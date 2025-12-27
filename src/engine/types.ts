@@ -133,7 +133,7 @@ export interface GameStats {
 export type ElementType = 'fire' | 'water' | 'nature' | 'neutral' | 'light' | 'dark';
 
 export interface Hero extends Entity {
-    class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock';
+    class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer';
     emoji: string;
     unlocked: boolean;
     element: ElementType;

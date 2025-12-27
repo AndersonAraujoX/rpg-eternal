@@ -14,6 +14,9 @@ export const STARLIGHT_UPGRADES: StarlightUpgrade[] = [
     { id: 'auto_equip', name: 'Auto-Loader Protocol', cost: 5, description: 'Automatically equips items if they have better stats.' },
     { id: 'auto_tavern', name: 'Infinite Recruiter', cost: 10, description: 'Automatically hires/upgrades heroes when you have excess gold.' },
     { id: 'auto_rebirth', name: 'Cycle of Rebirth', cost: 25, description: 'Automatically triggers Rebirth when soul gain is optimal (Lv 100+).' },
+    { id: 'auto_talent', name: 'Neural Optimizer', cost: 15, description: 'Automatically purchases affordable talents.' },
+    { id: 'auto_revive', name: 'Lazarus Protocol', cost: 30, description: 'Instantly revives fallen heroes.' },
+    { id: 'auto_tower', name: 'Infinity Climber', cost: 20, description: 'Automatically climbs the Tower of Eternity.' },
     { id: 'resource_saver', name: 'Matter Weaver', cost: 50, description: 'Keep 10% of resources after Ascension.' },
 ];
 
@@ -39,6 +42,9 @@ export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose,
                         if (upgrade.id === 'auto_equip') Icon = ShoppingBag;
                         if (upgrade.id === 'auto_tavern') Icon = Repeat;
                         if (upgrade.id === 'auto_rebirth') Icon = RefreshCw;
+                        if (upgrade.id === 'auto_talent') Icon = Zap;
+                        if (upgrade.id === 'auto_revive') Icon = Star;
+                        if (upgrade.id === 'auto_tower') Icon = ShoppingBag;
                         if (upgrade.id === 'resource_saver') Icon = Zap;
 
                         return (
@@ -58,10 +64,10 @@ export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose,
                                     onClick={() => onBuy(upgrade.id, upgrade.cost)}
                                     disabled={isOwned || starlight < upgrade.cost}
                                     className={`w-full py-2 rounded font-bold transition-colors ${isOwned
-                                            ? 'bg-slate-700 text-slate-500 cursor-default'
-                                            : starlight >= upgrade.cost
-                                                ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
-                                                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                        ? 'bg-slate-700 text-slate-500 cursor-default'
+                                        : starlight >= upgrade.cost
+                                            ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
+                                            : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                                         }`}
                                 >
                                     {isOwned ? 'UNLOCKED' : 'UNLOCK'}

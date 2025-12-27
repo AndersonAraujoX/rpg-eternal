@@ -4,6 +4,7 @@ import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
 import { processCombatTurn, calculateDamageMultiplier } from '../engine/combat';
+import { generateLoot } from '../engine/loot';
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
     { id: 'k1', name: 'Slayer I', description: 'Kill 100 Monsters', isUnlocked: false, condition: { type: 'kills', value: 100 }, reward: '+5% Attack' },
@@ -18,7 +19,10 @@ export const INITIAL_HEROES: Hero[] = [
     { id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], corruption: false, stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 } },
     { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 } },
     { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 } },
-    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 } }
+    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 } },
+    { id: 'h7', name: 'Dragoon', type: 'hero', class: 'Dragoon', unlocked: false, emoji: '🐉', isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 130, maxHp: 130, mp: 50, maxMp: 50, attack: 35, magic: 10, defense: 8, speed: 14 } },
+    { id: 'h8', name: 'Sage', type: 'hero', class: 'Sage', unlocked: false, emoji: '📜', isDead: false, element: 'light', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 75, maxHp: 75, mp: 150, maxMp: 150, attack: 5, magic: 40, defense: 4, speed: 10 } },
+    { id: 'h9', name: 'Necromancer', type: 'hero', class: 'Necromancer', unlocked: false, emoji: '🦴', isDead: false, element: 'dark', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 90, maxHp: 90, mp: 100, maxMp: 100, attack: 10, magic: 30, defense: 6, speed: 8 } }
 ];
 
 export const INITIAL_BOSS: Boss = {
@@ -31,6 +35,12 @@ export const INITIAL_PET_DATA: Pet = {
     level: 1, xp: 0, maxXp: 100,
     stats: { attack: 5, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 }
 };
+
+export const AVAILABLE_PETS: Pet[] = [
+    INITIAL_PET_DATA,
+    { id: 'pet-eye', name: 'Floating Eye', type: 'pet', bonus: '+Crit Dmg', emoji: '👁️', isDead: false, level: 1, xp: 0, maxXp: 100, stats: { attack: 2, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 } },
+    { id: 'pet-slime', name: 'Golden Slime', type: 'pet', bonus: '+Gold', emoji: '🦠', isDead: false, level: 1, xp: 0, maxXp: 100, stats: { attack: 1, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 } }
+];
 
 const INITIAL_TALENTS: Talent[] = [
     { id: 't1', name: 'Sharpness', level: 0, maxLevel: 50, cost: 10, costScaling: 1.5, description: '+5% Damage', stat: 'attack', valuePerLevel: 0.05 },
@@ -479,6 +489,34 @@ export const useGame = () => {
         if (starlightUpgrades.includes('auto_tavern')) {
             if (gold > 1000 && Math.random() < 0.1) { ACTIONS.summonTavern(); }
         }
+
+        // ULTRA AUTOMATION (Phase 16)
+        if (starlightUpgrades.includes('auto_talent')) {
+            const affordable = talents.find(t => {
+                const cost = Math.floor(t.cost * Math.pow(t.costScaling, t.level));
+                return souls >= cost;
+            });
+            if (affordable && Math.random() < 0.1) {
+                ACTIONS.buyTalent(affordable.id);
+            }
+        }
+
+        if (starlightUpgrades.includes('auto_revive')) {
+            const deadHeroes = heroes.filter(h => h.isDead);
+            if (deadHeroes.length > 0) {
+                deadHeroes.forEach(h => {
+                    h.isDead = false;
+                    h.stats.hp = h.stats.maxHp;
+                });
+                setHeroes([...heroes]);
+            }
+        }
+
+        if (starlightUpgrades.includes('auto_tower')) {
+            if (Math.random() < 0.01) {
+                setTower(t => ({ ...t, floor: t.floor + 1, maxFloor: Math.max(t.maxFloor, t.floor + 1) }));
+            }
+        }
         if (dungeonActive) {
             if (dungeonTimer <= 0) { setDungeonActive(false); setBoss(INITIAL_BOSS); addLog("Dungeon Closed.", 'info'); }
             else { setDungeonTimer(t => t - (1 * gameSpeed / 10)); }
@@ -551,23 +589,17 @@ export const useGame = () => {
 
             if (newBossHp === 0) {
                 // Drops
-                const sockets = Math.floor(Math.random() * 3) + 1; // 1 to 3 sockets
-                const loot: Item = { id: Math.random().toString(), name: 'Item', type: 'weapon', stat: 'attack', value: boss.level, rarity: 'common', sockets, runes: [] };
+                const loot = generateLoot(boss.level);
+
 
                 // AUTO EQUIP
                 if (starlightUpgrades.includes('auto_equip')) {
-                    // Simplified: just equip if value is better than nothing? 
-                    // Real logic needs active hero checking. For now, let's just claim it works visually or keep it manual for specific heroes.
-                    // Actually, let's just auto-sell weak items for gold if inventory full?
-                    // Implementation: If new item value > current avg item value, simple equip?
-                    // For this MVP, let's just make it auto-socket gems if we had that.
-                    // Let's fallback: Auto-Equip automatically gives the item to the first hero if they have nothing, or upgrades if better.
-                    // Too complex for one line. Let's make it: Auto-Sell low level items for gold.
                     if (boss.level < 10) {
-                        // Auto-scrap
                         setGold(g => g + boss.level);
+                        addLog(`Auto-Scrapped ${loot.name} for ${boss.level} Gold`, 'info');
                     } else {
                         setItems(p => [...p, loot]);
+                        addLog(`Auto-Looted: ${loot.name}`, 'info');
                     }
                 } else {
                     setItems(p => [...p, loot]);

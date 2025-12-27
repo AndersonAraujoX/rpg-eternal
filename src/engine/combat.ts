@@ -92,6 +92,29 @@ export const processCombatTurn = (
         return { ...h, stats: { ...h.stats, hp } };
     });
 
+    // Boss Damage to Heroes
+    if (allies.length > 0 && !boss.isDead) {
+        // Boss attacks everyone (AOE) or single target? 
+        // Let's do a simple tick damage to all combatants for now to make it dangerous.
+
+        updatedHeroes.forEach(h => {
+            if (h.assignment === 'combat' && !h.isDead) {
+                const defense = h.stats.defense * (h.gambits?.some(g => g.action === 'defend') ? 1.5 : 1);
+
+                let dmgReceived = Math.max(1, (boss.stats.attack - defense));
+                const elMult = getElementalMult(boss.element, h.element);
+                dmgReceived = Math.floor(dmgReceived * elMult);
+
+                h.stats.hp = Math.max(0, h.stats.hp - dmgReceived);
+
+                if (h.stats.hp <= 0) {
+                    h.isDead = true;
+                    // h.statusEffects = []; // Clean up if needed later
+                }
+            }
+        });
+    }
+
     // Pet Damage
     if (pet && allies.some(h => !h.isDead)) {
         totalDmg += Math.floor(pet.stats.attack * (boss.level * 0.5));
