@@ -1,19 +1,16 @@
 import { useRef, useEffect } from 'react';
 import { useGame } from './hooks/useGame';
-import { Sword, Flame, Heart, Skull } from 'lucide-react';
+import { Sword, Volume2, VolumeX, Save } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const { heroes, boss, isPlayerTurn, activeHeroIndex, logs, gameOver, isAutoPlay, actions } = useGame();
+  const { heroes, boss, logs, gameSpeed, isSoundOn, actions } = useGame();
 
   // Auto-scroll log
   const logRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
-
-  // Get active hero
-  const activeHero = heroes[activeHeroIndex];
 
   // Dynamic Background Helper
   const getBackgroundClass = (level: number) => {
@@ -34,12 +31,21 @@ function App() {
         <div className="bg-gray-900 p-4 border-b-4 border-gray-600 flex justify-between items-center text-xs md:text-sm text-yellow-400">
           <div>LVL: <span className="text-white">{boss.level}</span></div>
 
-          <button
-            onClick={actions.toggleAutoPlay}
-            className={`btn-retro bg-gray-700 text-white px-3 py-1 text-[10px] rounded border border-gray-500 hover:bg-gray-600 ${isAutoPlay ? 'bg-yellow-500 text-black pulse-gold' : ''}`}
-          >
-            AUTO: {isAutoPlay ? 'ON' : 'OFF'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={actions.toggleSound}
+              className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600"
+            >
+              {isSoundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            </button>
+
+            <button
+              onClick={() => actions.setGameSpeed(gameSpeed === 1 ? 5 : 1)}
+              className="btn-retro bg-blue-700 text-white px-3 py-1 text-[10px] rounded hover:bg-blue-600"
+            >
+              SPEED: {gameSpeed}x
+            </button>
+          </div>
 
           <div>BOSS HP: <span className="text-white">{boss.stats.hp}</span></div>
         </div>
@@ -56,7 +62,7 @@ function App() {
           <div className="flex flex-col items-center justify-center mt-4 transition-all">
             <div className="mb-2 text-red-400 text-sm md:text-base">{boss.name}</div>
             <div className="relative group">
-              <div className={`text-6xl md:text-8xl filter drop-shadow-lg transition-transform ${isPlayerTurn ? '' : 'attack-down'} ${boss.isDead ? 'scale-0 rotate-180 transition-transform duration-700' : ''}`}>
+              <div className={`text-6xl md:text-8xl filter drop-shadow-lg transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0 rotate-180 transition-transform duration-700' : ''}`}>
                 {boss.emoji}
               </div>
             </div>
@@ -73,21 +79,19 @@ function App() {
             </div>
           </div>
 
-          {/* VS Visual */}
+          {/* VS */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 text-4xl font-bold text-white pointer-events-none">
-            VS
+            AFK
           </div>
 
-          {/* Heroes Section (Party) */}
+          {/* Heroes Section */}
           <div className="grid grid-cols-3 gap-2 mb-4 w-full">
-            {heroes.map((hero, index) => {
-              const isActive = index === activeHeroIndex && isPlayerTurn && !hero.isDead;
+            {heroes.map((hero) => {
               const isDead = hero.isDead;
-
               return (
-                <div key={hero.id} className={`flex flex-col items-center p-2 rounded transition-all ${isActive ? 'bg-gray-800 border-2 border-yellow-500 transform scale-105' : 'opacity-80'}`}>
+                <div key={hero.id} className={`flex flex-col items-center p-2 rounded transition-all bg-gray-800 border-2 ${hero.stats.hp < hero.stats.maxHp * 0.3 ? 'border-red-500 animate-pulse' : 'border-gray-600'}`}>
                   {/* Hero Sprite */}
-                  <div className={`text-4xl md:text-5xl mb-2 ${isActive ? 'attack-up' : ''} ${isDead ? 'grayscale opacity-50' : ''}`}>
+                  <div className={`text-4xl md:text-5xl mb-2 ${isDead ? 'grayscale opacity-50' : 'attack-up'}`}>
                     {hero.emoji}
                   </div>
 
@@ -95,24 +99,16 @@ function App() {
                   <div className="w-full flex flex-col gap-1">
                     {/* HP */}
                     <div className="w-full h-3 bg-gray-700 bar-container relative rounded">
-                      <div
-                        className="h-full bg-green-500 transition-all duration-300"
-                        style={{ width: `${(hero.stats.hp / hero.stats.maxHp) * 100}%` }}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center text-[6px] text-black font-bold z-10">
-                        {hero.stats.hp}
-                      </div>
+                      <div className="h-full bg-green-500 transition-all duration-300" style={{ width: `${(hero.stats.hp / hero.stats.maxHp) * 100}%` }} />
+                      <div className="absolute inset-0 flex items-center justify-center text-[6px] text-black font-bold z-10">{hero.stats.hp}</div>
                     </div>
                     {/* MP */}
                     <div className="w-full h-2 bg-gray-700 bar-container relative rounded">
-                      <div
-                        className="h-full bg-blue-500 transition-all duration-300"
-                        style={{ width: `${(hero.stats.mp / hero.stats.maxMp) * 100}%` }}
-                      />
+                      <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${(hero.stats.mp / hero.stats.maxMp) * 100}%` }} />
                     </div>
                   </div>
-                  <div className={`mt-1 text-[8px] ${isActive ? 'text-yellow-400' : 'text-gray-400'}`}>
-                    {hero.class}
+                  <div className="mt-1 text-[8px] text-gray-400">
+                    ATK: {hero.stats.attack}
                   </div>
                 </div>
               );
@@ -122,7 +118,7 @@ function App() {
 
         {/* Combat Log */}
         <div ref={logRef} className="h-32 bg-black border-t-4 border-gray-600 p-2 text-[10px] md:text-xs text-green-400 overflow-y-auto font-mono leading-relaxed custom-scroll">
-          <div className="text-yellow-500">{'>'} Welcome to RPG Eternal!</div>
+          <div className="text-yellow-500">{'>'} AFK Mode: Observing Combat...</div>
           {logs.map(log => (
             <div key={log.id} style={{
               color: log.type === 'damage' ? '#f87171' :
@@ -134,51 +130,14 @@ function App() {
           ))}
         </div>
 
-        {/* Controls */}
-        <div className="bg-gray-800 p-4 border-t-4 border-gray-600 grid grid-cols-3 gap-3">
-          <button
-            onClick={() => actions.action('attack')}
-            disabled={!isPlayerTurn || isAutoPlay}
-            className={`btn-retro bg-red-600 hover:bg-red-500 text-white py-3 rounded text-xs md:text-sm flex flex-col items-center gap-1 ${(!isPlayerTurn || isAutoPlay) ? 'btn-disabled' : ''}`}
-          >
-            <Sword className="w-4 h-4" />
-            ATTACK
-          </button>
-          <button
-            onClick={() => actions.action('magic')}
-            disabled={!isPlayerTurn || isAutoPlay}
-            className={`btn-retro bg-blue-600 hover:bg-blue-500 text-white py-3 rounded text-xs md:text-sm flex flex-col items-center gap-1 group relative ${(!isPlayerTurn || isAutoPlay) ? 'btn-disabled' : ''}`}
-          >
-            <Flame className="w-4 h-4" />
-            MAGIC
-            <span className="text-[8px] text-blue-200 block md:absolute md:bottom-1 md:right-1">15 MP</span>
-          </button>
-          <button
-            onClick={() => actions.action('heal')}
-            disabled={!isPlayerTurn || isAutoPlay}
-            className={`btn-retro bg-green-600 hover:bg-green-500 text-white py-3 rounded text-xs md:text-sm flex flex-col items-center gap-1 group relative ${(!isPlayerTurn || isAutoPlay) ? 'btn-disabled' : ''}`}
-          >
-            <Heart className="w-4 h-4" />
-            HEAL
-            <span className="text-[8px] text-green-200 block md:absolute md:bottom-1 md:right-1">20 MP</span>
+        {/* Footer/Reset */}
+        <div className="bg-gray-800 p-2 border-t-4 border-gray-600 flex justify-between items-center text-[10px] text-gray-500">
+          <span>Progress Saved Automatically</span>
+          <button onClick={actions.resetSave} className="hover:text-red-500 flex items-center gap-1">
+            <Save size={10} /> Reset Save
           </button>
         </div>
-      </div>
 
-      {/* Game Over Modal */}
-      {gameOver && (
-        <div className="absolute inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center text-center p-4">
-          <h1 className="text-red-500 text-4xl mb-4 animate-pulse">GAME OVER</h1>
-          <Skull className="w-16 h-16 text-gray-500 mb-4" />
-          <p className="text-white mb-2">You survived until Level: <span className="text-yellow-400">{boss.level}</span></p>
-          <button onClick={actions.reset} className="btn-retro bg-white text-black px-6 py-3 rounded hover:bg-gray-200 mt-8">
-            TRY AGAIN
-          </button>
-        </div>
-      )}
-
-      <div className="absolute bottom-2 right-2 text-[8px] text-gray-600">
-        Active: {activeHero?.name}
       </div>
     </div>
   )

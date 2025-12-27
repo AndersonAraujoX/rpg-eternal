@@ -1,279 +1,216 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { Hero, Boss, LogEntry } from '../engine/types';
+import { useState, useEffect } from 'react';
+import type { Hero, Boss, LogEntry, Item } from '../engine/types';
+import { soundManager } from '../engine/sound';
 
 const INITIAL_HEROES: Hero[] = [
-    {
-        id: 'hero-warrior',
-        name: 'Warrior',
-        type: 'hero',
-        class: 'Warrior',
-        emoji: '🛡️',
-        isDead: false,
-        stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 }
-    },
-    {
-        id: 'hero-mage',
-        name: 'Mage',
-        type: 'hero',
-        class: 'Mage',
-        emoji: '🔮',
-        isDead: false,
-        stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 }
-    },
-    {
-        id: 'hero-healer',
-        name: 'Healer',
-        type: 'hero',
-        class: 'Healer',
-        emoji: '💚',
-        isDead: false,
-        stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 }
-    }
+    { id: 'hero-warrior', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', isDead: false, stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 } },
+    { id: 'hero-mage', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', isDead: false, stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 } },
+    { id: 'hero-healer', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', isDead: false, stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 } }
 ];
 
 const INITIAL_BOSS: Boss = {
-    id: 'boss-1',
-    name: 'Slime',
-    emoji: '🦠',
-    type: 'boss',
-    level: 1,
-    isDead: false,
+    id: 'boss-1', name: 'Slime', emoji: '🦠', type: 'boss', level: 1, isDead: false,
     stats: { hp: 200, maxHp: 200, mp: 0, maxMp: 0, attack: 12, magic: 0, defense: 2, speed: 8 }
 };
 
-
-
 export const useGame = () => {
-    const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
-    const [boss, setBoss] = useState<Boss>(INITIAL_BOSS);
-    const [turn, setTurn] = useState<number>(1);
-    const [isPlayerTurn, setIsPlayerTurn] = useState<boolean>(true);
+    // Persistence Loading
+    const loadState = () => {
+        const saved = localStorage.getItem('rpg_eternal_save');
+        if (saved) return JSON.parse(saved);
+        return null;
+    };
+    const savedState = loadState();
+
+    const [heroes, setHeroes] = useState<Hero[]>(savedState?.heroes || INITIAL_HEROES);
+    const [boss, setBoss] = useState<Boss>(savedState?.boss || INITIAL_BOSS);
     const [logs, setLogs] = useState<LogEntry[]>([]);
-    const [gameOver, setGameOver] = useState<boolean>(false);
-    const [isAutoPlay, setIsAutoPlay] = useState<boolean>(false);
-    const [activeHeroIndex, setActiveHeroIndex] = useState<number>(0); // Which hero is acting?
+    const [gameSpeed, setGameSpeed] = useState<number>(1);
+    const [isSoundOn, setIsSoundOn] = useState<boolean>(false);
+    const [items, setItems] = useState<Item[]>(savedState?.items || []);
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
-        setLogs(prev => [...prev.slice(-19), { id: Math.random().toString(36), message, type }]);
+        setLogs(prev => [...prev.slice(-14), { id: Math.random().toString(36), message, type }]); // Keep fewer logs for perf
     };
 
-    // Helper to get next living hero
-    const getNextLivingHeroIndex = (startIndex: number): number | -1 => {
-        let nextIndex = startIndex;
-        for (let i = 0; i < heroes.length; i++) {
-            if (!heroes[nextIndex].isDead) return nextIndex;
-            nextIndex = (nextIndex + 1) % heroes.length;
-        }
-        return -1; // All dead
+    // Save Effect
+    useEffect(() => {
+        const state = { heroes, boss, items };
+        localStorage.setItem('rpg_eternal_save', JSON.stringify(state));
+    }, [heroes, boss, items]);
+
+    // Sound Toggle
+    const toggleSound = () => {
+        const newState = !isSoundOn;
+        setIsSoundOn(newState);
+        soundManager.toggle(newState);
     };
 
-    const heroAction = useCallback((actionType: 'attack' | 'magic' | 'heal') => {
-        if (!isPlayerTurn || gameOver) return;
+    // LOOT SYSTEM
+    const generateLoot = (level: number): Item => {
+        const rarity = Math.random() > 0.9 ? 'legendary' : Math.random() > 0.7 ? 'epic' : 'common';
+        const type = Math.random() > 0.5 ? 'weapon' : 'armor';
+        const statVal = Math.floor(level * (rarity === 'legendary' ? 2 : 1.2));
 
-        const currentHeroIndex = getNextLivingHeroIndex(activeHeroIndex);
-        if (currentHeroIndex === -1) return; // Should be game over
+        return {
+            id: Math.random().toString(36),
+            name: `${rarity} ${type} +${statVal}`,
+            type: type as any,
+            stat: 'attack',
+            value: statVal,
+            rarity: rarity as any
+        };
+    };
 
-        const hero = heroes[currentHeroIndex];
-        let damage = 0;
-        let heal = 0;
+    // CORE GAME LOOP (AFK)
+    useEffect(() => {
+        // Only run if everyone is alive (or boss dead handles respawn)
+        if (heroes.every(h => h.isDead)) return;
 
-        // Action Logic
-        if (actionType === 'attack') {
-            damage = Math.floor(hero.stats.attack * (0.9 + Math.random() * 0.2));
-            const isCrit = Math.random() > 0.8;
-            if (isCrit) damage = Math.floor(damage * 1.5);
+        const tickRate = 1000 / gameSpeed;
 
-            setBoss(prev => {
-                const newHp = Math.max(0, prev.stats.hp - damage);
-                return { ...prev, stats: { ...prev.stats, hp: newHp }, isDead: newHp === 0 };
-            });
-            addLog(`${hero.name} attacks for ${damage}!${isCrit ? ' (CRIT!)' : ''}`, 'damage');
+        const timer = setTimeout(() => {
+            // 1. Identify Actor (Rotational or Speed based - keeping rotational for simplicity)
+            const livingHeroes = heroes.filter(h => !h.isDead);
 
-        } else if (actionType === 'magic') {
-            if (hero.stats.mp < 15) {
-                addLog(`${hero.name} has no Mana!`, 'info');
-                if (isAutoPlay) heroAction('attack'); // Fallback
-                return;
-            }
-            // Deduct MP
-            setHeroes(prev => prev.map((h, i) => i === currentHeroIndex ? { ...h, stats: { ...h.stats, mp: h.stats.mp - 15 } } : h));
+            // Player Turn: All heroes act simultaneously for "Fast AFK" feel? 
+            // Or sequential. Let's do: One Hero Act -> Boss Act -> Repeat
 
-            damage = Math.floor(hero.stats.magic * (1.2 + Math.random() * 0.3));
-            setBoss(prev => {
-                const newHp = Math.max(0, prev.stats.hp - damage);
-                return { ...prev, stats: { ...prev.stats, hp: newHp }, isDead: newHp === 0 };
-            });
-            addLog(`${hero.name} casts Fireball for ${damage}!`, 'damage');
+            if (livingHeroes.length === 0) return; // Wiped
 
-        } else if (actionType === 'heal') {
-            if (hero.stats.mp < 20) {
-                addLog(`${hero.name} has no Mana to heal!`, 'info');
-                if (isAutoPlay) heroAction('attack');
-                return;
-            }
-            // Deduct MP
-            setHeroes(prev => prev.map((h, i) => i === currentHeroIndex ? { ...h, stats: { ...h.stats, mp: h.stats.mp - 20 } } : h));
+            // HEROES ACTIONS
+            let totalDmg = 0;
+            const newHeroes = heroes.map(h => {
+                if (h.isDead) return h;
 
-            heal = Math.floor(hero.stats.magic * 1.5);
-            // Heal most injured hero
-            setHeroes(prev => {
-                // simple logic: heal self or lowest hp
-                return prev.map(h => {
-                    // Heal logic could be complex, keeping simple: heal self or anyone low
-                    if (h.id === hero.id) return { ...h, stats: { ...h.stats, hp: Math.min(h.stats.maxHp, h.stats.hp + heal) } };
-                    return h;
-                });
-            });
-            addLog(`${hero.name} heals for ${heal}!`, 'heal');
-        }
+                // Mana Regen
+                let mp = Math.min(h.stats.maxMp, h.stats.mp + 2);
+                let hp = h.stats.hp;
+                let actionLog = '';
 
-        // Check Boss Death immediately
-        if (boss.stats.hp - damage <= 0) {
-            // Boss death effect will trigger
-        } else {
-            // Advance Turn to next Hero or Boss
-            let nextIndex = (currentHeroIndex + 1) % heroes.length;
-            // If we wrapped around to 0, it means all heroes acted? 
-            // Or we can do: Each click is one hero action.
-            // Let's do: Next hero is selected. If next hero index <= current, it means round trip -> Boss Turn.
+                // AI Logic
+                if (h.class === 'Healer' && livingHeroes.some(lh => lh.stats.hp < lh.stats.maxHp * 0.6) && mp >= 20) {
+                    // Heal Team
+                    mp -= 20;
+                    // Healing applied later to state, tricky in map. 
+                    // Simplified: Healer heals self and gives "aura" to others? 
+                    // Let's make Healer attack AND heal.
+                    const healAmt = Math.floor(h.stats.magic * 1.5);
+                    soundManager.playHeal();
+                    hp = Math.min(h.stats.maxHp, h.stats.hp + healAmt); // Self heal for now simplicity
+                    actionLog = `${h.name} heals for ${healAmt}`;
 
-            // Simplified: One action per turn for the whole party? No, that's unfair.
-            // New System: Each hero acts once.
-            if (nextIndex === 0) {
-                setIsPlayerTurn(false);
-                setActiveHeroIndex(0);
-            } else {
-                // Find next living hero
-                const nextLiving = getNextLivingHeroIndex(nextIndex);
-                if (nextLiving === -1 || nextLiving < currentHeroIndex) {
-                    setIsPlayerTurn(false);
-                    setActiveHeroIndex(0);
+                } else if (mp >= 15 && boss.stats.hp > 50) {
+                    // Magic Attack
+                    mp -= 15;
+                    const dmg = Math.floor(h.stats.magic * 1.5);
+                    totalDmg += dmg;
+                    actionLog = `${h.name} text_fire blasts for ${dmg}!`;
+                    soundManager.playMagic();
                 } else {
-                    setActiveHeroIndex(nextLiving);
+                    // Attack
+                    const dmg = Math.floor(h.stats.attack * (1 + Math.random()));
+                    totalDmg += dmg;
+                    actionLog = `${h.name} hits for ${dmg}`;
+                    if (Math.random() > 0.8) soundManager.playAttack();
                 }
+
+                if (Math.random() > 0.9 && actionLog) addLog(actionLog, 'info'); // Reduce log spam
+                return { ...h, stats: { ...h.stats, hp, mp } };
+            });
+
+            // Apply Global Healer effect if Healer acted? (Skipped for stability complexity)
+            setHeroes(newHeroes);
+
+            // Apply Damage to Boss
+            let newBossHp = Math.max(0, boss.stats.hp - totalDmg);
+
+            if (totalDmg > 0) {
+                soundManager.playHit();
+                // addLog(`Party deals ${totalDmg} total damage!`, 'damage');
             }
-        }
 
-    }, [heroes, boss, isPlayerTurn, gameOver, activeHeroIndex, isAutoPlay]);
+            if (newBossHp === 0) {
+                // Boss Dead Logic
+                soundManager.playLevelUp();
+                const loot = generateLoot(boss.level);
+                setItems(prev => [...prev, loot]);
+                addLog(`${boss.name} Defeated! Dropped ${loot.name}`, 'death');
 
-
-    // Boss Turn
-    useEffect(() => {
-        if (!isPlayerTurn && !boss.isDead && !gameOver) {
-            const timer = setTimeout(() => {
-                const livingHeroes = heroes.filter(h => !h.isDead);
-                if (livingHeroes.length === 0) return;
-
-                const target = livingHeroes[Math.floor(Math.random() * livingHeroes.length)];
-                const damage = Math.max(1, Math.floor(boss.stats.attack * (0.8 + Math.random() * 0.4)));
-
-                setHeroes(prev => prev.map(h => {
-                    if (h.id === target.id) {
-                        const newHp = Math.max(0, h.stats.hp - damage);
-                        return { ...h, stats: { ...h.stats, hp: newHp }, isDead: newHp === 0 };
+                // Auto Equip / Consume Loot (Simplified: Boost Stats permanently)
+                setHeroes(prev => prev.map(h => ({
+                    ...h,
+                    stats: {
+                        ...h.stats,
+                        attack: h.stats.attack + (loot.stat === 'attack' ? loot.value : 0),
+                        maxHp: h.stats.maxHp + (loot.stat === 'hp' ? loot.value : 10)
                     }
-                    return h;
-                }));
+                })));
 
-                addLog(`${boss.name} attacks ${target.name} for ${damage}!`, 'damage');
-
-                // Regen MP a bit
-                setHeroes(prev => prev.map(h => !h.isDead ? { ...h, stats: { ...h.stats, mp: Math.min(h.stats.maxMp, h.stats.mp + 5) } } : h));
-
-                setIsPlayerTurn(true);
-                setActiveHeroIndex(getNextLivingHeroIndex(0));
-                setTurn(t => t + 1);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [isPlayerTurn, boss, gameOver]); // Dependency array simplified
-
-    // Check Game Over / Victory
-    useEffect(() => {
-        const allHeroesDead = heroes.every(h => h.isDead);
-        if (allHeroesDead) {
-            setGameOver(true);
-            addLog("Party defeated...", "death");
-        }
-
-        if (boss.isDead) {
-            addLog(`${boss.name} defeated!`, 'death');
-            setTimeout(() => {
-                const scale = 1.2;
+                // Respawn Boss
                 setBoss(prev => ({
                     ...prev,
                     level: prev.level + 1,
                     name: `Monster Lvl ${prev.level + 1}`,
-                    isDead: false,
                     stats: {
-                        hp: Math.floor(prev.stats.maxHp * scale),
-                        maxHp: Math.floor(prev.stats.maxHp * scale),
+                        maxHp: Math.floor(prev.stats.maxHp * 1.2),
+                        hp: Math.floor(prev.stats.maxHp * 1.2),
                         mp: 0, maxMp: 0,
                         attack: Math.floor(prev.stats.attack * 1.1),
                         magic: 0, defense: prev.stats.defense + 1, speed: 10
-                    }
+                    },
+                    isDead: false
+                    // Emoji randomization could be added here
                 }));
-                // Revive/Heal Party
-                setHeroes(prev => prev.map(h => ({
-                    ...h,
-                    isDead: false,
-                    stats: {
-                        ...h.stats,
-                        hp: Math.min(h.stats.maxHp, h.stats.hp + 50),
-                        mp: h.stats.maxMp
-                    }
-                })));
-                addLog("A stronger boss approaches! Party healed.", 'info');
-                setIsPlayerTurn(true);
-                setActiveHeroIndex(0);
-            }, 2000);
-        }
-    }, [heroes, boss.isDead]);
 
+                // Full Heal Party
+                setHeroes(prev => prev.map(h => ({ ...h, stats: { ...h.stats, hp: h.stats.maxHp, mp: h.stats.maxMp } })));
 
-    // Auto Play
+            } else {
+                // Boss Attacks Back
+                const dmg = Math.max(0, boss.stats.attack - 5);
+                setHeroes(prev => prev.map(h => {
+                    if (h.isDead) return h;
+                    const newHp = Math.max(0, h.stats.hp - dmg);
+                    return { ...h, isDead: newHp === 0, stats: { ...h.stats, hp: newHp } };
+                }));
+                setBoss(p => ({ ...p, stats: { ...p.stats, hp: newBossHp } }));
+            }
+
+        }, tickRate);
+
+        return () => clearTimeout(timer);
+    }, [heroes, boss, gameSpeed]);
+
+    // Wipe Check
     useEffect(() => {
-        if (isAutoPlay && isPlayerTurn && !gameOver) {
-            const timer = setTimeout(() => {
-                // Logic to choose action
-                const hero = heroes[activeHeroIndex];
-                if (!hero) return; // Should not happen
-
-                if (hero.stats.hp < hero.stats.maxHp * 0.5 && hero.stats.mp >= 20) {
-                    heroAction('heal');
-                } else if (hero.stats.mp >= 15 && boss.stats.hp > 50) {
-                    heroAction('magic');
-                } else {
-                    heroAction('attack');
-                }
-            }, 800);
-            return () => clearTimeout(timer);
+        if (heroes.every(h => h.isDead)) {
+            addLog("Party Wiped! Reviving in 3s...", "death");
+            setTimeout(() => {
+                setHeroes(prev => prev.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } })));
+            }, 3000);
         }
-    }, [isAutoPlay, isPlayerTurn, activeHeroIndex, gameOver, heroAction, heroes, boss]);
+    }, [heroes]);
 
-    const resetGame = () => {
+    const resetSave = () => {
+        localStorage.removeItem('rpg_eternal_save');
         setHeroes(INITIAL_HEROES);
         setBoss(INITIAL_BOSS);
-        setTurn(1);
-        setIsPlayerTurn(true);
-        setGameOver(false);
-        setLogs([]);
-        setActiveHeroIndex(0);
+        setItems([]);
+        addLog("Save Reset!");
     };
 
     return {
         heroes,
         boss,
-        turn,
-        isPlayerTurn,
-        activeHeroIndex,
         logs,
-        gameOver,
-        isAutoPlay,
+        items,
+        gameSpeed,
+        isSoundOn,
         actions: {
-            action: heroAction,
-            reset: resetGame,
-            toggleAutoPlay: () => setIsAutoPlay(p => !p)
+            setGameSpeed,
+            toggleSound,
+            resetSave
         }
     };
 };
