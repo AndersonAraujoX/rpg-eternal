@@ -28,11 +28,34 @@ export interface Pet extends Entity {
     emoji: string;
 }
 
+export interface Talent {
+    id: string;
+    name: string;
+    level: number;
+    maxLevel: number;
+    cost: number;
+    costScaling: number;
+    description: string;
+    stat: 'attack' | 'speed' | 'crit' | 'gold';
+    valuePerLevel: number;
+}
+
+export interface Artifact {
+    id: string;
+    name: string;
+    description: string;
+    emoji: string;
+    bonus: string;
+}
+
 export interface GameStats {
     souls: number;
     rebirths: number;
     totalKills: number;
+    talents: Talent[];
+    artifacts: Artifact[];
 }
+
 
 
 export interface Hero extends Entity {
