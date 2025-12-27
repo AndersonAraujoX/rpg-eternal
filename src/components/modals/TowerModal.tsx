@@ -7,9 +7,10 @@ interface TowerModalProps {
     onClose: () => void;
     tower: Tower;
     actions: any;
+    starlight: number;
 }
 
-export const TowerModal: React.FC<TowerModalProps> = ({ isOpen, onClose, tower, actions }) => {
+export const TowerModal: React.FC<TowerModalProps> = ({ isOpen, onClose, tower, actions, starlight }) => {
     if (!isOpen) return null;
 
     return (
@@ -39,6 +40,18 @@ export const TowerModal: React.FC<TowerModalProps> = ({ isOpen, onClose, tower, 
                 >
                     {tower.active ? <><Skull /> RETREAT</> : <><Castle /> ENTER TOWER</>}
                 </button>
+
+                <div className="mt-6 border-t border-indigo-800 pt-4">
+                    <div className="text-yellow-400 font-bold mb-2 text-xl">✨ Starlight: {starlight || 0} ✨</div>
+                    <button
+                        onClick={() => { actions.prestigeTower(); onClose(); }}
+                        className="w-full bg-cyan-900 hover:bg-cyan-700 text-cyan-100 border border-cyan-500 py-3 rounded font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={tower.floor < 20}
+                    >
+                        🌌 ASCEND (Req: Fl 20)
+                    </button>
+                    <p className="text-xs text-cyan-400 mt-1">Reset Tower to gain Starlight based on Max Floor.</p>
+                </div>
             </div>
         </div>
     );

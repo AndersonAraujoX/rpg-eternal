@@ -121,6 +121,7 @@ export interface GameStats {
     runes: Rune[];
     achievements: Achievement[];
     eternalFragments: number;
+    starlight: number;
     resources: {
         copper: number;
         iron: number;

@@ -108,19 +108,11 @@ export const useGame = () => {
     const [runes, setRunes] = useState<Rune[]>([]);
     const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
     const [eternalFragments, setEternalFragments] = useState(0);
+    const [starlight, setStarlight] = useState(0);
     const [worldBoss, setWorldBoss] = useState<WorldBossState>({ active: false, timer: 0, hp: 0, maxHp: 0, boss: INITIAL_BOSS });
 
     // LOAD
     // PERSISTENCE
-    usePersistence(
-        heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
-        divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
-        cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
-        tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
-        arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
-        runes, setRunes, achievements, setAchievements,
-        eternalFragments, setEternalFragments, worldBoss, setWorldBoss
-    );
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
         setLogs(prev => [...prev.slice(-14), { id: Math.random().toString(36), message, type }]);
@@ -445,6 +437,15 @@ export const useGame = () => {
                 }
                 return { ...wb, hp: newHp };
             });
+        },
+        prestigeTower: () => {
+            if (tower.floor < 20) { addLog("Reach Floor 20 to Ascend.", 'info'); return; }
+            const reward = Math.floor(tower.maxFloor / 10);
+            setStarlight(s => s + reward);
+            setTower({ active: false, floor: 1, maxFloor: 1 }); // Reset tower
+            setBoss(INITIAL_BOSS);
+            addLog(`TOWER ASCENDED! +${reward} Starlight`, 'achievement');
+            soundManager.playLevelUp();
         }
     };
 
@@ -656,14 +657,15 @@ export const useGame = () => {
         tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
         arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
         runes, setRunes, achievements, setAchievements,
-        eternalFragments, setEternalFragments, worldBoss, setWorldBoss
+        eternalFragments, setEternalFragments,
+        starlight, setStarlight
     );
 
     return {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss,
+        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss, starlight,
         actions: ACTIONS
     };
 };
