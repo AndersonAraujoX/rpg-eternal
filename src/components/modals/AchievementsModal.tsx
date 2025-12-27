@@ -22,22 +22,28 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({ isOpen, on
 
                 <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
                     {achievements.map(ach => (
-                        <div key={ach.id} className={`p-4 rounded-lg border flex items-center gap-4 transition-all duration-300 ${ach.unlocked ? 'bg-slate-800 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'bg-slate-900 border-slate-700 opacity-70'}`}>
-                            <div className={`p-3 rounded-full border-2 ${ach.unlocked ? 'bg-yellow-900/50 border-yellow-500 text-yellow-400' : 'bg-slate-800 border-slate-600 text-gray-600'}`}>
-                                {ach.unlocked ? <Trophy size={24} /> : <Lock size={24} />}
+                        <div key={ach.id} className={`p-4 rounded-lg border flex items-center gap-4 transition-all duration-300 ${ach.isUnlocked ? 'bg-slate-800 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'bg-slate-900 border-slate-700 opacity-70'}`}>
+                            <div className={`p-3 rounded-full border-2 ${ach.isUnlocked ? 'bg-yellow-900/50 border-yellow-500 text-yellow-400' : 'bg-slate-800 border-slate-600 text-gray-600'}`}>
+                                {ach.isUnlocked ? <Trophy size={24} /> : <Lock size={24} />}
                             </div>
 
                             <div className="flex-1">
-                                <div className={`text-lg font-bold ${ach.unlocked ? 'text-yellow-200' : 'text-gray-400'}`}>{ach.name}</div>
-                                <div className="text-gray-400 text-sm">{ach.description}</div>
-                                <div className="text-xs text-yellow-500/80 mt-1 uppercase tracking-wider font-semibold">Reward: {ach.reward}</div>
-                            </div>
-
-                            {ach.unlocked && (
-                                <div className="text-green-400 animate-pulse">
-                                    <CheckCircle size={24} />
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className={`text-lg font-bold ${ach.isUnlocked ? 'text-yellow-200' : 'text-gray-400'}`}>{ach.name}</div>
+                                        <div className="text-gray-400 text-sm mt-1">{ach.description}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Reward</div>
+                                        {ach.isUnlocked && (
+                                            <div className="text-green-400 font-bold bg-green-900/30 px-2 py-1 rounded inline-block">{ach.reward}</div>
+                                        )}
+                                        {ach.isUnlocked && (
+                                            <CheckCircle size={24} className="text-green-400 animate-pulse mt-2" />
+                                        )}
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     ))}
                 </div>

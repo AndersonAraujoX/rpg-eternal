@@ -122,6 +122,7 @@ export interface GameStats {
     achievements: Achievement[];
     eternalFragments: number;
     starlight: number;
+    starlightUpgrades: string[];
     resources: {
         copper: number;
         iron: number;
@@ -167,11 +168,18 @@ export interface Rune {
     value: number; // Percentage
 }
 
+export interface StarlightUpgrade {
+    id: string;
+    name: string;
+    cost: number;
+    description: string;
+}
+
 export interface Achievement {
     id: string;
     name: string;
     description: string;
-    unlocked: boolean;
+    isUnlocked: boolean;
     condition: { type: 'kills' | 'bossKills' | 'gold' | 'clicks' | 'crafts', value: number };
     reward: string; // Text description
 }

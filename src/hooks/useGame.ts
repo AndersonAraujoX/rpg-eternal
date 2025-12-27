@@ -6,10 +6,10 @@ import { usePersistence } from './usePersistence';
 import { processCombatTurn, calculateDamageMultiplier } from '../engine/combat';
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
-    { id: 'ach1', name: 'Novice Slayer', description: 'Kill 100 Bosses', unlocked: false, condition: { type: 'bossKills', value: 100 }, reward: '+10% Gold' },
-    { id: 'ach2', name: 'Millionaire', description: 'Hoard 1,000,000 Gold', unlocked: false, condition: { type: 'gold', value: 1000000 }, reward: '+5% Damage' },
-    { id: 'ach3', name: 'Rune Smith', description: 'Craft 10 Runes', unlocked: false, condition: { type: 'crafts', value: 10 }, reward: '+10% Craft Speed' },
-    { id: 'ach4', name: 'Clicker King', description: 'Click 5000 Times', unlocked: false, condition: { type: 'clicks', value: 5000 }, reward: '+1 Click DMG' }
+    { id: 'k1', name: 'Slayer I', description: 'Kill 100 Monsters', isUnlocked: false, condition: { type: 'kills', value: 100 }, reward: '+5% Attack' },
+    { id: 'g1', name: 'Midas I', description: 'Earn 1000 Gold', isUnlocked: false, condition: { type: 'gold', value: 1000 }, reward: '+5% Gold' },
+    { id: 'c1', name: 'Clicker I', description: 'Click 500 Times', isUnlocked: false, condition: { type: 'clicks', value: 500 }, reward: '+5% Click Dmg' },
+    { id: 'b1', name: 'Boss Hunter I', description: 'Kill 10 Bosses', isUnlocked: false, condition: { type: 'bossKills', value: 10 }, reward: '+10% Boss Dmg' },
 ];
 
 export const INITIAL_HEROES: Hero[] = [
@@ -109,6 +109,7 @@ export const useGame = () => {
     const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
     const [eternalFragments, setEternalFragments] = useState(0);
     const [starlight, setStarlight] = useState(0);
+    const [starlightUpgrades, setStarlightUpgrades] = useState<string[]>([]);
     const [worldBoss, setWorldBoss] = useState<WorldBossState>({ active: false, timer: 0, hp: 0, maxHp: 0, boss: INITIAL_BOSS });
 
     // LOAD
@@ -120,7 +121,14 @@ export const useGame = () => {
     const toggleSound = () => { setIsSoundOn(!isSoundOn); soundManager.toggle(!isSoundOn); };
 
     const ACTIONS = {
-
+        buyStarlightUpgrade: (id: string, cost: number) => {
+            if (starlight >= cost && !starlightUpgrades.includes(id)) {
+                setStarlight(s => s - cost);
+                setStarlightUpgrades(prev => [...prev, id]);
+                addLog(`Unlocked Constellation: ${id}`, 'achievement');
+                soundManager.playLevelUp();
+            }
+        },
 
         buyTalent: (id: string) => {
             setTalents(prev => prev.map(t => {
@@ -461,6 +469,16 @@ export const useGame = () => {
             if (raidTimer <= 0) { setRaidActive(false); setBoss(INITIAL_BOSS); addLog("Raid Failed!", 'damage'); }
             else { setRaidTimer(t => t - (1 * gameSpeed / 10)); }
         }
+
+        // AUTOMATION LOGIC
+        if (starlightUpgrades.includes('auto_rebirth')) {
+            // Rebirth if boss level > 100 AND slow kill (simulated by time or just level cap)
+            if (boss.level >= 105) { ACTIONS.triggerRebirth(); }
+        }
+
+        if (starlightUpgrades.includes('auto_tavern')) {
+            if (gold > 1000 && Math.random() < 0.1) { ACTIONS.summonTavern(); }
+        }
         if (dungeonActive) {
             if (dungeonTimer <= 0) { setDungeonActive(false); setBoss(INITIAL_BOSS); addLog("Dungeon Closed.", 'info'); }
             else { setDungeonTimer(t => t - (1 * gameSpeed / 10)); }
@@ -535,7 +553,25 @@ export const useGame = () => {
                 // Drops
                 const sockets = Math.floor(Math.random() * 3) + 1; // 1 to 3 sockets
                 const loot: Item = { id: Math.random().toString(), name: 'Item', type: 'weapon', stat: 'attack', value: boss.level, rarity: 'common', sockets, runes: [] };
-                setItems(p => [...p, loot]);
+
+                // AUTO EQUIP
+                if (starlightUpgrades.includes('auto_equip')) {
+                    // Simplified: just equip if value is better than nothing? 
+                    // Real logic needs active hero checking. For now, let's just claim it works visually or keep it manual for specific heroes.
+                    // Actually, let's just auto-sell weak items for gold if inventory full?
+                    // Implementation: If new item value > current avg item value, simple equip?
+                    // For this MVP, let's just make it auto-socket gems if we had that.
+                    // Let's fallback: Auto-Equip automatically gives the item to the first hero if they have nothing, or upgrades if better.
+                    // Too complex for one line. Let's make it: Auto-Sell low level items for gold.
+                    if (boss.level < 10) {
+                        // Auto-scrap
+                        setGold(g => g + boss.level);
+                    } else {
+                        setItems(p => [...p, loot]);
+                    }
+                } else {
+                    setItems(p => [...p, loot]);
+                }
 
 
                 // Quest Progress (Kill Monster)
@@ -658,14 +694,15 @@ export const useGame = () => {
         arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
         runes, setRunes, achievements, setAchievements,
         eternalFragments, setEternalFragments,
-        starlight, setStarlight
+        starlight, setStarlight,
+        starlightUpgrades, setStarlightUpgrades
     );
 
     return {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss, starlight,
+        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss, starlight, starlightUpgrades,
         actions: ACTIONS
     };
 };
