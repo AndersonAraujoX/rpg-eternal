@@ -46,6 +46,28 @@ export interface Artifact {
     description: string;
     emoji: string;
     bonus: string;
+    unlocked: boolean;
+}
+
+export interface ConstellationNode {
+    id: string;
+    name: string;
+    description: string;
+    level: number;
+    maxLevel: number;
+    cost: number; // Divinity cost
+    costScaling: number;
+    bonusType: 'bossDamage' | 'goldDrop' | 'soulDrop' | 'autoReviveSpeed';
+    valuePerLevel: number;
+    x: number; // For UI positioning (0-100)
+    y: number; // For UI positioning (0-100)
+}
+
+export interface MonsterCard {
+    id: string; // usually boss emoji or name
+    monsterName: string;
+    count: number;
+    bonus: number; // Damage multiplier
 }
 
 export interface GameStats {
@@ -56,6 +78,9 @@ export interface GameStats {
     totalKills: number;
     talents: Talent[];
     artifacts: Artifact[];
+    cards: MonsterCard[];
+    constellations: ConstellationNode[];
+    keys: number; // Gold Keys count
 }
 
 
