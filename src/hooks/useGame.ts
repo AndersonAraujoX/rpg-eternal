@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent } from '../engine/types';
 import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
@@ -88,13 +88,23 @@ export const useGame = () => {
     const [tower, setTower] = useState<Tower>({ floor: 1, active: false, maxFloor: 1 });
     const [guild, setGuild] = useState<Guild | null>(null);
 
+    // PHASE 10 STATE
+    const [arenaRank, setArenaRank] = useState<number>(1000);
+    const [glory, setGlory] = useState<number>(0);
+    const [quests, setQuests] = useState<Quest[]>([
+        { id: 'q1', description: 'Slay 50 Monsters', target: 50, progress: 0, reward: { type: 'gold', amount: 500 }, isCompleted: false, isClaimed: false },
+        { id: 'q2', description: 'Collect 100 Souls', target: 100, progress: 0, reward: { type: 'souls', amount: 50 }, isCompleted: false, isClaimed: false },
+        { id: 'q3', description: 'Enter the Tower', target: 1, progress: 0, reward: { type: 'voidMatter', amount: 1 }, isCompleted: false, isClaimed: false }
+    ]);
+
     // LOAD
     // PERSISTENCE
     usePersistence(
         heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
         divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
         cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
-        tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains
+        tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
+        arenaRank, setArenaRank, glory, setGlory, quests, setQuests
     );
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
@@ -312,6 +322,34 @@ export const useGame = () => {
                 });
             }
         },
+        // ARENA
+        fightArena: (opponent: ArenaOpponent) => {
+            const teamPower = heroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + h.stats.attack + h.stats.hp / 10, 0);
+            const winChance = teamPower / (teamPower + opponent.power); // Simplified ELO-ish
+
+            if (Math.random() < winChance) {
+                addLog(`Arena Victory! Defeated ${opponent.name}`, 'death');
+                setArenaRank(r => Math.max(1, r - Math.floor(Math.random() * 5 + 1))); // Rank up (lower is better)
+                setGlory(g => g + 10);
+                soundManager.playLevelUp();
+            } else {
+                addLog(`Arena Defeat against ${opponent.name}`, 'damage');
+                setArenaRank(r => r + Math.floor(Math.random() * 3 + 1)); // Rank down
+            }
+        },
+        // QUESTS
+        claimQuest: (id: string) => {
+            setQuests(prev => prev.map(q => {
+                if (q.id === id && q.isCompleted && !q.isClaimed) {
+                    if (q.reward.type === 'gold') setGold(g => g + q.reward.amount);
+                    if (q.reward.type === 'souls') setSouls(s => s + q.reward.amount);
+                    if (q.reward.type === 'voidMatter') setVoidMatter(v => v + q.reward.amount);
+                    addLog(`Quest Claimed: ${q.reward.amount} ${q.reward.type}!`, 'heal');
+                    return { ...q, isClaimed: true };
+                }
+                return q;
+            }));
+        },
         closeOfflineModal: () => setOfflineGains(null),
         setGameSpeed: setGameSpeed,
         toggleSound: toggleSound,
@@ -407,6 +445,14 @@ export const useGame = () => {
                 const loot: Item = { id: Math.random().toString(), name: 'Item', type: 'weapon', stat: 'attack', value: boss.level, rarity: 'common' };
                 setItems(p => [...p, loot]);
 
+
+                // Quest Progress (Kill Monster)
+                setQuests(prev => prev.map(q => {
+                    if (!q.isCompleted && q.description.includes('Slay')) return { ...q, progress: Math.min(q.target, q.progress + 1), isCompleted: q.progress + 1 >= q.target };
+                    if (!q.isCompleted && q.description.includes('Souls') && souls > q.target) return { ...q, progress: q.target, isCompleted: true }; // Retroactive check
+                    return q;
+                }));
+
                 // Gold
                 const cGold = constellations.find(c => c.bonusType === 'goldDrop');
                 const starGold = cGold ? (1 + cGold.level * cGold.valuePerLevel) : 1;
@@ -501,6 +547,8 @@ export const useGame = () => {
     return {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
-        ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer, actions: ACTIONS
+        ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
+        arenaRank, glory, quests,
+        actions: ACTIONS
     };
 };

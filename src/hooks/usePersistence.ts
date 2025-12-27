@@ -37,7 +37,13 @@ export const usePersistence = (
     setVoidMatter: React.Dispatch<React.SetStateAction<number>>,
     setRaidActive: React.Dispatch<React.SetStateAction<boolean>>,
     setDungeonActive: React.Dispatch<React.SetStateAction<boolean>>,
-    setOfflineGains: React.Dispatch<React.SetStateAction<string | null>>
+    setOfflineGains: React.Dispatch<React.SetStateAction<string | null>>,
+    arenaRank: number,
+    setArenaRank: React.Dispatch<React.SetStateAction<number>>,
+    glory: number,
+    setGlory: React.Dispatch<React.SetStateAction<number>>,
+    quests: any,
+    setQuests: React.Dispatch<React.SetStateAction<any>>
 ) => {
 
     // LOAD
@@ -73,6 +79,9 @@ export const usePersistence = (
                 if (state.tower) setTower(state.tower);
                 if (state.guild) setGuild(state.guild);
                 if (state.voidMatter) setVoidMatter(state.voidMatter);
+                if (state.arenaRank) setArenaRank(state.arenaRank);
+                if (state.glory) setGlory(state.glory);
+                if (state.quests) setQuests(state.quests);
 
                 setRaidActive(false);
                 setDungeonActive(false);
@@ -114,9 +123,9 @@ export const usePersistence = (
 
     // SAVE
     useEffect(() => {
-        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, lastSaveTime: Date.now() };
+        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, lastSaveTime: Date.now() };
         // We use a timeout to debounce saves slightly or just save on every change? 
         // Logic was saving on every dependency change.
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter]);
+    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests]);
 };

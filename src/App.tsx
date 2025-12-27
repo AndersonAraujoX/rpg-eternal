@@ -15,13 +15,17 @@ import { OfflineModal } from './components/modals/OfflineModal';
 import { TowerModal } from './components/modals/TowerModal';
 import { GuildModal } from './components/modals/GuildModal';
 import { VoidModal } from './components/modals/VoidModal';
+import { ArenaModal } from './components/modals/ArenaModal';
+import { QuestModal } from './components/modals/QuestModal';
 import './index.css';
 
 function App() {
   const {
-    heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, keys, pet, offlineGains,
-    talents, artifacts, cards, constellations, ultimateCharge, raidActive, raidTimer,
-    dungeonActive, dungeonTimer, resources, tower, guild, voidMatter, voidActive, voidTimer, actions
+    heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
+    talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
+    ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
+    arenaRank, glory, quests,
+    actions
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
@@ -34,6 +38,8 @@ function App() {
   const [showTower, setShowTower] = useState(false);
   const [showGuild, setShowGuild] = useState(false);
   const [showVoid, setShowVoid] = useState(false);
+  const [showArena, setShowArena] = useState(false);
+  const [showQuests, setShowQuests] = useState(false);
   const [importString, setImportString] = useState('');
 
   const getBackgroundClass = (level: number) => {
@@ -64,6 +70,8 @@ function App() {
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
       <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
+      <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} onFight={actions.fightArena} />
+      <QuestModal isOpen={showQuests} onClose={() => setShowQuests(false)} quests={quests} onClaim={actions.claimQuest} />
 
       {/* Game Container */}
       <div className="w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-gray-800 bg-opacity-90 border-4 border-gray-600 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm">

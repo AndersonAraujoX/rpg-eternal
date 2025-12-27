@@ -1,6 +1,6 @@
 import React from 'react';
-import { Swords, Trophy, Shield, Skull } from 'lucide-react';
-import { Hero, ArenaOpponent } from '../../engine/types';
+import { Swords, Trophy } from 'lucide-react';
+import type { Hero, ArenaOpponent } from '../../engine/types';
 
 interface ArenaModalProps {
     isOpen: boolean;

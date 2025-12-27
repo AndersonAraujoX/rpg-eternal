@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild } from '../engine/types';
 
@@ -31,13 +31,15 @@ interface HeaderProps {
     setShowGuild: (v: boolean) => void;
     setShowSettings: (v: boolean) => void;
     setShowVoid?: (v: boolean) => void;
+    setShowArena?: (v: boolean) => void;
+    setShowQuests?: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     boss, souls, gold, divinity, tower, guild, keys, voidMatter,
     dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory,
-    setShowCards, setShowTower, setShowGuild, setShowSettings, setShowVoid
+    setShowCards, setShowTower, setShowGuild, setShowSettings, setShowVoid, setShowArena, setShowQuests
 }) => {
     return (
         <div className="bg-gray-900 p-2 border-b-4 border-gray-600 flex flex-col gap-2 rounded-t-lg">
@@ -62,6 +64,8 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex gap-2">
                     <button onClick={() => setShowTower(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Tower"><Castle size={12} /> {tower.floor}</button>
                     <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guild"><Building size={12} /> {guild ? guild.level : '+'}</button>
+                    <button onClick={() => setShowArena && setShowArena(true)} className="btn-retro bg-red-900 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-800" title="Arena"><Swords size={12} /></button>
+                    <button onClick={() => setShowQuests && setShowQuests(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Quests"><Scroll size={12} /></button>
                     {tower.floor >= 10 && (
                         <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">
                             <Ghost size={12} /> {voidMatter}
