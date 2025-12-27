@@ -15,11 +15,20 @@ function App() {
   // Get active hero
   const activeHero = heroes[activeHeroIndex];
 
+  // Dynamic Background Helper
+  const getBackgroundClass = (level: number) => {
+    const biome = level % 3; // 1=Forest, 2=Cave, 0=Dungeon
+    if (biome === 1) return 'bg-forest';
+    if (biome === 2) return 'bg-cave';
+    return 'bg-dungeon';
+  };
+
   return (
-    <div className="h-screen w-full flex flex-col items-center justify-center p-2 relative overflow-hidden bg-gray-900">
+    <div className={`h-screen w-full flex flex-col items-center justify-center p-2 relative overflow-hidden ${getBackgroundClass(boss.level)}`}>
+      <div className="crt-overlay"></div>
 
       {/* Game Container */}
-      <div className="w-full max-w-3xl h-full max-h-[900px] flex flex-col bg-gray-800 border-4 border-gray-600 rounded-lg shadow-2xl relative">
+      <div className="w-full max-w-3xl h-full max-h-[900px] flex flex-col bg-gray-800 bg-opacity-90 border-4 border-gray-600 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm">
 
         {/* Header Info */}
         <div className="bg-gray-900 p-4 border-b-4 border-gray-600 flex justify-between items-center text-xs md:text-sm text-yellow-400">
