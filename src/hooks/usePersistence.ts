@@ -1,0 +1,122 @@
+import { useEffect } from 'react';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild } from '../engine/types';
+import { INITIAL_HEROES, INITIAL_PET_DATA } from '../hooks/useGame';
+
+export const usePersistence = (
+    heroes: Hero[],
+    setHeroes: React.Dispatch<React.SetStateAction<Hero[]>>,
+    boss: Boss,
+    setBoss: React.Dispatch<React.SetStateAction<Boss>>,
+    items: Item[],
+    setItems: React.Dispatch<React.SetStateAction<Item[]>>,
+    souls: number,
+    setSouls: React.Dispatch<React.SetStateAction<number>>,
+    gold: number,
+    setGold: React.Dispatch<React.SetStateAction<number>>,
+    divinity: number,
+    setDivinity: React.Dispatch<React.SetStateAction<number>>,
+    pet: Pet | null,
+    setPet: React.Dispatch<React.SetStateAction<Pet | null>>,
+    talents: Talent[],
+    setTalents: React.Dispatch<React.SetStateAction<Talent[]>>,
+    artifacts: Artifact[],
+    setArtifacts: React.Dispatch<React.SetStateAction<Artifact[]>>,
+    cards: MonsterCard[],
+    setCards: React.Dispatch<React.SetStateAction<MonsterCard[]>>,
+    constellations: ConstellationNode[],
+    setConstellations: React.Dispatch<React.SetStateAction<ConstellationNode[]>>,
+    keys: number,
+    setKeys: React.Dispatch<React.SetStateAction<number>>,
+    resources: { copper: number; iron: number; mithril: number },
+    setResources: React.Dispatch<React.SetStateAction<{ copper: number; iron: number; mithril: number }>>,
+    tower: Tower,
+    setTower: React.Dispatch<React.SetStateAction<Tower>>,
+    guild: Guild | null,
+    setGuild: React.Dispatch<React.SetStateAction<Guild | null>>,
+    voidMatter: number,
+    setVoidMatter: React.Dispatch<React.SetStateAction<number>>,
+    setRaidActive: React.Dispatch<React.SetStateAction<boolean>>,
+    setDungeonActive: React.Dispatch<React.SetStateAction<boolean>>,
+    setOfflineGains: React.Dispatch<React.SetStateAction<string | null>>
+) => {
+
+    // LOAD
+    useEffect(() => {
+        const saved = localStorage.getItem('rpg_eternal_save_v6');
+        if (saved) {
+            try {
+                const state = JSON.parse(saved);
+                // Merge loaded heroes with new props (element, assignment)
+                const loadedHeroes = state.heroes || INITIAL_HEROES;
+                const updatedHeroes = loadedHeroes.map((h: Hero, i: number) => ({
+                    ...INITIAL_HEROES[i], // Defaults
+                    ...h, // Loaded
+                    element: h.element || INITIAL_HEROES[i].element, // Backfill
+                    assignment: h.assignment || 'combat',
+                    gambits: h.gambits || INITIAL_HEROES[i].gambits,
+                    corruption: h.corruption || false
+                }));
+
+                setHeroes(updatedHeroes);
+                setBoss({ ...state.boss, element: state.boss?.element || 'neutral' });
+                setItems(state.items);
+                setSouls(state.souls || 0);
+                setGold(state.gold || 0);
+                setDivinity(state.divinity || 0);
+                if (state.pet) setPet({ ...INITIAL_PET_DATA, ...state.pet });
+                if (state.talents) setTalents(state.talents);
+                if (state.artifacts) setArtifacts(state.artifacts);
+                if (state.cards) setCards(state.cards);
+                if (state.constellations) setConstellations(state.constellations);
+                if (state.keys) setKeys(state.keys);
+                if (state.resources) setResources(state.resources);
+                if (state.tower) setTower(state.tower);
+                if (state.guild) setGuild(state.guild);
+                if (state.voidMatter) setVoidMatter(state.voidMatter);
+
+                setRaidActive(false);
+                setDungeonActive(false);
+
+                // Offline Calc
+                if (state.lastSaveTime) {
+                    const now = Date.now();
+                    const diff = now - state.lastSaveTime;
+                    const secondsOffline = Math.floor(diff / 1000);
+                    if (secondsOffline > 60) {
+                        // Check miners
+                        const miners = updatedHeroes.filter((h: Hero) => h.unlocked && h.assignment === 'mine');
+                        const combatants = updatedHeroes.filter((h: Hero) => h.unlocked && h.assignment === 'combat');
+
+                        let logMsg = `Offline for ${Math.floor(secondsOffline / 60)}m.`;
+
+                        if (miners.length > 0) {
+                            const oreGain = Math.floor(miners.length * secondsOffline * 0.5);
+                            setResources(r => ({ ...r, copper: r.copper + oreGain }));
+                            logMsg += `\nMiners found ${oreGain} Copper.`;
+                        }
+
+                        if (combatants.length > 0) {
+                            const kills = Math.floor((secondsOffline / 5) * (combatants.length / 6)); // Slower if less combatants
+                            const gainedSouls = Math.floor(kills * 0.2);
+                            const gainedGold = kills * 10;
+                            if (kills > 0) {
+                                setSouls(p => p + gainedSouls);
+                                setGold(p => p + gainedGold);
+                                logMsg += `\nKilled ${kills} Monsters.\nGained ${gainedSouls} Souls & ${gainedGold} Gold.`;
+                            }
+                        }
+                        setOfflineGains(logMsg);
+                    }
+                }
+            } catch (e) { console.error("Save Load Error", e); }
+        }
+    }, []);
+
+    // SAVE
+    useEffect(() => {
+        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, lastSaveTime: Date.now() };
+        // We use a timeout to debounce saves slightly or just save on every change? 
+        // Logic was saving on every dependency change.
+        localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
+    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter]);
+};

@@ -14,13 +14,14 @@ import { InventoryModal } from './components/modals/InventoryModal';
 import { OfflineModal } from './components/modals/OfflineModal';
 import { TowerModal } from './components/modals/TowerModal';
 import { GuildModal } from './components/modals/GuildModal';
+import { VoidModal } from './components/modals/VoidModal';
 import './index.css';
 
 function App() {
   const {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, keys, pet, offlineGains,
     talents, artifacts, cards, constellations, ultimateCharge, raidActive, raidTimer,
-    dungeonActive, dungeonTimer, resources, tower, guild, actions
+    dungeonActive, dungeonTimer, resources, tower, guild, voidMatter, voidActive, voidTimer, actions
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
@@ -32,11 +33,13 @@ function App() {
   const [showInventory, setShowInventory] = useState(false);
   const [showTower, setShowTower] = useState(false);
   const [showGuild, setShowGuild] = useState(false);
+  const [showVoid, setShowVoid] = useState(false);
   const [importString, setImportString] = useState('');
 
   const getBackgroundClass = (level: number) => {
     if (dungeonActive) return 'bg-amber-500'; // Gold Vault
-    if (tower.active) return 'bg-void'; // Tower is void
+    if (voidActive) return 'bg-void animate-pulse'; // Void Dimension
+    if (tower.active) return 'bg-slate-900'; // Tower
     if (level > 900) return 'bg-void';
     if (level > 40) return 'bg-lava';
     if (level > 20) return 'bg-ice';
@@ -60,6 +63,7 @@ function App() {
       <InventoryModal isOpen={showInventory} onClose={() => setShowInventory(false)} />
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
+      <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
 
       {/* Game Container */}
       <div className="w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-gray-800 bg-opacity-90 border-4 border-gray-600 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm">
@@ -67,10 +71,10 @@ function App() {
         <Header
           boss={boss} souls={souls} gold={gold} divinity={divinity} resources={resources} keys={keys}
           dungeonActive={dungeonActive} raidActive={raidActive} raidTimer={raidTimer} isSoundOn={isSoundOn} gameSpeed={gameSpeed} actions={actions}
-          tower={tower} guild={guild}
+          tower={tower} guild={guild} voidMatter={voidMatter} voidActive={voidActive} voidTimer={voidTimer}
           setShowShop={setShowShop} setShowTavern={setShowTavern} setShowStars={setShowStars} setShowForge={setShowForge}
           setShowInventory={setShowInventory} setShowCards={setShowCards} setShowSettings={setShowSettings}
-          setShowTower={setShowTower} setShowGuild={setShowGuild}
+          setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
         />
 
         <BattleArea
@@ -85,7 +89,7 @@ function App() {
         {/* Footer */}
         <div className="bg-gray-800 p-1 border-t-4 border-gray-600 flex justify-between items-center text-[10px] text-gray-500">
           <span>RBG Eternal v2.5 - {divinity > 0 ? `Divinity Rank ${divinity}` : 'Mortal Realm'}</span>
-          <div className="text-[10px] text-gray-600">Phase 7 Live</div>
+          <div className="text-[10px] text-gray-600">Phase 9: The Cosmic Void</div>
         </div>
 
       </div>

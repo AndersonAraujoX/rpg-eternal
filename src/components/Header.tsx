@@ -12,9 +12,12 @@ interface HeaderProps {
     tower: Tower;
     guild: Guild | null;
     keys: number;
+    voidMatter: number;
     dungeonActive: boolean;
     raidActive: boolean;
     raidTimer: number;
+    voidActive: boolean;
+    voidTimer: number;
     isSoundOn: boolean;
     gameSpeed: number;
     actions: any;
@@ -27,13 +30,14 @@ interface HeaderProps {
     setShowTower: (v: boolean) => void;
     setShowGuild: (v: boolean) => void;
     setShowSettings: (v: boolean) => void;
+    setShowVoid?: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-    boss, souls, gold, divinity, tower, guild, keys,
-    dungeonActive, raidActive, raidTimer, isSoundOn, gameSpeed, actions,
+    boss, souls, gold, divinity, tower, guild, keys, voidMatter,
+    dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory,
-    setShowCards, setShowTower, setShowGuild, setShowSettings
+    setShowCards, setShowTower, setShowGuild, setShowSettings, setShowVoid
 }) => {
     return (
         <div className="bg-gray-900 p-2 border-b-4 border-gray-600 flex flex-col gap-2 rounded-t-lg">
@@ -58,6 +62,11 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex gap-2">
                     <button onClick={() => setShowTower(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Tower"><Castle size={12} /> {tower.floor}</button>
                     <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guild"><Building size={12} /> {guild ? guild.level : '+'}</button>
+                    {tower.floor >= 10 && (
+                        <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">
+                            <Ghost size={12} /> {voidMatter}
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex gap-2 items-center">
@@ -65,7 +74,8 @@ export const Header: React.FC<HeaderProps> = ({
                     {keys > 0 && !dungeonActive && (
                         <button onClick={actions.enterDungeon} className="btn-retro bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-500 text-[10px] animate-pulse border border-yellow-300">VAULT</button>
                     )}
-                    {boss.level >= 20 && !dungeonActive && (
+                    {voidActive && <div className="text-purple-400 font-bold animate-pulse text-xs">VOID: {Math.floor(voidTimer)}s</div>}
+                    {boss.level >= 20 && !dungeonActive && !voidActive && (
                         <button onClick={actions.toggleRaid} className={`btn-retro px-2 py-1 rounded text-[10px] flex items-center gap-1 ${raidActive ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-red-900'}`}> <Skull size={12} /> {raidActive ? `${Math.floor(raidTimer)}s` : 'RAID'} </button>
                     )}
                     <button onClick={actions.toggleSound} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600">{isSoundOn ? <Volume2 size={12} /> : <VolumeX size={12} />}</button>

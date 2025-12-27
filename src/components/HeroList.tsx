@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sword, Pickaxe, Heart, Shield, Zap, Brain } from 'lucide-react';
+import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull } from 'lucide-react';
 import type { Hero } from '../engine/types';
 import { GambitModal } from './modals/GambitModal';
 
@@ -42,6 +42,13 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions }) => {
                                     className={`p-1 rounded border ${hero.assignment === 'combat' ? 'bg-red-900 border-red-500 text-red-200' : 'bg-blue-900 border-blue-500 text-blue-200'}`}
                                 >
                                     {hero.assignment === 'combat' ? <Sword size={10} /> : <Pickaxe size={10} />}
+                                </button>
+                                <button
+                                    onClick={() => actions.toggleCorruption(hero.id)}
+                                    className={`p-1 rounded border ${hero.corruption ? 'bg-purple-900 border-purple-500 text-purple-200 animate-pulse' : 'bg-gray-800 border-gray-600 text-gray-500'}`}
+                                    title="Corrupt Hero (+100% ATK, -50% HP/DEF)"
+                                >
+                                    <Skull size={10} />
                                 </button>
                             </div>
                         )}

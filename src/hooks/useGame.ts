@@ -1,23 +1,25 @@
 import { useState, useEffect } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, GambitAction } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit } from '../engine/types';
 import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
+import { usePersistence } from './usePersistence';
+import { processCombatTurn, calculateDamageMultiplier } from '../engine/combat';
 
-const INITIAL_HEROES: Hero[] = [
-    { id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 } },
-    { id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 } },
-    { id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 } },
-    { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 } },
-    { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 } },
-    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 } }
+export const INITIAL_HEROES: Hero[] = [
+    { id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 } },
+    { id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 } },
+    { id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], corruption: false, stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 } },
+    { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 } },
+    { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 } },
+    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 } }
 ];
 
-const INITIAL_BOSS: Boss = {
+export const INITIAL_BOSS: Boss = {
     id: 'boss-1', name: 'Slime', emoji: '🦠', type: 'boss', level: 1, isDead: false, element: 'neutral',
     stats: { hp: 200, maxHp: 200, mp: 0, maxMp: 0, attack: 12, magic: 0, defense: 2, speed: 8 }
 };
 
-const INITIAL_PET_DATA: Pet = {
+export const INITIAL_PET_DATA: Pet = {
     id: 'pet-dragon', name: 'Baby Dragon', type: 'pet', bonus: 'DPS', emoji: '🐉', isDead: false,
     level: 1, xp: 0, maxXp: 100,
     stats: { attack: 5, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 }
@@ -62,6 +64,7 @@ export const useGame = () => {
     const [souls, setSouls] = useState<number>(0);
     const [gold, setGold] = useState<number>(0);
     const [divinity, setDivinity] = useState<number>(0);
+    const [voidMatter, setVoidMatter] = useState<number>(0);
 
     const [pet, setPet] = useState<Pet | null>(null);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
@@ -79,86 +82,20 @@ export const useGame = () => {
     const [ultimateCharge, setUltimateCharge] = useState<number>(0);
     const [raidActive, setRaidActive] = useState(false);
     const [raidTimer, setRaidTimer] = useState(0);
+    const [voidActive, setVoidActive] = useState(false);
+    const [voidTimer, setVoidTimer] = useState(0);
 
     const [tower, setTower] = useState<Tower>({ floor: 1, active: false, maxFloor: 1 });
     const [guild, setGuild] = useState<Guild | null>(null);
 
     // LOAD
-    useEffect(() => {
-        const saved = localStorage.getItem('rpg_eternal_save_v6');
-        if (saved) {
-            try {
-                const state = JSON.parse(saved);
-                // Merge loaded heroes with new props (element, assignment)
-                const loadedHeroes = state.heroes || INITIAL_HEROES;
-                const updatedHeroes = loadedHeroes.map((h: Hero, i: number) => ({
-                    ...INITIAL_HEROES[i], // Defaults
-                    ...h, // Loaded
-                    element: h.element || INITIAL_HEROES[i].element, // Backfill
-                    assignment: h.assignment || 'combat',
-                    gambits: h.gambits || INITIAL_HEROES[i].gambits
-                }));
-
-                setHeroes(updatedHeroes);
-                setBoss({ ...state.boss, element: state.boss?.element || 'neutral' });
-                setItems(state.items);
-                setSouls(state.souls || 0);
-                setGold(state.gold || 0);
-                setDivinity(state.divinity || 0);
-                if (state.pet) setPet({ ...INITIAL_PET_DATA, ...state.pet });
-                if (state.talents) setTalents(state.talents);
-                if (state.artifacts) setArtifacts(state.artifacts);
-                if (state.cards) setCards(state.cards);
-                if (state.constellations) setConstellations(state.constellations);
-                if (state.keys) setKeys(state.keys);
-                if (state.keys) setKeys(state.keys);
-                if (state.resources) setResources(state.resources);
-                if (state.tower) setTower(state.tower);
-                if (state.guild) setGuild(state.guild);
-
-                setRaidActive(false);
-                setDungeonActive(false);
-
-                // Offline Calc
-                if (state.lastSaveTime) {
-                    const now = Date.now();
-                    const diff = now - state.lastSaveTime;
-                    const secondsOffline = Math.floor(diff / 1000);
-                    if (secondsOffline > 60) {
-                        // Check miners
-                        const miners = updatedHeroes.filter((h: Hero) => h.unlocked && h.assignment === 'mine');
-                        const combatants = updatedHeroes.filter((h: Hero) => h.unlocked && h.assignment === 'combat');
-
-                        let logMsg = `Offline for ${Math.floor(secondsOffline / 60)}m.`;
-
-                        if (miners.length > 0) {
-                            const oreGain = Math.floor(miners.length * secondsOffline * 0.5);
-                            setResources(r => ({ ...r, copper: r.copper + oreGain }));
-                            logMsg += `\nMiners found ${oreGain} Copper.`;
-                        }
-
-                        if (combatants.length > 0) {
-                            const kills = Math.floor((secondsOffline / 5) * (combatants.length / 6)); // Slower if less combatants
-                            const gainedSouls = Math.floor(kills * 0.2);
-                            const gainedGold = kills * 10;
-                            if (kills > 0) {
-                                setSouls(p => p + gainedSouls);
-                                setGold(p => p + gainedGold);
-                                logMsg += `\nKilled ${kills} Monsters.\nGained ${gainedSouls} Souls & ${gainedGold} Gold.`;
-                            }
-                        }
-                        setOfflineGains(logMsg);
-                    }
-                }
-            } catch (e) { console.error("Save Load Error", e); }
-        }
-    }, []);
-
-    // SAVE
-    useEffect(() => {
-        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, lastSaveTime: Date.now() };
-        localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild]);
+    // PERSISTENCE
+    usePersistence(
+        heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
+        divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
+        cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
+        tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains
+    );
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
         setLogs(prev => [...prev.slice(-14), { id: Math.random().toString(36), message, type }]);
@@ -257,7 +194,30 @@ export const useGame = () => {
             setResources({ copper: 0, iron: 0, mithril: 0 });
             setDungeonActive(false);
             setRaidActive(false);
+            setRaidActive(false);
+            setVoidMatter(0);
             addLog("ASCENDED! GAINED DIVINITY!", 'death');
+        },
+        toggleCorruption: (heroId: string) => {
+            setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, corruption: !h.corruption } : h));
+        },
+        enterVoid: () => {
+            if (tower.floor < 10) { addLog("Reach Tower Floor 10 to unlock Void.", 'info'); return; }
+            setVoidActive(true);
+            setVoidTimer(30);
+            setBoss({
+                id: 'void-boss', name: 'VOID GUARDIAN', emoji: '🌌', type: 'boss',
+                level: 9999, isDead: false, element: 'neutral',
+                stats: { hp: 1000000, maxHp: 1000000, attack: 1000, defense: 200, magic: 200, speed: 20, mp: 9999, maxMp: 9999 }
+            });
+            addLog("ENTERING THE VOID. 30 SECONDS!", 'death');
+        },
+        buyDarkGift: (cost: number, effect: string) => {
+            if (voidMatter >= cost) {
+                setVoidMatter(v => v - cost);
+                addLog(`Dark Gift Acquired: ${effect}`, 'death');
+                if (effect === 'ult_charge') setUltimateCharge(100);
+            }
         },
         toggleAssignment: (heroId: string) => {
             setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, assignment: h.assignment === 'combat' ? 'mine' : 'combat' } : h));
@@ -360,16 +320,6 @@ export const useGame = () => {
         importSave: (str: string) => { try { JSON.parse(atob(str)); localStorage.setItem('rpg_eternal_save_v6', atob(str)); window.location.reload(); } catch { alert("Invalid Save"); } }
     };
 
-    const getElementalMult = (atkEl: ElementType, defEl: ElementType) => {
-        if (atkEl === 'neutral' || defEl === 'neutral') return 1;
-        if (atkEl === 'fire' && defEl === 'nature') return 1.5;
-        if (atkEl === 'nature' && defEl === 'water') return 1.5;
-        if (atkEl === 'water' && defEl === 'fire') return 1.5;
-        if (atkEl === 'fire' && defEl === 'water') return 0.5;
-        if (atkEl === 'nature' && defEl === 'fire') return 0.5;
-        if (atkEl === 'water' && defEl === 'nature') return 0.5;
-        return 1;
-    };
 
     // CORE LOOP
     useEffect(() => {
@@ -385,6 +335,15 @@ export const useGame = () => {
         if (dungeonActive) {
             if (dungeonTimer <= 0) { setDungeonActive(false); setBoss(INITIAL_BOSS); addLog("Dungeon Closed.", 'info'); }
             else { setDungeonTimer(t => t - (1 * gameSpeed / 10)); }
+        }
+        if (voidActive) {
+            if (voidTimer <= 0) {
+                setVoidActive(false);
+                setBoss(INITIAL_BOSS);
+                addLog("VOID REJECTED YOU (TIMEOUT).", 'damage');
+            } else {
+                setVoidTimer(t => t - (1 * gameSpeed / 10));
+            }
         }
         if (tower.active) {
             // Check for failure (Party Wipe)
@@ -413,19 +372,10 @@ export const useGame = () => {
                 }
             }
 
-            const dmgTalent = talents.find(t => t.stat === 'attack');
+
+            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards);
             const critTalent = talents.find(t => t.stat === 'crit');
-            // Constellation Bonuses
-            const cScale = constellations.find(c => c.bonusType === 'bossDamage');
-            const starMult = cScale ? (1 + cScale.level * cScale.valuePerLevel) : 1;
-
-            const damageMult = (1 + (souls * 0.05) + (divinity * 1.0) + (dmgTalent ? (dmgTalent.level * dmgTalent.valuePerLevel) : 0)) * starMult;
             const critChance = critTalent ? (critTalent.level * critTalent.valuePerLevel) : 0;
-
-            const hasVoidStone = artifacts.some(a => a.id === 'a2');
-            const artifactMult = hasVoidStone ? 1.5 : 1;
-            const relevantCard = cards.find(c => c.id === boss.emoji);
-            const cardMult = relevantCard ? (1 + (relevantCard.bonus * relevantCard.count)) : 1;
 
             // Ultimate
             let isUltimate = false;
@@ -436,76 +386,18 @@ export const useGame = () => {
                 soundManager.playLevelUp();
             } else { setUltimateCharge(p => Math.min(100, p + (5 * activeHeroes.length / 6) * gameSpeed)); } // Charge slower if fewer heroes
 
-            let totalDmg = 0;
-            const newHeroes = heroes.map(h => {
-                if (h.assignment !== 'combat' || h.isDead || !h.unlocked) return h;
-                let hp = h.stats.hp;
-                const eleMult = getElementalMult(h.element, boss.element);
-                let baseDmg = h.stats.attack * damageMult * artifactMult * cardMult * eleMult;
+            const { updatedHeroes, totalDmg } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pet);
 
-                // Gambit Logic
-                let action: GambitAction = 'attack';
-                if (h.gambits && h.gambits.length > 0) {
-                    for (const g of h.gambits) {
-                        let conditionMet = false;
-                        if (g.condition === 'always') conditionMet = true;
-                        if (g.condition === 'hp<50' && h.stats.hp < h.stats.maxHp * 0.5) conditionMet = true;
-                        if (g.condition === 'hp<30' && h.stats.hp < h.stats.maxHp * 0.3) conditionMet = true;
-                        if (g.condition === 'enemy_boss' && boss.type === 'boss') conditionMet = true;
-                        if (g.condition === 'ally_hp<50' && heroes.some(ally => ally.assignment === 'combat' && !ally.isDead && ally.stats.hp < ally.stats.maxHp * 0.5)) conditionMet = true;
-
-                        if (conditionMet) {
-                            action = g.action;
-                            break; // First matching gambit wins
-                        }
-                    }
-                }
-
-                if (action === 'heal') {
-                    // Find weakest ally
-                    const weakest = heroes.filter(ally => !ally.isDead && ally.assignment === 'combat').sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0];
-                    if (weakest) {
-                        // This is tricky because we are inside a map. We can't easily modify other heroes here without complex reduce.
-                        // For MVP, self-heal or simplified logic.
-                        // Actually, we can return a "heal intent" and process it after? 
-                        // To keep it simple for now, Healers heal THEMSELVES if they are low, or trigger a global heal effect later?
-                        // Better: Healers deal 0 damage but restore HP to lowest ally in a separate pass?
-                        // Let's stick to simple: specific action modifications.
-                        if (h.class === 'Healer' || action === 'heal') {
-                            baseDmg = 0; // Sacrifices damage to heal
-                            // We will handle the actual healing in a 2nd pass or just hack it:
-                            // Effect: "Heal Pulse"
-                        }
-                    }
-                } else if (action === 'strong_attack') {
-                    if (h.stats.mp >= 10) {
-                        baseDmg *= 1.5;
-                        // Cost MP... (not implemented fully yet, let's assume free for this phase or just simple check)
-                    }
-                } else if (action === 'defend') {
-                    baseDmg *= 0.5; // Less damage, but maybe take less damage? (Defense not implemented in this loop yet)
-                }
-
-                if (Math.random() < critChance + (h.class === 'Rogue' ? 0.3 : 0)) baseDmg *= 2;
-                if (isUltimate) baseDmg *= 5;
-
-                totalDmg += Math.floor(baseDmg);
-                return { ...h, stats: { ...h.stats, hp } };
-            });
-
-            // Healer Logic: Simplified - If any hero carried out a 'heal' action, heal random ally
-            // const healers = heroes.filter(h => h.gambits?.some(g => g.action === 'heal' && g.condition === 'always') || h.class === 'Healer'); // Rough check
+            // Healer Logic (Simplified check for 'heal' action or just passive)
+            // Ideally this should be inside processCombatTurn or a separate pass, leaving as is but using updatedHeroes
             if (activeHeroes.some(h => h.class === 'Healer')) {
-                // Healer passive: 5% HP per tick to lowest
-                const lowest = newHeroes.filter(h => !h.isDead && h.assignment === 'combat').sort((a, b) => a.stats.hp - b.stats.hp)[0];
+                const lowest = updatedHeroes.filter(h => !h.isDead && h.assignment === 'combat').sort((a, b) => a.stats.hp - b.stats.hp)[0];
                 if (lowest) {
                     lowest.stats.hp = Math.min(lowest.stats.maxHp, lowest.stats.hp + (lowest.stats.maxHp * 0.05));
                 }
             }
 
-            if (pet && activeHeroes.some(h => !h.isDead)) totalDmg += Math.floor(pet.stats.attack * (boss.level * 0.5));
-
-            setHeroes(newHeroes);
+            setHeroes(updatedHeroes);
 
             let newBossHp = Math.max(0, boss.stats.hp - totalDmg);
             if (totalDmg > 0 && Math.random() > 0.8) soundManager.playHit();
@@ -553,6 +445,11 @@ export const useGame = () => {
                     setGold(g => g + 50000);
                     setDivinity(d => d + 1);
                     setRaidActive(false);
+                    setBoss(INITIAL_BOSS);
+                } else if (voidActive) {
+                    addLog("VOID ENTITY VANQUISHED!", 'death');
+                    setVoidMatter(v => v + 1);
+                    setVoidActive(false);
                     setBoss(INITIAL_BOSS);
                 } else if (dungeonActive) {
                     setBoss({ ...boss, stats: { ...boss.stats, hp: boss.stats.maxHp, maxHp: boss.stats.maxHp + 50 } });
@@ -604,6 +501,6 @@ export const useGame = () => {
     return {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
-        ultimateCharge, raidActive, raidTimer, tower, guild, actions: ACTIONS
+        ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer, actions: ACTIONS
     };
 };

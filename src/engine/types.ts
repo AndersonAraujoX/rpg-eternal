@@ -84,6 +84,40 @@ export interface GameStats {
     cards: MonsterCard[];
     constellations: ConstellationNode[];
     keys: number; // Gold Keys count
+}
+
+export interface Quest {
+    id: string;
+    description: string;
+    target: number;
+    progress: number;
+    reward: { type: 'gold' | 'souls' | 'voidMatter', amount: number };
+    isCompleted: boolean;
+    isClaimed: boolean;
+}
+
+export interface ArenaOpponent {
+    id: string;
+    name: string;
+    power: number;
+    rank: number;
+    avatar: string; // Emoji
+}
+
+export interface GameStats {
+    souls: number;
+    gold: number;
+    divinity: number;
+    rebirths: number;
+    totalKills: number;
+    talents: Talent[];
+    artifacts: Artifact[];
+    cards: MonsterCard[];
+    constellations: ConstellationNode[];
+    keys: number; // Gold Keys count
+    voidMatter: number;
+    arenaRank: number;
+    glory: number;
     resources: {
         copper: number;
         iron: number;
@@ -100,7 +134,9 @@ export interface Hero extends Entity {
     element: ElementType;
     assignment: 'combat' | 'mine';
     gambits: Gambit[];
+    corruption: boolean;
 }
+
 export type LogEntry = {
     id: string;
     message: string;
