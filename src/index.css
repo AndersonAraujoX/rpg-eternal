@@ -1,45 +1,175 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 :root {
-  --color-bg: #202028;
-  --color-text: #f0f0f0;
-  --color-primary: #ff0044;
-  --color-secondary: #00ccff;
-  --font-pixel: 'Press Start 2P', cursive;
-}
-
-* {
-  box-sizing: border-box;
-  image-rendering: pixelated;
-  user-select: none;
+  --color-bg: #1a1a2e;
+  --color-text: #e0e0e0;
 }
 
 body {
-  margin: 0;
-  padding: 0;
+  font-family: 'Press Start 2P', cursive;
   background-color: var(--color-bg);
   color: var(--color-text);
-  font-family: var(--font-pixel);
-  -webkit-font-smoothing: none;
+  user-select: none;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
-button {
-  font-family: var(--font-pixel);
-  cursor: pointer;
-  border: 4px solid #fff;
-  border-image-slice: 1;
-  background: #333;
-  color: #fff;
-  padding: 10px 20px;
-  font-size: 1rem;
-  transition: transform 0.1s;
+/* Animations from User Prototype */
+@keyframes shake {
+  0% {
+    transform: translate(1px, 1px) rotate(0deg);
+  }
+
+  10% {
+    transform: translate(-1px, -2px) rotate(-1deg);
+  }
+
+  20% {
+    transform: translate(-3px, 0px) rotate(1deg);
+  }
+
+  30% {
+    transform: translate(3px, 2px) rotate(0deg);
+  }
+
+  40% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+
+  50% {
+    transform: translate(-1px, 2px) rotate(-1deg);
+  }
+
+  60% {
+    transform: translate(-3px, 1px) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
-button:active {
-  transform: scale(0.95);
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
 }
 
-.pixel-border {
-  border: 4px solid white;
+@keyframes attackPlayer {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes attackEnemy {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(20px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-gold {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(250, 204, 21, 0);
+  }
+}
+
+.shake-anim {
+  animation: shake 0.5s;
+}
+
+.attack-up {
+  animation: attackPlayer 0.2s ease-in-out;
+}
+
+.attack-down {
+  animation: attackEnemy 0.2s ease-in-out;
+}
+
+.pulse-gold {
+  animation: pulse-gold 2s infinite;
+}
+
+.damage-number {
+  position: absolute;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ff4d4d;
+  animation: floatUp 1s ease-out forwards;
+  pointer-events: none;
+  z-index: 50;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.heal-number {
+  color: #4ade80 !important;
+}
+
+.mana-number {
+  color: #60a5fa !important;
+}
+
+/* Custom Scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #111;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.btn-retro {
+  box-shadow: 4px 4px 0px 0px #000000;
+  transition: all 0.1s;
+}
+
+.btn-retro:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px 0px #000000;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.bar-container {
+  box-shadow: inset 2px 2px 0px 0px #000000;
 }
