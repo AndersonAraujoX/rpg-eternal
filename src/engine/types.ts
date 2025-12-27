@@ -117,3 +117,10 @@ export interface Boss extends Entity {
     element: ElementType;
     emoji: string;
 }
+
+export type Resources = {
+    copper: number;
+    iron: number;
+    mithril: number;
+};
+export type Log = LogEntry;
