@@ -1,10 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { useGame } from './hooks/useGame';
-import { Sword, Volume2, VolumeX, Save } from 'lucide-react';
+import { Sword, Volume2, VolumeX, RotateCcw, Ghost } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const { heroes, boss, logs, gameSpeed, isSoundOn, actions } = useGame();
+  const { heroes, boss, logs, gameSpeed, isSoundOn, souls, pet, offlineGains, actions } = useGame();
 
   // Auto-scroll log
   const logRef = useRef<HTMLDivElement>(null);
@@ -24,12 +24,28 @@ function App() {
     <div className={`h-screen w-full flex flex-col items-center justify-center p-2 relative overflow-hidden ${getBackgroundClass(boss.level)}`}>
       <div className="crt-overlay"></div>
 
+      {/* Offline Modal */}
+      {offlineGains && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 animate-fade-in">
+          <div className="bg-gray-800 border-4 border-yellow-500 p-6 rounded-lg max-w-sm text-center shadow-2xl">
+            <h2 className="text-2xl text-yellow-400 mb-4 font-bold">WELCOME BACK!</h2>
+            <div className="text-white whitespace-pre-line mb-6 font-mono text-sm">{offlineGains}</div>
+            <button onClick={actions.closeOfflineModal} className="btn-retro bg-green-600 px-6 py-2 rounded text-white hover:bg-green-500 w-full">
+              AWESOME!
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Game Container */}
       <div className="w-full max-w-3xl h-full max-h-[900px] flex flex-col bg-gray-800 bg-opacity-90 border-4 border-gray-600 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm">
 
         {/* Header Info */}
         <div className="bg-gray-900 p-4 border-b-4 border-gray-600 flex justify-between items-center text-xs md:text-sm text-yellow-400">
-          <div>LVL: <span className="text-white">{boss.level}</span></div>
+          <div className="flex flex-col">
+            <span>LVL: <span className="text-white">{boss.level}</span></span>
+            <span className="text-[10px] text-purple-400 flex items-center gap-1"><Ghost size={10} /> SOULS: {souls}</span>
+          </div>
 
           <div className="flex gap-2">
             <button
@@ -45,6 +61,16 @@ function App() {
             >
               SPEED: {gameSpeed}x
             </button>
+
+            {boss.level >= 10 && (
+              <button
+                onClick={actions.triggerRebirth}
+                className="btn-retro bg-purple-700 text-white px-3 py-1 text-[10px] rounded hover:bg-purple-600 animate-pulse border border-purple-400"
+                title="Reset for Souls Multiplier"
+              >
+                REBIRTH
+              </button>
+            )}
           </div>
 
           <div>BOSS HP: <span className="text-white">{boss.stats.hp}</span></div>
@@ -79,18 +105,22 @@ function App() {
             </div>
           </div>
 
-          {/* VS */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 text-4xl font-bold text-white pointer-events-none">
-            AFK
-          </div>
+          {/* PET RENDER */}
+          {pet && (
+            <div className="absolute top-1/2 left-10 transform -translate-y-1/2 flex flex-col items-center animate-bounce">
+              <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer" title={`Pet Bonus: ${pet.bonus}`}>
+                {pet.emoji}
+              </div>
+              <div className="text-[8px] text-gray-400 bg-black px-1 rounded bg-opacity-50">{pet.name}</div>
+            </div>
+          )}
 
           {/* Heroes Section */}
-          <div className="grid grid-cols-3 gap-2 mb-4 w-full">
+          <div className="grid grid-cols-3 gap-2 mb-4 w-full relative z-10">
             {heroes.map((hero) => {
               const isDead = hero.isDead;
               return (
                 <div key={hero.id} className={`flex flex-col items-center p-2 rounded transition-all bg-gray-800 border-2 ${hero.stats.hp < hero.stats.maxHp * 0.3 ? 'border-red-500 animate-pulse' : 'border-gray-600'}`}>
-                  {/* Hero Sprite */}
                   <div className={`text-4xl md:text-5xl mb-2 ${isDead ? 'grayscale opacity-50' : 'attack-up'}`}>
                     {hero.emoji}
                   </div>
@@ -134,7 +164,7 @@ function App() {
         <div className="bg-gray-800 p-2 border-t-4 border-gray-600 flex justify-between items-center text-[10px] text-gray-500">
           <span>Progress Saved Automatically</span>
           <button onClick={actions.resetSave} className="hover:text-red-500 flex items-center gap-1">
-            <Save size={10} /> Reset Save
+            <RotateCcw size={10} /> Full Reset
           </button>
         </div>
 

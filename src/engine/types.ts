@@ -9,7 +9,9 @@ export type Stats = {
     magic: number;
 };
 
-export type EntityType = 'hero' | 'boss';
+
+export type EntityType = 'hero' | 'boss' | 'pet';
+
 
 export interface Entity {
     id: string;
@@ -19,6 +21,19 @@ export interface Entity {
     spriteUrl?: string;
     isDead: boolean;
 }
+
+export interface Pet extends Entity {
+    type: 'pet';
+    bonus: string; // e.g., "+10% DPS"
+    emoji: string;
+}
+
+export interface GameStats {
+    souls: number;
+    rebirths: number;
+    totalKills: number;
+}
+
 
 export interface Hero extends Entity {
     class: 'Warrior' | 'Mage' | 'Healer';

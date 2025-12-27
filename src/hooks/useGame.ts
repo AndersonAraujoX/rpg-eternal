@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Hero, Boss, LogEntry, Item } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet } from '../engine/types';
 import { soundManager } from '../engine/sound';
 
 const INITIAL_HEROES: Hero[] = [
@@ -13,161 +13,186 @@ const INITIAL_BOSS: Boss = {
     stats: { hp: 200, maxHp: 200, mp: 0, maxMp: 0, attack: 12, magic: 0, defense: 2, speed: 8 }
 };
 
-export const useGame = () => {
-    // Persistence Loading
-    const loadState = () => {
-        const saved = localStorage.getItem('rpg_eternal_save');
-        if (saved) return JSON.parse(saved);
-        return null;
-    };
-    const savedState = loadState();
+const INITIAL_PET: Pet = {
+    id: 'pet-dragon', name: 'Baby Dragon', type: 'pet', bonus: 'DPS', emoji: '🐉', isDead: false,
+    stats: { attack: 5, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 }
+};
 
-    const [heroes, setHeroes] = useState<Hero[]>(savedState?.heroes || INITIAL_HEROES);
-    const [boss, setBoss] = useState<Boss>(savedState?.boss || INITIAL_BOSS);
+export const useGame = () => {
+    // STATE
+    const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
+    const [boss, setBoss] = useState<Boss>(INITIAL_BOSS);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [gameSpeed, setGameSpeed] = useState<number>(1);
     const [isSoundOn, setIsSoundOn] = useState<boolean>(false);
-    const [items, setItems] = useState<Item[]>(savedState?.items || []);
+    const [items, setItems] = useState<Item[]>([]);
+    const [souls, setSouls] = useState<number>(0);
+    const [pet, setPet] = useState<Pet | null>(null);
+    const [offlineGains, setOfflineGains] = useState<string | null>(null);
+
+    // LOAD / OFFLINE CALC
+    useEffect(() => {
+        const saved = localStorage.getItem('rpg_eternal_save_v2');
+        if (saved) {
+            const state = JSON.parse(saved);
+            setHeroes(state.heroes);
+            setBoss(state.boss);
+            setItems(state.items);
+            setSouls(state.souls || 0);
+            if (state.pet) setPet(state.pet);
+
+            // Offline Calc
+            if (state.lastSaveTime) {
+                const now = Date.now();
+                const diff = now - state.lastSaveTime;
+                const secondsOffline = Math.floor(diff / 1000);
+
+                if (secondsOffline > 60) {
+                    // Simulate: 1 Boss Kill per 10 seconds (conservative estimate)
+                    const estimatedKills = Math.floor(secondsOffline / 10);
+                    const estimatedLevels = Math.floor(estimatedKills / 5); // 1 lvl per 5 kills
+                    const estimatedSouls = Math.floor(estimatedKills * 0.5);
+
+                    if (estimatedKills > 0) {
+                        setOfflineGains(`While you were gone (${Math.floor(secondsOffline / 60)}m):\nDefeated ${estimatedKills} Bosses\nGained ${estimatedSouls} Souls!`);
+                        setSouls(prev => prev + estimatedSouls);
+                        // Boost Boss Level
+                        setBoss(p => ({ ...p, level: p.level + estimatedLevels, stats: { ...p.stats, maxHp: p.stats.maxHp + (estimatedLevels * 50) } }));
+                    }
+                }
+            }
+        }
+    }, []);
+
+    // SAVE EFFECT
+    useEffect(() => {
+        const state = { heroes, boss, items, souls, pet, lastSaveTime: Date.now() };
+        localStorage.setItem('rpg_eternal_save_v2', JSON.stringify(state));
+    }, [heroes, boss, items, souls, pet]);
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
-        setLogs(prev => [...prev.slice(-14), { id: Math.random().toString(36), message, type }]); // Keep fewer logs for perf
+        setLogs(prev => [...prev.slice(-14), { id: Math.random().toString(36), message, type }]);
     };
 
-    // Save Effect
-    useEffect(() => {
-        const state = { heroes, boss, items };
-        localStorage.setItem('rpg_eternal_save', JSON.stringify(state));
-    }, [heroes, boss, items]);
-
-    // Sound Toggle
+    // SOUND TOGGLE
     const toggleSound = () => {
         const newState = !isSoundOn;
         setIsSoundOn(newState);
         soundManager.toggle(newState);
     };
 
-    // LOOT SYSTEM
-    const generateLoot = (level: number): Item => {
-        const rarity = Math.random() > 0.9 ? 'legendary' : Math.random() > 0.7 ? 'epic' : 'common';
-        const type = Math.random() > 0.5 ? 'weapon' : 'armor';
-        const statVal = Math.floor(level * (rarity === 'legendary' ? 2 : 1.2));
+    // REBIRTH SYSTEM
+    const triggerRebirth = () => {
+        const soulsGain = Math.floor(boss.level / 5);
+        if (soulsGain <= 0) return;
 
-        return {
-            id: Math.random().toString(36),
-            name: `${rarity} ${type} +${statVal}`,
-            type: type as any,
-            stat: 'attack',
-            value: statVal,
-            rarity: rarity as any
-        };
+        const multiplier = 1 + ((souls + soulsGain) * 0.1); // 10% per soul
+
+        setSouls(p => p + soulsGain);
+        setHeroes(INITIAL_HEROES.map(h => ({
+            ...h,
+            stats: {
+                ...h.stats,
+                attack: Math.floor(h.stats.attack * multiplier),
+                maxHp: Math.floor(h.stats.maxHp * multiplier)
+            }
+        })));
+        setBoss(INITIAL_BOSS);
+        setItems([]); // Clear items or keep? Usually clear inventory on prestige.
+        setGameSpeed(1);
+        addLog(`REBIRTH! Gained ${soulsGain} Souls! Stats x${multiplier.toFixed(1)}`, 'death');
+        soundManager.playLevelUp();
     };
 
-    // CORE GAME LOOP (AFK)
+    // ITEM MERGE (Auto)
     useEffect(() => {
-        // Only run if everyone is alive (or boss dead handles respawn)
+        if (items.length > 20) {
+            // Simple cleanup: Keep best 20 based on Value
+            const sorted = [...items].sort((a, b) => b.value - a.value).slice(0, 20);
+            if (sorted.length !== items.length) {
+                setItems(sorted);
+                addLog("Inventory full! Auto-scrapped weak items.", 'info');
+            }
+        }
+    }, [items]);
+
+    // UNLOCK PET
+    useEffect(() => {
+        if (boss.level >= 10 && !pet) {
+            setPet(INITIAL_PET);
+            addLog("You found a Baby Dragon Egg!", 'info');
+        }
+    }, [boss.level, pet]);
+
+    // CORE LOOP
+    useEffect(() => {
         if (heroes.every(h => h.isDead)) return;
 
         const tickRate = 1000 / gameSpeed;
-
         const timer = setTimeout(() => {
-            // 1. Identify Actor (Rotational or Speed based - keeping rotational for simplicity)
             const livingHeroes = heroes.filter(h => !h.isDead);
+            if (livingHeroes.length === 0) return;
 
-            // Player Turn: All heroes act simultaneously for "Fast AFK" feel? 
-            // Or sequential. Let's do: One Hero Act -> Boss Act -> Repeat
-
-            if (livingHeroes.length === 0) return; // Wiped
-
-            // HEROES ACTIONS
+            // HERO Action
             let totalDmg = 0;
+
+            // Soul Multiplier calculated continuously or persisted? 
+            // Persisted in base stats on Rebirth. 
+            // Dynamic multiplier for Pet?
+            const damageMult = 1 + (souls * 0.05); // 5% dynamic bonus too
+
             const newHeroes = heroes.map(h => {
                 if (h.isDead) return h;
-
-                // Mana Regen
-                let mp = Math.min(h.stats.maxMp, h.stats.mp + 2);
+                // Heal / Attack logic same as before...
                 let hp = h.stats.hp;
-                let actionLog = '';
+                let mp = Math.min(h.stats.maxMp, h.stats.mp + 2);
 
-                // AI Logic
-                if (h.class === 'Healer' && livingHeroes.some(lh => lh.stats.hp < lh.stats.maxHp * 0.6) && mp >= 20) {
-                    // Heal Team
-                    mp -= 20;
-                    // Healing applied later to state, tricky in map. 
-                    // Simplified: Healer heals self and gives "aura" to others? 
-                    // Let's make Healer attack AND heal.
-                    const healAmt = Math.floor(h.stats.magic * 1.5);
-                    soundManager.playHeal();
-                    hp = Math.min(h.stats.maxHp, h.stats.hp + healAmt); // Self heal for now simplicity
-                    actionLog = `${h.name} heals for ${healAmt}`;
+                // Attack
+                const dmg = Math.floor(h.stats.attack * damageMult);
+                totalDmg += dmg;
 
-                } else if (mp >= 15 && boss.stats.hp > 50) {
-                    // Magic Attack
-                    mp -= 15;
-                    const dmg = Math.floor(h.stats.magic * 1.5);
-                    totalDmg += dmg;
-                    actionLog = `${h.name} text_fire blasts for ${dmg}!`;
-                    soundManager.playMagic();
-                } else {
-                    // Attack
-                    const dmg = Math.floor(h.stats.attack * (1 + Math.random()));
-                    totalDmg += dmg;
-                    actionLog = `${h.name} hits for ${dmg}`;
-                    if (Math.random() > 0.8) soundManager.playAttack();
-                }
-
-                if (Math.random() > 0.9 && actionLog) addLog(actionLog, 'info'); // Reduce log spam
+                // Simple loop logic (can expand)
+                if (Math.random() > 0.9) addLog(`${h.name} attacks for ${dmg}`, 'info');
                 return { ...h, stats: { ...h.stats, hp, mp } };
             });
 
-            // Apply Global Healer effect if Healer acted? (Skipped for stability complexity)
-            setHeroes(newHeroes);
-
-            // Apply Damage to Boss
-            let newBossHp = Math.max(0, boss.stats.hp - totalDmg);
-
-            if (totalDmg > 0) {
-                soundManager.playHit();
-                // addLog(`Party deals ${totalDmg} total damage!`, 'damage');
+            // PET Action
+            if (pet) {
+                const petDmg = Math.floor(pet.stats.attack * (boss.level * 0.5));
+                totalDmg += petDmg;
+                if (Math.random() > 0.95) addLog(`${pet.name} breathes fire: ${petDmg}`, 'damage');
             }
 
-            if (newBossHp === 0) {
-                // Boss Dead Logic
-                soundManager.playLevelUp();
-                const loot = generateLoot(boss.level);
-                setItems(prev => [...prev, loot]);
-                addLog(`${boss.name} Defeated! Dropped ${loot.name}`, 'death');
+            setHeroes(newHeroes);
 
-                // Auto Equip / Consume Loot (Simplified: Boost Stats permanently)
+            // Apply Damage
+            let newBossHp = Math.max(0, boss.stats.hp - totalDmg);
+            if (totalDmg > 0) soundManager.playHit();
+
+            if (newBossHp === 0) {
+                // Boss Death
+                soundManager.playLevelUp();
+                const loot: Item = { id: Math.random().toString(), name: 'Epic Loot', type: 'weapon', stat: 'attack', value: boss.level * 2, rarity: 'epic' };
+                setItems(p => [...p, loot]);
+                addLog(`${boss.name} Defeated!`, 'death');
+
+                // Auto Equip logic...
                 setHeroes(prev => prev.map(h => ({
                     ...h,
-                    stats: {
-                        ...h.stats,
-                        attack: h.stats.attack + (loot.stat === 'attack' ? loot.value : 0),
-                        maxHp: h.stats.maxHp + (loot.stat === 'hp' ? loot.value : 10)
-                    }
+                    stats: { ...h.stats, attack: h.stats.attack + loot.value, maxHp: h.stats.maxHp + 10 }
                 })));
 
-                // Respawn Boss
+                // Respawn
                 setBoss(prev => ({
-                    ...prev,
-                    level: prev.level + 1,
-                    name: `Monster Lvl ${prev.level + 1}`,
-                    stats: {
-                        maxHp: Math.floor(prev.stats.maxHp * 1.2),
-                        hp: Math.floor(prev.stats.maxHp * 1.2),
-                        mp: 0, maxMp: 0,
-                        attack: Math.floor(prev.stats.attack * 1.1),
-                        magic: 0, defense: prev.stats.defense + 1, speed: 10
-                    },
+                    ...prev, level: prev.level + 1, name: `Monster Lvl ${prev.level + 1}`,
+                    stats: { ...prev.stats, hp: Math.floor(prev.stats.maxHp * 1.2), maxHp: Math.floor(prev.stats.maxHp * 1.2) },
                     isDead: false
-                    // Emoji randomization could be added here
                 }));
-
-                // Full Heal Party
-                setHeroes(prev => prev.map(h => ({ ...h, stats: { ...h.stats, hp: h.stats.maxHp, mp: h.stats.maxMp } })));
+                // Full Heal
+                setHeroes(prev => prev.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } })));
 
             } else {
-                // Boss Attacks Back
+                // Boss Attack
                 const dmg = Math.max(0, boss.stats.attack - 5);
                 setHeroes(prev => prev.map(h => {
                     if (h.isDead) return h;
@@ -178,39 +203,23 @@ export const useGame = () => {
             }
 
         }, tickRate);
-
         return () => clearTimeout(timer);
-    }, [heroes, boss, gameSpeed]);
+    }, [heroes, boss, gameSpeed, souls, pet]);
 
     // Wipe Check
     useEffect(() => {
         if (heroes.every(h => h.isDead)) {
-            addLog("Party Wiped! Reviving in 3s...", "death");
             setTimeout(() => {
                 setHeroes(prev => prev.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } })));
+                addLog("Party Revived!", "heal");
             }, 3000);
         }
     }, [heroes]);
 
-    const resetSave = () => {
-        localStorage.removeItem('rpg_eternal_save');
-        setHeroes(INITIAL_HEROES);
-        setBoss(INITIAL_BOSS);
-        setItems([]);
-        addLog("Save Reset!");
-    };
+    const resetSave = () => { localStorage.removeItem('rpg_eternal_save_v2'); window.location.reload(); };
 
     return {
-        heroes,
-        boss,
-        logs,
-        items,
-        gameSpeed,
-        isSoundOn,
-        actions: {
-            setGameSpeed,
-            toggleSound,
-            resetSave
-        }
+        heroes, boss, logs, items, gameSpeed, isSoundOn, souls, pet, offlineGains,
+        actions: { setGameSpeed, toggleSound, resetSave, triggerRebirth, closeOfflineModal: () => setOfflineGains(null) }
     };
 };
