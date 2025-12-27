@@ -50,6 +50,8 @@ export interface Artifact {
 
 export interface GameStats {
     souls: number;
+    gold: number;
+    divinity: number;
     rebirths: number;
     totalKills: number;
     talents: Talent[];
@@ -59,8 +61,9 @@ export interface GameStats {
 
 
 export interface Hero extends Entity {
-    class: 'Warrior' | 'Mage' | 'Healer';
+    class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock';
     emoji: string;
+    unlocked: boolean;
 }
 export type LogEntry = {
     id: string;
