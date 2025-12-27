@@ -81,14 +81,21 @@ export interface GameStats {
     cards: MonsterCard[];
     constellations: ConstellationNode[];
     keys: number; // Gold Keys count
+    resources: {
+        copper: number;
+        iron: number;
+        mithril: number;
+    };
 }
 
-
+export type ElementType = 'fire' | 'water' | 'nature' | 'neutral';
 
 export interface Hero extends Entity {
     class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock';
     emoji: string;
     unlocked: boolean;
+    element: ElementType;
+    assignment: 'combat' | 'mine';
 }
 export type LogEntry = {
     id: string;
@@ -107,6 +114,6 @@ export interface Item {
 
 export interface Boss extends Entity {
     level: number;
+    element: ElementType;
     emoji: string;
 }
-
