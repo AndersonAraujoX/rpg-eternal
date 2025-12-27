@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, GambitAction } from '../engine/types';
 import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 
 const INITIAL_HEROES: Hero[] = [
-    { id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 } },
-    { id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 } },
-    { id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 } },
-    { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 } },
-    { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 } },
-    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 } }
+    { id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 } },
+    { id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 } },
+    { id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 } },
+    { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 } },
+    { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 } },
+    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 } }
 ];
 
 const INITIAL_BOSS: Boss = {
@@ -19,6 +19,7 @@ const INITIAL_BOSS: Boss = {
 
 const INITIAL_PET_DATA: Pet = {
     id: 'pet-dragon', name: 'Baby Dragon', type: 'pet', bonus: 'DPS', emoji: '🐉', isDead: false,
+    level: 1, xp: 0, maxXp: 100,
     stats: { attack: 5, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 }
 };
 
@@ -94,7 +95,8 @@ export const useGame = () => {
                     ...INITIAL_HEROES[i], // Defaults
                     ...h, // Loaded
                     element: h.element || INITIAL_HEROES[i].element, // Backfill
-                    assignment: h.assignment || 'combat'
+                    assignment: h.assignment || 'combat',
+                    gambits: h.gambits || INITIAL_HEROES[i].gambits
                 }));
 
                 setHeroes(updatedHeroes);
@@ -103,7 +105,7 @@ export const useGame = () => {
                 setSouls(state.souls || 0);
                 setGold(state.gold || 0);
                 setDivinity(state.divinity || 0);
-                if (state.pet) setPet(state.pet);
+                if (state.pet) setPet({ ...INITIAL_PET_DATA, ...state.pet });
                 if (state.talents) setTalents(state.talents);
                 if (state.artifacts) setArtifacts(state.artifacts);
                 if (state.cards) setCards(state.cards);
@@ -260,6 +262,39 @@ export const useGame = () => {
         toggleAssignment: (heroId: string) => {
             setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, assignment: h.assignment === 'combat' ? 'mine' : 'combat' } : h));
         },
+        updateGambits: (heroId: string, gambits: Gambit[]) => {
+            setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, gambits } : h));
+        },
+        feedPet: (foodType: 'gold' | 'souls') => {
+            if (!pet) return;
+            const xpGain = 50;
+            if (foodType === 'gold' && gold >= 100) {
+                setGold(g => g - 100);
+            } else if (foodType === 'souls' && souls >= 10) {
+                setSouls(s => s - 10);
+            } else {
+                return;
+            }
+
+            setPet(p => {
+                if (!p) return null;
+                let newXp = p.xp + xpGain;
+                let newLvl = p.level;
+                let newMax = p.maxXp;
+                let newStats = { ...p.stats };
+
+                if (newXp >= p.maxXp) {
+                    newXp -= p.maxXp;
+                    newLvl += 1;
+                    newMax = Math.floor(newMax * 1.5);
+                    newStats.attack += 5;
+                    addLog(`PET LEVEL UP! Lvl ${newLvl}`, 'heal');
+                    soundManager.playLevelUp();
+                }
+                return { ...p, xp: newXp, level: newLvl, maxXp: newMax, stats: newStats };
+            });
+            addLog("Pet fed!", 'heal');
+        },
         // TOWER
         enterTower: () => {
             if (tower.active) {
@@ -408,12 +443,65 @@ export const useGame = () => {
                 const eleMult = getElementalMult(h.element, boss.element);
                 let baseDmg = h.stats.attack * damageMult * artifactMult * cardMult * eleMult;
 
+                // Gambit Logic
+                let action: GambitAction = 'attack';
+                if (h.gambits && h.gambits.length > 0) {
+                    for (const g of h.gambits) {
+                        let conditionMet = false;
+                        if (g.condition === 'always') conditionMet = true;
+                        if (g.condition === 'hp<50' && h.stats.hp < h.stats.maxHp * 0.5) conditionMet = true;
+                        if (g.condition === 'hp<30' && h.stats.hp < h.stats.maxHp * 0.3) conditionMet = true;
+                        if (g.condition === 'enemy_boss' && boss.type === 'boss') conditionMet = true;
+                        if (g.condition === 'ally_hp<50' && heroes.some(ally => ally.assignment === 'combat' && !ally.isDead && ally.stats.hp < ally.stats.maxHp * 0.5)) conditionMet = true;
+
+                        if (conditionMet) {
+                            action = g.action;
+                            break; // First matching gambit wins
+                        }
+                    }
+                }
+
+                if (action === 'heal') {
+                    // Find weakest ally
+                    const weakest = heroes.filter(ally => !ally.isDead && ally.assignment === 'combat').sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0];
+                    if (weakest) {
+                        // This is tricky because we are inside a map. We can't easily modify other heroes here without complex reduce.
+                        // For MVP, self-heal or simplified logic.
+                        // Actually, we can return a "heal intent" and process it after? 
+                        // To keep it simple for now, Healers heal THEMSELVES if they are low, or trigger a global heal effect later?
+                        // Better: Healers deal 0 damage but restore HP to lowest ally in a separate pass?
+                        // Let's stick to simple: specific action modifications.
+                        if (h.class === 'Healer' || action === 'heal') {
+                            baseDmg = 0; // Sacrifices damage to heal
+                            // We will handle the actual healing in a 2nd pass or just hack it:
+                            // Effect: "Heal Pulse"
+                        }
+                    }
+                } else if (action === 'strong_attack') {
+                    if (h.stats.mp >= 10) {
+                        baseDmg *= 1.5;
+                        // Cost MP... (not implemented fully yet, let's assume free for this phase or just simple check)
+                    }
+                } else if (action === 'defend') {
+                    baseDmg *= 0.5; // Less damage, but maybe take less damage? (Defense not implemented in this loop yet)
+                }
+
                 if (Math.random() < critChance + (h.class === 'Rogue' ? 0.3 : 0)) baseDmg *= 2;
                 if (isUltimate) baseDmg *= 5;
 
                 totalDmg += Math.floor(baseDmg);
                 return { ...h, stats: { ...h.stats, hp } };
             });
+
+            // Healer Logic: Simplified - If any hero carried out a 'heal' action, heal random ally
+            // const healers = heroes.filter(h => h.gambits?.some(g => g.action === 'heal' && g.condition === 'always') || h.class === 'Healer'); // Rough check
+            if (activeHeroes.some(h => h.class === 'Healer')) {
+                // Healer passive: 5% HP per tick to lowest
+                const lowest = newHeroes.filter(h => !h.isDead && h.assignment === 'combat').sort((a, b) => a.stats.hp - b.stats.hp)[0];
+                if (lowest) {
+                    lowest.stats.hp = Math.min(lowest.stats.maxHp, lowest.stats.hp + (lowest.stats.maxHp * 0.05));
+                }
+            }
 
             if (pet && activeHeroes.some(h => !h.isDead)) totalDmg += Math.floor(pet.stats.attack * (boss.level * 0.5));
 
@@ -439,6 +527,19 @@ export const useGame = () => {
                 if (Math.random() < 0.02) { setKeys(k => k + 1); addLog("FOUND GOLD KEY!", 'death'); }
 
                 // Card Drop (5%)
+                if (pet) {
+                    setPet(p => {
+                        if (!p) return null;
+                        const xp = p.xp + 1; // 1 XP per kill
+                        if (xp >= p.maxXp) {
+                            soundManager.playLevelUp();
+                            addLog("Pet Level Up!", 'heal');
+                            return { ...p, level: p.level + 1, xp: 0, maxXp: Math.floor(p.maxXp * 1.5), stats: { ...p.stats, attack: p.stats.attack + 2 } };
+                        }
+                        return { ...p, xp };
+                    });
+                }
+
                 if (Math.random() < 0.05) {
                     setCards(prev => {
                         const existing = prev.find(c => c.id === boss.emoji);

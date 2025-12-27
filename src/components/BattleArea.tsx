@@ -20,7 +20,7 @@ const getElementIcon = (el: string) => {
     return null;
 };
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pet, artifacts }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pet, artifacts, actions }) => {
     return (
         <div className="flex-1 relative bg-gray-900 flex flex-col justify-between p-4 overflow-hidden" id="battle-field">
             {/* Artifacts */}
@@ -52,9 +52,21 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
             {/* Pet */}
             {pet && (
-                <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col items-center animate-bounce z-20 opacity-80">
-                    <div className="text-2xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer" title={`Pet Bonus: ${pet.bonus}`}>{pet.emoji}</div>
-                    <div className="text-[8px] text-white">{pet.bonus}</div>
+                <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col items-center z-20 opacity-90 group">
+                    <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer animate-bounce" title={`Lvl ${pet.level} ${pet.name}`}>
+                        {pet.emoji}
+                    </div>
+                    <div className="flex flex-col items-center bg-black bg-opacity-50 p-1 rounded backdrop-blur-sm mt-1">
+                        <span className="text-[8px] text-orange-300 font-bold mb-0.5">Lvl {pet.level}</span>
+                        <div className="w-10 h-1 bg-gray-700 rounded-full overflow-hidden mb-1">
+                            <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${(pet.xp / pet.maxXp) * 100}%` }}></div>
+                        </div>
+                        <div className="flex gap-1 opacity-100 transition-opacity">
+                            <button onClick={() => actions.feedPet('gold')} className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-yellow-500" title="Feed 100 Gold" disabled={false}>$</button>
+                            <button onClick={() => actions.feedPet('souls')} className="w-4 h-4 bg-purple-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-purple-500" title="Feed 10 Souls">S</button>
+                        </div>
+                        <span className="text-[6px] text-gray-400 mt-0.5">{pet.bonus}</span>
+                    </div>
                 </div>
             )}
         </div>

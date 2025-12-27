@@ -26,6 +26,9 @@ export interface Pet extends Entity {
     type: 'pet';
     bonus: string; // e.g., "+10% DPS"
     emoji: string;
+    level: number;
+    xp: number;
+    maxXp: number;
 }
 
 export interface Talent {
@@ -96,6 +99,7 @@ export interface Hero extends Entity {
     unlocked: boolean;
     element: ElementType;
     assignment: 'combat' | 'mine';
+    gambits: Gambit[];
 }
 export type LogEntry = {
     id: string;
@@ -137,6 +141,16 @@ export interface Guild {
     maxXp: number;
     bonus: string; // e.g., "+10% Gold"
     members: number;
+}
+
+export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'ally_hp<50' | 'enemy_boss';
+export type GambitAction = 'attack' | 'heal' | 'strong_attack' | 'defend';
+
+export interface Gambit {
+    id: string;
+    condition: GambitCondition;
+    action: GambitAction;
+    target?: string; // 'self', 'weakest_ally', 'boss'
 }
 
 export const GUILDS = [
