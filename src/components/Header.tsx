@@ -1,7 +1,7 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Key, Skull, Volume2, VolumeX, Zap, Settings } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings } from 'lucide-react';
 import { formatNumber } from '../utils';
-import type { Boss, Resources } from '../engine/types';
+import type { Boss, Resources, Tower, Guild } from '../engine/types';
 
 interface HeaderProps {
     boss: Boss;
@@ -9,6 +9,8 @@ interface HeaderProps {
     gold: number;
     divinity: number;
     resources: Resources;
+    tower: Tower;
+    guild: Guild | null;
     keys: number;
     dungeonActive: boolean;
     raidActive: boolean;
@@ -22,14 +24,16 @@ interface HeaderProps {
     setShowForge: (v: boolean) => void;
     setShowInventory: (v: boolean) => void;
     setShowCards: (v: boolean) => void;
+    setShowTower: (v: boolean) => void;
+    setShowGuild: (v: boolean) => void;
     setShowSettings: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-    boss, souls, gold, divinity, keys,
+    boss, souls, gold, divinity, tower, guild, keys,
     dungeonActive, raidActive, raidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory,
-    setShowCards, setShowSettings
+    setShowCards, setShowTower, setShowGuild, setShowSettings
 }) => {
     return (
         <div className="bg-gray-900 p-2 border-b-4 border-gray-600 flex flex-col gap-2 rounded-t-lg">
@@ -52,7 +56,8 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Row 2: Actions & Modes */}
             <div className="flex flex-wrap justify-between items-center text-xs gap-2">
                 <div className="flex gap-2">
-                    {/* Phase 6 has no Tower/Guild/Void buttons here */}
+                    <button onClick={() => setShowTower(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Tower"><Castle size={12} /> {tower.floor}</button>
+                    <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guild"><Building size={12} /> {guild ? guild.level : '+'}</button>
                 </div>
 
                 <div className="flex gap-2 items-center">

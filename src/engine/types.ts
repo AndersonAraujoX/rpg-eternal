@@ -123,4 +123,26 @@ export type Resources = {
     iron: number;
     mithril: number;
 };
+
+export interface Tower {
+    floor: number;
+    active: boolean;
+    maxFloor: number;
+}
+
+export interface Guild {
+    name: string;
+    level: number;
+    xp: number;
+    maxXp: number;
+    bonus: string; // e.g., "+10% Gold"
+    members: number;
+}
+
+export const GUILDS = [
+    { name: 'The Iron Legion', bonus: '+10% Defense' },
+    { name: 'The Arcane Order', bonus: '+10% Magic' },
+    { name: 'The Shadow Syndicate', bonus: '+10% Crit Damage' }
+];
+
 export type Log = LogEntry;

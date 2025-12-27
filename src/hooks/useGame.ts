@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild } from '../engine/types';
+import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 
 const INITIAL_HEROES: Hero[] = [
@@ -78,6 +79,9 @@ export const useGame = () => {
     const [raidActive, setRaidActive] = useState(false);
     const [raidTimer, setRaidTimer] = useState(0);
 
+    const [tower, setTower] = useState<Tower>({ floor: 1, active: false, maxFloor: 1 });
+    const [guild, setGuild] = useState<Guild | null>(null);
+
     // LOAD
     useEffect(() => {
         const saved = localStorage.getItem('rpg_eternal_save_v6');
@@ -105,7 +109,10 @@ export const useGame = () => {
                 if (state.cards) setCards(state.cards);
                 if (state.constellations) setConstellations(state.constellations);
                 if (state.keys) setKeys(state.keys);
+                if (state.keys) setKeys(state.keys);
                 if (state.resources) setResources(state.resources);
+                if (state.tower) setTower(state.tower);
+                if (state.guild) setGuild(state.guild);
 
                 setRaidActive(false);
                 setDungeonActive(false);
@@ -147,9 +154,9 @@ export const useGame = () => {
 
     // SAVE
     useEffect(() => {
-        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, lastSaveTime: Date.now() };
+        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, lastSaveTime: Date.now() };
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources]);
+    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild]);
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
         setLogs(prev => [...prev.slice(-14), { id: Math.random().toString(36), message, type }]);
@@ -253,14 +260,61 @@ export const useGame = () => {
         toggleAssignment: (heroId: string) => {
             setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, assignment: h.assignment === 'combat' ? 'mine' : 'combat' } : h));
         },
-        forgeUpgrade: (resource: 'copper' | 'iron' | 'mithril') => {
-            const costs = { copper: 100, iron: 50, mithril: 10 };
-            const gains = { copper: 2, iron: 5, mithril: 20 };
-            if (resources[resource] >= costs[resource]) {
-                setResources(r => ({ ...r, [resource]: r[resource] - costs[resource] }));
-                setHeroes(prev => prev.map(h => ({ ...h, stats: { ...h.stats, hp: h.stats.hp + gains[resource], attack: h.stats.attack + Math.ceil(gains[resource] / 2) } })));
-                addLog(`Forged using ${resource}! All Stats Up.`, 'heal');
-                soundManager.playLevelUp();
+        // TOWER
+        enterTower: () => {
+            if (tower.active) {
+                // Fleeing
+                setTower(t => ({ ...t, active: false }));
+                setBoss(INITIAL_BOSS); // Reset to normal boss
+                addLog("Escaped the Tower.", 'info');
+                return;
+            }
+            setTower(t => ({ ...t, active: true }));
+            setBoss({
+                id: `tower-${tower.floor}`, name: `Tower Guardian ${tower.floor}`, emoji: '🏯', type: 'boss',
+                level: tower.floor * 10, isDead: false, element: 'neutral',
+                stats: {
+                    hp: 500 * Math.pow(1.5, tower.floor), maxHp: 500 * Math.pow(1.5, tower.floor),
+                    attack: 20 * tower.floor, defense: 5 * tower.floor,
+                    magic: 10 * tower.floor, speed: 10 + tower.floor, mp: 9999, maxMp: 9999
+                }
+            });
+            addLog(`Entering Tower Floor ${tower.floor}...`, 'death');
+        },
+        // GUILD
+        joinGuild: (guildName: string) => {
+            if (guild) return; // Already in one
+            const template = GUILDS.find(g => g.name === guildName);
+            if (template) {
+                setGuild({ name: template.name, level: 1, xp: 0, maxXp: 1000, bonus: template.bonus, members: 1 });
+                addLog(`Joined ${guildName}!`, 'heal');
+            }
+        },
+        donateGuild: (amount: number, currency: 'gold' | 'ore') => {
+            if (!guild) return;
+            let xpGain = 0;
+            if (currency === 'gold') {
+                if (gold >= amount) { setGold(g => g - amount); xpGain = Math.floor(amount / 10); }
+            } else {
+                // Assume amount is 100 copper for simplicity in this MVP
+                if (resources.copper >= amount) { setResources(r => ({ ...r, copper: r.copper - amount })); xpGain = 50; }
+            }
+
+            if (xpGain > 0) {
+                setGuild(prev => {
+                    if (!prev) return null;
+                    let newXp = prev.xp + xpGain;
+                    let newLevel = prev.level;
+                    let newMax = prev.maxXp;
+                    if (newXp >= prev.maxXp) {
+                        newLevel++;
+                        newXp -= prev.maxXp;
+                        newMax = Math.floor(newMax * 1.5);
+                        addLog(`GUILD LEVEL UP! Lvl ${newLevel}`, 'heal');
+                        soundManager.playLevelUp();
+                    }
+                    return { ...prev, xp: newXp, level: newLevel, maxXp: newMax };
+                });
             }
         },
         closeOfflineModal: () => setOfflineGains(null),
@@ -296,6 +350,14 @@ export const useGame = () => {
         if (dungeonActive) {
             if (dungeonTimer <= 0) { setDungeonActive(false); setBoss(INITIAL_BOSS); addLog("Dungeon Closed.", 'info'); }
             else { setDungeonTimer(t => t - (1 * gameSpeed / 10)); }
+        }
+        if (tower.active) {
+            // Check for failure (Party Wipe)
+            if (activeHeroes.length > 0 && activeHeroes.every(h => h.isDead)) {
+                setTower(t => ({ ...t, active: false }));
+                setBoss(INITIAL_BOSS);
+                addLog(`DEFEAT! Tower Floor ${tower.floor} failed.`, 'death');
+            }
         }
 
         const hasteTalent = talents.find(t => t.stat === 'speed');
@@ -411,6 +473,13 @@ export const useGame = () => {
                 setHeroes(prev => prev.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } })));
                 soundManager.playLevelUp();
 
+                if (tower.active) {
+                    addLog(`Floor ${tower.floor} Cleared!`, 'death');
+                    setTower(t => ({ ...t, floor: t.floor + 1, maxFloor: Math.max(t.maxFloor, t.floor + 1) }));
+                    // Next floor immediately
+                    setTimeout(() => ACTIONS.enterTower(), 1000);
+                }
+
             } else {
                 setBoss(p => ({ ...p, stats: { ...p.stats, hp: newBossHp } }));
             }
@@ -434,6 +503,6 @@ export const useGame = () => {
     return {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
-        ultimateCharge, raidActive, raidTimer, actions: ACTIONS
+        ultimateCharge, raidActive, raidTimer, tower, guild, actions: ACTIONS
     };
 };
