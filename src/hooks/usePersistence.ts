@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../hooks/useGame';
 
 export const usePersistence = (
@@ -43,7 +43,11 @@ export const usePersistence = (
     glory: number,
     setGlory: React.Dispatch<React.SetStateAction<number>>,
     quests: any,
-    setQuests: React.Dispatch<React.SetStateAction<any>>
+    setQuests: React.Dispatch<React.SetStateAction<any>>,
+    runes: Rune[],
+    setRunes: React.Dispatch<React.SetStateAction<Rune[]>>,
+    achievements: Achievement[],
+    setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>
 ) => {
 
     // LOAD
@@ -82,6 +86,8 @@ export const usePersistence = (
                 if (state.arenaRank) setArenaRank(state.arenaRank);
                 if (state.glory) setGlory(state.glory);
                 if (state.quests) setQuests(state.quests);
+                if (state.runes) setRunes(state.runes);
+                if (state.achievements) setAchievements(state.achievements);
 
                 setRaidActive(false);
                 setDungeonActive(false);
@@ -123,9 +129,9 @@ export const usePersistence = (
 
     // SAVE
     useEffect(() => {
-        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, lastSaveTime: Date.now() };
+        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, lastSaveTime: Date.now() };
         // We use a timeout to debounce saves slightly or just save on every change? 
         // Logic was saving on every dependency change.
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests]);
+    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements]);
 };

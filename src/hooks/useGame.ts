@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement } from '../engine/types';
 import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
 import { processCombatTurn, calculateDamageMultiplier } from '../engine/combat';
+
+const INITIAL_ACHIEVEMENTS: Achievement[] = [
+    { id: 'ach1', name: 'Novice Slayer', description: 'Kill 100 Bosses', unlocked: false, condition: { type: 'bossKills', value: 100 }, reward: '+10% Gold' },
+    { id: 'ach2', name: 'Millionaire', description: 'Hoard 1,000,000 Gold', unlocked: false, condition: { type: 'gold', value: 1000000 }, reward: '+5% Damage' },
+    { id: 'ach3', name: 'Rune Smith', description: 'Craft 10 Runes', unlocked: false, condition: { type: 'crafts', value: 10 }, reward: '+10% Craft Speed' },
+    { id: 'ach4', name: 'Clicker King', description: 'Click 5000 Times', unlocked: false, condition: { type: 'clicks', value: 5000 }, reward: '+1 Click DMG' }
+];
 
 export const INITIAL_HEROES: Hero[] = [
     { id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 } },
@@ -97,6 +104,10 @@ export const useGame = () => {
         { id: 'q3', description: 'Enter the Tower', target: 1, progress: 0, reward: { type: 'voidMatter', amount: 1 }, isCompleted: false, isClaimed: false }
     ]);
 
+    // PHASE 11
+    const [runes, setRunes] = useState<Rune[]>([]);
+    const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
+
     // LOAD
     // PERSISTENCE
     usePersistence(
@@ -104,7 +115,8 @@ export const useGame = () => {
         divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
         cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
         tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
-        arenaRank, setArenaRank, glory, setGlory, quests, setQuests
+        arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
+        runes, setRunes, achievements, setAchievements
     );
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
@@ -350,6 +362,55 @@ export const useGame = () => {
                 return q;
             }));
         },
+        // RUNES
+        craftRune: () => {
+            const COST = { mithril: 10, souls: 50 };
+            if (resources.mithril >= COST.mithril && souls >= COST.souls) {
+                setResources(r => ({ ...r, mithril: r.mithril - COST.mithril }));
+                setSouls(s => s - COST.souls);
+
+                const rarityRoll = Math.random();
+                let rarity: Rune['rarity'] = 'common';
+                if (rarityRoll > 0.98) rarity = 'legendary';
+                else if (rarityRoll > 0.90) rarity = 'epic';
+                else if (rarityRoll > 0.70) rarity = 'rare';
+
+                const stats: Rune['stat'][] = ['attack', 'defense', 'hp', 'magic', 'gold', 'xp'];
+                const stat = stats[Math.floor(Math.random() * stats.length)];
+                let val = 1;
+                if (rarity === 'common') val = Math.floor(Math.random() * 5 + 1);
+                if (rarity === 'rare') val = Math.floor(Math.random() * 10 + 5);
+                if (rarity === 'epic') val = Math.floor(Math.random() * 15 + 10);
+                if (rarity === 'legendary') val = Math.floor(Math.random() * 25 + 20);
+
+                const newRune: Rune = {
+                    id: Math.random().toString(),
+                    name: `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Rune of ${stat.charAt(0).toUpperCase() + stat.slice(1)}`,
+                    rarity,
+                    stat,
+                    value: val,
+                    bonus: `+${val}% ${stat.toUpperCase()}`
+                };
+
+                setRunes(prev => [...prev, newRune]);
+                addLog(`Crafted: ${newRune.name}`, 'craft');
+                soundManager.playLevelUp();
+            }
+        },
+        socketRune: (itemId: string, runeId: string) => {
+            const rune = runes.find(r => r.id === runeId);
+            if (!rune) return;
+
+            setItems(prev => prev.map(item => {
+                if (item.id === itemId && item.runes.length < item.sockets) {
+                    setRunes(rs => rs.filter(r => r.id !== runeId)); // Remove from inventory
+                    addLog(`Socketed ${rune.name} into ${item.name}`, 'craft');
+                    soundManager.playLevelUp();
+                    return { ...item, runes: [...item.runes, rune] };
+                }
+                return item;
+            }));
+        },
         closeOfflineModal: () => setOfflineGains(null),
         setGameSpeed: setGameSpeed,
         toggleSound: toggleSound,
@@ -442,7 +503,8 @@ export const useGame = () => {
 
             if (newBossHp === 0) {
                 // Drops
-                const loot: Item = { id: Math.random().toString(), name: 'Item', type: 'weapon', stat: 'attack', value: boss.level, rarity: 'common' };
+                const sockets = Math.floor(Math.random() * 3) + 1; // 1 to 3 sockets
+                const loot: Item = { id: Math.random().toString(), name: 'Item', type: 'weapon', stat: 'attack', value: boss.level, rarity: 'common', sockets, runes: [] };
                 setItems(p => [...p, loot]);
 
 
@@ -548,7 +610,7 @@ export const useGame = () => {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests,
+        arenaRank, glory, quests, runes, achievements,
         actions: ACTIONS
     };
 };

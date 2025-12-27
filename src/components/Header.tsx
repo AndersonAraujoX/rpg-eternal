@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild } from '../engine/types';
 
@@ -33,13 +33,16 @@ interface HeaderProps {
     setShowVoid?: (v: boolean) => void;
     setShowArena?: (v: boolean) => void;
     setShowQuests?: (v: boolean) => void;
+    setShowRunes?: (v: boolean) => void;
+    setShowAchievements?: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     boss, souls, gold, divinity, tower, guild, keys, voidMatter,
     dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory,
-    setShowCards, setShowTower, setShowGuild, setShowSettings, setShowVoid, setShowArena, setShowQuests
+    setShowCards, setShowTower, setShowGuild, setShowSettings, setShowVoid, setShowArena, setShowQuests,
+    setShowRunes, setShowAchievements
 }) => {
     return (
         <div className="bg-gray-900 p-2 border-b-4 border-gray-600 flex flex-col gap-2 rounded-t-lg">
@@ -66,6 +69,8 @@ export const Header: React.FC<HeaderProps> = ({
                     <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guild"><Building size={12} /> {guild ? guild.level : '+'}</button>
                     <button onClick={() => setShowArena && setShowArena(true)} className="btn-retro bg-red-900 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-800" title="Arena"><Swords size={12} /></button>
                     <button onClick={() => setShowQuests && setShowQuests(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Quests"><Scroll size={12} /></button>
+                    <button onClick={() => setShowRunes && setShowRunes(true)} className="btn-retro bg-purple-900 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800" title="Rune Forge"><Gem size={12} /></button>
+                    <button onClick={() => setShowAchievements && setShowAchievements(true)} className="btn-retro bg-teal-900 text-teal-200 px-2 py-1 rounded border border-teal-500 flex items-center gap-1 hover:bg-teal-800" title="Achievements"><Trophy size={12} /></button>
                     {tower.floor >= 10 && (
                         <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">
                             <Ghost size={12} /> {voidMatter}

@@ -17,14 +17,16 @@ import { GuildModal } from './components/modals/GuildModal';
 import { VoidModal } from './components/modals/VoidModal';
 import { ArenaModal } from './components/modals/ArenaModal';
 import { QuestModal } from './components/modals/QuestModal';
+import { RuneModal } from './components/modals/RuneModal';
+import { AchievementsModal } from './components/modals/AchievementsModal';
 import './index.css';
 
 function App() {
   const {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
-    talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
+    talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-    arenaRank, glory, quests,
+    arenaRank, glory, quests, runes, achievements,
     actions
   } = useGame();
 
@@ -40,6 +42,8 @@ function App() {
   const [showVoid, setShowVoid] = useState(false);
   const [showArena, setShowArena] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
+  const [showRunes, setShowRunes] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
   const [importString, setImportString] = useState('');
 
   const getBackgroundClass = (level: number) => {
@@ -57,21 +61,8 @@ function App() {
 
   return (
     <div className={`h-screen w-full flex flex-col items-center justify-center p-2 relative overflow-hidden ${raidActive ? 'bg-red-900' : getBackgroundClass(boss.level)}`}>
-      <div className="crt-overlay"></div>
 
-      <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />
-      <StarChartModal isOpen={showStars} onClose={() => setShowStars(false)} divinity={divinity} constellations={constellations} actions={actions} />
-      <ForgeModal isOpen={showForge} onClose={() => setShowForge(false)} resources={resources} actions={actions} />
-      <CardsModal isOpen={showCards} onClose={() => setShowCards(false)} cards={cards} />
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} />
-      <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />
-      <TavernModal isOpen={showTavern} onClose={() => setShowTavern(false)} gold={gold} actions={actions} />
-      <InventoryModal isOpen={showInventory} onClose={() => setShowInventory(false)} />
-      <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} />
-      <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
-      <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
-      <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} onFight={actions.fightArena} />
-      <QuestModal isOpen={showQuests} onClose={() => setShowQuests(false)} quests={quests} onClaim={actions.claimQuest} />
+      <div className="crt-overlay"></div>
 
       {/* Game Container */}
       <div className="w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-gray-800 bg-opacity-90 border-4 border-gray-600 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm">
@@ -83,6 +74,8 @@ function App() {
           setShowShop={setShowShop} setShowTavern={setShowTavern} setShowStars={setShowStars} setShowForge={setShowForge}
           setShowInventory={setShowInventory} setShowCards={setShowCards} setShowSettings={setShowSettings}
           setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
+          setShowArena={setShowArena} setShowQuests={setShowQuests}
+          setShowRunes={setShowRunes} setShowAchievements={setShowAchievements}
         />
 
         <BattleArea
@@ -96,11 +89,28 @@ function App() {
 
         {/* Footer */}
         <div className="bg-gray-800 p-1 border-t-4 border-gray-600 flex justify-between items-center text-[10px] text-gray-500">
-          <span>RBG Eternal v2.5 - {divinity > 0 ? `Divinity Rank ${divinity}` : 'Mortal Realm'}</span>
-          <div className="text-[10px] text-gray-600">Phase 9: The Cosmic Void</div>
+          <span>RBG Eternal v2.7 - {divinity > 0 ? `Divinity Rank ${divinity}` : 'Mortal Realm'}</span>
+          <div className="text-[10px] text-gray-600">Phase 11: Celestial Forge</div>
         </div>
 
       </div>
+
+      {/* MODALS RENDER */}
+      <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />
+      <StarChartModal isOpen={showStars} onClose={() => setShowStars(false)} divinity={divinity} constellations={constellations} actions={actions} />
+      <ForgeModal isOpen={showForge} onClose={() => setShowForge(false)} resources={resources} actions={actions} />
+      <CardsModal isOpen={showCards} onClose={() => setShowCards(false)} cards={cards} />
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} />
+      <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />
+      <TavernModal isOpen={showTavern} onClose={() => setShowTavern(false)} gold={gold} actions={actions} />
+      <InventoryModal isOpen={showInventory} onClose={() => setShowInventory(false)} items={items} />
+      <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} />
+      <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
+      <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
+      <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} onFight={actions.fightArena} />
+      <QuestModal isOpen={showQuests} onClose={() => setShowQuests(false)} quests={quests} onClaim={actions.claimQuest} />
+      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
+      <AchievementsModal isOpen={showAchievements} onClose={() => setShowAchievements(false)} achievements={achievements} />
     </div>
   );
 }

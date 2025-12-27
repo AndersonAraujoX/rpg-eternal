@@ -118,6 +118,8 @@ export interface GameStats {
     voidMatter: number;
     arenaRank: number;
     glory: number;
+    runes: Rune[];
+    achievements: Achievement[];
     resources: {
         copper: number;
         iron: number;
@@ -140,7 +142,7 @@ export interface Hero extends Entity {
 export type LogEntry = {
     id: string;
     message: string;
-    type: 'info' | 'damage' | 'heal' | 'death';
+    type: 'info' | 'damage' | 'heal' | 'death' | 'craft' | 'achievement';
 };
 
 export interface Item {
@@ -150,6 +152,26 @@ export interface Item {
     stat: 'attack' | 'defense' | 'hp' | 'magic' | 'speed';
     value: number;
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    sockets: number;
+    runes: Rune[];
+}
+
+export interface Rune {
+    id: string;
+    name: string;
+    rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    bonus: string; // e.g. "+5% Attack"
+    stat: 'attack' | 'defense' | 'hp' | 'xp' | 'gold' | 'magic';
+    value: number; // Percentage
+}
+
+export interface Achievement {
+    id: string;
+    name: string;
+    description: string;
+    unlocked: boolean;
+    condition: { type: 'kills' | 'bossKills' | 'gold' | 'clicks' | 'crafts', value: number };
+    reward: string; // Text description
 }
 
 export interface Boss extends Entity {
