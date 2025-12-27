@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, WorldBossState } from '../engine/types';
 import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
@@ -107,6 +107,8 @@ export const useGame = () => {
     // PHASE 11
     const [runes, setRunes] = useState<Rune[]>([]);
     const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
+    const [eternalFragments, setEternalFragments] = useState(0);
+    const [worldBoss, setWorldBoss] = useState<WorldBossState>({ active: false, timer: 0, hp: 0, maxHp: 0, boss: INITIAL_BOSS });
 
     // LOAD
     // PERSISTENCE
@@ -116,7 +118,8 @@ export const useGame = () => {
         cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
         tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
         arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
-        runes, setRunes, achievements, setAchievements
+        runes, setRunes, achievements, setAchievements,
+        eternalFragments, setEternalFragments, worldBoss, setWorldBoss
     );
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
@@ -125,6 +128,8 @@ export const useGame = () => {
     const toggleSound = () => { setIsSoundOn(!isSoundOn); soundManager.toggle(!isSoundOn); };
 
     const ACTIONS = {
+
+
         buyTalent: (id: string) => {
             setTalents(prev => prev.map(t => {
                 if (t.id === id && souls >= t.cost && t.level < t.maxLevel) {
@@ -416,7 +421,31 @@ export const useGame = () => {
         toggleSound: toggleSound,
         resetSave: () => { localStorage.clear(); window.location.reload(); },
         exportSave: () => btoa(localStorage.getItem('rpg_eternal_save_v6') || ''),
-        importSave: (str: string) => { try { JSON.parse(atob(str)); localStorage.setItem('rpg_eternal_save_v6', atob(str)); window.location.reload(); } catch { alert("Invalid Save"); } }
+        importSave: (str: string) => { try { JSON.parse(atob(str)); localStorage.setItem('rpg_eternal_save_v6', atob(str)); window.location.reload(); } catch { alert("Invalid Save"); } },
+        summonWorldBoss: () => {
+            const wbHP = boss.stats.maxHp * 50; // Huge HP
+            setWorldBoss({
+                active: true,
+                boss: { ...INITIAL_BOSS, name: 'Void Titan', element: 'dark', level: 99 },
+                hp: wbHP,
+                maxHp: wbHP,
+                timer: 300 // 5 minutes
+            });
+            addLog("A WORLD BOSS HAS APPEARED!", 'death');
+        },
+        attackWorldBoss: () => {
+            if (!worldBoss.active) return;
+            const clickDmg = heroes.reduce((acc, h) => acc + h.stats.attack, 0) * (1 + divinity);
+            setWorldBoss(wb => {
+                const newHp = wb.hp - clickDmg;
+                if (newHp <= 0) {
+                    addLog("World Boss Defeated! +1 Eternal Fragment", 'achievement');
+                    setEternalFragments(prev => prev + 1);
+                    return { ...wb, active: false, hp: 0 };
+                }
+                return { ...wb, hp: newHp };
+            });
+        }
     };
 
 
@@ -597,20 +626,44 @@ export const useGame = () => {
 
     useEffect(() => { if (boss.level >= 10 && !pet) setPet(INITIAL_PET_DATA); }, [boss.level, pet]);
 
+    // Phase 12: World Boss Logic
+    // Phase 12 logic
+
     useEffect(() => {
-        const assigned = heroes.filter(h => h.unlocked && h.assignment === 'combat');
-        if (assigned.length > 0 && assigned.every(h => h.isDead)) {
-            setTimeout(() => {
-                setHeroes(prev => prev.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } })));
-            }, 3000);
+        if (!worldBoss.active) {
+            // 1% chance per second to spawn world boss if not active
+            const spawnCheck = setInterval(() => {
+                if (Math.random() < 0.01) {
+                    ACTIONS.summonWorldBoss();
+                }
+            }, 1000);
+            return () => clearInterval(spawnCheck);
+        } else {
+            const timer = setInterval(() => {
+                setWorldBoss(wb => {
+                    if (wb.timer <= 0) return { ...wb, active: false };
+                    return { ...wb, timer: wb.timer - 1 };
+                });
+            }, 1000);
+            return () => clearInterval(timer);
         }
-    }, [heroes]);
+    }, [worldBoss.active]);
+
+    usePersistence(
+        heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
+        divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
+        cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
+        tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
+        arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
+        runes, setRunes, achievements, setAchievements,
+        eternalFragments, setEternalFragments, worldBoss, setWorldBoss
+    );
 
     return {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements,
+        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss,
         actions: ACTIONS
     };
 };

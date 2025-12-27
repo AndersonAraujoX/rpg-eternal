@@ -19,6 +19,7 @@ import { ArenaModal } from './components/modals/ArenaModal';
 import { QuestModal } from './components/modals/QuestModal';
 import { RuneModal } from './components/modals/RuneModal';
 import { AchievementsModal } from './components/modals/AchievementsModal';
+import { WorldBossPanel } from './components/WorldBossPanel';
 import './index.css';
 
 function App() {
@@ -26,7 +27,7 @@ function App() {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-    arenaRank, glory, quests, runes, achievements,
+    arenaRank, glory, quests, runes, achievements, worldBoss,
     actions
   } = useGame();
 
@@ -111,6 +112,7 @@ function App() {
       <QuestModal isOpen={showQuests} onClose={() => setShowQuests(false)} quests={quests} onClaim={actions.claimQuest} />
       <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
       <AchievementsModal isOpen={showAchievements} onClose={() => setShowAchievements(false)} achievements={achievements} />
+      <WorldBossPanel worldBoss={worldBoss} attackAction={actions.attackWorldBoss} />
     </div>
   );
 }

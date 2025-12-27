@@ -120,6 +120,7 @@ export interface GameStats {
     glory: number;
     runes: Rune[];
     achievements: Achievement[];
+    eternalFragments: number;
     resources: {
         copper: number;
         iron: number;
@@ -127,7 +128,7 @@ export interface GameStats {
     };
 }
 
-export type ElementType = 'fire' | 'water' | 'nature' | 'neutral';
+export type ElementType = 'fire' | 'water' | 'nature' | 'neutral' | 'light' | 'dark';
 
 export interface Hero extends Entity {
     class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock';
@@ -216,5 +217,13 @@ export const GUILDS = [
     { name: 'The Arcane Order', bonus: '+10% Magic' },
     { name: 'The Shadow Syndicate', bonus: '+10% Crit Damage' }
 ];
+
+export interface WorldBossState {
+    active: boolean;
+    boss: Boss;
+    hp: number;
+    maxHp: number;
+    timer: number;
+}
 
 export type Log = LogEntry;

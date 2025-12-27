@@ -8,6 +8,7 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
     if (atkEl === 'fire' && defEl === 'water') return 0.5;
     if (atkEl === 'nature' && defEl === 'fire') return 0.5;
     if (atkEl === 'water' && defEl === 'nature') return 0.5;
+    if ((atkEl === 'light' && defEl === 'dark') || (atkEl === 'dark' && defEl === 'light')) return 1.5;
     return 1;
 };
 

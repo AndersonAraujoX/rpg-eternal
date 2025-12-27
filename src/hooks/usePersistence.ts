@@ -47,7 +47,9 @@ export const usePersistence = (
     runes: Rune[],
     setRunes: React.Dispatch<React.SetStateAction<Rune[]>>,
     achievements: Achievement[],
-    setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>
+    setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>,
+    eternalFragments: number,
+    setEternalFragments: React.Dispatch<React.SetStateAction<number>>
 ) => {
 
     // LOAD
@@ -88,20 +90,21 @@ export const usePersistence = (
                 if (state.quests) setQuests(state.quests);
                 if (state.runes) setRunes(state.runes);
                 if (state.achievements) setAchievements(state.achievements);
+                if (state.eternalFragments) setEternalFragments(state.eternalFragments);
+                // World Boss state generally shouldn't be persisted if active, or maybe yes?
+                // For now, let's reset WB on reload to avoid bugs, or persist only fragments.
 
                 setRaidActive(false);
                 setDungeonActive(false);
 
-                // Offline Calc
+                // Offline Calc (omitted for brevity, assume unchanged logic)
                 if (state.lastSaveTime) {
                     const now = Date.now();
                     const diff = now - state.lastSaveTime;
                     const secondsOffline = Math.floor(diff / 1000);
                     if (secondsOffline > 60) {
-                        // Check miners
                         const miners = updatedHeroes.filter((h: Hero) => h.unlocked && h.assignment === 'mine');
                         const combatants = updatedHeroes.filter((h: Hero) => h.unlocked && h.assignment === 'combat');
-
                         let logMsg = `Offline for ${Math.floor(secondsOffline / 60)}m.`;
 
                         if (miners.length > 0) {
@@ -109,9 +112,8 @@ export const usePersistence = (
                             setResources(r => ({ ...r, copper: r.copper + oreGain }));
                             logMsg += `\nMiners found ${oreGain} Copper.`;
                         }
-
                         if (combatants.length > 0) {
-                            const kills = Math.floor((secondsOffline / 5) * (combatants.length / 6)); // Slower if less combatants
+                            const kills = Math.floor((secondsOffline / 5) * (combatants.length / 6));
                             const gainedSouls = Math.floor(kills * 0.2);
                             const gainedGold = kills * 10;
                             if (kills > 0) {
@@ -129,9 +131,11 @@ export const usePersistence = (
 
     // SAVE
     useEffect(() => {
-        const state = { heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, lastSaveTime: Date.now() };
-        // We use a timeout to debounce saves slightly or just save on every change? 
-        // Logic was saving on every dependency change.
+        const state = {
+            heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys,
+            resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments,
+            lastSaveTime: Date.now()
+        };
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements]);
+    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments]);
 };
