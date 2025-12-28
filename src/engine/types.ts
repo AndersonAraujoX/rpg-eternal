@@ -74,18 +74,7 @@ export interface MonsterCard {
     value: number; // e.g. 0.01 per card
 }
 
-export interface GameStats {
-    souls: number;
-    gold: number;
-    divinity: number;
-    rebirths: number;
-    totalKills: number;
-    talents: Talent[];
-    artifacts: Artifact[];
-    cards: MonsterCard[];
-    constellations: ConstellationNode[];
-    keys: number; // Gold Keys count
-}
+
 
 export interface Quest {
     id: string;
@@ -194,16 +183,7 @@ export interface StarlightUpgrade {
     description: string;
 }
 
-export interface GameStats {
-    totalGoldEarned: number;
-    totalKills: number;
-    bossKills: number;
-    clicks: number;
-    totalDamageDealt: number;
-    highestDps: number;
-    playTime: number; // seconds
-    ascensions: number;
-}
+
 
 export interface Achievement {
     id: string;
@@ -236,6 +216,7 @@ export interface Tower {
 }
 
 export interface Guild {
+    id: string;
     name: string;
     level: number;
     xp: number;

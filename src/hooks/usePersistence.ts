@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Quest, Rune, Achievement, GalaxySector, StarlightUpgrade, GameStats } from '../engine/types';
-import { INITIAL_HEROES, INITIAL_PET_DATA } from '../hooks/useGame';
+import { INITIAL_HEROES, INITIAL_PET_DATA } from '../engine/initialData';
 
 export const usePersistence = (
     heroes: Hero[],
@@ -62,8 +62,7 @@ export const usePersistence = (
     setMonsterKills: React.Dispatch<React.SetStateAction<Record<string, number>>>,
     gameStats: GameStats,
     setGameStats: React.Dispatch<React.SetStateAction<GameStats>>,
-    achievements: Achievement[],
-    setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>
+
 ) => {
 
     // LOAD
