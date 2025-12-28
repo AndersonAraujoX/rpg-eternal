@@ -57,13 +57,20 @@ const INITIAL_TALENTS: Talent[] = [
     { id: 't4', name: 'Precision', level: 0, maxLevel: 25, cost: 25, costScaling: 1.8, description: '+1% Crit Chance', stat: 'crit', valuePerLevel: 0.01 }
 ];
 
-const MONSTERS = [
-    { name: 'Slime', emoji: '🦠' }, { name: 'Rat', emoji: '🐀' }, { name: 'Spider', emoji: '🕷️' }, { name: 'Bat', emoji: '🦇' },
-    { name: 'Wolf', emoji: '🐺' }, { name: 'Goblin', emoji: '👺' }, { name: 'Skeleton', emoji: '💀' }, { name: 'Orc', emoji: '👹' },
-    { name: 'Ghost', emoji: '👻' }, { name: 'Zombie', emoji: '🧟' }, { name: 'Troll', emoji: '🗿' }, { name: 'Yeti', emoji: '🥶' },
-    { name: 'Mummy', emoji: '🤕' }, { name: 'Vampire', emoji: '🧛' }, { name: 'Demon', emoji: '👿' }, { name: 'Dragon', emoji: '🐉' },
-    { name: 'Hydra', emoji: '🐍' }, { name: 'Kraken', emoji: '🐙' }, { name: 'Titan', emoji: '👾' }, { name: 'Evil Eye', emoji: '👁️' }
-];
+import { MONSTERS } from '../engine/bestiary';
+import { ACHIEVEMENTS_DATA } from '../engine/achievements';
+import { GameStats } from '../engine/types';
+
+const INITIAL_STATS: GameStats = {
+    totalGoldEarned: 0,
+    totalKills: 0,
+    bossKills: 0,
+    clicks: 0,
+    totalDamageDealt: 0,
+    highestDps: 0,
+    playTime: 0,
+    ascensions: 0
+};
 
 const INITIAL_CONSTELLATIONS: ConstellationNode[] = [
     { id: 'c1', name: 'Orion', description: '+Boss Damage', level: 0, maxLevel: 10, cost: 1, costScaling: 2, bonusType: 'bossDamage', valuePerLevel: 0.10, x: 20, y: 50 },
@@ -103,6 +110,7 @@ export const useGame = () => {
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
 
     const [cards, setCards] = useState<MonsterCard[]>([]);
+    const [monsterKills, setMonsterKills] = useState<Record<string, number>>({});
     const [constellations, setConstellations] = useState<ConstellationNode[]>(INITIAL_CONSTELLATIONS);
     const [keys, setKeys] = useState<number>(0);
     const [resources, setResources] = useState({ copper: 0, iron: 0, mithril: 0 });
@@ -140,6 +148,9 @@ export const useGame = () => {
         }
     }, [arenaOpponents.length, arenaRank, partyDps]);
 
+    const [gameStats, setGameStats] = useState<GameStats>(INITIAL_STATS);
+    const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS_DATA);
+
     const [quests, setQuests] = useState<Quest[]>([
         { id: 'q1', description: 'Slay 50 Monsters', target: 50, progress: 0, reward: { type: 'gold', amount: 500 }, isCompleted: false, isClaimed: false },
         { id: 'q2', description: 'Collect 100 Souls', target: 100, progress: 0, reward: { type: 'souls', amount: 50 }, isCompleted: false, isClaimed: false },
@@ -157,7 +168,7 @@ export const useGame = () => {
 
     // PHASE 11
     const [runes, setRunes] = useState<Rune[]>([]);
-    const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
+
     const [eternalFragments, setEternalFragments] = useState(0);
     const [starlight, setStarlight] = useState(0);
     const [starlightUpgrades, setStarlightUpgrades] = useState<string[]>([]);
@@ -442,6 +453,14 @@ export const useGame = () => {
             }
         },
         triggerRebirth: () => {
+            // Achievement Bonuses
+            const achDamageMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'damage').reduce((acc, a) => acc + a.rewardValue, 0);
+            const achGoldMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'gold').reduce((acc, a) => acc + a.rewardValue, 0);
+            const achSpeedMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'speed').reduce((acc, a) => acc + a.rewardValue, 0);
+            const achBossMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'bossDamage').reduce((acc, a) => acc + a.rewardValue, 0);
+
+            // -- MEMOIZED CALCULATIONS --
+            const clickDmg = Math.floor(10 * (1 + boss.level * 0.5) * (1 + achDamageMult));
             const soulsGain = Math.floor(boss.level / 5);
             if (soulsGain <= 0) return;
             setSouls(p => p + soulsGain);
@@ -885,117 +904,158 @@ export const useGame = () => {
                     if (!q.isCompleted && q.description.includes('Souls') && souls > q.target) return { ...q, progress: q.target, isCompleted: true }; // Retroactive check
                     return q;
                 }));
-
-                // Gold
-                const cGold = constellations.find(c => c.bonusType === 'goldDrop');
-                const starGold = cGold ? (1 + cGold.level * cGold.valuePerLevel) : 1;
-
-                let goldDrop = Math.floor(boss.level * (Math.random() * 5 + 1) * starGold * goldMult);
-                if (dungeonActive) goldDrop *= 10;
-                setGold(g => g + goldDrop);
-
-                // Key Drop (Rare)
-                if (Math.random() < 0.02) { setKeys(k => k + 1); addLog("FOUND GOLD KEY!", 'death'); }
-
-                // Card Drop (5%)
-                if (pet) {
-                    setPet(p => {
-                        if (!p) return null;
-                        const xp = p.xp + 1; // 1 XP per kill
-                        if (xp >= p.maxXp) {
-                            soundManager.playLevelUp();
-                            addLog("Pet Level Up!", 'heal');
-                            return { ...p, level: p.level + 1, xp: 0, maxXp: Math.floor(p.maxXp * 1.5), stats: { ...p.stats, attack: p.stats.attack + 2 } };
-                        }
-                        return { ...p, xp };
-                    });
-                }
-
-                if (Math.random() < 0.05) {
-                    setCards(prev => {
-                        const existing = prev.find(c => c.id === boss.emoji);
-                        if (existing) { return prev.map(c => c.id === boss.emoji ? { ...c, count: c.count + 1 } : c); }
-                        else {
-                            addLog(`New Card: ${boss.emoji} `, 'death');
-                            return [...prev, { id: boss.emoji, monsterName: boss.name, count: 1, stat: getCardStat(boss.emoji), value: 0.01 }];
-                        }
-                    });
-                }
-
-                if (raidActive) {
-                    addLog("WORLD EATER DEFEATED!", 'death');
-                    setGold(g => g + 50000);
-                    setDivinity(d => d + 1);
-                    setRaidActive(false);
-                    setBoss(INITIAL_BOSS);
-                } else if (voidActive) {
-                    addLog("VOID ENTITY VANQUISHED!", 'death');
-                    setVoidMatter(v => v + 1);
-                    setVoidActive(false);
-                    setBoss(INITIAL_BOSS);
-                } else if (dungeonActive) {
-                    setBoss({ ...boss, stats: { ...boss.stats, hp: boss.stats.maxHp, maxHp: boss.stats.maxHp + 50 } });
-                } else {
-                    const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
-                    // Biome Element Logic
-                    const lvl = boss.level; // next level actually
-                    let el: ElementType = 'neutral';
-                    if (lvl > 40) el = 'fire';
-                    else if (lvl > 20) el = 'water';
-                    else if (lvl % 3 === 1) el = 'nature';
-
-                    setBoss(prev => ({
-                        ...prev, level: prev.level + 1, name: monster.name, emoji: monster.emoji, element: el,
-                        stats: { ...prev.stats, maxHp: Math.floor(prev.stats.maxHp * 1.2), hp: Math.floor(prev.stats.maxHp * 1.2) }
-                    }));
-                }
-
-                finalHeroes = finalHeroes.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } }));
-                soundManager.playLevelUp();
-
-                if (tower.active) {
-                    addLog(`Floor ${tower.floor} Cleared!`, 'death');
-                    setTower(t => ({ ...t, floor: t.floor + 1, maxFloor: Math.max(t.maxFloor, t.floor + 1) }));
-                    // Next floor immediately
-                    setTimeout(() => ACTIONS.enterTower(), 1000);
-                }
-
-            } else {
-                setBoss(p => ({ ...p, stats: { ...p.stats, hp: newBossHp } }));
+                setPet(p => {
+                    if (!p) return null;
+                    const xp = p.xp + 1; // 1 XP per kill
+                    if (xp >= p.maxXp) {
+                        soundManager.playLevelUp();
+                        addLog("Pet Level Up!", 'heal');
+                        return { ...p, level: p.level + 1, xp: 0, maxXp: Math.floor(p.maxXp * 1.5), stats: { ...p.stats, attack: p.stats.attack + 2 } };
+                    }
+                    return { ...p, xp };
+                });
             }
 
-            // Calc Power
-            const currentPwr = finalHeroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + calculateHeroPower(h), 0);
-            setPartyPower(currentPwr);
+            if (boss.emoji !== '💀' && boss.name !== 'Raid Boss' && boss.name !== 'Void Entity') {
+                // Drop Card Logic
+                if (Math.random() < 0.05) { // 5% Chance
+                    // ... existing card logic ...
+                    const card = MONSTERS.find(m => m.name === boss.name);
+                    if (card) {
+                        setCards(prev => {
+                            const existing = prev.find(c => c.monsterName === boss.name);
+                            if (existing) return prev.map(c => c.monsterName === boss.name ? { ...c, count: c.count + 1 } : c);
+                            // Determine stat
+                            const stats: MonsterCard['stat'][] = ['attack', 'defense', 'gold', 'xp', 'speed'];
+                            const stat = stats[Math.floor(Math.random() * stats.length)];
+                            return [...prev, { id: card.emoji, monsterName: card.name, count: 1, stat, value: 0.01 }];
+                        });
+                        addLog(`Found ${boss.name} Card!`, 'achievement');
+                    }
+                }
 
-            setHeroes(finalHeroes);
+                // Track Kills (Bestiary & Stats)
+                setMonsterKills(prev => ({ ...prev, [boss.name]: (prev[boss.name] || 0) + 1 }));
+                setGameStats(prev => ({
+                    ...prev,
+                    totalKills: prev.totalKills + 1,
+                    bossKills: boss.name.includes('Boss') ? prev.bossKills + 1 : prev.bossKills
+                }));
+
+                // Quest Logic: Track Kills
+                setQuests(prev => prev.map(q => {
+                    if (!q.isCompleted && q.description.includes('Kill') && !q.description.includes('Boss')) {
+                        return { ...q, progress: Math.min(q.target, q.progress + 1), isCompleted: q.progress + 1 >= q.target };
+                    }
+                    return q;
+                }));
+            }
+
+            if (raidActive) {
+                addLog("WORLD EATER DEFEATED!", 'death');
+                setGold(g => g + 50000);
+                setDivinity(d => d + 1);
+                setRaidActive(false);
+                setBoss(INITIAL_BOSS);
+            } else if (voidActive) {
+                addLog("VOID ENTITY VANQUISHED!", 'death');
+                setVoidMatter(v => v + 1);
+                setVoidActive(false);
+                setBoss(INITIAL_BOSS);
+            } else if (dungeonActive) {
+                setBoss({ ...boss, stats: { ...boss.stats, hp: boss.stats.maxHp, maxHp: boss.stats.maxHp + 50 } });
+            } else {
+                const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+                // Biome Element Logic
+                const lvl = boss.level; // next level actually
+                let el: ElementType = 'neutral';
+                if (lvl > 40) el = 'fire';
+                else if (lvl > 20) el = 'water';
+                else if (lvl % 3 === 1) el = 'nature';
+
+                setBoss(prev => ({
+                    ...prev, level: prev.level + 1, name: monster.name, emoji: monster.emoji, element: el,
+                    stats: { ...prev.stats, maxHp: Math.floor(prev.stats.maxHp * 1.2), hp: Math.floor(prev.stats.maxHp * 1.2) }
+                }));
+            }
+
+            finalHeroes = finalHeroes.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } }));
+            soundManager.playLevelUp();
+
+            if (tower.active) {
+                addLog(`Floor ${tower.floor} Cleared!`, 'death');
+                setTower(t => ({ ...t, floor: t.floor + 1, maxFloor: Math.max(t.maxFloor, t.floor + 1) }));
+                // Next floor immediately
+                setTimeout(() => ACTIONS.enterTower(), 1000);
+            }
+
+        } else {
+            setBoss(p => ({ ...p, stats: { ...p.stats, hp: newBossHp } }));
+// Calculate Party Power
+let currentPower = 0;
+finalHeroes.forEach(h => {
+    if (h.assignment === 'combat' && !h.isDead) {
+        currentPower += calculateHeroPower(h);
+    }
+});
+setPartyPower(currentPower);
+
+// Update Playtime
+setGameStats(prev => ({ ...prev, playTime: prev.playTime + (effectiveTick / 1000) }));
+
+// Check Achievements
+setAchievements(prev => prev.map(ach => {
+    if (ach.isUnlocked) return ach;
+    let unlocked = false;
+    if (ach.condition.type === 'kills' && gameStats.totalKills >= ach.condition.value) unlocked = true;
+    if (ach.condition.type === 'bossKills' && gameStats.bossKills >= ach.condition.value) unlocked = true;
+    if (ach.condition.type === 'gold' && gameStats.totalGoldEarned >= ach.condition.value) unlocked = true;
+    if (ach.condition.type === 'clicks' && gameStats.clicks >= ach.condition.value) unlocked = true;
+
+    if (unlocked) {
+        addLog(`ACHIEVEMENT UNLOCKED: ${ach.name}!`, 'achievement');
+        soundManager.playLevelUp(); // Re-use lvl up sound
+        return { ...ach, isUnlocked: true };
+    }
+    return ach;
+}));
+            }
+
+// Calc Power
+const currentPwr = finalHeroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + calculateHeroPower(h), 0);
+setPartyPower(currentPwr);
+
+setHeroes(finalHeroes);
         }, effectiveTick / (1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0)));
 
-        return () => clearTimeout(timer);
+return () => clearTimeout(timer);
     }, [heroes, boss, gameSpeed, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, dungeonActive, raidActive, resources]);
 
 
 
-    usePersistence(
-        heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
-        divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
-        cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
-        tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
-        arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
-        runes, setRunes, achievements, setAchievements,
-        eternalFragments, setEternalFragments,
-        starlight, setStarlight,
-        starlightUpgrades, setStarlightUpgrades,
-        theme, setTheme,
-        galaxy, setGalaxy
-    );
+usePersistence(
+    heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
+    divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
+    cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
+    tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
+    arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
+    runes, setRunes, achievements, setAchievements,
+    eternalFragments, setEternalFragments,
+    starlight, setStarlight,
+    starlightUpgrades, setStarlightUpgrades,
+    theme, setTheme,
+    galaxy, setGalaxy,
+    monsterKills, setMonsterKills,
+    gameStats, setGameStats
+);
 
 
-    return {
-        heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
-        talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
-        ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: { ...ACTIONS, conquerSector }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies
-    };
+return {
+    heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
+    talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
+    ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
+    arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
+    actions: { ...ACTIONS, conquerSector }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
+    monsterKills, gameStats
+};
 };

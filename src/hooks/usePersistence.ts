@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector } from '../engine/types';
+import { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Quest, Rune, Achievement, GalaxySector, StarlightUpgrade, GameStats } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../hooks/useGame';
 
 export const usePersistence = (
@@ -57,7 +57,13 @@ export const usePersistence = (
     theme: string,
     setTheme: React.Dispatch<React.SetStateAction<string>>,
     galaxy: GalaxySector[],
-    setGalaxy: React.Dispatch<React.SetStateAction<GalaxySector[]>>
+    setGalaxy: React.Dispatch<React.SetStateAction<GalaxySector[]>>,
+    monsterKills: Record<string, number>,
+    setMonsterKills: React.Dispatch<React.SetStateAction<Record<string, number>>>,
+    gameStats: GameStats,
+    setGameStats: React.Dispatch<React.SetStateAction<GameStats>>,
+    achievements: Achievement[],
+    setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>
 ) => {
 
     // LOAD
@@ -103,6 +109,18 @@ export const usePersistence = (
                 if (state.starlightUpgrades) setStarlightUpgrades(state.starlightUpgrades);
                 if (state.theme) setTheme(state.theme);
                 if (state.galaxy) setGalaxy(state.galaxy); // Galaxy Load
+                if (state.monsterKills) setMonsterKills(state.monsterKills);
+                if (state.gameStats) setGameStats(state.gameStats);
+                if (state.achievements) {
+                    // Merge saved achievements with current data to ensure new achievements appear
+                    setAchievements(prev => {
+                        const saved = state.achievements as Achievement[];
+                        return prev.map(p => {
+                            const found = saved.find(s => s.id === p.id);
+                            return found ? { ...p, isUnlocked: found.isUnlocked } : p;
+                        });
+                    });
+                }
 
                 // World Boss state generally shouldn't be persisted if active, or maybe yes?
                 // For now, let's reset WB on reload to avoid bugs, or persist only fragments.
@@ -147,9 +165,9 @@ export const usePersistence = (
         const state = {
             heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys,
             resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight,
-            starlightUpgrades, theme, galaxy, // Galaxy Save
+            starlightUpgrades, theme, galaxy, monsterKills, gameStats, // Galaxy Save
             lastSaveTime: Date.now()
         };
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme, galaxy]);
+    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats]);
 };

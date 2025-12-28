@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2 } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild } from '../engine/types';
 
@@ -26,23 +26,24 @@ interface HeaderProps {
     setShowStars: (v: boolean) => void;
     setShowForge: (v: boolean) => void;
     setShowInventory: (v: boolean) => void;
-    setShowCards: (v: boolean) => void;
+    setShowBestiary: (v: boolean) => void;
+    setShowStats: (v: boolean) => void;
     setShowTower: (v: boolean) => void;
     setShowGuild: (v: boolean) => void;
     setShowSettings: (v: boolean) => void;
     setShowVoid?: (v: boolean) => void;
     setShowArena?: (v: boolean) => void;
-    setShowQuests?: (v: boolean) => void;
-    setShowRunes?: (v: boolean) => void;
-    setShowAchievements?: (v: boolean) => void;
-    setShowStarlight?: (v: boolean) => void;
-    setShowHelp?: (v: boolean) => void;
-    setShowGalaxy?: (v: boolean) => void;
+    setShowQuests: (v: boolean) => void;
+    setShowRunes: (v: boolean) => void;
+    setShowAchievements: (v: boolean) => void;
+    setShowStarlight: (v: boolean) => void;
+    setShowGalaxy: (v: boolean) => void;
+    setShowHelp: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     boss, souls, gold, divinity, tower, guild, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
-    setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowCards, setShowSettings,
+    setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowBestiary, setShowSettings, setShowStats,
     setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy
 }) => {
     return (
@@ -59,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex gap-1">
                     <button onClick={() => setShowForge(true)} className="btn-retro bg-orange-900 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-800" title="The Forge"><Hammer size={12} /></button>
                     <button onClick={() => setShowInventory(true)} className="btn-retro bg-slate-700 text-slate-200 px-2 py-1 rounded border border-slate-500 flex items-center gap-1 hover:bg-slate-600" title="Inventory"><Briefcase size={12} /></button>
-                    <button onClick={() => setShowCards(true)} className="btn-retro bg-slate-700 text-white px-2 py-1 rounded hover:bg-slate-600 text-[10px]" title="Monster Cards"><Layers size={14} /></button>
+                    <button onClick={() => setShowBestiary(true)} className="btn-retro bg-amber-900 text-amber-200 px-2 py-1 rounded border border-amber-600 flex items-center hover:bg-amber-800 text-[10px]" title="Bestiary (Monster Log)"><BookOpen size={14} /></button>
                 </div>
             </div>
 
@@ -95,9 +96,19 @@ export const Header: React.FC<HeaderProps> = ({
                     <button onClick={actions.toggleSound} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600">{isSoundOn ? <Volume2 size={12} /> : <VolumeX size={12} />}</button>
                     <button onClick={() => actions.setGameSpeed(gameSpeed === 1 ? 2 : gameSpeed === 2 ? 5 : gameSpeed === 5 ? 10 : gameSpeed === 10 ? 25 : 1)} className="btn-retro bg-blue-700 px-2 py-1 rounded text-[10px]"><Zap size={10} /> {gameSpeed}x</button>
                     <button onClick={() => setShowSettings(true)} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600"><Settings size={12} /></button>
-                    {setShowHelp && <button onClick={() => setShowHelp(true)} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600 text-yellow-400"><HelpCircle size={12} /></button>}
+                    <button onClick={() => setShowAchievements(true)} className="p-2 border border-yellow-600 bg-gray-800 rounded hover:bg-gray-700 text-yellow-500" title="Achievements">
+                        <Trophy size={20} />
+                    </button>
+                    <button onClick={() => setShowStats(true)} className="p-2 border border-indigo-600 bg-gray-800 rounded hover:bg-gray-700 text-indigo-400" title="Statistics">
+                        <BarChart2 size={20} />
+                    </button>
+                    <button onClick={() => setShowQuests(true)} className="p-2 border border-yellow-600 bg-gray-800 rounded hover:bg-gray-700 text-yellow-500" title="Daily Quests">
+                        <Scroll size={20} />
+                    </button>
+                    <button onClick={() => setShowHelp(true)} className="p-2 border border-gray-600 bg-gray-800 rounded hover:bg-gray-700 text-gray-400" title="Help / Guide">
+                        <HelpCircle size={20} />
+                    </button>
                 </div>
             </div>
-        </div>
-    );
+            );
 };

@@ -8,9 +8,10 @@ import { ShopModal } from './components/modals/ShopModal';
 import { TavernModal } from './components/modals/TavernModal';
 import { ForgeModal } from './components/modals/ForgeModal';
 import { StarChartModal } from './components/modals/StarChartModal';
-import { CardsModal } from './components/modals/CardsModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { InventoryModal } from './components/modals/InventoryModal';
+import { BestiaryModal } from './components/modals/BestiaryModal';
+import { StatisticsModal } from './components/modals/StatisticsModal';
 import { HelpModal } from './components/modals/HelpModal';
 import { OfflineModal } from './components/modals/OfflineModal';
 
@@ -32,14 +33,15 @@ function App() {
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-    actions, partyDps, partyPower, combatEvents, theme, galaxy
+    actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showTavern, setShowTavern] = useState(false);
   const [showStars, setShowStars] = useState(false);
-  const [showCards, setShowCards] = useState(false);
+  const [showBestiary, setShowBestiary] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showForge, setShowForge] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
@@ -62,7 +64,7 @@ function App() {
       if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
 
       if (e.key === 'Escape') {
-        setShowShop(false); setShowTavern(false); setShowStars(false); setShowCards(false);
+        setShowShop(false); setShowTavern(false); setShowStars(false); setShowBestiary(false);
         setShowSettings(false); setShowForge(false); setShowInventory(false); setShowTower(false);
         setShowGuild(false); setShowVoid(false); setShowArena(false); setShowQuests(false);
         setShowRunes(false); setShowAchievements(false); setShowStarlight(false); setShowHelp(false);
@@ -71,7 +73,7 @@ function App() {
       if (e.key.toLowerCase() === 's') setShowShop(prev => !prev);
       if (e.key.toLowerCase() === 'i') setShowInventory(prev => !prev);
       if (e.key.toLowerCase() === 't') setShowTavern(prev => !prev);
-      if (e.key.toLowerCase() === 'c') setShowCards(prev => !prev);
+      if (e.key.toLowerCase() === 'c') setShowBestiary(prev => !prev);
       if (e.key.toLowerCase() === 'h') setShowHelp(prev => !prev);
       if (e.key.toLowerCase() === 'g') setShowGuild(prev => !prev);
       if (e.key.toLowerCase() === 'r') setShowRunes(prev => !prev);
@@ -120,7 +122,7 @@ function App() {
           dungeonActive={dungeonActive} raidActive={raidActive} raidTimer={raidTimer} isSoundOn={isSoundOn} gameSpeed={gameSpeed} actions={actions}
           tower={tower} guild={guild} voidMatter={voidMatter} voidActive={voidActive} voidTimer={voidTimer}
           setShowShop={setShowShop} setShowTavern={setShowTavern} setShowStars={setShowStars} setShowForge={setShowForge}
-          setShowInventory={setShowInventory} setShowCards={setShowCards} setShowSettings={setShowSettings}
+          setShowInventory={setShowInventory} setShowBestiary={setShowBestiary} setShowSettings={setShowSettings} setShowStats={setShowStats}
           setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
           setShowArena={setShowArena} setShowQuests={setShowQuests} setShowGalaxy={setShowGalaxy}
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
@@ -153,7 +155,7 @@ function App() {
       <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />
       <StarChartModal isOpen={showStars} onClose={() => setShowStars(false)} divinity={divinity} constellations={constellations} actions={actions} />
       <ForgeModal isOpen={showForge} onClose={() => setShowForge(false)} resources={resources} actions={actions} items={items} voidMatter={voidMatter} />
-      <CardsModal isOpen={showCards} onClose={() => setShowCards(false)} cards={cards} />
+      <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} theme={theme} />
       <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />
       <TavernModal isOpen={showTavern} onClose={() => setShowTavern(false)} gold={gold} actions={actions} />
@@ -162,9 +164,16 @@ function App() {
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
       <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
       <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} opponents={arenaOpponents} onFight={actions.fightArena} />
-      <QuestModal isOpen={showQuests} onClose={() => setShowQuests(false)} quests={quests} onClaim={actions.claimQuest} />
+      {showQuests && (
+        <QuestModal
+          quests={quests}
+          onClose={() => setShowQuests(false)}
+          onClaim={actions.claimQuest}
+        />
+      )}
       <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
-      <AchievementsModal isOpen={showAchievements} onClose={() => setShowAchievements(false)} achievements={achievements} />
+      {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
+      <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
       <GalaxyModal isOpen={showGalaxy} onClose={() => setShowGalaxy(false)} galaxy={galaxy} onConquer={actions.conquerSector} partyPower={heroes.reduce((acc, h) => acc + (h.assignment === 'combat' && !h.isDead ? h.stats.attack : 0), 0)} />
     </div>
