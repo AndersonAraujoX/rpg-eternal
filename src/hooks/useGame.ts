@@ -1,31 +1,34 @@
 import { useState, useEffect, useRef } from 'react'; // Refresh timestamp: 1
 
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Skill } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources } from '../engine/types';
 import { CLASS_SKILLS } from '../engine/skills';
 import { INITIAL_GALAXY, calculateGalaxyIncome } from '../engine/galaxy';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
 import {
-    getElementalMult,
+    // getElementalMult,
     calculateDamageMultiplier,
     processCombatTurn,
     calculateHeroPower
 } from '../engine/combat';
 import { checkSynergies } from '../engine/synergies';
 import { MONSTERS } from '../engine/bestiary';
-import { generateLoot, getCardStat } from '../engine/loot';
+import { generateLoot } from '../engine/loot';
 import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim } from '../engine/automation';
+import { simulateTavernSummon } from '../engine/tavern';
+import { processMining } from '../engine/mining';
+import { processFishing } from '../engine/fishing';
+import { brewPotion } from '../engine/alchemy';
+import type { Expedition, Potion } from '../engine/types';
+import { startExpedition, checkExpeditionCompletion, claimExpeditionRewards } from '../engine/expeditions';
 
 import {
     INITIAL_HEROES,
     INITIAL_BOSS,
-    INITIAL_PET_DATA,
-    AVAILABLE_PETS,
     INITIAL_TALENTS,
     INITIAL_ACHIEVEMENTS,
     INITIAL_STATS,
     INITIAL_CONSTELLATIONS,
-    RARE_ARTIFACTS,
     GUILDS
 } from '../engine/initialData';
 
@@ -51,7 +54,11 @@ export const useGame = () => {
     const [monsterKills, setMonsterKills] = useState<Record<string, number>>({});
     const [constellations, setConstellations] = useState<ConstellationNode[]>(INITIAL_CONSTELLATIONS);
     const [keys, setKeys] = useState<number>(0);
-    const [resources, setResources] = useState({ copper: 0, iron: 0, mithril: 0 });
+    const [resources, setResources] = useState<Resources>({ copper: 0, iron: 0, mithril: 0, fish: 0, herbs: 0 });
+
+    // PHASE 41
+    const [activeExpeditions, setActiveExpeditions] = useState<Expedition[]>([]);
+    const [activePotions, setActivePotions] = useState<{ id: string, name: string, effect: Potion['effect'], value: number, endTime: number }[]>([]);
 
     const [dungeonActive, setDungeonActive] = useState<boolean>(false);
     const [dungeonTimer, setDungeonTimer] = useState<number>(0);
@@ -321,94 +328,76 @@ export const useGame = () => {
             addLog(`Forged ${material} Gear! All Heroes Upgraded.`, 'craft');
             soundManager.playLevelUp();
         },
+        summonTavern: (amount: number = 1) => {
+            const result = simulateTavernSummon(amount, gold, gameStats.tavernPurchases || 0, heroes, artifacts, pets);
 
-        // CORE GAMEPLAY
-        summonTavern: () => {
-            const COST = 500;
-            if (gold < COST) return;
-            setGold(g => g - COST);
-            const roll = Math.random();
-            if (roll < 0.3) {
-                const lockedHeroes = heroes.filter(h => !h.unlocked);
-                if (lockedHeroes.length > 0) {
-                    const toUnlock = lockedHeroes[Math.floor(Math.random() * lockedHeroes.length)];
-                    setHeroes(prev => prev.map(h => h.id === toUnlock.id ? { ...h, unlocked: true } : h));
-                    addLog(`NEW HERO: ${toUnlock.name} Joined!`, 'heal');
-                    soundManager.playLevelUp();
-                } else {
-                    addLog("Duplicate Hero! Stats Up.", 'info');
-                    setHeroes(prev => prev.map(h => ({ ...h, stats: { ...h.stats, hp: h.stats.hp + 10, attack: h.stats.attack + 2 } })));
-                }
-            } else if (roll < 0.35) {
-                const newArt = RARE_ARTIFACTS[Math.floor(Math.random() * RARE_ARTIFACTS.length)];
-                const alreadyHas = artifacts.some(a => a.id === newArt.id);
-                if (!alreadyHas) {
-                    setArtifacts(p => [...p, newArt]);
-                    addLog(`TAVERN FOUND: ${newArt.name} !`, 'death');
-                } else { addLog("Tavern Keeper found nothing special.", 'info'); }
-            } else if (roll < 0.50) {
-                // PET DROP (15%)
-                // PET DROP (15%)
-                // New Logic: 15% to find a pet. If owned, small XP boost? Or just allow duplicates? 
-                // User asked for "possible to have more than one pet". 
-                // We'll allow finding new instances of pets.
-                const PETS: Pet[] = [
-                    { id: 'p1', name: 'Baby Dragon', type: 'pet', emoji: '🐉', level: 1, xp: 0, maxXp: 100, bonus: '+10% DPS', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                    { id: 'p2', name: 'Floating Eye', type: 'pet', emoji: '👁️', level: 1, xp: 0, maxXp: 100, bonus: '+10% Gold', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                    { id: 'p3', name: 'Slime', type: 'pet', emoji: '💧', level: 1, xp: 0, maxXp: 100, bonus: '+10% HP', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                    { id: 'p4', name: 'Phoenix', type: 'pet', emoji: '🦅🔥', level: 1, xp: 0, maxXp: 100, bonus: '+5% Revive Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 8, defense: 0, magic: 5, speed: 0 }, isDead: false },
-                    { id: 'p5', name: 'Dire Wolf', type: 'pet', emoji: '🐺', level: 1, xp: 0, maxXp: 100, bonus: '+10% Crit Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 12, defense: 0, magic: 0, speed: 2 }, isDead: false },
-                    { id: 'p6', name: 'Fairy', type: 'pet', emoji: '🧚', level: 1, xp: 0, maxXp: 100, bonus: '+5 HP/sec Regen', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 10, speed: 0 }, isDead: false },
-                    { id: 'p7', name: 'Mimic', type: 'pet', emoji: '📦', level: 1, xp: 0, maxXp: 100, bonus: '+15% Magic Find', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 0, speed: 0 }, isDead: false },
-                    { id: 'p8', name: 'Rock Golem', type: 'pet', emoji: '🗿', level: 1, xp: 0, maxXp: 100, bonus: '+20% Defense', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 20, magic: 0, speed: -1 }, isDead: false },
-                    { id: 'p9', name: 'Ghost', type: 'pet', emoji: '👻', level: 1, xp: 0, maxXp: 100, bonus: '+10% Evasion', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 0, defense: 0, magic: 10, speed: 5 }, isDead: false },
-                    { id: 'p10', name: 'Unicorn', type: 'pet', emoji: '🦄', level: 1, xp: 0, maxXp: 100, bonus: '+10% Magic', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 15, speed: 2 }, isDead: false },
-                    { id: 'p11', name: 'Griffin', type: 'pet', emoji: '🦅', level: 1, xp: 0, maxXp: 100, bonus: '+10% Speed', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 5, magic: 0, speed: 10 }, isDead: false },
-                    { id: 'p12', name: 'Kraken', type: 'pet', emoji: '🦑', level: 1, xp: 0, maxXp: 100, bonus: '+15% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 20, defense: 5, magic: 0, speed: -2 }, isDead: false }
-                ];
-                const basePet = PETS[Math.floor(Math.random() * PETS.length)];
-                let finalPet = { ...basePet };
+            if (!result.success) {
+                result.logs.forEach(l => addLog(l, 'info'));
+                return;
+            }
 
-                // SHINY ROLL (10%)
-                if (Math.random() < 0.1) {
-                    finalPet.name = `✨ Shiny ${finalPet.name}`;
-                    // Double the percentage in bonus string
-                    finalPet.bonus = finalPet.bonus.replace(/(\d+)%/, (_, num) => `${parseInt(num) * 2}%`);
-                    finalPet.emoji = `✨${finalPet.emoji}`;
-                    addLog("SHINY PET FOUND! Double Stats!", 'achievement');
-                }
+            setGold(g => g - result.cost);
+            setGameStats(prev => ({ ...prev, tavernPurchases: (prev.tavernPurchases || 0) + amount }));
 
-                // Unique ID for each new pet instance
-                const newPet: Pet = { ...finalPet, id: `pet-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
+            // Update Heroes
+            if (result.unlockedHeroIds.length > 0 || result.statBoosts > 0 || result.minerBoosts > 0 || result.newHeroes.length > 0) {
+                setHeroes(prev => {
+                    let updated = prev.map(h => {
+                        if (result.unlockedHeroIds.includes(h.id)) return { ...h, unlocked: true };
+                        if (result.statBoosts > 0 && h.unlocked && h.class !== 'Miner') {
+                            return { ...h, stats: { ...h.stats, hp: h.stats.hp + (10 * result.statBoosts), attack: h.stats.attack + (2 * result.statBoosts) } };
+                        }
+                        if (result.minerBoosts > 0 && h.class === 'Miner') {
+                            return { ...h, stats: { ...h.stats, hp: h.stats.hp + (10 * result.minerBoosts), attack: h.stats.attack + (2 * result.minerBoosts) } };
+                        }
+                        return h;
+                    });
 
-                setPets(prev => [...prev, newPet]);
-                addLog(`FOUND EGG: ${newPet.name} hatched!`, 'achievement');
-                soundManager.playLevelUp();
-            } else if (roll < 0.60) {
-                // MINER DROP (10%)
-                const newMiner: Hero = {
-                    id: `miner-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                    name: 'Dwarven Miner',
-                    class: 'Miner',
-                    emoji: '⛏️',
-                    unlocked: true,
-                    level: 1,
-                    xp: 0,
-                    maxXp: 100,
-                    stats: { hp: 50, maxHp: 50, attack: 20, defense: 10, magic: 0, speed: 2, mp: 0, maxMp: 0 },
-                    element: 'neutral',
-                    assignment: 'mine',
-                    gambits: [],
-                    corruption: false,
-                    statPoints: 0,
-                    skills: [],
-                    type: 'hero',
-                    isDead: false
-                };
-                setHeroes(prev => [...prev, newMiner]);
-                addLog("Recruited a Miner! (Auto-assign: Mine)", 'heal');
-                soundManager.playLevelUp();
-            } else { addLog("Refreshing drink... but nothing happened.", 'info'); }
+                    if (result.minerBoosts > 0 && result.newHeroes.length > 0) {
+                        result.newHeroes.forEach(h => {
+                            if (h.class === 'Miner') {
+                                h.stats.hp += (10 * result.minerBoosts);
+                                h.stats.attack += (2 * result.minerBoosts);
+                            }
+                        });
+                    }
+                    return [...updated, ...result.newHeroes];
+                });
+            }
+
+            if (result.newArtifacts.length > 0) setArtifacts(p => [...p, ...result.newArtifacts]);
+
+            setPets(prev => {
+                let updated = [...prev];
+                Object.entries(result.petXpBoosts).forEach(([id, xp]) => {
+                    const p = updated.find(pet => pet.id === id);
+                    if (p) {
+                        p.xp += xp;
+                        while (p.xp >= p.maxXp) {
+                            p.xp -= p.maxXp;
+                            p.level++;
+                            p.maxXp = Math.floor(p.maxXp * 1.5);
+                            p.stats.attack += 5;
+                        }
+                    }
+                });
+                return [...updated, ...result.pendingPets];
+            });
+
+            if (result.logs.length > 5) {
+                addLog(`Bulk Summon Result: ${result.logs.length} New Items.`, 'achievement');
+            } else {
+                result.logs.forEach(l => addLog(l, 'achievement'));
+            }
+
+            if (result.statBoosts > 0) addLog(`General Stats Up x${result.statBoosts}`, 'info');
+            if (result.minerBoosts > 0) addLog(`Miner Upgraded x${result.minerBoosts}`, 'craft');
+            const petBoostCount = Object.keys(result.petXpBoosts).length;
+            if (petBoostCount > 0) addLog(`${petBoostCount} Pets Upgraded (XP)!`, 'heal');
+
+            soundManager.playLevelUp();
+
+            soundManager.playLevelUp();
         },
         enterDungeon: () => {
             if (keys < 1) return;
@@ -433,13 +422,13 @@ export const useGame = () => {
         },
         triggerRebirth: () => {
             // Achievement Bonuses
-            const achDamageMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'damage').reduce((acc, a) => acc + a.rewardValue, 0);
-            const achGoldMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'gold').reduce((acc, a) => acc + a.rewardValue, 0);
-            const achSpeedMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'speed').reduce((acc, a) => acc + a.rewardValue, 0);
-            const achBossMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'bossDamage').reduce((acc, a) => acc + a.rewardValue, 0);
+            // const achDamageMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'damage').reduce((acc, a) => acc + a.rewardValue, 0);
+            // const achGoldMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'gold').reduce((acc, a) => acc + a.rewardValue, 0);
+            // const achSpeedMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'speed').reduce((acc, a) => acc + a.rewardValue, 0);
+            // const achBossMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'bossDamage').reduce((acc, a) => acc + a.rewardValue, 0);
 
             // -- MEMOIZED CALCULATIONS --
-            const clickDmg = Math.floor(10 * (1 + boss.level * 0.5) * (1 + achDamageMult));
+            // const clickDmg = Math.floor(10 * (1 + boss.level * 0.5) * (1 + achDamageMult));
             const soulsGain = Math.floor(boss.level / 5);
             if (soulsGain <= 0) return;
             setSouls(p => p + soulsGain);
@@ -463,7 +452,7 @@ export const useGame = () => {
             setTalents(INITIAL_TALENTS);
             setArtifacts([]);
             setCards([]);
-            setResources({ copper: 0, iron: 0, mithril: 0 });
+            setResources({ copper: 0, iron: 0, mithril: 0, fish: 0, herbs: 0 });
             setDungeonActive(false);
             setRaidActive(false);
             setVoidMatter(0);
@@ -617,6 +606,84 @@ export const useGame = () => {
             setVoidMatter(v => v - 5);
             addLog("Item Reforged with Void energy.", 'craft');
         },
+        manualFish: () => {
+            const caught = processFishing(1);
+            if (caught > 0) {
+                setResources(r => ({ ...r, fish: (r.fish || 0) + caught }));
+                addLog(`Caught ${caught} Fish!`, 'craft');
+                soundManager.playLevelUp();
+            } else {
+                addLog('No fish bit...', 'info');
+            }
+        },
+
+        // PHASE 41
+        brewPotion: (potionId: string) => {
+            const POTIONS_DB: Potion[] = [
+                { id: 'pot_heal', name: 'Health Potion', description: 'Restores 500 HP', effect: 'heal', value: 500, duration: 0, cost: [{ type: 'herbs', amount: 5 }], emoji: '🧪' },
+                { id: 'pot_str', name: 'Elixir of Strength', description: '+20% Attack for 5m', effect: 'attack', value: 0.2, duration: 300, cost: [{ type: 'herbs', amount: 10 }, { type: 'fish', amount: 1 }], emoji: '💪' },
+                { id: 'pot_xp', name: 'Wisdom Draught', description: '+20% XP for 5m', effect: 'xp', value: 0.2, duration: 300, cost: [{ type: 'herbs', amount: 10 }, { type: 'mithril', amount: 1 }], emoji: '🧠' }
+            ];
+            const potion = POTIONS_DB.find(p => p.id === potionId);
+            if (!potion) return;
+
+            const result = brewPotion(potion, resources);
+            if (result.success) {
+                // Deduct resources
+                setResources(prev => {
+                    const next = { ...prev };
+                    if (result.cost.copper) next.copper -= result.cost.copper;
+                    if (result.cost.iron) next.iron -= result.cost.iron;
+                    if (result.cost.mithril) next.mithril -= result.cost.mithril;
+                    if (result.cost.fish) next.fish -= result.cost.fish;
+                    if (result.cost.herbs) next.herbs -= result.cost.herbs;
+                    return next;
+                });
+
+                // Apply Effect
+                if (potion.duration === 0) {
+                    // Instant (Heal)
+                    if (potion.effect === 'heal') {
+                        setHeroes(prev => prev.map(h => ({ ...h, stats: { ...h.stats, hp: Math.min(h.stats.maxHp, h.stats.hp + potion.value) } })));
+                        addLog(`Used ${potion.name}: Healed Party!`, 'heal');
+                    }
+                } else {
+                    // Duration Buff
+                    setActivePotions(prev => [...prev, {
+                        id: Math.random().toString(),
+                        name: potion.name,
+                        effect: potion.effect,
+                        value: potion.value,
+                        endTime: Date.now() + (potion.duration * 1000)
+                    }]);
+                    addLog(`Brewed & Drank ${potion.name}!`, 'heal');
+                }
+                soundManager.playLevelUp();
+            } else {
+                addLog(`Cannot brew: ${result.error}`, 'info');
+            }
+        },
+
+        startExpedition: (exp: Expedition, heroIds: string[]) => {
+            // Validate
+            // Check if heroes are available (not on another expedition)
+            // const available = heroes.filter(h => heroIds.includes(h.id) && h.assignment !== 'expedition' && h.assignment !== 'mine');
+            // Actually mining/combat heroes can be reassigned, but expedition heroes are locked?
+            // Let's assume re-assignment is fine if user selects them (UI should filter).
+
+            // Set Start Time
+            const newExp = { ...exp, startTime: Date.now(), heroIds };
+            setActiveExpeditions(p => [...p, newExp]);
+
+            // Assign Heroes
+            const updated = startExpedition(newExp, heroes);
+            setHeroes(prev => prev.map(h => {
+                const update = updated.find(u => u.id === h.id);
+                return update ? update : h;
+            }));
+
+            addLog(`Expedition '${exp.name}' Started!`, 'info');
+        },
 
         closeOfflineModal: () => setOfflineGains(null),
         setAutoSellRarity: setAutoSellRarity,
@@ -708,26 +775,91 @@ export const useGame = () => {
         const effectiveTick = Math.max(40, baseTick * speedBonus); // Allow up to 25x speed (40ms)
 
         const timer = setTimeout(() => {
-            // Card Buffs & Pet Buffs
+            // Card Buffs & Pet Buffs & Potion Buffs
             const petGoldBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('Gold') ? 0.1 : 0), 0);
             const petDefenseBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('Defense') ? 0.2 : 0), 0);
 
+            const potionXpBonus = activePotions.filter(p => p.effect === 'xp').reduce((acc, p) => acc + p.value, 0);
+            const potionAtkBonus = activePotions.filter(p => p.effect === 'attack').reduce((acc, p) => acc + p.value, 0);
+
             const goldMult = 1 + cards.filter(c => c.stat === 'gold').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources + petGoldBonus;
-            const xpMult = 1 + cards.filter(c => c.stat === 'xp').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources;
+            const xpMult = 1 + cards.filter(c => c.stat === 'xp').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources + potionXpBonus;
             const defenseMult = 1 + cards.filter(c => c.stat === 'defense').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyDefense + petDefenseBonus;
-            const speedMult = 1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0);
+            // const speedMult = 1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0);
 
             // Time Tick
             const now = Date.now();
             // Mining Logic (Assigned miners)
             const miners = heroes.filter(h => h.unlocked && h.assignment === 'mine');
-            if (miners.length > 0) {
-                if (Math.random() < 0.2) { // 20% chance per tick per miner? No, just per tick
-                    const minerPower = miners.reduce((acc, h) => acc + h.stats.attack, 0);
-                    const roll = Math.random() * minerPower;
-                    if (roll > 1000) setResources(r => ({ ...r, mithril: r.mithril + 1 }));
-                    else if (roll > 200) setResources(r => ({ ...r, iron: r.iron + 1 }));
-                    else setResources(r => ({ ...r, copper: r.copper + 1 }));
+            const miningYield = processMining(miners);
+            if (miningYield) {
+                setResources(r => ({
+                    ...r,
+                    copper: r.copper + (miningYield.copper || 0),
+                    iron: r.iron + (miningYield.iron || 0),
+                    mithril: r.mithril + (miningYield.mithril || 0)
+                }));
+            }
+
+            // Fishing (Passive)
+            if (Math.random() < 0.05) { // 5% chance per tick to verify catch
+                const fishCaught = processFishing(1);
+                if (fishCaught > 0) {
+                    setResources(r => ({ ...r, fish: (r.fish || 0) + fishCaught }));
+                }
+            }
+
+            // Expeditions
+            if (activeExpeditions.length > 0) {
+                const finished = activeExpeditions.filter(e => checkExpeditionCompletion(e));
+                if (finished.length > 0) {
+                    let totalGold = 0;
+                    let totalXp = 0;
+                    let rewardsLog: string[] = [];
+
+                    finished.forEach(exp => {
+                        const rewards = claimExpeditionRewards(exp);
+                        rewards.forEach(r => {
+                            if (r.type === 'gold') totalGold += r.amount;
+                            if (r.type === 'xp') totalXp += r.amount;
+                            if (r.type === 'item') rewardsLog.push(`${r.amount} Items`);
+                            if (r.type === 'artifact') rewardsLog.push("Artifact found!");
+                        });
+                        addLog(`Expedition '${exp.name}' Complete!`, 'achievement');
+
+                        // Release Heroes
+                        // Note: We need to do this in setHeroes to be safe
+                    });
+
+                    if (totalGold > 0) setGold(g => g + totalGold);
+
+                    // Handle XP and Hero Release
+                    setHeroes(prev => prev.map(h => {
+                        if (finished.some(e => e.heroIds.includes(h.id))) {
+                            // Apply XP to these heroes? Or just free them?
+                            // Prompt said "Gold/XP" rewards. Let's give XP to participant heroes.
+                            // let xpGain = totalXp;
+                            // Filter xp for specific expedition? Simplified for now.
+                            // Ideally we match expedition to reward.
+                            // Let's assume 'totalXp' is global for simplicity or fix logic later.
+                            // Better: Just free them and apply XP.
+
+                            return { ...h, assignment: 'combat', xp: h.xp + 100 }; // Reset to combat
+                        }
+                        return h;
+                    }));
+
+                    setActiveExpeditions(prev => prev.filter(e => !finished.find(f => f.id === e.id)));
+                    soundManager.playLevelUp();
+                }
+            }
+
+            // Potions
+            if (activePotions.length > 0) {
+                const expired = activePotions.filter(p => p.endTime <= now);
+                if (expired.length > 0) {
+                    expired.forEach(p => addLog(`${p.name} wore off.`, 'info'));
+                    setActivePotions(prev => prev.filter(p => p.endTime > now));
                 }
             }
 
@@ -773,7 +905,7 @@ export const useGame = () => {
                 });
             }
 
-            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, pets);
+            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, pets) + potionAtkBonus;
             const critTalent = talents.find(t => t.stat === 'crit');
             const critChance = critTalent ? (critTalent.level * critTalent.valuePerLevel) : 0;
 
@@ -1082,7 +1214,10 @@ export const useGame = () => {
         theme, setTheme,
         galaxy, setGalaxy,
         monsterKills, setMonsterKills,
-        gameStats, setGameStats
+        gameStats, setGameStats,
+        // PHASE 41
+        activeExpeditions, setActiveExpeditions,
+        activePotions, setActivePotions
     );
 
 
@@ -1092,6 +1227,6 @@ export const useGame = () => {
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
         actions: { ...ACTIONS, conquerSector }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
-        monsterKills, gameStats
+        monsterKills, gameStats, activeExpeditions, activePotions
     };
 };

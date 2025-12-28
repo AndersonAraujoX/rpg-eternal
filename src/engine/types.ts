@@ -124,11 +124,11 @@ export interface Skill {
 }
 
 export interface Hero extends Entity {
-    class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner';
+    class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate';
     emoji: string;
     unlocked: boolean;
     element: ElementType;
-    assignment: 'combat' | 'mine';
+    assignment: 'combat' | 'mine' | 'expedition';
     gambits: Gambit[];
     corruption: boolean;
     level: number;
@@ -204,11 +204,48 @@ export interface Boss extends Entity {
     emoji: string;
 }
 
+
 export type Resources = {
     copper: number;
     iron: number;
     mithril: number;
+    fish: number;
+    herbs: number;
 };
+
+export interface Potion {
+    id: string;
+    name: string;
+    description: string;
+    effect: 'heal' | 'attack' | 'xp' | 'mana';
+    value: number; // Effectiveness
+    duration: number; // Seconds (0 for instant)
+    cost: { type: keyof Resources, amount: number }[];
+    emoji: string;
+}
+
+export const POTIONS: Potion[] = [
+    { id: 'pot_heal', name: 'Health Potion', description: 'Restores 500 HP', effect: 'heal', value: 500, duration: 0, cost: [{ type: 'herbs', amount: 5 }], emoji: '🧪' },
+    { id: 'pot_str', name: 'Elixir of Strength', description: '+20% Attack for 5m', effect: 'attack', value: 0.2, duration: 300, cost: [{ type: 'herbs', amount: 10 }, { type: 'fish', amount: 1 }], emoji: '💪' },
+    { id: 'pot_xp', name: 'Wisdom Draught', description: '+20% XP for 5m', effect: 'xp', value: 0.2, duration: 300, cost: [{ type: 'herbs', amount: 10 }, { type: 'mithril', amount: 1 }], emoji: '🧠' }
+];
+
+export interface Expedition {
+    id: string;
+    name: string;
+    description: string;
+    duration: number; // Seconds
+    difficulty: number;
+    rewards: { type: 'gold' | 'xp' | 'item' | 'artifact', min: number, max: number }[];
+    heroIds: string[]; // Assigned heroes
+    startTime?: number; // Timestamp
+}
+
+export const EXPEDITIONS: Expedition[] = [
+    { id: 'exp_forest', name: 'Scout the Forest', description: 'Quick patrol.', duration: 300, difficulty: 1, rewards: [{ type: 'gold', min: 100, max: 500 }, { type: 'xp', min: 100, max: 200 }], heroIds: [] },
+    { id: 'exp_cave', name: 'Spelunking', description: 'Search for shiny rocks.', duration: 1800, difficulty: 5, rewards: [{ type: 'gold', min: 1000, max: 2000 }, { type: 'item', min: 1, max: 2 }], heroIds: [] },
+    { id: 'exp_ruins', name: 'Ancient Ruins', description: 'High risk, high reward.', duration: 14400, difficulty: 20, rewards: [{ type: 'gold', min: 5000, max: 10000 }, { type: 'artifact', min: 0, max: 1 }], heroIds: [] } // 4h
+];
 
 export interface Tower {
     floor: number;

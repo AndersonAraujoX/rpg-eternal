@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Quest, Rune, Achievement, GalaxySector, StarlightUpgrade, GameStats } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Quest, Rune, Achievement, GalaxySector, StarlightUpgrade, GameStats, Resources } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../engine/initialData';
 
 export const usePersistence = (
@@ -27,8 +27,8 @@ export const usePersistence = (
     setConstellations: React.Dispatch<React.SetStateAction<ConstellationNode[]>>,
     keys: number,
     setKeys: React.Dispatch<React.SetStateAction<number>>,
-    resources: { copper: number; iron: number; mithril: number },
-    setResources: React.Dispatch<React.SetStateAction<{ copper: number; iron: number; mithril: number }>>,
+    resources: Resources,
+    setResources: React.Dispatch<React.SetStateAction<Resources>>,
     tower: Tower,
     setTower: React.Dispatch<React.SetStateAction<Tower>>,
     guild: Guild | null,
@@ -62,6 +62,11 @@ export const usePersistence = (
     setMonsterKills: React.Dispatch<React.SetStateAction<Record<string, number>>>,
     gameStats: GameStats,
     setGameStats: React.Dispatch<React.SetStateAction<GameStats>>,
+    // PHASE 41
+    activeExpeditions: { id: string }[],
+    setActiveExpeditions: React.Dispatch<React.SetStateAction<any[]>>,
+    activePotions: any[],
+    setActivePotions: React.Dispatch<React.SetStateAction<any[]>>,
 
 ) => {
 
@@ -117,7 +122,11 @@ export const usePersistence = (
                 if (state.theme) setTheme(state.theme);
                 if (state.galaxy) setGalaxy(state.galaxy); // Galaxy Load
                 if (state.monsterKills) setMonsterKills(state.monsterKills);
+                if (state.monsterKills) setMonsterKills(state.monsterKills);
                 if (state.gameStats) setGameStats(state.gameStats);
+                if (state.activeExpeditions) setActiveExpeditions(state.activeExpeditions);
+                if (state.activePotions) setActivePotions(state.activePotions);
+
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
                     setAchievements(prev => {
@@ -172,9 +181,10 @@ export const usePersistence = (
         const state = {
             heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys,
             resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight,
-            starlightUpgrades, theme, galaxy, monsterKills, gameStats, // Galaxy Save
+            starlightUpgrades, theme, galaxy, monsterKills, gameStats,
+            activeExpeditions, activePotions,
             lastSaveTime: Date.now()
         };
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats]);
+    }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats, activeExpeditions, activePotions]);
 };

@@ -25,6 +25,11 @@ import { AchievementsModal } from './components/modals/AchievementsModal';
 import { StarlightModal } from './components/modals/StarlightModal';
 import { LogModal } from './components/modals/LogModal';
 import { GalaxyModal } from './components/modals/GalaxyModal';
+// PHASE 41
+import { FishingModal } from './components/modals/FishingModal';
+import { AlchemyModal } from './components/modals/AlchemyModal';
+import { ExpeditionsModal } from './components/modals/ExpeditionsModal';
+
 import './index.css';
 
 function App() {
@@ -33,7 +38,8 @@ function App() {
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-    actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats
+    actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
+    activeExpeditions, activePotions
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
@@ -55,6 +61,11 @@ function App() {
   const [showLog, setShowLog] = useState(false);
   const [showStarlight, setShowStarlight] = useState(false);
   const [showGalaxy, setShowGalaxy] = useState(false);
+  // PHASE 41
+  const [showFishing, setShowFishing] = useState(false);
+  const [showAlchemy, setShowAlchemy] = useState(false);
+  const [showExpeditions, setShowExpeditions] = useState(false);
+
   const [importString, setImportString] = useState('');
 
   // Keyboard Shortcuts
@@ -68,7 +79,9 @@ function App() {
         setShowSettings(false); setShowForge(false); setShowInventory(false); setShowTower(false);
         setShowGuild(false); setShowVoid(false); setShowArena(false); setShowQuests(false);
         setShowRunes(false); setShowAchievements(false); setShowStarlight(false); setShowHelp(false);
-        setShowLog(false);
+        setShowGuild(false); setShowVoid(false); setShowArena(false); setShowQuests(false);
+        setShowRunes(false); setShowAchievements(false); setShowStarlight(false); setShowHelp(false);
+        setShowLog(false); setShowFishing(false); setShowAlchemy(false); setShowExpeditions(false);
       }
       if (e.key.toLowerCase() === 's') setShowShop(prev => !prev);
       if (e.key.toLowerCase() === 'i') setShowInventory(prev => !prev);
@@ -176,6 +189,13 @@ function App() {
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
       <GalaxyModal isOpen={showGalaxy} onClose={() => setShowGalaxy(false)} galaxy={galaxy} onConquer={actions.conquerSector} partyPower={partyPower} starlightUpgrades={starlightUpgrades} />
+
+      {/* PHASE 41 Modals */}
+      <FishingModal isOpen={showFishing} onClose={() => setShowFishing(false)} fishCount={resources.fish || 0} setFish={() => actions.manualFish && actions.manualFish()} />
+
+      <AlchemyModal isOpen={showAlchemy} onClose={() => setShowAlchemy(false)} resources={resources} activePotions={activePotions || []} brewPotion={actions.brewPotion} />
+
+      <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} />
     </div>
   );
 }
