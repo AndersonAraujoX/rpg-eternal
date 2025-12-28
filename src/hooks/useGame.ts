@@ -914,148 +914,148 @@ export const useGame = () => {
                     }
                     return { ...p, xp };
                 });
-            }
 
-            if (boss.emoji !== '💀' && boss.name !== 'Raid Boss' && boss.name !== 'Void Entity') {
-                // Drop Card Logic
-                if (Math.random() < 0.05) { // 5% Chance
-                    // ... existing card logic ...
-                    const card = MONSTERS.find(m => m.name === boss.name);
-                    if (card) {
-                        setCards(prev => {
-                            const existing = prev.find(c => c.monsterName === boss.name);
-                            if (existing) return prev.map(c => c.monsterName === boss.name ? { ...c, count: c.count + 1 } : c);
-                            // Determine stat
-                            const stats: MonsterCard['stat'][] = ['attack', 'defense', 'gold', 'xp', 'speed'];
-                            const stat = stats[Math.floor(Math.random() * stats.length)];
-                            return [...prev, { id: card.emoji, monsterName: card.name, count: 1, stat, value: 0.01 }];
-                        });
-                        addLog(`Found ${boss.name} Card!`, 'achievement');
+
+                if (boss.emoji !== '💀' && boss.name !== 'Raid Boss' && boss.name !== 'Void Entity') {
+                    // Drop Card Logic
+                    if (Math.random() < 0.05) { // 5% Chance
+                        // ... existing card logic ...
+                        const card = MONSTERS.find(m => m.name === boss.name);
+                        if (card) {
+                            setCards(prev => {
+                                const existing = prev.find(c => c.monsterName === boss.name);
+                                if (existing) return prev.map(c => c.monsterName === boss.name ? { ...c, count: c.count + 1 } : c);
+                                // Determine stat
+                                const stats: MonsterCard['stat'][] = ['attack', 'defense', 'gold', 'xp', 'speed'];
+                                const stat = stats[Math.floor(Math.random() * stats.length)];
+                                return [...prev, { id: card.emoji, monsterName: card.name, count: 1, stat, value: 0.01 }];
+                            });
+                            addLog(`Found ${boss.name} Card!`, 'achievement');
+                        }
                     }
+
+                    // Track Kills (Bestiary & Stats)
+                    setMonsterKills(prev => ({ ...prev, [boss.name]: (prev[boss.name] || 0) + 1 }));
+                    setGameStats(prev => ({
+                        ...prev,
+                        totalKills: prev.totalKills + 1,
+                        bossKills: boss.name.includes('Boss') ? prev.bossKills + 1 : prev.bossKills
+                    }));
+
+                    // Quest Logic: Track Kills
+                    setQuests(prev => prev.map(q => {
+                        if (!q.isCompleted && q.description.includes('Kill') && !q.description.includes('Boss')) {
+                            return { ...q, progress: Math.min(q.target, q.progress + 1), isCompleted: q.progress + 1 >= q.target };
+                        }
+                        return q;
+                    }));
                 }
 
-                // Track Kills (Bestiary & Stats)
-                setMonsterKills(prev => ({ ...prev, [boss.name]: (prev[boss.name] || 0) + 1 }));
-                setGameStats(prev => ({
-                    ...prev,
-                    totalKills: prev.totalKills + 1,
-                    bossKills: boss.name.includes('Boss') ? prev.bossKills + 1 : prev.bossKills
-                }));
+                if (raidActive) {
+                    addLog("WORLD EATER DEFEATED!", 'death');
+                    setGold(g => g + 50000);
+                    setDivinity(d => d + 1);
+                    setRaidActive(false);
+                    setBoss(INITIAL_BOSS);
+                } else if (voidActive) {
+                    addLog("VOID ENTITY VANQUISHED!", 'death');
+                    setVoidMatter(v => v + 1);
+                    setVoidActive(false);
+                    setBoss(INITIAL_BOSS);
+                } else if (dungeonActive) {
+                    setBoss({ ...boss, stats: { ...boss.stats, hp: boss.stats.maxHp, maxHp: boss.stats.maxHp + 50 } });
+                } else {
+                    const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+                    // Biome Element Logic
+                    const lvl = boss.level; // next level actually
+                    let el: ElementType = 'neutral';
+                    if (lvl > 40) el = 'fire';
+                    else if (lvl > 20) el = 'water';
+                    else if (lvl % 3 === 1) el = 'nature';
 
-                // Quest Logic: Track Kills
-                setQuests(prev => prev.map(q => {
-                    if (!q.isCompleted && q.description.includes('Kill') && !q.description.includes('Boss')) {
-                        return { ...q, progress: Math.min(q.target, q.progress + 1), isCompleted: q.progress + 1 >= q.target };
-                    }
-                    return q;
-                }));
-            }
+                    setBoss(prev => ({
+                        ...prev, level: prev.level + 1, name: monster.name, emoji: monster.emoji, element: el,
+                        stats: { ...prev.stats, maxHp: Math.floor(prev.stats.maxHp * 1.2), hp: Math.floor(prev.stats.maxHp * 1.2) }
+                    }));
+                }
 
-            if (raidActive) {
-                addLog("WORLD EATER DEFEATED!", 'death');
-                setGold(g => g + 50000);
-                setDivinity(d => d + 1);
-                setRaidActive(false);
-                setBoss(INITIAL_BOSS);
-            } else if (voidActive) {
-                addLog("VOID ENTITY VANQUISHED!", 'death');
-                setVoidMatter(v => v + 1);
-                setVoidActive(false);
-                setBoss(INITIAL_BOSS);
-            } else if (dungeonActive) {
-                setBoss({ ...boss, stats: { ...boss.stats, hp: boss.stats.maxHp, maxHp: boss.stats.maxHp + 50 } });
+                finalHeroes = finalHeroes.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } }));
+                soundManager.playLevelUp();
+
+                if (tower.active) {
+                    addLog(`Floor ${tower.floor} Cleared!`, 'death');
+                    setTower(t => ({ ...t, floor: t.floor + 1, maxFloor: Math.max(t.maxFloor, t.floor + 1) }));
+                    // Next floor immediately
+                    setTimeout(() => ACTIONS.enterTower(), 1000);
+                }
+
             } else {
-                const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
-                // Biome Element Logic
-                const lvl = boss.level; // next level actually
-                let el: ElementType = 'neutral';
-                if (lvl > 40) el = 'fire';
-                else if (lvl > 20) el = 'water';
-                else if (lvl % 3 === 1) el = 'nature';
+                setBoss(p => ({ ...p, stats: { ...p.stats, hp: newBossHp } }));
+                // Calculate Party Power
+                let currentPower = 0;
+                finalHeroes.forEach(h => {
+                    if (h.assignment === 'combat' && !h.isDead) {
+                        currentPower += calculateHeroPower(h);
+                    }
+                });
+                setPartyPower(currentPower);
 
-                setBoss(prev => ({
-                    ...prev, level: prev.level + 1, name: monster.name, emoji: monster.emoji, element: el,
-                    stats: { ...prev.stats, maxHp: Math.floor(prev.stats.maxHp * 1.2), hp: Math.floor(prev.stats.maxHp * 1.2) }
+                // Update Playtime
+                setGameStats(prev => ({ ...prev, playTime: prev.playTime + (effectiveTick / 1000) }));
+
+                // Check Achievements
+                setAchievements(prev => prev.map(ach => {
+                    if (ach.isUnlocked) return ach;
+                    let unlocked = false;
+                    if (ach.condition.type === 'kills' && gameStats.totalKills >= ach.condition.value) unlocked = true;
+                    if (ach.condition.type === 'bossKills' && gameStats.bossKills >= ach.condition.value) unlocked = true;
+                    if (ach.condition.type === 'gold' && gameStats.totalGoldEarned >= ach.condition.value) unlocked = true;
+                    if (ach.condition.type === 'clicks' && gameStats.clicks >= ach.condition.value) unlocked = true;
+
+                    if (unlocked) {
+                        addLog(`ACHIEVEMENT UNLOCKED: ${ach.name}!`, 'achievement');
+                        soundManager.playLevelUp(); // Re-use lvl up sound
+                        return { ...ach, isUnlocked: true };
+                    }
+                    return ach;
                 }));
             }
 
-            finalHeroes = finalHeroes.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } }));
-            soundManager.playLevelUp();
+            // Calc Power
+            const currentPwr = finalHeroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + calculateHeroPower(h), 0);
+            setPartyPower(currentPwr);
 
-            if (tower.active) {
-                addLog(`Floor ${tower.floor} Cleared!`, 'death');
-                setTower(t => ({ ...t, floor: t.floor + 1, maxFloor: Math.max(t.maxFloor, t.floor + 1) }));
-                // Next floor immediately
-                setTimeout(() => ACTIONS.enterTower(), 1000);
-            }
-
-        } else {
-            setBoss(p => ({ ...p, stats: { ...p.stats, hp: newBossHp } }));
-// Calculate Party Power
-let currentPower = 0;
-finalHeroes.forEach(h => {
-    if (h.assignment === 'combat' && !h.isDead) {
-        currentPower += calculateHeroPower(h);
-    }
-});
-setPartyPower(currentPower);
-
-// Update Playtime
-setGameStats(prev => ({ ...prev, playTime: prev.playTime + (effectiveTick / 1000) }));
-
-// Check Achievements
-setAchievements(prev => prev.map(ach => {
-    if (ach.isUnlocked) return ach;
-    let unlocked = false;
-    if (ach.condition.type === 'kills' && gameStats.totalKills >= ach.condition.value) unlocked = true;
-    if (ach.condition.type === 'bossKills' && gameStats.bossKills >= ach.condition.value) unlocked = true;
-    if (ach.condition.type === 'gold' && gameStats.totalGoldEarned >= ach.condition.value) unlocked = true;
-    if (ach.condition.type === 'clicks' && gameStats.clicks >= ach.condition.value) unlocked = true;
-
-    if (unlocked) {
-        addLog(`ACHIEVEMENT UNLOCKED: ${ach.name}!`, 'achievement');
-        soundManager.playLevelUp(); // Re-use lvl up sound
-        return { ...ach, isUnlocked: true };
-    }
-    return ach;
-}));
-            }
-
-// Calc Power
-const currentPwr = finalHeroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + calculateHeroPower(h), 0);
-setPartyPower(currentPwr);
-
-setHeroes(finalHeroes);
+            setHeroes(finalHeroes);
         }, effectiveTick / (1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0)));
 
-return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
     }, [heroes, boss, gameSpeed, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, dungeonActive, raidActive, resources]);
 
 
 
-usePersistence(
-    heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
-    divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
-    cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
-    tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
-    arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
-    runes, setRunes, achievements, setAchievements,
-    eternalFragments, setEternalFragments,
-    starlight, setStarlight,
-    starlightUpgrades, setStarlightUpgrades,
-    theme, setTheme,
-    galaxy, setGalaxy,
-    monsterKills, setMonsterKills,
-    gameStats, setGameStats
-);
+    usePersistence(
+        heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
+        divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
+        cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
+        tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
+        arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
+        runes, setRunes, achievements, setAchievements,
+        eternalFragments, setEternalFragments,
+        starlight, setStarlight,
+        starlightUpgrades, setStarlightUpgrades,
+        theme, setTheme,
+        galaxy, setGalaxy,
+        monsterKills, setMonsterKills,
+        gameStats, setGameStats
+    );
 
 
-return {
-    heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
-    talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
-    ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-    arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-    actions: { ...ACTIONS, conquerSector }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
-    monsterKills, gameStats
-};
+    return {
+        heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
+        talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
+        ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
+        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
+        actions: { ...ACTIONS, conquerSector }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
+        monsterKills, gameStats
+    };
 };
