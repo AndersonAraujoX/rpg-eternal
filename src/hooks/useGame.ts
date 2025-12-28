@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, WorldBossState } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement } from '../engine/types';
 import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
@@ -126,7 +126,6 @@ export const useGame = () => {
     const [eternalFragments, setEternalFragments] = useState(0);
     const [starlight, setStarlight] = useState(0);
     const [starlightUpgrades, setStarlightUpgrades] = useState<string[]>([]);
-    const [worldBoss, setWorldBoss] = useState<WorldBossState>({ active: false, timer: 0, hp: 0, maxHp: 0, boss: INITIAL_BOSS });
     const [theme, setTheme] = useState('default');
 
     // LOAD
@@ -486,30 +485,6 @@ export const useGame = () => {
         resetSave: () => { localStorage.clear(); window.location.reload(); },
         exportSave: () => btoa(localStorage.getItem('rpg_eternal_save_v6') || ''),
         importSave: (str: string) => { try { JSON.parse(atob(str)); localStorage.setItem('rpg_eternal_save_v6', atob(str)); window.location.reload(); } catch { alert("Invalid Save"); } },
-        summonWorldBoss: () => {
-            const wbHP = boss.stats.maxHp * 50; // Huge HP
-            setWorldBoss({
-                active: true,
-                boss: { ...INITIAL_BOSS, name: 'Void Titan', element: 'dark', level: 99 },
-                hp: wbHP,
-                maxHp: wbHP,
-                timer: 300 // 5 minutes
-            });
-            addLog("A WORLD BOSS HAS APPEARED!", 'death');
-        },
-        attackWorldBoss: () => {
-            if (!worldBoss.active) return;
-            const clickDmg = heroes.reduce((acc, h) => acc + h.stats.attack, 0) * (1 + divinity);
-            setWorldBoss(wb => {
-                const newHp = wb.hp - clickDmg;
-                if (newHp <= 0) {
-                    addLog("World Boss Defeated! +1 Eternal Fragment", 'achievement');
-                    setEternalFragments(prev => prev + 1);
-                    return { ...wb, active: false, hp: 0 };
-                }
-                return { ...wb, hp: newHp };
-            });
-        },
         prestigeTower: () => {
             if (tower.floor < 20) { addLog("Reach Floor 20 to Ascend.", 'info'); return; }
             const reward = Math.floor(tower.maxFloor / 10);
@@ -736,30 +711,7 @@ export const useGame = () => {
         return () => clearTimeout(timer);
     }, [heroes, boss, gameSpeed, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, dungeonActive, raidActive, resources]);
 
-    useEffect(() => { if (boss.level >= 10 && !pet) setPet(INITIAL_PET_DATA); }, [boss.level, pet]);
 
-    // Phase 12: World Boss Logic
-    // Phase 12 logic
-
-    useEffect(() => {
-        if (!worldBoss.active) {
-            // 1% chance per second to spawn world boss if not active
-            const spawnCheck = setInterval(() => {
-                if (Math.random() < 0.01) {
-                    ACTIONS.summonWorldBoss();
-                }
-            }, 1000);
-            return () => clearInterval(spawnCheck);
-        } else {
-            const timer = setInterval(() => {
-                setWorldBoss(wb => {
-                    if (wb.timer <= 0) return { ...wb, active: false };
-                    return { ...wb, timer: wb.timer - 1 };
-                });
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [worldBoss.active]);
 
     usePersistence(
         heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
@@ -779,7 +731,7 @@ export const useGame = () => {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss, starlight, starlightUpgrades, autoSellRarity,
+        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity,
         actions: ACTIONS, partyDps, combatEvents, theme
     };
 };

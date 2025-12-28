@@ -22,7 +22,6 @@ import { QuestModal } from './components/modals/QuestModal';
 import { RuneModal } from './components/modals/RuneModal';
 import { AchievementsModal } from './components/modals/AchievementsModal';
 import { StarlightModal } from './components/modals/StarlightModal';
-import { WorldBossPanel } from './components/WorldBossPanel';
 import { LogModal } from './components/modals/LogModal';
 import './index.css';
 
@@ -31,7 +30,7 @@ function App() {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-    arenaRank, glory, quests, runes, achievements, worldBoss, starlight, starlightUpgrades, autoSellRarity,
+    arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity,
     actions, partyDps, combatEvents, theme
   } = useGame();
 
@@ -133,7 +132,6 @@ function App() {
 
         <HeroList heroes={heroes} actions={actions} />
 
-        <HeroList heroes={heroes} actions={actions} />
 
         <GameLog logs={logs} onShowHistory={() => setShowLog(true)} />
 
@@ -164,7 +162,6 @@ function App() {
       <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
       <AchievementsModal isOpen={showAchievements} onClose={() => setShowAchievements(false)} achievements={achievements} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
-      <WorldBossPanel worldBoss={worldBoss} attackAction={actions.attackWorldBoss} />
     </div>
   );
 }

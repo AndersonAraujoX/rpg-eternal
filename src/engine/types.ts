@@ -227,12 +227,5 @@ export const GUILDS = [
     { name: 'The Shadow Syndicate', bonus: '+10% Crit Damage' }
 ];
 
-export interface WorldBossState {
-    active: boolean;
-    boss: Boss;
-    hp: number;
-    maxHp: number;
-    timer: number;
-}
 
 export type Log = LogEntry;
