@@ -53,7 +53,9 @@ export const usePersistence = (
     starlight: number,
     setStarlight: React.Dispatch<React.SetStateAction<number>>,
     starlightUpgrades: string[],
-    setStarlightUpgrades: React.Dispatch<React.SetStateAction<string[]>>
+    setStarlightUpgrades: React.Dispatch<React.SetStateAction<string[]>>,
+    theme: string,
+    setTheme: React.Dispatch<React.SetStateAction<string>>
 ) => {
 
     // LOAD
@@ -98,6 +100,7 @@ export const usePersistence = (
                 if (state.starlight) setStarlight(state.starlight);
                 if (state.starlightUpgrades) setStarlightUpgrades(state.starlightUpgrades);
                 if (state.starlightUpgrades) setStarlightUpgrades(state.starlightUpgrades);
+                if (state.theme) setTheme(state.theme);
                 // World Boss state generally shouldn't be persisted if active, or maybe yes?
                 // For now, let's reset WB on reload to avoid bugs, or persist only fragments.
 
@@ -141,9 +144,9 @@ export const usePersistence = (
         const state = {
             heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys,
             resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight,
-            starlightUpgrades,
+            starlightUpgrades, theme,
             lastSaveTime: Date.now()
         };
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades]);
+    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme]);
 };

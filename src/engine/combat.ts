@@ -1,4 +1,4 @@
-import type { Hero, Boss, GambitAction, Pet, ConstellationNode, Talent, Artifact, MonsterCard } from './types';
+import type { Hero, Boss, GambitAction, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement } from './types';
 
 export const getElementalMult = (atkEl: string, defEl: string) => {
     if (atkEl === 'neutral' || defEl === 'neutral') return 1;
@@ -12,7 +12,7 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
     return 1;
 };
 
-export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], boss: Boss, cards: MonsterCard[]) => {
+export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], boss: Boss, cards: MonsterCard[], achievements: Achievement[] = []) => {
     const dmgTalent = talents.find(t => t.stat === 'attack');
     const cScale = constellations.find(c => c.bonusType === 'bossDamage');
     const starMult = cScale ? (1 + cScale.level * cScale.valuePerLevel) : 1;
@@ -23,6 +23,10 @@ export const calculateDamageMultiplier = (souls: number, divinity: number, talen
 
     const relevantCard = cards.find(c => c.id === boss.emoji);
     if (relevantCard) mult *= (1 + (relevantCard.bonus * relevantCard.count));
+
+    // Achievement Mastery: +1% Damage per unlocked achievement
+    const achievementBonus = achievements.filter(a => a.isUnlocked).length * 0.01;
+    mult *= (1 + achievementBonus);
 
     return mult;
 };

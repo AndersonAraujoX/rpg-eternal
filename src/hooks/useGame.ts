@@ -127,12 +127,13 @@ export const useGame = () => {
     const [starlight, setStarlight] = useState(0);
     const [starlightUpgrades, setStarlightUpgrades] = useState<string[]>([]);
     const [worldBoss, setWorldBoss] = useState<WorldBossState>({ active: false, timer: 0, hp: 0, maxHp: 0, boss: INITIAL_BOSS });
+    const [theme, setTheme] = useState('default');
 
     // LOAD
     // PERSISTENCE
 
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
-        setLogs(prev => [...prev.slice(-14), { id: Math.random().toString(36), message, type }]);
+        setLogs(prev => [...prev.slice(-49), { id: Math.random().toString(36), message, type }]);
     };
     const toggleSound = () => { setIsSoundOn(!isSoundOn); soundManager.toggle(!isSoundOn); };
 
@@ -584,7 +585,7 @@ export const useGame = () => {
             }
 
 
-            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards);
+            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements);
             const critTalent = talents.find(t => t.stat === 'crit');
             const critChance = critTalent ? (critTalent.level * critTalent.valuePerLevel) : 0;
 
@@ -769,7 +770,8 @@ export const useGame = () => {
         runes, setRunes, achievements, setAchievements,
         eternalFragments, setEternalFragments,
         starlight, setStarlight,
-        starlightUpgrades, setStarlightUpgrades
+        starlightUpgrades, setStarlightUpgrades,
+        theme, setTheme
     );
 
 
@@ -778,6 +780,6 @@ export const useGame = () => {
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss, starlight, starlightUpgrades, autoSellRarity,
-        actions: ACTIONS, partyDps, combatEvents
+        actions: ACTIONS, partyDps, combatEvents, theme
     };
 };

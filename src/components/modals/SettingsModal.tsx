@@ -8,9 +8,10 @@ interface SettingsModalProps {
     importString: string;
     setImportString: (s: string) => void;
     autoSellRarity: 'none' | 'common' | 'rare';
+    theme: string;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, actions, importString, setImportString, autoSellRarity }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, actions, importString, setImportString, autoSellRarity, theme }) => {
     if (!isOpen) return null;
 
     return (
@@ -20,6 +21,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
                 <h2 className="text-2xl font-bold text-white mb-4 flex items-center justify-center gap-2"><Settings /> SETTINGS</h2>
 
                 <div className="space-y-4">
+                    <div className="bg-gray-700 p-2 rounded text-left">
+                        <label className="text-xs text-gray-400 block mb-1">UI Theme</label>
+                        <select
+                            value={theme}
+                            onChange={(e) => actions.setTheme(e.target.value)}
+                            className="w-full bg-black text-white p-2 rounded border border-gray-600"
+                        >
+                            <option value="default">Default (Classic)</option>
+                            <option value="midnight">Midnight (Blue)</option>
+                            <option value="forest">Forest (Green)</option>
+                            <option value="crimson">Crimson (Red)</option>
+                            <option value="void">Void (Purple)</option>
+                        </select>
+                    </div>
+
                     <div className="bg-gray-700 p-2 rounded text-left">
                         <label className="text-xs text-gray-400 block mb-1">Auto-Sell Threshold (Requires Auto-Loader)</label>
                         <select
