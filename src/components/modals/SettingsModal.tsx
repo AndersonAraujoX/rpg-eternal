@@ -7,9 +7,10 @@ interface SettingsModalProps {
     actions: any;
     importString: string;
     setImportString: (s: string) => void;
+    autoSellRarity: 'none' | 'common' | 'rare';
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, actions, importString, setImportString }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, actions, importString, setImportString, autoSellRarity }) => {
     if (!isOpen) return null;
 
     return (
@@ -19,6 +20,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
                 <h2 className="text-2xl font-bold text-white mb-4 flex items-center justify-center gap-2"><Settings /> SETTINGS</h2>
 
                 <div className="space-y-4">
+                    <div className="bg-gray-700 p-2 rounded text-left">
+                        <label className="text-xs text-gray-400 block mb-1">Auto-Sell Threshold (Requires Auto-Loader)</label>
+                        <select
+                            value={autoSellRarity}
+                            onChange={(e) => actions.setAutoSellRarity(e.target.value)}
+                            className="w-full bg-black text-white p-2 rounded border border-gray-600"
+                        >
+                            <option value="none">Keep All</option>
+                            <option value="common">Auto-Sell Common</option>
+                            <option value="rare">Auto-Sell Common & Rare</option>
+                        </select>
+                    </div>
+
                     <button onClick={() => { navigator.clipboard.writeText(actions.exportSave()); alert("Save copied to clipboard!"); }} className="btn-retro bg-blue-600 text-white w-full py-3 flex items-center justify-center gap-2">
                         <Download size={16} /> EXPORT SAVE TO CLIPBOARD
                     </button>

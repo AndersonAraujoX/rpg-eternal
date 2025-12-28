@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, WorldBossState } from '../engine/types';
 import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
 import { processCombatTurn, calculateDamageMultiplier } from '../engine/combat';
 import { generateLoot } from '../engine/loot';
+import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim } from '../engine/automation';
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
     { id: 'k1', name: 'Slayer I', description: 'Kill 100 Monsters', isUnlocked: false, condition: { type: 'kills', value: 100 }, reward: '+5% Attack' },
@@ -113,6 +114,11 @@ export const useGame = () => {
         { id: 'q2', description: 'Collect 100 Souls', target: 100, progress: 0, reward: { type: 'souls', amount: 50 }, isCompleted: false, isClaimed: false },
         { id: 'q3', description: 'Enter the Tower', target: 1, progress: 0, reward: { type: 'voidMatter', amount: 1 }, isCompleted: false, isClaimed: false }
     ]);
+    const [autoSellRarity, setAutoSellRarity] = useState<'none' | 'common' | 'rare'>('none');
+    const [partyDps, setPartyDps] = useState(0);
+    const damageAccumulator = useRef(0);
+    const lastDpsUpdate = useRef(Date.now());
+    const [combatEvents, setCombatEvents] = useState<{ id: string, damage: number, isCrit: boolean, x: number, y: number }[]>([]);
 
     // PHASE 11
     const [runes, setRunes] = useState<Rune[]>([]);
@@ -130,6 +136,20 @@ export const useGame = () => {
     };
     const toggleSound = () => { setIsSoundOn(!isSoundOn); soundManager.toggle(!isSoundOn); };
 
+    // DPS Calculation Loop
+    useEffect(() => {
+        const dpsInterval = setInterval(() => {
+            const now = Date.now();
+            const timeDiff = (now - lastDpsUpdate.current) / 1000;
+            if (timeDiff >= 1) {
+                setPartyDps(Math.round(damageAccumulator.current / timeDiff));
+                damageAccumulator.current = 0;
+                lastDpsUpdate.current = now;
+            }
+        }, 1000);
+        return () => clearInterval(dpsInterval);
+    }, []);
+
     const ACTIONS = {
         buyStarlightUpgrade: (id: string, cost: number) => {
             if (starlight >= cost && !starlightUpgrades.includes(id)) {
@@ -140,14 +160,30 @@ export const useGame = () => {
             }
         },
 
-        buyTalent: (id: string) => {
-            setTalents(prev => prev.map(t => {
-                if (t.id === id && souls >= t.cost && t.level < t.maxLevel) {
-                    setSouls(s => s - t.cost);
-                    return { ...t, level: t.level + 1, cost: Math.floor(t.cost * t.costScaling) };
-                }
-                return t;
-            }));
+        buyTalent: (id: string, amount: number = 1) => {
+            const t = talents.find(t => t.id === id);
+            if (!t) return;
+
+            let level = t.level;
+            let cost = t.cost;
+            let totalCost = 0;
+            let count = 0;
+
+            // Prevent infinite loop crash if maxLevel is high, cap at amount (1, 10, 100)
+            for (let i = 0; i < amount; i++) {
+                if (level >= t.maxLevel) break;
+                if ((souls - totalCost) < cost) break; // Check affordability
+
+                totalCost += cost;
+                level++;
+                cost = Math.floor(cost * t.costScaling);
+                count++;
+            }
+
+            if (count > 0) {
+                setSouls(s => s - totalCost);
+                setTalents(prev => prev.map(pt => pt.id === id ? { ...pt, level, cost } : pt));
+            }
         },
         buyConstellation: (id: string) => {
             setConstellations(prev => prev.map(c => {
@@ -237,6 +273,9 @@ export const useGame = () => {
         },
         toggleCorruption: (heroId: string) => {
             setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, corruption: !h.corruption } : h));
+        },
+        renameHero: (heroId: string, newName: string) => {
+            setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, name: newName.substring(0, 12) } : h));
         },
         enterVoid: () => {
             if (tower.floor < 10) { addLog("Reach Tower Floor 10 to unlock Void.", 'info'); return; }
@@ -415,18 +454,32 @@ export const useGame = () => {
         socketRune: (itemId: string, runeId: string) => {
             const rune = runes.find(r => r.id === runeId);
             if (!rune) return;
-
-            setItems(prev => prev.map(item => {
-                if (item.id === itemId && item.runes.length < item.sockets) {
-                    setRunes(rs => rs.filter(r => r.id !== runeId)); // Remove from inventory
-                    addLog(`Socketed ${rune.name} into ${item.name}`, 'craft');
+            setItems(prev => prev.map(i => {
+                if (i.id === itemId && i.sockets && i.sockets > (i.runes?.length || 0)) {
+                    setRunes(r => r.filter(ru => ru.id !== runeId)); // Consume rune
+                    addLog(`Socketed ${rune.name} into ${i.name}`, 'craft');
                     soundManager.playLevelUp();
-                    return { ...item, runes: [...item.runes, rune] };
+                    return { ...i, runes: [...(i.runes || []), rune] };
                 }
-                return item;
+                return i;
             }));
         },
+        reforgeItem: (itemId: string) => {
+            if (voidMatter < 5) { addLog("Not enough Void Matter to reforge (5 needed).", 'info'); return; }
+            setItems(prev => prev.map(i => {
+                if (i.id === itemId) {
+                    const stats: ('attack' | 'defense' | 'hp' | 'magic' | 'speed')[] = ['attack', 'defense', 'hp', 'magic', 'speed'];
+                    const newStat = stats[Math.floor(Math.random() * stats.length)];
+                    const variance = 0.8 + Math.random() * 0.4;
+                    return { ...i, stat: newStat, value: Math.floor(i.value * variance) };
+                }
+                return i;
+            }));
+            setVoidMatter(v => v - 5);
+            addLog("Item Reforged with Void energy.", 'craft');
+        },
         closeOfflineModal: () => setOfflineGains(null),
+        setAutoSellRarity: setAutoSellRarity,
         setGameSpeed: setGameSpeed,
         toggleSound: toggleSound,
         resetSave: () => { localStorage.clear(); window.location.reload(); },
@@ -468,6 +521,7 @@ export const useGame = () => {
     };
 
 
+
     // CORE LOOP
     useEffect(() => {
         // Combat Loop (Only assigned combatants)
@@ -486,50 +540,22 @@ export const useGame = () => {
             if (boss.level >= 105) { ACTIONS.triggerRebirth(); }
         }
 
-        if (starlightUpgrades.includes('auto_tavern')) {
-            if (gold > 1000 && Math.random() < 0.1) { ACTIONS.summonTavern(); }
-        }
+        if (shouldSummonTavern(gold, starlightUpgrades)) { ACTIONS.summonTavern(); }
 
         // ULTRA AUTOMATION (Phase 16)
-        if (starlightUpgrades.includes('auto_talent')) {
-            const affordable = talents.find(t => {
-                const cost = Math.floor(t.cost * Math.pow(t.costScaling, t.level));
-                return souls >= cost;
-            });
-            if (affordable && Math.random() < 0.1) {
-                ACTIONS.buyTalent(affordable.id);
-            }
+        const autoTalentId = getAutoTalentToBuy(starlightUpgrades, souls, talents);
+        if (autoTalentId) { ACTIONS.buyTalent(autoTalentId); }
+
+        if (shouldAutoRevive(starlightUpgrades, heroes)) {
+            setHeroes(prev => prev.map(h => h.isDead ? { ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } } : h));
         }
 
-        if (starlightUpgrades.includes('auto_revive')) {
-            const deadHeroes = heroes.filter(h => h.isDead);
-            if (deadHeroes.length > 0) {
-                deadHeroes.forEach(h => {
-                    h.isDead = false;
-                    h.stats.hp = h.stats.maxHp;
-                });
-                setHeroes([...heroes]);
-            }
-        }
+        const newTowerState = getAutoTowerClimb(starlightUpgrades, tower);
+        if (newTowerState) setTower(newTowerState);
 
-        if (starlightUpgrades.includes('auto_tower')) {
-            if (Math.random() < 0.01) {
-                setTower(t => ({ ...t, floor: t.floor + 1, maxFloor: Math.max(t.maxFloor, t.floor + 1) }));
-            }
-        }
-        if (dungeonActive) {
-            if (dungeonTimer <= 0) { setDungeonActive(false); setBoss(INITIAL_BOSS); addLog("Dungeon Closed.", 'info'); }
-            else { setDungeonTimer(t => t - (1 * gameSpeed / 10)); }
-        }
-        if (voidActive) {
-            if (voidTimer <= 0) {
-                setVoidActive(false);
-                setBoss(INITIAL_BOSS);
-                addLog("VOID REJECTED YOU (TIMEOUT).", 'damage');
-            } else {
-                setVoidTimer(t => t - (1 * gameSpeed / 10));
-            }
-        }
+        // Auto-Quest
+        const questToClaim = getAutoQuestClaim(starlightUpgrades, quests);
+        if (questToClaim) { ACTIONS.claimQuest(questToClaim); }
         if (tower.active) {
             // Check for failure (Party Wipe)
             if (activeHeroes.length > 0 && activeHeroes.every(h => h.isDead)) {
@@ -571,7 +597,20 @@ export const useGame = () => {
                 soundManager.playLevelUp();
             } else { setUltimateCharge(p => Math.min(100, p + (5 * activeHeroes.length / 6) * gameSpeed)); } // Charge slower if fewer heroes
 
-            const { updatedHeroes, totalDmg } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pet);
+            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pet);
+            damageAccumulator.current += totalDmg; // Track DPS
+
+            if (totalDmg > 0) {
+                // Add combat event for particles
+                const newEvent = {
+                    id: Math.random().toString(36),
+                    damage: totalDmg,
+                    isCrit: crits > 0,
+                    x: 50 + (Math.random() * 20 - 10), // Randomize slightly around center
+                    y: 40 + (Math.random() * 20 - 10)
+                };
+                setCombatEvents(prev => [...prev.slice(-4), newEvent]); // Keep last 5 events
+            }
 
             // Healer Logic (Simplified check for 'heal' action or just passive)
             // Ideally this should be inside processCombatTurn or a separate pass, leaving as is but using updatedHeroes
@@ -592,11 +631,14 @@ export const useGame = () => {
                 const loot = generateLoot(boss.level);
 
 
-                // AUTO EQUIP
+                // AUTO EQUIP & AUTO SELL
                 if (starlightUpgrades.includes('auto_equip')) {
-                    if (boss.level < 10) {
-                        setGold(g => g + boss.level);
-                        addLog(`Auto-Scrapped ${loot.name} for ${boss.level} Gold`, 'info');
+                    const isTrash = (autoSellRarity === 'common' && loot.rarity === 'common') ||
+                        (autoSellRarity === 'rare' && (loot.rarity === 'common' || loot.rarity === 'rare'));
+
+                    if (isTrash || boss.level < 10) {
+                        setGold(g => g + Math.floor(loot.value / 2));
+                        addLog(`Auto-Scrapped ${loot.name} (${loot.rarity}) for ${Math.floor(loot.value / 2)} Gold`, 'info');
                     } else {
                         setItems(p => [...p, loot]);
                         addLog(`Auto-Looted: ${loot.name}`, 'info');
@@ -730,11 +772,12 @@ export const useGame = () => {
         starlightUpgrades, setStarlightUpgrades
     );
 
+
     return {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss, starlight, starlightUpgrades,
-        actions: ACTIONS
+        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, worldBoss, starlight, starlightUpgrades, autoSellRarity,
+        actions: ACTIONS, partyDps, combatEvents
     };
 };

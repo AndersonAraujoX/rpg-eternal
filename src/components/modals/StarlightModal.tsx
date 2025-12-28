@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Zap, ShoppingBag, Repeat, RefreshCw } from 'lucide-react';
+import { Star, Zap, ShoppingBag, Repeat, RefreshCw, CheckCircle } from 'lucide-react';
 import type { StarlightUpgrade } from '../../engine/types';
 
 interface StarlightModalProps {
@@ -17,6 +17,7 @@ export const STARLIGHT_UPGRADES: StarlightUpgrade[] = [
     { id: 'auto_talent', name: 'Neural Optimizer', cost: 15, description: 'Automatically purchases affordable talents.' },
     { id: 'auto_revive', name: 'Lazarus Protocol', cost: 30, description: 'Instantly revives fallen heroes.' },
     { id: 'auto_tower', name: 'Infinity Climber', cost: 20, description: 'Automatically climbs the Tower of Eternity.' },
+    { id: 'auto_quest', name: 'Quest Master', cost: 10, description: 'Automatically claims and refreshes quests.' }, // Phase 19
     { id: 'resource_saver', name: 'Matter Weaver', cost: 50, description: 'Keep 10% of resources after Ascension.' },
 ];
 
@@ -45,6 +46,7 @@ export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose,
                         if (upgrade.id === 'auto_talent') Icon = Zap;
                         if (upgrade.id === 'auto_revive') Icon = Star;
                         if (upgrade.id === 'auto_tower') Icon = ShoppingBag;
+                        if (upgrade.id === 'auto_quest') Icon = CheckCircle;
                         if (upgrade.id === 'resource_saver') Icon = Zap;
 
                         return (

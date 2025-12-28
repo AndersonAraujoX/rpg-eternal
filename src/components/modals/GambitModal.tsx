@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Save, Trash2, PlusCircle } from 'lucide-react';
+import { Brain, Save, Trash2, PlusCircle, Pencil } from 'lucide-react';
 import type { Hero, Gambit, GambitCondition, GambitAction } from '../../engine/types';
 
 interface GambitModalProps {
@@ -28,6 +28,15 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
     if (!isOpen || !hero) return null;
 
     const [gambits, setGambits] = useState<Gambit[]>(hero.gambits || []);
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [newName, setNewName] = useState(hero.name);
+
+    const handleRename = () => {
+        if (newName.trim()) {
+            actions.renameHero(hero.id, newName);
+            setIsRenaming(false);
+        }
+    };
 
     const addGambit = () => {
         if (gambits.length >= 3) return;
@@ -50,12 +59,28 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
         actions.updateGambits(hero.id, gambits);
         onClose();
     };
-
+    //...
     return (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95">
             <div className="bg-slate-900 border-4 border-cyan-500 w-full max-w-lg p-6 rounded-lg shadow-2xl relative">
                 <button onClick={onClose} className="absolute top-2 right-2 text-white font-bold">X</button>
-                <h2 className="text-cyan-400 text-2xl font-bold mb-4 flex items-center justify-center gap-2"><Brain /> TACTICS: {hero.name}</h2>
+                <h2 className="text-cyan-400 text-2xl font-bold mb-4 flex items-center justify-center gap-2">
+                    <Brain />
+                    {isRenaming ? (
+                        <input
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onBlur={handleRename}
+                            onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                            autoFocus
+                            className="bg-black text-white px-2 py-1 rounded border border-cyan-500 text-lg w-40"
+                        />
+                    ) : (
+                        <button onClick={() => setIsRenaming(true)} className="flex items-center gap-2 hover:text-white border-b border-dashed border-gray-600">
+                            {hero.name} <Pencil size={16} className="opacity-50" />
+                        </button>
+                    )}
+                </h2>
 
                 <div className="space-y-4 mb-6">
                     {gambits.map((g, i) => (

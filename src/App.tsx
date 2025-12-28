@@ -11,7 +11,9 @@ import { StarChartModal } from './components/modals/StarChartModal';
 import { CardsModal } from './components/modals/CardsModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { InventoryModal } from './components/modals/InventoryModal';
+import { HelpModal } from './components/modals/HelpModal';
 import { OfflineModal } from './components/modals/OfflineModal';
+
 import { TowerModal } from './components/modals/TowerModal';
 import { GuildModal } from './components/modals/GuildModal';
 import { VoidModal } from './components/modals/VoidModal';
@@ -28,11 +30,12 @@ function App() {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-    arenaRank, glory, quests, runes, achievements, worldBoss, starlight, starlightUpgrades,
-    actions
+    arenaRank, glory, quests, runes, achievements, worldBoss, starlight, starlightUpgrades, autoSellRarity,
+    actions, partyDps, combatEvents
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [showTavern, setShowTavern] = useState(false);
   const [showStars, setShowStars] = useState(false);
   const [showCards, setShowCards] = useState(false);
@@ -78,12 +81,13 @@ function App() {
           setShowInventory={setShowInventory} setShowCards={setShowCards} setShowSettings={setShowSettings}
           setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
           setShowArena={setShowArena} setShowQuests={setShowQuests}
-          setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight}
+          setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
         />
 
         <BattleArea
           boss={boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
-          ultimateCharge={ultimateCharge} pet={pet} actions={actions} artifacts={artifacts} heroes={heroes}
+          ultimateCharge={ultimateCharge} pet={pet} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps}
+          combatEvents={combatEvents}
         />
 
         <HeroList heroes={heroes} actions={actions} />
@@ -99,11 +103,12 @@ function App() {
       </div>
 
       {/* MODALS RENDER */}
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
       <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />
       <StarChartModal isOpen={showStars} onClose={() => setShowStars(false)} divinity={divinity} constellations={constellations} actions={actions} />
-      <ForgeModal isOpen={showForge} onClose={() => setShowForge(false)} resources={resources} actions={actions} />
+      <ForgeModal isOpen={showForge} onClose={() => setShowForge(false)} resources={resources} actions={actions} items={items} voidMatter={voidMatter} />
       <CardsModal isOpen={showCards} onClose={() => setShowCards(false)} cards={cards} />
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} />
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} />
       <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />
       <TavernModal isOpen={showTavern} onClose={() => setShowTavern(false)} gold={gold} actions={actions} />
       <InventoryModal isOpen={showInventory} onClose={() => setShowInventory(false)} items={items} />

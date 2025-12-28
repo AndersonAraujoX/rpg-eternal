@@ -52,6 +52,7 @@ export const processCombatTurn = (
     pet: Pet | null
 ) => {
     let totalDmg = 0;
+    let crits = 0;
     const allies = heroes.filter(h => h.assignment === 'combat' && !h.isDead);
 
     const updatedHeroes = heroes.map(h => {
@@ -83,7 +84,10 @@ export const processCombatTurn = (
             baseDmg *= 0.5;
         }
 
-        if (Math.random() < critChance + (h.class === 'Rogue' ? 0.3 : 0)) baseDmg *= 2;
+        if (Math.random() < critChance + (h.class === 'Rogue' ? 0.3 : 0)) {
+            baseDmg *= 2;
+            crits++;
+        }
         if (isUltimate) baseDmg *= 5;
 
         totalDmg += Math.floor(baseDmg);
@@ -120,5 +124,5 @@ export const processCombatTurn = (
         totalDmg += Math.floor(pet.stats.attack * (boss.level * 0.5));
     }
 
-    return { updatedHeroes, totalDmg };
+    return { updatedHeroes, totalDmg, crits };
 };

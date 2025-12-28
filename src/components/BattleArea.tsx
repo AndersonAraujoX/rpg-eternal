@@ -11,6 +11,8 @@ interface BattleAreaProps {
     actions: any;
     artifacts: Artifact[];
     heroes: Hero[]; // Passed for hero effects or rendering behind boss
+    partyDps?: number;
+    combatEvents?: any[]; // Using any for now to avoid circular dependency or import type
 }
 
 const getElementIcon = (el: string) => {
@@ -20,9 +22,55 @@ const getElementIcon = (el: string) => {
     return null;
 };
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pet, artifacts, actions }) => {
+interface Particle {
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+    color: string;
+    age: number;
+}
+
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pet, artifacts, actions, partyDps = 0, combatEvents = [] }) => {
+    const [particles, setParticles] = React.useState<Particle[]>([]);
+    const lastEventId = React.useRef<string | null>(null);
+
+    React.useEffect(() => {
+        const last = combatEvents[combatEvents.length - 1];
+        if (last && last.id !== lastEventId.current) {
+            lastEventId.current = last.id;
+            const newParticle: Particle = {
+                id: last.id,
+                text: last.isCrit ? `CRIT! ${Math.floor(last.damage)}` : `${Math.floor(last.damage)}`,
+                x: last.x + Math.random() * 10 - 5,
+                y: last.y,
+                color: last.isCrit ? 'text-yellow-400 font-bold text-xl' : 'text-white text-lg',
+                age: 0
+            };
+            setParticles(prev => [...prev, newParticle]);
+        }
+    }, [combatEvents]);
+
+    React.useEffect(() => {
+        const timer = setInterval(() => {
+            setParticles(prev => prev.map(p => ({ ...p, age: p.age + 1, y: p.y - 1 })).filter(p => p.age < 20));
+        }, 50);
+        return () => clearInterval(timer);
+    }, []);
+
     return (
         <div className="flex-1 relative bg-gray-900 flex flex-col justify-between p-4 overflow-hidden" id="battle-field">
+            {/* Particles */}
+            {particles.map(p => (
+                <div
+                    key={p.id}
+                    className={`absolute pointer-events-none transition-opacity duration-300 ${p.color}`}
+                    style={{ left: `${p.x}%`, top: `${p.y}%`, opacity: 1 - (p.age / 20) }}
+                >
+                    {p.text}
+                </div>
+            ))}
+
             {/* Artifacts */}
             <div className="absolute top-2 left-2 flex gap-1 z-20 flex-wrap max-w-[200px]">
                 {artifacts.map(a => (
@@ -47,6 +95,10 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
                 <div className="w-48 h-1 bg-gray-800 mt-1 relative rounded overflow-hidden">
                     <div className={`h-full transition-all duration-100 ${ultimateCharge >= 100 ? 'bg-cyan-400 animate-pulse' : 'bg-cyan-800'}`} style={{ width: `${ultimateCharge}%` }}></div>
+                </div>
+
+                <div className="mt-2 text-xs font-mono text-gray-400 flex flex-col items-center">
+                    <span className="text-red-400 font-bold">{partyDps.toLocaleString()} DPS</span>
                 </div>
             </div>
 
