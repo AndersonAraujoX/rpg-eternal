@@ -8,10 +8,14 @@ interface GalaxyModalProps {
     galaxy: GalaxySector[];
     onConquer: (id: string) => void;
     partyPower: number;
+    starlightUpgrades: string[];
 }
 
-export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galaxy, onConquer, partyPower }) => {
+export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galaxy, onConquer, partyPower, starlightUpgrades }) => {
     const [selectedSector, setSelectedSector] = useState<GalaxySector | null>(null);
+
+    const hasScanner = starlightUpgrades.includes('galaxy_scanner');
+    const getDifficulty = (base: number) => hasScanner ? Math.floor(base * 0.8) : base;
 
     if (!isOpen || !galaxy) return null;
 
@@ -28,7 +32,7 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                         <Globe className="text-blue-400" /> Galaxy Conquest
                     </h2>
                     <div className="text-sm font-mono text-gray-400">
-                        Party Power: <span className="text-red-400">{partyPower.toLocaleString()}</span>
+                        PWR: <span className="text-red-400">{partyPower.toLocaleString()}</span>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                         <X size={24} />
@@ -49,7 +53,7 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                                 key={sector.id}
                                 onClick={() => setSelectedSector(sector)}
                                 className={`absolute transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full transition-all duration-300 hover:scale-150 shadow-[0_0_10px_currentColor] ${sector.isOwned ? 'bg-green-500 text-green-500' :
-                                    (partyPower >= sector.difficulty ? 'bg-yellow-400 text-yellow-400 animate-pulse' : 'bg-red-600 text-red-600')
+                                    (partyPower >= getDifficulty(sector.difficulty) ? 'bg-yellow-400 text-yellow-400 animate-pulse' : 'bg-red-600 text-red-600')
                                     }`}
                                 style={{
                                     left: `${mapX(sector.x)}%`,
@@ -90,13 +94,13 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                         {!selectedSector.isOwned ? (
                             <button
                                 onClick={() => onConquer(selectedSector.id)}
-                                disabled={partyPower < selectedSector.difficulty * 0.5} // Allow trying if >50% pow, but low chance
-                                className={`px-6 py-3 rounded font-bold transition-all ${partyPower >= selectedSector.difficulty
+                                disabled={partyPower < getDifficulty(selectedSector.difficulty) * 0.5} // Allow trying if >50% pow, but low chance
+                                className={`px-6 py-3 rounded font-bold transition-all ${partyPower >= getDifficulty(selectedSector.difficulty)
                                     ? 'bg-gradient-to-r from-green-600 to-green-500 hover:scale-105 text-white shadow-[0_0_15px_rgba(0,255,0,0.5)]'
                                     : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                     }`}
                             >
-                                {partyPower >= selectedSector.difficulty ? 'CONQUER' : 'Too Dangerous'}
+                                {partyPower >= getDifficulty(selectedSector.difficulty) ? 'CONQUER' : 'Too Dangerous'}
                             </button>
                         ) : (
                             <div className="px-6 py-3 bg-gray-800 text-green-400 font-bold rounded border border-green-900">

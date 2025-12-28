@@ -1,4 +1,4 @@
-import { Achievement } from './types';
+import type { Achievement } from './types';
 
 export const ACHIEVEMENTS_DATA: Achievement[] = [
     { id: 'a1', name: 'First Blood', description: 'Slay 10 Monsters', isUnlocked: false, condition: { type: 'kills', value: 10 }, rewardType: 'gold', rewardValue: 0.1, rewardText: '+10% Gold' },

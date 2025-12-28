@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Quest, Rune, Achievement, GalaxySector, StarlightUpgrade, GameStats } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Quest, Rune, Achievement, GalaxySector, StarlightUpgrade, GameStats } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../engine/initialData';
 
 export const usePersistence = (
@@ -15,8 +15,8 @@ export const usePersistence = (
     setGold: React.Dispatch<React.SetStateAction<number>>,
     divinity: number,
     setDivinity: React.Dispatch<React.SetStateAction<number>>,
-    pet: Pet | null,
-    setPet: React.Dispatch<React.SetStateAction<Pet | null>>,
+    pets: Pet[],
+    setPets: React.Dispatch<React.SetStateAction<Pet[]>>,
     talents: Talent[],
     setTalents: React.Dispatch<React.SetStateAction<Talent[]>>,
     artifacts: Artifact[],
@@ -88,7 +88,15 @@ export const usePersistence = (
                 setSouls(state.souls || 0);
                 setGold(state.gold || 0);
                 setDivinity(state.divinity || 0);
-                if (state.pet) setPet({ ...INITIAL_PET_DATA, ...state.pet });
+                setDivinity(state.divinity || 0);
+                if (state.pets) {
+                    setPets(state.pets);
+                } else if (state.pet) {
+                    // Migration: Single to Array
+                    setPets([{ ...INITIAL_PET_DATA, ...state.pet }]);
+                } else {
+                    setPets([]);
+                }
                 if (state.talents) setTalents(state.talents);
                 if (state.artifacts) setArtifacts(state.artifacts);
                 if (state.cards) setCards(state.cards);
@@ -162,11 +170,11 @@ export const usePersistence = (
     // SAVE
     useEffect(() => {
         const state = {
-            heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys,
+            heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys,
             resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight,
             starlightUpgrades, theme, galaxy, monsterKills, gameStats, // Galaxy Save
             lastSaveTime: Date.now()
         };
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats]);
+    }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats]);
 };

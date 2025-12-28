@@ -73,6 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
                     <button onClick={() => setShowQuests && setShowQuests(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Quests"><Scroll size={12} /></button>
                     <button onClick={() => setShowRunes && setShowRunes(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Rune Forge"><Gem size={12} /></button>
                     <button onClick={() => setShowAchievements && setShowAchievements(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Achievements"><Trophy size={12} /></button>
+                    <button onClick={() => setShowStats(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Stats"><BarChart2 size={12} /></button>
+                    <button onClick={() => setShowHelp(true)} className="btn-retro bg-gray-600 text-gray-200 px-2 py-1 rounded border border-gray-400 flex items-center gap-1 hover:bg-gray-500" title="Help"><HelpCircle size={12} /></button>
                     {setShowStarlight && <button onClick={() => setShowStarlight(true)} className="btn-retro bg-cyan-950 text-cyan-400 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-900 animate-pulse" title="Automation Constellations"><Settings size={12} /></button>}
                     {/* GALAXY BUTTON */}
                     {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /></button>}
@@ -96,18 +98,6 @@ export const Header: React.FC<HeaderProps> = ({
                     <button onClick={actions.toggleSound} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600">{isSoundOn ? <Volume2 size={12} /> : <VolumeX size={12} />}</button>
                     <button onClick={() => actions.setGameSpeed(gameSpeed === 1 ? 2 : gameSpeed === 2 ? 5 : gameSpeed === 5 ? 10 : gameSpeed === 10 ? 25 : 1)} className="btn-retro bg-blue-700 px-2 py-1 rounded text-[10px]"><Zap size={10} /> {gameSpeed}x</button>
                     <button onClick={() => setShowSettings(true)} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600"><Settings size={12} /></button>
-                    <button onClick={() => setShowAchievements(true)} className="p-2 border border-yellow-600 bg-gray-800 rounded hover:bg-gray-700 text-yellow-500" title="Achievements">
-                        <Trophy size={20} />
-                    </button>
-                    <button onClick={() => setShowStats(true)} className="p-2 border border-indigo-600 bg-gray-800 rounded hover:bg-gray-700 text-indigo-400" title="Statistics">
-                        <BarChart2 size={20} />
-                    </button>
-                    <button onClick={() => setShowQuests(true)} className="p-2 border border-yellow-600 bg-gray-800 rounded hover:bg-gray-700 text-yellow-500" title="Daily Quests">
-                        <Scroll size={20} />
-                    </button>
-                    <button onClick={() => setShowHelp(true)} className="p-2 border border-gray-600 bg-gray-800 rounded hover:bg-gray-700 text-gray-400" title="Help / Guide">
-                        <HelpCircle size={20} />
-                    </button>
                 </div>
             </div>
         </div>

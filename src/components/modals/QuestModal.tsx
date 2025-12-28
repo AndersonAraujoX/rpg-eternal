@@ -1,6 +1,6 @@
 import React from 'react';
 import { Scroll, Trophy, Check, X, Coins, Sparkles, AlertCircle } from 'lucide-react';
-import { Quest } from '../../engine/types';
+import type { Quest } from '../../engine/types';
 
 interface QuestModalProps {
     quests: Quest[];

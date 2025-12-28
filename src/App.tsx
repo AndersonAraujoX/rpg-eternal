@@ -29,7 +29,7 @@ import './index.css';
 
 function App() {
   const {
-    heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
+    heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
@@ -130,7 +130,7 @@ function App() {
 
         <BattleArea
           boss={boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
-          ultimateCharge={ultimateCharge} pet={pet} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps} partyPower={partyPower}
+          ultimateCharge={ultimateCharge} pets={pets} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps} partyPower={partyPower}
           combatEvents={combatEvents}
           // @ts-ignore
           synergies={useGame().synergies} // Wait, I returned 'synergies' from useGame, so I can just access it from destructuring?
@@ -175,7 +175,7 @@ function App() {
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
-      <GalaxyModal isOpen={showGalaxy} onClose={() => setShowGalaxy(false)} galaxy={galaxy} onConquer={actions.conquerSector} partyPower={heroes.reduce((acc, h) => acc + (h.assignment === 'combat' && !h.isDead ? h.stats.attack : 0), 0)} />
+      <GalaxyModal isOpen={showGalaxy} onClose={() => setShowGalaxy(false)} galaxy={galaxy} onConquer={actions.conquerSector} partyPower={partyPower} starlightUpgrades={starlightUpgrades} />
     </div>
   );
 }

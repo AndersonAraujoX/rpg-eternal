@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOpen, Skull, Layers, X, HelpCircle } from 'lucide-react';
 import { MONSTERS } from '../../engine/bestiary';
-import { MonsterCard } from '../../engine/types';
+import type { MonsterCard } from '../../engine/types';
 
 interface BestiaryModalProps {
     isOpen: boolean;

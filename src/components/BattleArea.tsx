@@ -7,7 +7,7 @@ interface BattleAreaProps {
     dungeonActive: boolean;
     dungeonTimer: number;
     ultimateCharge: number;
-    pet: Pet | null;
+    pets: Pet[];
     actions: any;
     artifacts: Artifact[];
     heroes: Hero[]; // Passed for hero effects or rendering behind boss
@@ -33,7 +33,7 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pet, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [] }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [] }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
     const lastEventId = React.useRef<string | null>(null);
 
@@ -63,20 +63,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
     return (
         <div className="flex-1 relative bg-gray-900 flex flex-col justify-between p-4 overflow-hidden" id="battle-field">
             {/* Pet Rendering */}
-            {pet && (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-32 z-10 animate-bounce cursor-pointer group">
-                    <div className="text-4xl filter drop-shadow-lg">{pet.emoji}</div>
-                    <div className="absolute top-0 left-10 hidden group-hover:block bg-black bg-opacity-80 p-2 rounded text-xs text-white whitespace-nowrap z-50 border border-yellow-500">
-                        <div className="font-bold text-yellow-400">{pet.name} (Lvl {pet.level})</div>
-                        <div>XP: {pet.xp} / {pet.maxXp}</div>
-                        <div>Bonus: {pet.bonus}</div>
-                        <div className="mt-2 flex gap-1">
-                            <button onClick={() => actions.feedPet('gold')} className="bg-yellow-600 px-2 py-1 rounded hover:bg-yellow-500">Feed (100g)</button>
-                            <button onClick={() => actions.feedPet('souls')} className="bg-purple-600 px-2 py-1 rounded hover:bg-purple-500">Feed (10 Souls)</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
             {/* Particles */}
             {particles.map(p => (
                 <div
@@ -139,24 +126,32 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             </div>
 
             {/* Pet */}
-            {pet && (
-                <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col items-center z-20 opacity-90 group">
-                    <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer animate-bounce" title={`Lvl ${pet.level} ${pet.name}`}>
-                        {pet.emoji}
-                    </div>
-                    <div className="flex flex-col items-center bg-black bg-opacity-50 p-1 rounded backdrop-blur-sm mt-1">
-                        <span className="text-[8px] text-orange-300 font-bold mb-0.5">Lvl {pet.level}</span>
-                        <div className="w-10 h-1 bg-gray-700 rounded-full overflow-hidden mb-1">
-                            <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${(pet.xp / pet.maxXp) * 100}%` }}></div>
+            {/* Pets List */}
+            <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col gap-4 z-20 max-h-[80%] overflow-y-auto w-20 no-scrollbar">
+                {pets && [...pets].sort((a, b) => b.level - a.level).map(pet => (
+                    <div key={pet.id} className="flex flex-col items-center opacity-90 group relative">
+                        <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer animate-bounce" title={`Lvl ${pet.level} ${pet.name}`}>
+                            {pet.emoji}
                         </div>
-                        <div className="flex gap-1 opacity-100 transition-opacity">
-                            <button onClick={() => actions.feedPet('gold')} className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-yellow-500" title="Feed 100 Gold" disabled={false}>$</button>
-                            <button onClick={() => actions.feedPet('souls')} className="w-4 h-4 bg-purple-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-purple-500" title="Feed 10 Souls">S</button>
+                        {/* Hover Details */}
+                        <div className="hidden group-hover:flex absolute left-full top-0 ml-2 bg-black bg-opacity-90 p-2 rounded border border-yellow-500 flex-col z-50 whitespace-nowrap">
+                            <span className="font-bold text-yellow-400">{pet.name} (Lvl {pet.level})</span>
+                            <span className="text-xs text-gray-300">{pet.bonus}</span>
                         </div>
-                        <span className="text-[6px] text-gray-400 mt-0.5">{pet.bonus}</span>
+
+                        <div className="flex flex-col items-center bg-black bg-opacity-50 p-1 rounded backdrop-blur-sm mt-1 w-full">
+                            <span className="text-[8px] text-orange-300 font-bold mb-0.5">Lvl {pet.level}</span>
+                            <div className="w-10 h-1 bg-gray-700 rounded-full overflow-hidden mb-1">
+                                <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${(pet.xp / pet.maxXp) * 100}%` }}></div>
+                            </div>
+                            <div className="flex gap-1 opacity-100 transition-opacity">
+                                <button onClick={() => actions.feedPet('gold', pet.id)} className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-yellow-500" title="Feed 100 Gold" disabled={false}>$</button>
+                                <button onClick={() => actions.feedPet('souls', pet.id)} className="w-4 h-4 bg-purple-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-purple-500" title="Feed 10 Souls">S</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            )}
+                ))}
+            </div>
         </div>
     );
 };

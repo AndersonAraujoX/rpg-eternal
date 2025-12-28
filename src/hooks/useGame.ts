@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react'; // Refresh timestamp: 1
+
 import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Skill } from '../engine/types';
 import { CLASS_SKILLS } from '../engine/skills';
 import { INITIAL_GALAXY, calculateGalaxyIncome } from '../engine/galaxy';
@@ -41,7 +42,7 @@ export const useGame = () => {
     const [divinity, setDivinity] = useState<number>(0);
     const [voidMatter, setVoidMatter] = useState<number>(0);
 
-    const [pet, setPet] = useState<Pet | null>(null);
+    const [pets, setPets] = useState<Pet[]>([]);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<Talent[]>(INITIAL_TALENTS);
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
@@ -118,17 +119,21 @@ export const useGame = () => {
         if (!sector || sector.isOwned) return;
 
         // Difficulty Check: Party Power (Sum of Attack) vs Difficulty
-        const partyPower = heroes.filter(h => h.assignment === 'combat' && !h.isDead).reduce((acc, h) => acc + h.stats.attack, 0);
+        // Difficulty Check: Party Power (Sum of Power Score) vs Difficulty
+        const partyPower = heroes.filter(h => h.assignment === 'combat' && !h.isDead).reduce((acc, h) => acc + calculateHeroPower(h), 0);
 
         // Random variance: Party Power * (0.8 to 1.2)
         const roll = partyPower * (0.8 + Math.random() * 0.4);
 
-        if (roll >= sector.difficulty) {
+        const hasScanner = starlightUpgrades.includes('galaxy_scanner');
+        const effectiveDifficulty = hasScanner ? Math.floor(sector.difficulty * 0.8) : sector.difficulty;
+
+        if (roll >= effectiveDifficulty) {
             setGalaxy(prev => prev.map(s => s.id === sectorId ? { ...s, isOwned: true } : s));
             addLog(`Conquered ${sector.name} !`, 'achievement');
             soundManager.playLevelUp(); // Re-use fanfare
         } else {
-            addLog(`Failed to conquer ${sector.name}. Need more power!(Rolled: ${Math.floor(roll)} vs ${sector.difficulty})`, 'combat');
+            addLog(`Failed to conquer ${sector.name}. Need more power! (Rolled: ${Math.floor(roll)} vs ${sector.difficulty})`, 'info');
         }
     };
 
@@ -250,7 +255,7 @@ export const useGame = () => {
             if (guild) return;
             const template = GUILDS.find(g => g.name === guildName);
             if (template) {
-                setGuild({ name: template.name, level: 1, xp: 0, maxXp: 1000, bonus: template.bonus, members: Math.floor(Math.random() * 50) + 10, description: template.description || 'A bot guild.' });
+                setGuild({ id: template.id, name: template.name, level: 1, xp: 0, maxXp: 1000, bonus: template.bonus, members: Math.floor(Math.random() * 50) + 10, description: template.description || 'A bot guild.' });
                 addLog(`Joined ${guildName} !`, 'heal');
             }
         },
@@ -343,29 +348,55 @@ export const useGame = () => {
                 } else { addLog("Tavern Keeper found nothing special.", 'info'); }
             } else if (roll < 0.50) {
                 // PET DROP (15%)
-                if (!pet) {
-                    const PETS: Pet[] = [
-                        { id: 'p1', name: 'Baby Dragon', type: 'pet', emoji: '🐉', level: 1, xp: 0, maxXp: 100, bonus: '+10% DPS', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                        { id: 'p2', name: 'Floating Eye', type: 'pet', emoji: '👁️', level: 1, xp: 0, maxXp: 100, bonus: '+10% Gold', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                        { id: 'p3', name: 'Slime', type: 'pet', emoji: '💧', level: 1, xp: 0, maxXp: 100, bonus: '+10% HP', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                        { id: 'p4', name: 'Phoenix', type: 'pet', emoji: '🦅🔥', level: 1, xp: 0, maxXp: 100, bonus: '+5% Revive Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 8, defense: 0, magic: 5, speed: 0 }, isDead: false },
-                        { id: 'p5', name: 'Dire Wolf', type: 'pet', emoji: '🐺', level: 1, xp: 0, maxXp: 100, bonus: '+10% Crit Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 12, defense: 0, magic: 0, speed: 2 }, isDead: false },
-                        { id: 'p6', name: 'Fairy', type: 'pet', emoji: '🧚', level: 1, xp: 0, maxXp: 100, bonus: '+5 HP/sec Regen', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 10, speed: 0 }, isDead: false },
-                        { id: 'p7', name: 'Mimic', type: 'pet', emoji: '📦', level: 1, xp: 0, maxXp: 100, bonus: '+15% Magic Find', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 0, speed: 0 }, isDead: false },
-                        { id: 'p8', name: 'Rock Golem', type: 'pet', emoji: '🗿', level: 1, xp: 0, maxXp: 100, bonus: '+20% Defense', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 20, magic: 0, speed: -1 }, isDead: false },
-                        { id: 'p9', name: 'Ghost', type: 'pet', emoji: '👻', level: 1, xp: 0, maxXp: 100, bonus: '+10% Evasion', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 0, defense: 0, magic: 10, speed: 5 }, isDead: false },
-                        { id: 'p10', name: 'Unicorn', type: 'pet', emoji: '🦄', level: 1, xp: 0, maxXp: 100, bonus: '+10% Magic', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 15, speed: 2 }, isDead: false },
-                        { id: 'p11', name: 'Griffin', type: 'pet', emoji: '🦅', level: 1, xp: 0, maxXp: 100, bonus: '+10% Speed', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 5, magic: 0, speed: 10 }, isDead: false },
-                        { id: 'p12', name: 'Kraken', type: 'pet', emoji: '🦑', level: 1, xp: 0, maxXp: 100, bonus: '+15% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 20, defense: 5, magic: 0, speed: -2 }, isDead: false }
-                    ];
-                    const newPet = PETS[Math.floor(Math.random() * PETS.length)];
-                    setPet(newPet);
-                    addLog(`FOUND EGG: ${newPet.name} hatched!`, 'achievement');
-                    soundManager.playLevelUp();
-                } else {
-                    addLog("Your pet found a snack! (XP Up)", 'heal');
-                    setPet(p => p ? { ...p, xp: p.xp + 50 } : null);
-                }
+                // PET DROP (15%)
+                // New Logic: 15% to find a pet. If owned, small XP boost? Or just allow duplicates? 
+                // User asked for "possible to have more than one pet". 
+                // We'll allow finding new instances of pets.
+                const PETS: Pet[] = [
+                    { id: 'p1', name: 'Baby Dragon', type: 'pet', emoji: '🐉', level: 1, xp: 0, maxXp: 100, bonus: '+10% DPS', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 0, magic: 0, speed: 0 }, isDead: false },
+                    { id: 'p2', name: 'Floating Eye', type: 'pet', emoji: '👁️', level: 1, xp: 0, maxXp: 100, bonus: '+10% Gold', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 0, magic: 0, speed: 0 }, isDead: false },
+                    { id: 'p3', name: 'Slime', type: 'pet', emoji: '💧', level: 1, xp: 0, maxXp: 100, bonus: '+10% HP', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 0, speed: 0 }, isDead: false },
+                    { id: 'p4', name: 'Phoenix', type: 'pet', emoji: '🦅🔥', level: 1, xp: 0, maxXp: 100, bonus: '+5% Revive Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 8, defense: 0, magic: 5, speed: 0 }, isDead: false },
+                    { id: 'p5', name: 'Dire Wolf', type: 'pet', emoji: '🐺', level: 1, xp: 0, maxXp: 100, bonus: '+10% Crit Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 12, defense: 0, magic: 0, speed: 2 }, isDead: false },
+                    { id: 'p6', name: 'Fairy', type: 'pet', emoji: '🧚', level: 1, xp: 0, maxXp: 100, bonus: '+5 HP/sec Regen', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 10, speed: 0 }, isDead: false },
+                    { id: 'p7', name: 'Mimic', type: 'pet', emoji: '📦', level: 1, xp: 0, maxXp: 100, bonus: '+15% Magic Find', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 0, speed: 0 }, isDead: false },
+                    { id: 'p8', name: 'Rock Golem', type: 'pet', emoji: '🗿', level: 1, xp: 0, maxXp: 100, bonus: '+20% Defense', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 20, magic: 0, speed: -1 }, isDead: false },
+                    { id: 'p9', name: 'Ghost', type: 'pet', emoji: '👻', level: 1, xp: 0, maxXp: 100, bonus: '+10% Evasion', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 0, defense: 0, magic: 10, speed: 5 }, isDead: false },
+                    { id: 'p10', name: 'Unicorn', type: 'pet', emoji: '🦄', level: 1, xp: 0, maxXp: 100, bonus: '+10% Magic', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 15, speed: 2 }, isDead: false },
+                    { id: 'p11', name: 'Griffin', type: 'pet', emoji: '🦅', level: 1, xp: 0, maxXp: 100, bonus: '+10% Speed', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 5, magic: 0, speed: 10 }, isDead: false },
+                    { id: 'p12', name: 'Kraken', type: 'pet', emoji: '🦑', level: 1, xp: 0, maxXp: 100, bonus: '+15% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 20, defense: 5, magic: 0, speed: -2 }, isDead: false }
+                ];
+                const basePet = PETS[Math.floor(Math.random() * PETS.length)];
+                // Unique ID for each new pet instance
+                const newPet: Pet = { ...basePet, id: `pet-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
+
+                setPets(prev => [...prev, newPet]);
+                addLog(`FOUND EGG: ${newPet.name} hatched!`, 'achievement');
+                soundManager.playLevelUp();
+            } else if (roll < 0.60) {
+                // MINER DROP (10%)
+                const newMiner: Hero = {
+                    id: `miner-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                    name: 'Dwarven Miner',
+                    class: 'Miner',
+                    emoji: '⛏️',
+                    unlocked: true,
+                    level: 1,
+                    xp: 0,
+                    maxXp: 100,
+                    stats: { hp: 50, maxHp: 50, attack: 20, defense: 10, magic: 0, speed: 2, mp: 0, maxMp: 0 },
+                    element: 'neutral',
+                    assignment: 'mine',
+                    gambits: [],
+                    corruption: false,
+                    statPoints: 0,
+                    skills: [],
+                    type: 'hero',
+                    isDead: false
+                };
+                setHeroes(prev => [...prev, newMiner]);
+                addLog("Recruited a Miner! (Auto-assign: Mine)", 'heal');
+                soundManager.playLevelUp();
             } else { addLog("Refreshing drink... but nothing happened.", 'info'); }
         },
         enterDungeon: () => {
@@ -457,19 +488,30 @@ export const useGame = () => {
         updateGambits: (heroId: string, gambits: Gambit[]) => {
             setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, gambits } : h));
         },
-        feedPet: (foodType: 'gold' | 'souls') => {
-            if (!pet) return;
+        feedPet: (foodType: 'gold' | 'souls', petId?: string) => {
+            // If petId provided, feed that. If not, feed all (expensive?) or first? 
+            // Let's assume petId is required or we default to the first one for backward compat actions.
+            // But we changed ACTIONS to require it?
+
+            const costGold = 100;
+            const costSouls = 10;
             const xpGain = 50;
-            if (foodType === 'gold' && gold >= 100) {
-                setGold(g => g - 100);
-            } else if (foodType === 'souls' && souls >= 10) {
-                setSouls(s => s - 10);
-            } else {
-                return;
+
+            if (foodType === 'gold') {
+                if (gold < costGold) return;
+                setGold(g => g - costGold);
+            } else if (foodType === 'souls') {
+                if (souls < costSouls) return;
+                setSouls(s => s - costSouls);
             }
 
-            setPet(p => {
-                if (!p) return null;
+            setPets(prev => prev.map(p => {
+                // If petId is specified, only upgrade that one.
+                // If not (e.g. legacy call), maybe upgrade first? 
+                // Let's safe guard: if petId is passed, use it.
+                if (petId && p.id !== petId) return p;
+                if (!petId && prev.indexOf(p) !== 0) return p; // Default to first
+
                 let newXp = p.xp + xpGain;
                 let newLvl = p.level;
                 let newMax = p.maxXp;
@@ -480,11 +522,11 @@ export const useGame = () => {
                     newLvl += 1;
                     newMax = Math.floor(newMax * 1.5);
                     newStats.attack += 5;
-                    addLog(`PET LEVEL UP! Lvl ${newLvl} `, 'heal');
+                    addLog(`PET LEVEL UP! ${p.name} -> Lvl ${newLvl} `, 'heal');
                     soundManager.playLevelUp();
                 }
                 return { ...p, xp: newXp, level: newLvl, maxXp: newMax, stats: newStats };
-            });
+            }));
             addLog("Pet fed!", 'heal');
         },
 
@@ -642,10 +684,13 @@ export const useGame = () => {
         const effectiveTick = Math.max(40, baseTick * speedBonus); // Allow up to 25x speed (40ms)
 
         const timer = setTimeout(() => {
-            // Card Buffs
-            const goldMult = 1 + cards.filter(c => c.stat === 'gold').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources;
+            // Card Buffs & Pet Buffs
+            const petGoldBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('Gold') ? 0.1 : 0), 0);
+            const petDefenseBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('Defense') ? 0.2 : 0), 0);
+
+            const goldMult = 1 + cards.filter(c => c.stat === 'gold').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources + petGoldBonus;
             const xpMult = 1 + cards.filter(c => c.stat === 'xp').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources;
-            const defenseMult = 1 + cards.filter(c => c.stat === 'defense').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyDefense;
+            const defenseMult = 1 + cards.filter(c => c.stat === 'defense').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyDefense + petDefenseBonus;
             const speedMult = 1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0);
 
             // Time Tick
@@ -704,7 +749,7 @@ export const useGame = () => {
                 });
             }
 
-            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements);
+            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, pets);
             const critTalent = talents.find(t => t.stat === 'crit');
             const critChance = critTalent ? (critTalent.level * critTalent.valuePerLevel) : 0;
 
@@ -717,7 +762,7 @@ export const useGame = () => {
                 soundManager.playLevelUp();
             } else { setUltimateCharge(p => Math.min(100, p + (5 * activeHeroes.length / 6) * gameSpeed)); } // Charge slower if fewer heroes
 
-            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pet, effectiveTick, defenseMult, synergyVampirism);
+            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pets, effectiveTick, defenseMult, synergyVampirism);
             damageAccumulator.current += totalDmg; // Track DPS
 
             if (totalDmg > 0) {
@@ -747,6 +792,11 @@ export const useGame = () => {
             if (totalDmg > 0 && Math.random() > 0.8) soundManager.playHit();
 
             if (newBossHp === 0) {
+                // GOLD GAIN
+                const goldReward = Math.floor(boss.level * (1 + (boss.level * 0.1)) * goldMult);
+                setGold(g => g + goldReward);
+                setGameStats(prev => ({ ...prev, totalGoldEarned: prev.totalGoldEarned + goldReward, totalKills: prev.totalKills + 1, bossKills: prev.bossKills + (boss.type === 'boss' ? 1 : 0) }));
+
                 // XP GAIN
                 // XP GAIN
                 const xpGain = Math.max(10, Math.floor(boss.level * 10 * xpMult));
@@ -841,17 +891,42 @@ export const useGame = () => {
                     if (!q.isCompleted && q.description.includes('Souls') && souls > q.target) return { ...q, progress: q.target, isCompleted: true }; // Retroactive check
                     return q;
                 }));
-                setPet(p => {
-                    if (!p) return null;
-                    const xp = p.xp + 1; // 1 XP per kill
+                setPets(prev => prev.map(p => {
+                    const xpGain = 1 + Math.floor(boss.level / 10);
+                    const xp = p.xp + xpGain;
                     if (xp >= p.maxXp) {
+                        // Only play sound once per tick if multiple level up (unlikely same tick but good practice)
+                        // We can just play it.
                         soundManager.playLevelUp();
-                        addLog("Pet Level Up!", 'heal');
+                        addLog(`${p.name} Level Up!`, 'heal');
                         return { ...p, level: p.level + 1, xp: 0, maxXp: Math.floor(p.maxXp * 1.5), stats: { ...p.stats, attack: p.stats.attack + 2 } };
                     }
                     return { ...p, xp };
-                });
+                }));
 
+
+                // Guild XP
+                setGuild(g => {
+                    if (!g) return null;
+                    const xpGain = Math.max(1, Math.floor(boss.level / 2));
+                    const newXp = g.xp + xpGain;
+                    if (newXp >= g.maxXp) {
+                        addLog(`${g.name} Guild Level Up!`, 'achievement');
+                        soundManager.playLevelUp();
+                        const newBonusVal = (g.bonusValue || 0.1) + 0.01;
+                        // Update bonus string display
+                        const newBonusStr = (g.bonus || g.description || "").replace(/\d+%/, `${Math.round(newBonusVal * 100)}%`);
+                        return {
+                            ...g,
+                            level: g.level + 1,
+                            xp: 0,
+                            maxXp: Math.floor(g.maxXp * 1.2),
+                            bonusValue: newBonusVal,
+                            bonus: newBonusStr
+                        };
+                    }
+                    return { ...g, xp: newXp };
+                });
 
                 if (boss.emoji !== '💀' && boss.name !== 'Raid Boss' && boss.name !== 'Void Entity') {
                     // Drop Card Logic
@@ -966,13 +1041,13 @@ export const useGame = () => {
         }, effectiveTick / (1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0)));
 
         return () => clearTimeout(timer);
-    }, [heroes, boss, gameSpeed, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, dungeonActive, raidActive, resources]);
+    }, [heroes, boss, gameSpeed, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, dungeonActive, raidActive, resources]);
 
 
 
     usePersistence(
         heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
-        divinity, setDivinity, pet, setPet, talents, setTalents, artifacts, setArtifacts,
+        divinity, setDivinity, pets, setPets, talents, setTalents, artifacts, setArtifacts,
         cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
         tower, setTower, guild, setGuild, voidMatter, setVoidMatter, setRaidActive, setDungeonActive, setOfflineGains,
         arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
@@ -988,7 +1063,7 @@ export const useGame = () => {
 
 
     return {
-        heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
+        heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,

@@ -19,6 +19,8 @@ export const STARLIGHT_UPGRADES: StarlightUpgrade[] = [
     { id: 'auto_tower', name: 'Infinity Climber', cost: 20, description: 'Automatically climbs the Tower of Eternity.' },
     { id: 'auto_quest', name: 'Quest Master', cost: 10, description: 'Automatically claims and refreshes quests.' }, // Phase 19
     { id: 'resource_saver', name: 'Matter Weaver', cost: 50, description: 'Keep 10% of resources after Ascension.' },
+    { id: 'galaxy_scanner', name: 'Deep Space Scanners', cost: 100, description: 'Reduces difficulty of all Galaxy Sectors by 20%.' },
+    { id: 'stellar_forge', name: 'Stellar Forge', cost: 150, description: 'Increases effectiveness of all crafted items by 25%.' },
 ];
 
 export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose, starlight, upgrades, onBuy }) => {
@@ -46,6 +48,10 @@ export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose,
                         if (upgrade.id === 'auto_talent') Icon = Zap;
                         if (upgrade.id === 'auto_revive') Icon = Star;
                         if (upgrade.id === 'auto_tower') Icon = ShoppingBag;
+                        if (upgrade.id === 'auto_quest') Icon = CheckCircle;
+                        if (upgrade.id === 'resource_saver') Icon = Zap;
+                        if (upgrade.id === 'galaxy_scanner') Icon = Zap;
+                        if (upgrade.id === 'stellar_forge') Icon = Star;
                         if (upgrade.id === 'auto_quest') Icon = CheckCircle;
                         if (upgrade.id === 'resource_saver') Icon = Zap;
 

@@ -29,7 +29,7 @@ export const calculateHeroPower = (hero: Hero): number => {
     return Math.floor(baseScore * (1 + (stats.speed * 0.05)));
 };
 
-export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], boss: Boss, cards: MonsterCard[], achievements: Achievement[] = []) => {
+export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], boss: Boss, cards: MonsterCard[], achievements: Achievement[] = [], pets: Pet[] = []) => {
     const dmgTalent = talents.find(t => t.stat === 'attack');
     const cScale = constellations.find(c => c.bonusType === 'bossDamage');
     const starMult = cScale ? (1 + cScale.level * cScale.valuePerLevel) : 1;
@@ -46,6 +46,10 @@ export const calculateDamageMultiplier = (souls: number, divinity: number, talen
     // Achievement Mastery: +1% Damage per unlocked achievement
     const achievementBonus = achievements.filter(a => a.isUnlocked).length * 0.01;
     mult *= (1 + achievementBonus);
+
+    // Pet Bonuses (+10% DPS etc)
+    const petDamageBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('DPS') || p.bonus.includes('Attack') ? (p.bonus.includes('15%') ? 0.15 : 0.10) : 0), 0);
+    mult *= (1 + petDamageBonus);
 
     return mult;
 };
@@ -72,7 +76,7 @@ export const processCombatTurn = (
     damageMult: number,
     critChance: number,
     isUltimate: boolean,
-    pet: Pet | null,
+    pets: Pet[] = [],
     tickDuration: number = 1000,
     defenseMult: number = 1,
     lifeSteal: number = 0
@@ -196,8 +200,11 @@ export const processCombatTurn = (
     */
 
     // Pet Damage
-    if (pet && allies.some(h => !h.isDead)) {
-        totalDmg += Math.floor(pet.stats.attack * (boss.level * 0.5));
+    if (pets && pets.length > 0 && allies.some(h => !h.isDead)) {
+        // Each pet deals damage
+        pets.forEach(p => {
+            totalDmg += Math.floor(p.stats.attack * (boss.level * 0.5));
+        });
     }
 
     return { updatedHeroes, totalDmg, crits };

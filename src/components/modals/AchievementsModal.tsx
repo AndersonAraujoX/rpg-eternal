@@ -2,7 +2,7 @@ import React from 'react';
 import { Trophy, CheckCircle, Lock } from 'lucide-react';
 import type { Achievement } from '../../engine/types';
 
-import { GameStats } from '../../engine/types';
+import type { GameStats } from '../../engine/types';
 import { formatNumber } from '../../utils';
 
 interface AchievementsModalProps {

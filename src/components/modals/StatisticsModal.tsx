@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart2, Clock, Swords, Skull, Coins, MousePointer, X } from 'lucide-react';
-import { GameStats } from '../../engine/types';
+import type { GameStats } from '../../engine/types';
 import { formatNumber } from '../../utils';
 
 interface StatisticsModalProps {
