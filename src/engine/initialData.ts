@@ -51,7 +51,8 @@ export const INITIAL_STATS: GameStats = {
     totalDamageDealt: 0,
     highestDps: 0,
     playTime: 0,
-    ascensions: 0
+    ascensions: 0,
+    tavernPurchases: 0
 };
 
 export const INITIAL_CONSTELLATIONS: ConstellationNode[] = [

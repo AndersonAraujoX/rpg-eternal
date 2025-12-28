@@ -367,8 +367,19 @@ export const useGame = () => {
                     { id: 'p12', name: 'Kraken', type: 'pet', emoji: '🦑', level: 1, xp: 0, maxXp: 100, bonus: '+15% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 20, defense: 5, magic: 0, speed: -2 }, isDead: false }
                 ];
                 const basePet = PETS[Math.floor(Math.random() * PETS.length)];
+                let finalPet = { ...basePet };
+
+                // SHINY ROLL (10%)
+                if (Math.random() < 0.1) {
+                    finalPet.name = `✨ Shiny ${finalPet.name}`;
+                    // Double the percentage in bonus string
+                    finalPet.bonus = finalPet.bonus.replace(/(\d+)%/, (_, num) => `${parseInt(num) * 2}%`);
+                    finalPet.emoji = `✨${finalPet.emoji}`;
+                    addLog("SHINY PET FOUND! Double Stats!", 'achievement');
+                }
+
                 // Unique ID for each new pet instance
-                const newPet: Pet = { ...basePet, id: `pet-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
+                const newPet: Pet = { ...finalPet, id: `pet-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
 
                 setPets(prev => [...prev, newPet]);
                 addLog(`FOUND EGG: ${newPet.name} hatched!`, 'achievement');
@@ -670,6 +681,19 @@ export const useGame = () => {
         // calculating it here ensures strictly correct data based on `activeHeroes` which is derived from `heroes` in scope.
         // So:
         // const synergies = checkSynergies(activeHeroes); // already done in prev step logic
+
+        // AUTO PET XP UPGRADE CHECK
+        if (starlightUpgrades.includes('auto_pet_xp')) {
+            setPets(prev => prev.map(p => {
+                if (p.xp + 1 >= p.maxXp) {
+                    // Don't auto-level logic here to avoid spam/complexity, just cap or overflow?
+                    // Actually, let's just let them gain 1 XP. Level up happens on kill or feed.
+                    // Or implement simple auto-level if we want full automation.
+                    return { ...p, xp: p.xp + 1 };
+                }
+                return { ...p, xp: p.xp + 1 };
+            }));
+        }
 
         // I need to Fix the return statement to return `activeSynergies`
         // Apply Synergy Buffs

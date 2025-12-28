@@ -48,7 +48,14 @@ export const calculateDamageMultiplier = (souls: number, divinity: number, talen
     mult *= (1 + achievementBonus);
 
     // Pet Bonuses (+10% DPS etc)
-    const petDamageBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('DPS') || p.bonus.includes('Attack') ? (p.bonus.includes('15%') ? 0.15 : 0.10) : 0), 0);
+    const petDamageBonus = pets.reduce((acc, p) => {
+        if (p.isDead) return acc;
+        if (p.bonus.includes('DPS') || p.bonus.includes('Attack')) {
+            const match = p.bonus.match(/(\d+)%/);
+            return acc + (match ? parseInt(match[1]) / 100 : 0.1);
+        }
+        return acc;
+    }, 0);
     mult *= (1 + petDamageBonus);
 
     return mult;

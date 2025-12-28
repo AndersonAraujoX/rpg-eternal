@@ -103,6 +103,7 @@ export interface GameStats {
     highestDps: number;
     playTime: number;
     ascensions: number;
+    tavernPurchases: number;
 }
 
 export type ElementType = 'fire' | 'water' | 'nature' | 'neutral' | 'light' | 'dark';

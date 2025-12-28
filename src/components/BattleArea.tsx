@@ -127,7 +127,14 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
             {/* Pet */}
             {/* Pets List */}
-            <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col gap-4 z-20 max-h-[80%] overflow-y-auto w-20 no-scrollbar">
+            <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col gap-2 z-20 max-h-[80%] overflow-y-auto w-24 no-scrollbar">
+                {pets && pets.length > 0 && (
+                    <div className="flex flex-col gap-1 mb-2 bg-black bg-opacity-50 p-1 rounded">
+                        <span className="text-[8px] text-center text-gray-300 font-bold">FEAST</span>
+                        <button onClick={() => actions.feedPet('gold', 'all')} className="bg-yellow-700 text-[8px] text-white rounded hover:bg-yellow-600 px-1">G (5k)</button>
+                        <button onClick={() => actions.feedPet('souls', 'all')} className="bg-purple-800 text-[8px] text-white rounded hover:bg-purple-700 px-1">S (500)</button>
+                    </div>
+                )}
                 {pets && [...pets].sort((a, b) => b.level - a.level).map(pet => (
                     <div key={pet.id} className="flex flex-col items-center opacity-90 group relative">
                         <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer animate-bounce" title={`Lvl ${pet.level} ${pet.name}`}>

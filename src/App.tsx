@@ -158,7 +158,7 @@ function App() {
       <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} theme={theme} />
       <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />
-      <TavernModal isOpen={showTavern} onClose={() => setShowTavern(false)} gold={gold} actions={actions} />
+      <TavernModal isOpen={showTavern} onClose={() => setShowTavern(false)} gold={gold} actions={actions} tavernPurchases={gameStats.tavernPurchases || 0} />
       <InventoryModal isOpen={showInventory} onClose={() => setShowInventory(false)} items={items} />
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />

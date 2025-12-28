@@ -21,6 +21,7 @@ export const STARLIGHT_UPGRADES: StarlightUpgrade[] = [
     { id: 'resource_saver', name: 'Matter Weaver', cost: 50, description: 'Keep 10% of resources after Ascension.' },
     { id: 'galaxy_scanner', name: 'Deep Space Scanners', cost: 100, description: 'Reduces difficulty of all Galaxy Sectors by 20%.' },
     { id: 'stellar_forge', name: 'Stellar Forge', cost: 150, description: 'Increases effectiveness of all crafted items by 25%.' },
+    { id: 'auto_pet_xp', name: 'Spirit Kennel', cost: 15, description: 'All pets passively gain 1 XP per second.' },
 ];
 
 export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose, starlight, upgrades, onBuy }) => {
@@ -54,6 +55,7 @@ export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose,
                         if (upgrade.id === 'stellar_forge') Icon = Star;
                         if (upgrade.id === 'auto_quest') Icon = CheckCircle;
                         if (upgrade.id === 'resource_saver') Icon = Zap;
+                        if (upgrade.id === 'auto_pet_xp') Icon = Repeat;
 
                         return (
                             <div key={upgrade.id} className={`p-4 rounded-xl border-2 ${isOwned ? 'bg-cyan-900/30 border-cyan-700' : 'bg-slate-800 border-slate-600'} transition-all hover:scale-[1.02]`}>
