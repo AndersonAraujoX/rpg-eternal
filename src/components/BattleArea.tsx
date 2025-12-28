@@ -11,6 +11,7 @@ interface BattleAreaProps {
     actions: any;
     artifacts: Artifact[];
     heroes: Hero[]; // Passed for hero effects or rendering behind boss
+    synergies?: { id: string, name: string, icon: string, description: string }[];
     partyDps?: number;
     combatEvents?: any[]; // Using any for now to avoid circular dependency or import type
 }
@@ -71,6 +72,25 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                 </div>
             ))}
 
+            {/* Party DPS Meter & Synergies */}
+            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
+                <div className="bg-black bg-opacity-50 p-1 rounded text-xs font-mono text-yellow-300">
+                    DPS: {actions.formatNumber ? actions.formatNumber(partyDps || 0) : partyDps}
+                </div>
+
+                {/* Active Synergies */}
+                <div className="flex gap-1">
+                    {actions.synergies?.map((s: any) => (
+                        <div key={s.id} className="bg-gray-800 p-1 rounded border border-yellow-500 text-lg cursor-help relative group" title={s.description}>
+                            {s.icon}
+                            <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block w-48 bg-gray-900 border border-white p-2 text-[10px] text-white z-50 rounded shadow-xl">
+                                <div className="font-bold text-yellow-400">{s.name}</div>
+                                <div>{s.description}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
             {/* Artifacts */}
             <div className="absolute top-2 left-2 flex gap-1 z-20 flex-wrap max-w-[200px]">
                 {artifacts.map(a => (
@@ -84,7 +104,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             <div className="flex flex-col items-center justify-center mt-2 transition-all">
                 {dungeonActive && <div className="text-yellow-400 font-bold animate-pulse mb-2">GOLD VAULT: {Math.floor(dungeonTimer)}s</div>}
                 <div className="flex items-center gap-2">
-                    <div className={`text-6xl md:text-8xl filter drop-shadow-lg transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''}`}>{boss.emoji}</div>
+                    <div className={`text-6xl md:text-8xl filter drop-shadow-lg grayscale transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''}`}>{boss.emoji}</div>
                     <div className="text-white opacity-50" title={`Element: ${boss.element}`}>{getElementIcon(boss.element)}</div>
                 </div>
 

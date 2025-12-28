@@ -37,12 +37,13 @@ interface HeaderProps {
     setShowAchievements?: (v: boolean) => void;
     setShowStarlight?: (v: boolean) => void;
     setShowHelp?: (v: boolean) => void;
+    setShowGalaxy?: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     boss, souls, gold, divinity, tower, guild, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowCards, setShowSettings,
-    setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp
+    setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy
 }) => {
     return (
         <div className="bg-gray-900 p-2 border-b-4 border-gray-600 flex flex-col gap-2 rounded-t-lg">
@@ -72,6 +73,9 @@ export const Header: React.FC<HeaderProps> = ({
                     <button onClick={() => setShowRunes && setShowRunes(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Rune Forge"><Gem size={12} /></button>
                     <button onClick={() => setShowAchievements && setShowAchievements(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Achievements"><Trophy size={12} /></button>
                     {setShowStarlight && <button onClick={() => setShowStarlight(true)} className="btn-retro bg-cyan-950 text-cyan-400 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-900 animate-pulse" title="Automation Constellations"><Settings size={12} /></button>}
+                    {/* GALAXY BUTTON */}
+                    {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /></button>}
+
                     {tower.floor >= 10 && (
                         <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">
                             <Ghost size={12} /> {voidMatter}
@@ -89,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button onClick={actions.toggleRaid} className={`btn-retro px-2 py-1 rounded text-[10px] flex items-center gap-1 ${raidActive ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-red-900'}`}> <Skull size={12} /> {raidActive ? `${Math.floor(raidTimer)}s` : 'RAID'} </button>
                     )}
                     <button onClick={actions.toggleSound} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600">{isSoundOn ? <Volume2 size={12} /> : <VolumeX size={12} />}</button>
-                    <button onClick={() => actions.setGameSpeed(gameSpeed === 1 ? 5 : 1)} className="btn-retro bg-blue-700 px-2 py-1 rounded text-[10px]"><Zap size={10} /> {gameSpeed}x</button>
+                    <button onClick={() => actions.setGameSpeed(gameSpeed === 1 ? 2 : gameSpeed === 2 ? 5 : gameSpeed === 5 ? 10 : gameSpeed === 10 ? 25 : 1)} className="btn-retro bg-blue-700 px-2 py-1 rounded text-[10px]"><Zap size={10} /> {gameSpeed}x</button>
                     <button onClick={() => setShowSettings(true)} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600"><Settings size={12} /></button>
                     {setShowHelp && <button onClick={() => setShowHelp(true)} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600 text-yellow-400"><HelpCircle size={12} /></button>}
                 </div>

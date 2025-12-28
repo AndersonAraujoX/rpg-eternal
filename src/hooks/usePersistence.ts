@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../hooks/useGame';
 
 export const usePersistence = (
@@ -55,7 +55,9 @@ export const usePersistence = (
     starlightUpgrades: string[],
     setStarlightUpgrades: React.Dispatch<React.SetStateAction<string[]>>,
     theme: string,
-    setTheme: React.Dispatch<React.SetStateAction<string>>
+    setTheme: React.Dispatch<React.SetStateAction<string>>,
+    galaxy: GalaxySector[],
+    setGalaxy: React.Dispatch<React.SetStateAction<GalaxySector[]>>
 ) => {
 
     // LOAD
@@ -99,8 +101,9 @@ export const usePersistence = (
                 if (state.eternalFragments) setEternalFragments(state.eternalFragments);
                 if (state.starlight) setStarlight(state.starlight);
                 if (state.starlightUpgrades) setStarlightUpgrades(state.starlightUpgrades);
-                if (state.starlightUpgrades) setStarlightUpgrades(state.starlightUpgrades);
                 if (state.theme) setTheme(state.theme);
+                if (state.galaxy) setGalaxy(state.galaxy); // Galaxy Load
+
                 // World Boss state generally shouldn't be persisted if active, or maybe yes?
                 // For now, let's reset WB on reload to avoid bugs, or persist only fragments.
 
@@ -144,9 +147,9 @@ export const usePersistence = (
         const state = {
             heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys,
             resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight,
-            starlightUpgrades, theme,
+            starlightUpgrades, theme, galaxy, // Galaxy Save
             lastSaveTime: Date.now()
         };
         localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
-    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme]);
+    }, [heroes, boss, items, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme, galaxy]);
 };

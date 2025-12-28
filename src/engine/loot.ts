@@ -37,3 +37,20 @@ export const generateLoot = (level: number): Item => {
         runes: []
     };
 };
+
+import type { MonsterCard } from './types';
+
+export const getCardStat = (emoji: string): MonsterCard['stat'] => {
+    switch (emoji) {
+        case '🐉':
+        case '🦁':
+        case '👹': return 'attack';
+        case '🦠':
+        case '🐸': return 'gold';
+        case '👻':
+        case '💀': return 'xp';
+        case '🐢':
+        case '🗿': return 'defense';
+        default: return 'attack';
+    }
+};

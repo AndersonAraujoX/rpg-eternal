@@ -21,8 +21,10 @@ export const calculateDamageMultiplier = (souls: number, divinity: number, talen
     const hasVoidStone = artifacts.some(a => a.id === 'a2');
     if (hasVoidStone) mult *= 1.5;
 
-    const relevantCard = cards.find(c => c.id === boss.emoji);
-    if (relevantCard) mult *= (1 + (relevantCard.bonus * relevantCard.count));
+    // Card Buffs (Global Attack)
+    const attackCards = cards.filter(c => c.stat === 'attack');
+    const cardBonus = attackCards.reduce((acc, c) => acc + (c.count * c.value), 0);
+    mult *= (1 + cardBonus);
 
     // Achievement Mastery: +1% Damage per unlocked achievement
     const achievementBonus = achievements.filter(a => a.isUnlocked).length * 0.01;
@@ -53,7 +55,10 @@ export const processCombatTurn = (
     damageMult: number,
     critChance: number,
     isUltimate: boolean,
-    pet: Pet | null
+    pet: Pet | null,
+    tickDuration: number = 1000,
+    defenseMult: number = 1,
+    lifeSteal: number = 0
 ) => {
     let totalDmg = 0;
     let crits = 0;
@@ -77,11 +82,53 @@ export const processCombatTurn = (
 
         let baseDmg = stats.attack * damageMult * getElementalMult(h.element, boss.element);
 
+        // Active Skills Logic
+        if (h.skills) {
+            h.skills.forEach(s => {
+                if (s.type === 'active') {
+                    if (s.currentCooldown > 0) {
+                        s.currentCooldown = Math.max(0, s.currentCooldown - (tickDuration / 1000));
+                    }
+
+                    if (s.currentCooldown <= 0) {
+                        // Activate Skill
+                        let skillDmg = 0;
+                        if (s.effectType === 'damage') {
+                            // Apply Skill Multiplier to Base Damage (includes all buffs)
+                            skillDmg = baseDmg * s.value;
+
+                            // Element Bonus for Skill? (Optional, if skill has element)
+                            if (s.element) {
+                                skillDmg = skillDmg * getElementalMult(s.element, boss.element);
+                            }
+                        } else if (s.effectType === 'heal' || s.effectType === 'buff') {
+                            // Healing (Simulated or Real)
+                            const healAmount = stats.maxHp * s.value;
+                            // Heal self or lowest hp ally?
+                            // For simplicity in this function, we treat healing as damage mitigation or direct heal
+                            // Let's heal SELF for now or rely on game loop to update heroes state.
+                            // Limitation: updatedHeroes is map() result. Can't easily modify other heroes.
+                            // So we heal SELF or add "healing" to output to process later?
+                            // Simpler: Heal SELF here.
+                            hp = Math.min(stats.maxHp, hp + healAmount);
+                            baseDmg = 0; // Skill cast replaces attack? Or adds to it? 
+                            // Usually auto-cast is separate. Let's make it separate (ADDITIVE).
+                            // But if healing, it deals 0 dmg.
+                            skillDmg = 0;
+                        }
+
+                        totalDmg += Math.floor(skillDmg);
+                        s.currentCooldown = s.cooldown;
+                    }
+                }
+            });
+        }
+
         // Gambit
         const action = evaluateGambit(h, heroes, boss);
 
         if (action === 'heal') {
-            baseDmg = 0; // Sacrifices attack to heal (handled externally or simplified)
+            baseDmg = 0;
         } else if (action === 'strong_attack') {
             baseDmg *= 1.5;
         } else if (action === 'defend') {
@@ -94,20 +141,27 @@ export const processCombatTurn = (
         }
         if (isUltimate) baseDmg *= 5;
 
-        totalDmg += Math.floor(baseDmg);
+        const heroDamageDealt = Math.floor(baseDmg);
+        totalDmg += heroDamageDealt;
 
-        // Return updated hero (HP maintained for now, healing done separately)
-        return { ...h, stats: { ...h.stats, hp } };
+        // Return updated hero
+        if (heroDamageDealt > 0 && lifeSteal > 0) {
+            hp = Math.min(stats.maxHp, hp + (heroDamageDealt * lifeSteal));
+        }
+
+        return { ...h, stats: { ...h.stats, hp }, skills: h.skills }; // Return updated skills (cooldowns)
     });
 
     // Boss Damage to Heroes
+    // Boss Damage to Heroes (DISABLED BY USER REQUEST)
+    /*
     if (allies.length > 0 && !boss.isDead) {
         // Boss attacks everyone (AOE) or single target? 
         // Let's do a simple tick damage to all combatants for now to make it dangerous.
 
         updatedHeroes.forEach(h => {
             if (h.assignment === 'combat' && !h.isDead) {
-                const defense = h.stats.defense * (h.gambits?.some(g => g.action === 'defend') ? 1.5 : 1);
+                const defense = h.stats.defense * (h.gambits?.some(g => g.action === 'defend') ? 1.5 : 1) * defenseMult;
 
                 let dmgReceived = Math.max(1, (boss.stats.attack - defense));
                 const elMult = getElementalMult(boss.element, h.element);
@@ -122,6 +176,7 @@ export const processCombatTurn = (
             }
         });
     }
+    */
 
     // Pet Damage
     if (pet && allies.some(h => !h.isDead)) {

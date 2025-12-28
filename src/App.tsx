@@ -23,6 +23,7 @@ import { RuneModal } from './components/modals/RuneModal';
 import { AchievementsModal } from './components/modals/AchievementsModal';
 import { StarlightModal } from './components/modals/StarlightModal';
 import { LogModal } from './components/modals/LogModal';
+import { GalaxyModal } from './components/modals/GalaxyModal';
 import './index.css';
 
 function App() {
@@ -31,7 +32,7 @@ function App() {
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-    actions, partyDps, combatEvents, theme
+    actions, partyDps, combatEvents, theme, galaxy
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
@@ -51,6 +52,7 @@ function App() {
   const [showAchievements, setShowAchievements] = useState(false);
   const [showLog, setShowLog] = useState(false);
   const [showStarlight, setShowStarlight] = useState(false);
+  const [showGalaxy, setShowGalaxy] = useState(false);
   const [importString, setImportString] = useState('');
 
   // Keyboard Shortcuts
@@ -120,7 +122,7 @@ function App() {
           setShowShop={setShowShop} setShowTavern={setShowTavern} setShowStars={setShowStars} setShowForge={setShowForge}
           setShowInventory={setShowInventory} setShowCards={setShowCards} setShowSettings={setShowSettings}
           setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
-          setShowArena={setShowArena} setShowQuests={setShowQuests}
+          setShowArena={setShowArena} setShowQuests={setShowQuests} setShowGalaxy={setShowGalaxy}
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
         />
 
@@ -128,6 +130,8 @@ function App() {
           boss={boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
           ultimateCharge={ultimateCharge} pet={pet} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps}
           combatEvents={combatEvents}
+          // @ts-ignore
+          synergies={useGame().synergies} // Wait, I returned 'synergies' from useGame, so I can just access it from destructuring?
         />
 
         <HeroList heroes={heroes} actions={actions} />
@@ -137,7 +141,7 @@ function App() {
 
         {/* Footer */}
         <div className="bg-gray-800 p-1 border-t-4 border-gray-600 flex justify-between items-center text-[10px] text-gray-500">
-          <span>RBG Eternal v2.8 - {divinity > 0 ? `Divinity Rank ${divinity}` : 'Mortal Realm'}</span>
+          <span>Terras Eternas do Abismo v2.8 - {divinity > 0 ? `Divinity Rank ${divinity}` : 'Mortal Realm'}</span>
           <div className="text-[10px] text-gray-600">Phase 21: Mastery Update</div>
         </div>
 
@@ -162,6 +166,7 @@ function App() {
       <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
       <AchievementsModal isOpen={showAchievements} onClose={() => setShowAchievements(false)} achievements={achievements} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
+      <GalaxyModal isOpen={showGalaxy} onClose={() => setShowGalaxy(false)} galaxy={galaxy} onConquer={actions.conquerSector} partyPower={heroes.reduce((acc, h) => acc + (h.assignment === 'combat' && !h.isDead ? h.stats.attack : 0), 0)} />
     </div>
   );
 }

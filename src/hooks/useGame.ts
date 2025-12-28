@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats } from '../engine/types';
-import { GUILDS } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, Skill } from '../engine/types';
+import { CLASS_SKILLS } from '../engine/skills';
+import { INITIAL_GALAXY, calculateGalaxyIncome } from '../engine/galaxy';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
-import { processCombatTurn, calculateDamageMultiplier } from '../engine/combat';
-import { generateLoot } from '../engine/loot';
+import { getElementalMult, calculateDamageMultiplier, processCombatTurn } from '../engine/combat';
+import { checkSynergies } from '../engine/synergies';
+import { generateLoot, getCardStat } from '../engine/loot';
 import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim } from '../engine/automation';
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
@@ -71,6 +73,12 @@ const RARE_ARTIFACTS: Artifact[] = [
     { id: 'a3', name: 'Phoenix Feather', description: 'Auto-Revive (10s)', emoji: '🪶', bonus: 'revive', unlocked: false }
 ];
 
+const GUILDS: Guild[] = [
+    { id: 'g1', name: 'Xang', description: '+10% Physical Damage', bonusType: 'physical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000 },
+    { id: 'g2', name: 'Zhauw', description: '+10% Magical Damage', bonusType: 'magical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000 },
+    { id: 'g3', name: 'Yang', description: '+10% Critical Damage', bonusType: 'crit', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000 }
+];
+
 export const useGame = () => {
     // STATE
     const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
@@ -116,8 +124,8 @@ export const useGame = () => {
     useEffect(() => {
         if (arenaOpponents.length === 0) {
             const newOpponents: ArenaOpponent[] = Array(3).fill(null).map((_, i) => ({
-                id: `opp-${Date.now()}-${i}`,
-                name: `Bot Player ${Math.floor(Math.random() * 1000)}`,
+                id: `opp - ${Date.now()} -${i} `,
+                name: `Bot Player ${Math.floor(Math.random() * 1000)} `,
                 power: Math.floor(partyDps * (0.8 + (i * 0.2))), // 0.8x, 1.0x, 1.2x difficulty
                 rank: arenaRank + ((i - 1) * 25), // +/- rank
                 avatar: ['🤖', '👽', '👺', '🤡', '🤠'][Math.floor(Math.random() * 5)]
@@ -137,6 +145,10 @@ export const useGame = () => {
     const lastDpsUpdate = useRef(Date.now());
     const [combatEvents, setCombatEvents] = useState<{ id: string, damage: number, isCrit: boolean, x: number, y: number }[]>([]);
 
+    // Derived State: Active Synergies
+    const activeHeroesList = heroes.filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked);
+    const activeSynergies = checkSynergies(activeHeroesList);
+
     // PHASE 11
     const [runes, setRunes] = useState<Rune[]>([]);
     const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
@@ -144,6 +156,27 @@ export const useGame = () => {
     const [starlight, setStarlight] = useState(0);
     const [starlightUpgrades, setStarlightUpgrades] = useState<string[]>([]);
     const [theme, setTheme] = useState('default');
+    const [galaxy, setGalaxy] = useState(INITIAL_GALAXY);
+
+    // GALAXY LOGIC
+    const conquerSector = (sectorId: string) => {
+        const sector = galaxy.find(s => s.id === sectorId);
+        if (!sector || sector.isOwned) return;
+
+        // Difficulty Check: Party Power (Sum of Attack) vs Difficulty
+        const partyPower = heroes.filter(h => h.assignment === 'combat' && !h.isDead).reduce((acc, h) => acc + h.stats.attack, 0);
+
+        // Random variance: Party Power * (0.8 to 1.2)
+        const roll = partyPower * (0.8 + Math.random() * 0.4);
+
+        if (roll >= sector.difficulty) {
+            setGalaxy(prev => prev.map(s => s.id === sectorId ? { ...s, isOwned: true } : s));
+            addLog(`Conquered ${sector.name} !`, 'achievement');
+            soundManager.playLevelUp(); // Re-use fanfare
+        } else {
+            addLog(`Failed to conquer ${sector.name}. Need more power!(Rolled: ${Math.floor(roll)} vs ${sector.difficulty})`, 'combat');
+        }
+    };
 
     // LOAD
     // PERSISTENCE
@@ -172,7 +205,7 @@ export const useGame = () => {
             if (starlight >= cost && !starlightUpgrades.includes(id)) {
                 setStarlight(s => s - cost);
                 setStarlightUpgrades(prev => [...prev, id]);
-                addLog(`Unlocked Constellation: ${id}`, 'achievement');
+                addLog(`Unlocked Constellation: ${id} `, 'achievement');
                 soundManager.playLevelUp();
             }
         },
@@ -238,7 +271,7 @@ export const useGame = () => {
             }
             setTower(t => ({ ...t, active: true }));
             setBoss({
-                id: `tower-${tower.floor}`, name: `Tower Guardian ${tower.floor}`, emoji: '🏯', type: 'boss',
+                id: `tower - ${tower.floor} `, name: `Tower Guardian ${tower.floor} `, emoji: '🏯', type: 'boss',
                 level: tower.floor * 10, isDead: false, element: 'neutral',
                 stats: {
                     hp: 500 * Math.pow(1.5, tower.floor), maxHp: 500 * Math.pow(1.5, tower.floor),
@@ -254,7 +287,7 @@ export const useGame = () => {
             setStarlight(s => s + reward);
             setTower({ active: false, floor: 1, maxFloor: 1 });
             setBoss(INITIAL_BOSS);
-            addLog(`TOWER ASCENDED! +${reward} Starlight`, 'achievement');
+            addLog(`TOWER ASCENDED! + ${reward} Starlight`, 'achievement');
             soundManager.playLevelUp();
         },
 
@@ -264,7 +297,7 @@ export const useGame = () => {
             const template = GUILDS.find(g => g.name === guildName);
             if (template) {
                 setGuild({ name: template.name, level: 1, xp: 0, maxXp: 1000, bonus: template.bonus, members: Math.floor(Math.random() * 50) + 10, description: template.description || 'A bot guild.' });
-                addLog(`Joined ${guildName}!`, 'heal');
+                addLog(`Joined ${guildName} !`, 'heal');
             }
         },
         contributeGuild: (amount: number) => {
@@ -275,7 +308,7 @@ export const useGame = () => {
                 if (!g) return null;
                 const newXp = g.xp + (amount / 10);
                 if (newXp >= g.maxXp) {
-                    addLog(`Guild Leveled Up to ${g.level + 1}!`, 'achievement');
+                    addLog(`Guild Leveled Up to ${g.level + 1} !`, 'achievement');
                     return { ...g, level: g.level + 1, xp: newXp - g.maxXp, maxXp: g.maxXp * 1.5 };
                 }
                 return { ...g, xp: newXp };
@@ -291,12 +324,12 @@ export const useGame = () => {
                 const gloryGain = 10;
                 setArenaRank(r => r + rankGain);
                 setGlory(g => g + gloryGain);
-                addLog(`Won Arena Match vs ${opponent.name}! +${rankGain} Rank, +${gloryGain} Glory`, 'achievement');
+                addLog(`Won Arena Match vs ${opponent.name} ! +${rankGain} Rank, +${gloryGain} Glory`, 'achievement');
                 soundManager.playLevelUp();
             } else {
                 const rankLoss = 15;
                 setArenaRank(r => Math.max(0, r - rankLoss));
-                addLog(`Lost Arena Match vs ${opponent.name}. -${rankLoss} Rank`, 'death');
+                addLog(`Lost Arena Match vs ${opponent.name}.-${rankLoss} Rank`, 'death');
             }
             // Refresh opponents
             setArenaOpponents([]);
@@ -324,7 +357,7 @@ export const useGame = () => {
                 const alreadyHas = artifacts.some(a => a.id === newArt.id);
                 if (!alreadyHas) {
                     setArtifacts(p => [...p, newArt]);
-                    addLog(`TAVERN FOUND: ${newArt.name}!`, 'death');
+                    addLog(`TAVERN FOUND: ${newArt.name} !`, 'death');
                 } else { addLog("Tavern Keeper found nothing special.", 'info'); }
             } else { addLog("Refreshing drink... but nothing happened.", 'info'); }
         },
@@ -360,7 +393,7 @@ export const useGame = () => {
             setGold(0);
             setDungeonActive(false);
             setRaidActive(false);
-            addLog(`REBIRTH! +${soulsGain} Souls.`, 'death');
+            addLog(`REBIRTH! + ${soulsGain} Souls.`, 'death');
             soundManager.playLevelUp();
         },
         triggerAscension: () => {
@@ -399,7 +432,7 @@ export const useGame = () => {
         buyDarkGift: (cost: number, effect: string) => {
             if (voidMatter >= cost) {
                 setVoidMatter(v => v - cost);
-                addLog(`Dark Gift Acquired: ${effect}`, 'death');
+                addLog(`Dark Gift Acquired: ${effect} `, 'death');
                 if (effect === 'ult_charge') setUltimateCharge(100);
             }
         },
@@ -432,7 +465,7 @@ export const useGame = () => {
                     newLvl += 1;
                     newMax = Math.floor(newMax * 1.5);
                     newStats.attack += 5;
-                    addLog(`PET LEVEL UP! Lvl ${newLvl}`, 'heal');
+                    addLog(`PET LEVEL UP! Lvl ${newLvl} `, 'heal');
                     soundManager.playLevelUp();
                 }
                 return { ...p, xp: newXp, level: newLvl, maxXp: newMax, stats: newStats };
@@ -447,7 +480,7 @@ export const useGame = () => {
                     if (q.reward.type === 'gold') setGold(g => g + q.reward.amount);
                     if (q.reward.type === 'souls') setSouls(s => s + q.reward.amount);
                     if (q.reward.type === 'voidMatter') setVoidMatter(v => v + q.reward.amount);
-                    addLog(`Quest Claimed: ${q.reward.amount} ${q.reward.type}!`, 'heal');
+                    addLog(`Quest Claimed: ${q.reward.amount} ${q.reward.type} !`, 'heal');
                     return { ...q, isClaimed: true };
                 }
                 return q;
@@ -477,15 +510,15 @@ export const useGame = () => {
 
                 const newRune: Rune = {
                     id: Math.random().toString(),
-                    name: `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Rune of ${stat.charAt(0).toUpperCase() + stat.slice(1)}`,
+                    name: `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Rune of ${stat.charAt(0).toUpperCase() + stat.slice(1)} `,
                     rarity,
                     stat,
                     value: val,
-                    bonus: `+${val}% ${stat.toUpperCase()}`
+                    bonus: `+ ${val}% ${stat.toUpperCase()} `
                 };
 
                 setRunes(prev => [...prev, newRune]);
-                addLog(`Crafted: ${newRune.name}`, 'craft');
+                addLog(`Crafted: ${newRune.name} `, 'craft');
                 soundManager.playLevelUp();
             }
         },
@@ -495,7 +528,7 @@ export const useGame = () => {
             setItems(prev => prev.map(i => {
                 if (i.id === itemId && i.sockets && i.sockets > (i.runes?.length || 0)) {
                     setRunes(r => r.filter(ru => ru.id !== runeId)); // Consume rune
-                    addLog(`Socketed ${rune.name} into ${i.name}`, 'craft');
+                    addLog(`Socketed ${rune.name} into ${i.name} `, 'craft');
                     soundManager.playLevelUp();
                     return { ...i, runes: [...(i.runes || []), rune] };
                 }
@@ -571,12 +604,37 @@ export const useGame = () => {
             }
         }
 
+        // SYNERGY CHECKS
+        // SYNERGY CHECKS (Recalculated for loop safety/closure)
+        const synergies = activeSynergies; // Use the derived state (it will be closed over current render, which is fine)
+        // Actually, inside setTimeout closure, activeSynergies might be stale?
+        // Yes, setTimeout closes over variables from the render it was scheduled in.
+        // But `heroes` is in dep array, so effect runs on hero change.
+        // calculating it here ensures strictly correct data based on `activeHeroes` which is derived from `heroes` in scope.
+        // So:
+        // const synergies = checkSynergies(activeHeroes); // already done in prev step logic
+
+        // I need to Fix the return statement to return `activeSynergies`
+        // Apply Synergy Buffs
+        const synergyDefense = synergies.find(s => s.type === 'defense') ? 0.2 : 0;
+        const synergyVampirism = synergies.find(s => s.type === 'vampirism') ? 0.15 : 0;
+        const synergyAttackSpeed = synergies.find(s => s.type === 'attackSpeed') ? 0.2 : 0;
+        const synergyResources = synergies.find(s => s.type === 'resources') ? 0.1 : 0;
+
         const hasteTalent = talents.find(t => t.stat === 'speed');
-        const speedBonus = hasteTalent ? (1 - (hasteTalent.level * hasteTalent.valuePerLevel)) : 1;
+        const speedBonus = (hasteTalent ? (1 - (hasteTalent.level * hasteTalent.valuePerLevel)) : 1) * (1 - synergyAttackSpeed);
         const baseTick = 1000 / gameSpeed;
-        const effectiveTick = Math.max(100, baseTick * speedBonus);
+        const effectiveTick = Math.max(40, baseTick * speedBonus); // Allow up to 25x speed (40ms)
 
         const timer = setTimeout(() => {
+            // Card Buffs
+            const goldMult = 1 + cards.filter(c => c.stat === 'gold').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources;
+            const xpMult = 1 + cards.filter(c => c.stat === 'xp').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources;
+            const defenseMult = 1 + cards.filter(c => c.stat === 'defense').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyDefense;
+            const speedMult = 1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0);
+
+            // Time Tick
+            const now = Date.now();
             // Mining Logic (Assigned miners)
             const miners = heroes.filter(h => h.unlocked && h.assignment === 'mine');
             if (miners.length > 0) {
@@ -589,6 +647,14 @@ export const useGame = () => {
                 }
             }
 
+
+
+            // Galaxy Income
+            const gIncome = calculateGalaxyIncome(galaxy);
+            if (gIncome.gold > 0) setGold(g => g + gIncome.gold);
+            if (gIncome.souls > 0) setSouls(s => s + gIncome.souls);
+            if (gIncome.starlight > 0) setStarlight(s => s + gIncome.starlight);
+            if (gIncome.mithril > 0) setResources(r => ({ ...r, mithril: r.mithril + gIncome.mithril }));
 
             const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements);
             const critTalent = talents.find(t => t.stat === 'crit');
@@ -603,7 +669,7 @@ export const useGame = () => {
                 soundManager.playLevelUp();
             } else { setUltimateCharge(p => Math.min(100, p + (5 * activeHeroes.length / 6) * gameSpeed)); } // Charge slower if fewer heroes
 
-            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pet);
+            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pet, effectiveTick, defenseMult, synergyVampirism);
             damageAccumulator.current += totalDmg; // Track DPS
 
             if (totalDmg > 0) {
@@ -634,7 +700,8 @@ export const useGame = () => {
 
             if (newBossHp === 0) {
                 // XP GAIN
-                const xpGain = Math.max(10, boss.level * 10);
+                // XP GAIN
+                const xpGain = Math.max(10, Math.floor(boss.level * 10 * xpMult));
                 finalHeroes = finalHeroes.map(h => {
                     if (!h.isDead && h.assignment === 'combat' && h.unlocked) {
                         let newXp = (h.xp || 0) + xpGain;
@@ -643,8 +710,55 @@ export const useGame = () => {
                             newXp -= (h.maxXp || 100);
                             h.level = (h.level || 1) + 1;
                             h.maxXp = Math.floor((h.maxXp || 100) * 1.5);
-                            h.statPoints = (h.statPoints || 0) + 3;
-                            addLog(`${h.name} reached Lvl ${h.level}!`, 'achievement');
+
+                            // Auto Stats Growth
+                            let growth = { hp: 10, mp: 5, attack: 1, defense: 1, magic: 1, speed: 0 };
+                            switch (h.class) {
+                                case 'Warrior': growth = { hp: 20, mp: 2, attack: 2, defense: 2, magic: 0, speed: 1 }; break;
+                                case 'Mage': growth = { hp: 8, mp: 15, attack: 1, defense: 1, magic: 3, speed: 1 }; break;
+                                case 'Healer': growth = { hp: 12, mp: 10, attack: 1, defense: 1, magic: 2, speed: 1 }; break;
+                                case 'Rogue': growth = { hp: 15, mp: 5, attack: 3, defense: 1, magic: 0, speed: 2 }; break;
+                                case 'Paladin': growth = { hp: 25, mp: 5, attack: 1, defense: 3, magic: 1, speed: 0 }; break;
+                                case 'Warlock': growth = { hp: 10, mp: 20, attack: 1, defense: 1, magic: 3, speed: 1 }; break;
+                                case 'Dragoon': growth = { hp: 18, mp: 5, attack: 2, defense: 2, magic: 1, speed: 2 }; break;
+                                case 'Sage': growth = { hp: 10, mp: 20, attack: 0, defense: 1, magic: 3, speed: 1 }; break;
+                                case 'Necromancer': growth = { hp: 15, mp: 15, attack: 1, defense: 1, magic: 2, speed: 1 }; break;
+                            }
+
+                            h.stats.maxHp += growth.hp;
+                            h.stats.hp += growth.hp;
+                            h.stats.maxMp += growth.mp;
+                            h.stats.mp += growth.mp;
+                            h.stats.attack += growth.attack;
+                            h.stats.defense += growth.defense;
+                            h.stats.magic += growth.magic;
+                            h.stats.speed += growth.speed;
+
+                            // Auto Skill Unlock
+                            const classSkills = CLASS_SKILLS[h.class] || [];
+                            classSkills.forEach(skillDef => {
+                                if (h.level >= skillDef.unlockLevel) {
+                                    if (!h.skills) h.skills = [];
+                                    const known = h.skills.find(s => s.id === skillDef.id);
+                                    if (!known) {
+                                        let newSkill = { ...skillDef };
+                                        h.skills.push(newSkill);
+                                        addLog(`${h.name} learned ${newSkill.name} !`, 'achievement');
+
+                                        // Apply Passive Stats
+                                        if (newSkill.type === 'passive' && newSkill.statBonus) {
+                                            if (newSkill.statBonus.hp) { h.stats.maxHp += newSkill.statBonus.hp; h.stats.hp += newSkill.statBonus.hp; }
+                                            if (newSkill.statBonus.mp) { h.stats.maxMp += newSkill.statBonus.mp; h.stats.mp += newSkill.statBonus.mp; }
+                                            if (newSkill.statBonus.attack) h.stats.attack += newSkill.statBonus.attack;
+                                            if (newSkill.statBonus.defense) h.stats.defense += newSkill.statBonus.defense;
+                                            if (newSkill.statBonus.magic) h.stats.magic += newSkill.statBonus.magic;
+                                            if (newSkill.statBonus.speed) h.stats.speed += newSkill.statBonus.speed;
+                                        }
+                                    }
+                                }
+                            });
+
+                            addLog(`${h.name} reached Lvl ${h.level} !(Auto - Upgraded)`, 'achievement');
                             soundManager.playLevelUp();
                         }
                         return { ...h, xp: newXp };
@@ -663,10 +777,10 @@ export const useGame = () => {
 
                     if (isTrash || boss.level < 10) {
                         setGold(g => g + Math.floor(loot.value / 2));
-                        addLog(`Auto-Scrapped ${loot.name} (${loot.rarity}) for ${Math.floor(loot.value / 2)} Gold`, 'info');
+                        addLog(`Auto - Scrapped ${loot.name} (${loot.rarity}) for ${Math.floor(loot.value / 2)} Gold`, 'info');
                     } else {
                         setItems(p => [...p, loot]);
-                        addLog(`Auto-Looted: ${loot.name}`, 'info');
+                        addLog(`Auto - Looted: ${loot.name} `, 'info');
                     }
                 } else {
                     setItems(p => [...p, loot]);
@@ -684,7 +798,7 @@ export const useGame = () => {
                 const cGold = constellations.find(c => c.bonusType === 'goldDrop');
                 const starGold = cGold ? (1 + cGold.level * cGold.valuePerLevel) : 1;
 
-                let goldDrop = Math.floor(boss.level * (Math.random() * 5 + 1) * starGold);
+                let goldDrop = Math.floor(boss.level * (Math.random() * 5 + 1) * starGold * goldMult);
                 if (dungeonActive) goldDrop *= 10;
                 setGold(g => g + goldDrop);
 
@@ -709,7 +823,10 @@ export const useGame = () => {
                     setCards(prev => {
                         const existing = prev.find(c => c.id === boss.emoji);
                         if (existing) { return prev.map(c => c.id === boss.emoji ? { ...c, count: c.count + 1 } : c); }
-                        else { addLog(`New Card: ${boss.emoji}`, 'death'); return [...prev, { id: boss.emoji, monsterName: boss.name, count: 1, bonus: 0.1 }]; }
+                        else {
+                            addLog(`New Card: ${boss.emoji} `, 'death');
+                            return [...prev, { id: boss.emoji, monsterName: boss.name, count: 1, stat: getCardStat(boss.emoji), value: 0.01 }];
+                        }
                     });
                 }
 
@@ -756,7 +873,7 @@ export const useGame = () => {
             }
 
             setHeroes(finalHeroes);
-        }, effectiveTick);
+        }, effectiveTick / (1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0)));
 
         return () => clearTimeout(timer);
     }, [heroes, boss, gameSpeed, souls, gold, divinity, pet, talents, artifacts, cards, constellations, keys, dungeonActive, raidActive, resources]);
@@ -782,6 +899,6 @@ export const useGame = () => {
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: ACTIONS, partyDps, combatEvents, theme
+        actions: { ...ACTIONS, conquerSector }, partyDps, combatEvents, theme, galaxy, synergies: activeSynergies
     };
 };

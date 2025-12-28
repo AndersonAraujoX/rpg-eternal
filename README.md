@@ -1,6 +1,6 @@
-# RPG Eternal
+# Terras Eternas do Abismo
 
-**RPG Eternal** is an advanced idle RPG web game built with **React**, **TypeScript**, and **Vite**. It features a deep progression system, strategic combat, and automation mechanics, wrapped in a retro pixel-art aesthetic.
+**Terras Eternas do Abismo** is an advanced idle RPG web game built with **React**, **TypeScript**, and **Vite**. It features a deep progression system, strategic combat, and automation mechanics, wrapped in a retro pixel-art aesthetic.
 
 ## 🎮 Game Features
 

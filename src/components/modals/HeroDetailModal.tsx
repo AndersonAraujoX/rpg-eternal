@@ -67,11 +67,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold text-white">Attributes</h3>
-                            {hero.statPoints > 0 && (
-                                <span className="px-2 py-1 bg-yellow-900/50 text-yellow-200 text-xs rounded border border-yellow-700 animate-pulse">
-                                    {hero.statPoints} Points Available
-                                </span>
-                            )}
+                            <span className="text-xs text-gray-500 italic">Stats increase automatically on Level Up based on Class.</span>
                         </div>
 
                         <div className="space-y-3">
@@ -82,14 +78,6 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-white font-mono text-lg">{Math.floor(hero.stats[stat.key])}</span>
-                                        {hero.statPoints > 0 && (
-                                            <button
-                                                onClick={() => actions.spendStatPoint(hero.id, stat.key)}
-                                                className="w-6 h-6 flex items-center justify-center bg-green-700 hover:bg-green-600 text-white rounded text-sm font-bold shadow-lg shadow-green-900/50"
-                                            >
-                                                +
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -97,24 +85,44 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                     </div>
 
                     {/* Skills Section */}
-                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                        <h3 className="text-xl font-bold text-white mb-4">Skills</h3>
-                        {hero.skills && hero.skills.length > 0 ? (
-                            <div className="space-y-2">
-                                {hero.skills.map(skill => (
-                                    <div key={skill.id} className="bg-gray-900 p-3 rounded border border-gray-600">
-                                        <div className="font-bold text-cyan-300">{skill.name}</div>
-                                        <div className="text-xs text-gray-400">{skill.description}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center text-gray-500 italic py-8 border border-dashed border-gray-700 rounded">
-                                No skills unlocked yet.
-                                <br />
-                                <span className="text-xs">Level up to unlock class abilities!</span>
-                            </div>
-                        )}
+                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col gap-4">
+                        <div>
+                            <h3 className="text-xl font-bold text-white mb-2">Active Skills</h3>
+                            {hero.skills && hero.skills.filter(s => s.type === 'active').length > 0 ? (
+                                <div className="space-y-2">
+                                    {hero.skills.filter(s => s.type === 'active').map(skill => (
+                                        <div key={skill.id} className="bg-gray-900 p-3 rounded border border-gray-600 flex justify-between items-center">
+                                            <div>
+                                                <div className="font-bold text-cyan-300">{skill.name}</div>
+                                                <div className="text-xs text-gray-400">{skill.description}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-xs text-gray-500 block">CD: {skill.cooldown}s</span>
+                                                <span className="text-xs text-blue-400 block">Lvl {skill.unlockLevel}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center text-gray-500 text-sm py-2">No active skills unlocked.</div>
+                            )}
+                        </div>
+
+                        <div>
+                            <h3 className="text-xl font-bold text-white mb-2">Passive Skills</h3>
+                            {hero.skills && hero.skills.filter(s => s.type === 'passive').length > 0 ? (
+                                <div className="space-y-2">
+                                    {hero.skills.filter(s => s.type === 'passive').map(skill => (
+                                        <div key={skill.id} className="bg-gray-900 p-3 rounded border border-gray-600">
+                                            <div className="font-bold text-yellow-300">{skill.name}</div>
+                                            <div className="text-xs text-gray-400">{skill.description}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center text-gray-500 text-sm py-2">No passive skills unlocked.</div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

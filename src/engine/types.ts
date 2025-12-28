@@ -67,10 +67,11 @@ export interface ConstellationNode {
 }
 
 export interface MonsterCard {
-    id: string; // usually boss emoji or name
+    id: string; // emoji
     monsterName: string;
     count: number;
-    bonus: number; // Damage multiplier
+    stat: 'attack' | 'gold' | 'xp' | 'defense' | 'speed';
+    value: number; // e.g. 0.01 per card
 }
 
 export interface GameStats {
@@ -139,9 +140,12 @@ export interface Skill {
     unlockLevel: number;
     cooldown: number; // Turns/seconds
     currentCooldown: number;
+    type: 'active' | 'passive';
     effectType: 'damage' | 'heal' | 'buff' | 'passive';
+    target: 'enemy' | 'self' | 'party' | 'lowest_hp';
     element?: ElementType;
-    value: number; // Multiplier (e.g. 1.5x damage)
+    value: number; // Multiplier or Stat Value
+    statBonus?: Partial<Stats>; // For passives
 }
 
 export interface Hero extends Entity {
@@ -157,6 +161,19 @@ export interface Hero extends Entity {
     maxXp: number;
     statPoints: number;
     skills: Skill[];
+}
+
+export interface GalaxySector {
+    id: string;
+    name: string;
+    description: string;
+    x: number;
+    y: number;
+    level: number; // Enemy Level
+    difficulty: number; // Recommended Power
+    reward: { type: 'gold' | 'mithril' | 'souls' | 'starlight', value: number }; // Value per tick
+    isOwned: boolean;
+    type: 'planet' | 'asteroid' | 'nebula' | 'star';
 }
 
 export type LogEntry = {
@@ -239,10 +256,10 @@ export interface Gambit {
     target?: string; // 'self', 'weakest_ally', 'boss'
 }
 
-export const GUILDS = [
-    { name: 'The Iron Legion', bonus: '+10% Defense', description: 'Strong defenders.' },
-    { name: 'The Arcane Order', bonus: '+10% Magic', description: 'Masters of magic.' },
-    { name: 'The Shadow Syndicate', bonus: '+10% Crit Damage', description: 'Assassins and thieves.' }
+export const GUILDS: Guild[] = [
+    { id: 'g1', name: 'Xang', description: '+10% Physical Damage', bonusType: 'physical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000 },
+    { id: 'g2', name: 'Zhauw', description: '+10% Magical Damage', bonusType: 'magical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000 },
+    { id: 'g3', name: 'Yang', description: '+10% Critical Damage', bonusType: 'crit', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000 }
 ];
 
 
