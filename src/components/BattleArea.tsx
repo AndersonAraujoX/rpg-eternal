@@ -13,6 +13,7 @@ interface BattleAreaProps {
     heroes: Hero[]; // Passed for hero effects or rendering behind boss
     synergies?: { id: string, name: string, icon: string, description: string }[];
     partyDps?: number;
+    partyPower?: number;
     combatEvents?: any[]; // Using any for now to avoid circular dependency or import type
 }
 
@@ -32,7 +33,7 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pet, artifacts, actions, partyDps = 0, combatEvents = [] }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pet, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [] }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
     const lastEventId = React.useRef<string | null>(null);
 
@@ -61,6 +62,21 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
     return (
         <div className="flex-1 relative bg-gray-900 flex flex-col justify-between p-4 overflow-hidden" id="battle-field">
+            {/* Pet Rendering */}
+            {pet && (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-32 z-10 animate-bounce cursor-pointer group">
+                    <div className="text-4xl filter drop-shadow-lg">{pet.emoji}</div>
+                    <div className="absolute top-0 left-10 hidden group-hover:block bg-black bg-opacity-80 p-2 rounded text-xs text-white whitespace-nowrap z-50 border border-yellow-500">
+                        <div className="font-bold text-yellow-400">{pet.name} (Lvl {pet.level})</div>
+                        <div>XP: {pet.xp} / {pet.maxXp}</div>
+                        <div>Bonus: {pet.bonus}</div>
+                        <div className="mt-2 flex gap-1">
+                            <button onClick={() => actions.feedPet('gold')} className="bg-yellow-600 px-2 py-1 rounded hover:bg-yellow-500">Feed (100g)</button>
+                            <button onClick={() => actions.feedPet('souls')} className="bg-purple-600 px-2 py-1 rounded hover:bg-purple-500">Feed (10 Souls)</button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Particles */}
             {particles.map(p => (
                 <div
@@ -75,7 +91,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {/* Party DPS Meter & Synergies */}
             <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
                 <div className="bg-black bg-opacity-50 p-1 rounded text-xs font-mono text-yellow-300">
-                    DPS: {actions.formatNumber ? actions.formatNumber(partyDps || 0) : partyDps}
+                    DPS: {actions.formatNumber ? actions.formatNumber(partyDps || 0) : partyDps} | PWR: {actions.formatNumber ? actions.formatNumber(partyPower || 0) : partyPower}
                 </div>
 
                 {/* Active Synergies */}

@@ -4,7 +4,12 @@ import { CLASS_SKILLS } from '../engine/skills';
 import { INITIAL_GALAXY, calculateGalaxyIncome } from '../engine/galaxy';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
-import { getElementalMult, calculateDamageMultiplier, processCombatTurn } from '../engine/combat';
+import {
+    getElementalMult,
+    calculateDamageMultiplier,
+    processCombatTurn,
+    calculateHeroPower
+} from '../engine/combat';
 import { checkSynergies } from '../engine/synergies';
 import { generateLoot, getCardStat } from '../engine/loot';
 import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim } from '../engine/automation';
@@ -118,6 +123,7 @@ export const useGame = () => {
     const [arenaRank, setArenaRank] = useState<number>(1000);
     const [glory, setGlory] = useState<number>(0);
     const [partyDps, setPartyDps] = useState(0);
+    const [partyPower, setPartyPower] = useState(0);
     const [arenaOpponents, setArenaOpponents] = useState<ArenaOpponent[]>([]);
 
     // Generate opponents if empty
@@ -316,7 +322,7 @@ export const useGame = () => {
             addLog(`Contributed ${amount} Gold to Guild`, 'info');
         },
         fightArena: (opponent: ArenaOpponent) => {
-            const winChance = partyDps > opponent.power ? 0.8 : 0.2;
+            const winChance = partyPower > opponent.power ? 0.8 : 0.2;
             const isWin = Math.random() < winChance;
 
             if (isWin) {
@@ -333,6 +339,34 @@ export const useGame = () => {
             }
             // Refresh opponents
             setArenaOpponents([]);
+        },
+
+        forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => {
+            const COSTS = { copper: 100, iron: 50, mithril: 10 };
+            const COST = COSTS[material];
+            if (resources[material] < COST) { addLog(`Not enough ${material}`, 'info'); return; }
+
+            setResources(r => ({ ...r, [material]: r[material] - COST }));
+
+            let statBoost = { hp: 0, attack: 0, defense: 0, magic: 0, speed: 0 };
+            if (material === 'copper') statBoost = { hp: 10, attack: 1, defense: 1, magic: 0, speed: 0 };
+            if (material === 'iron') statBoost = { hp: 25, attack: 2, defense: 2, magic: 1, speed: 0 };
+            if (material === 'mithril') statBoost = { hp: 50, attack: 5, defense: 5, magic: 3, speed: 1 };
+
+            setHeroes(prev => prev.map(h => ({
+                ...h,
+                stats: {
+                    ...h.stats,
+                    hp: h.stats.hp + statBoost.hp,
+                    maxHp: h.stats.maxHp + statBoost.hp,
+                    attack: h.stats.attack + statBoost.attack,
+                    defense: h.stats.defense + statBoost.defense,
+                    magic: h.stats.magic + statBoost.magic,
+                    speed: h.stats.speed + statBoost.speed
+                }
+            })));
+            addLog(`Forged ${material} Gear! All Heroes Upgraded.`, 'craft');
+            soundManager.playLevelUp();
         },
 
         // CORE GAMEPLAY
@@ -359,6 +393,31 @@ export const useGame = () => {
                     setArtifacts(p => [...p, newArt]);
                     addLog(`TAVERN FOUND: ${newArt.name} !`, 'death');
                 } else { addLog("Tavern Keeper found nothing special.", 'info'); }
+            } else if (roll < 0.50) {
+                // PET DROP (15%)
+                if (!pet) {
+                    const PETS: Pet[] = [
+                        { id: 'p1', name: 'Baby Dragon', type: 'pet', emoji: '🐉', level: 1, xp: 0, maxXp: 100, bonus: '+10% DPS', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 0, magic: 0, speed: 0 }, isDead: false },
+                        { id: 'p2', name: 'Floating Eye', type: 'pet', emoji: '👁️', level: 1, xp: 0, maxXp: 100, bonus: '+10% Gold', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 0, magic: 0, speed: 0 }, isDead: false },
+                        { id: 'p3', name: 'Slime', type: 'pet', emoji: '💧', level: 1, xp: 0, maxXp: 100, bonus: '+10% HP', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 0, speed: 0 }, isDead: false },
+                        { id: 'p4', name: 'Phoenix', type: 'pet', emoji: '🦅🔥', level: 1, xp: 0, maxXp: 100, bonus: '+5% Revive Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 8, defense: 0, magic: 5, speed: 0 }, isDead: false },
+                        { id: 'p5', name: 'Dire Wolf', type: 'pet', emoji: '🐺', level: 1, xp: 0, maxXp: 100, bonus: '+10% Crit Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 12, defense: 0, magic: 0, speed: 2 }, isDead: false },
+                        { id: 'p6', name: 'Fairy', type: 'pet', emoji: '🧚', level: 1, xp: 0, maxXp: 100, bonus: '+5 HP/sec Regen', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 10, speed: 0 }, isDead: false },
+                        { id: 'p7', name: 'Mimic', type: 'pet', emoji: '📦', level: 1, xp: 0, maxXp: 100, bonus: '+15% Magic Find', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 0, speed: 0 }, isDead: false },
+                        { id: 'p8', name: 'Rock Golem', type: 'pet', emoji: '🗿', level: 1, xp: 0, maxXp: 100, bonus: '+20% Defense', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 20, magic: 0, speed: -1 }, isDead: false },
+                        { id: 'p9', name: 'Ghost', type: 'pet', emoji: '👻', level: 1, xp: 0, maxXp: 100, bonus: '+10% Evasion', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 0, defense: 0, magic: 10, speed: 5 }, isDead: false },
+                        { id: 'p10', name: 'Unicorn', type: 'pet', emoji: '🦄', level: 1, xp: 0, maxXp: 100, bonus: '+10% Magic', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 15, speed: 2 }, isDead: false },
+                        { id: 'p11', name: 'Griffin', type: 'pet', emoji: '🦅', level: 1, xp: 0, maxXp: 100, bonus: '+10% Speed', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 5, magic: 0, speed: 10 }, isDead: false },
+                        { id: 'p12', name: 'Kraken', type: 'pet', emoji: '🦑', level: 1, xp: 0, maxXp: 100, bonus: '+15% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 20, defense: 5, magic: 0, speed: -2 }, isDead: false }
+                    ];
+                    const newPet = PETS[Math.floor(Math.random() * PETS.length)];
+                    setPet(newPet);
+                    addLog(`FOUND EGG: ${newPet.name} hatched!`, 'achievement');
+                    soundManager.playLevelUp();
+                } else {
+                    addLog("Your pet found a snack! (XP Up)", 'heal');
+                    setPet(p => p ? { ...p, xp: p.xp + 50 } : null);
+                }
             } else { addLog("Refreshing drink... but nothing happened.", 'info'); }
         },
         enterDungeon: () => {
@@ -656,6 +715,39 @@ export const useGame = () => {
             if (gIncome.starlight > 0) setStarlight(s => s + gIncome.starlight);
             if (gIncome.mithril > 0) setResources(r => ({ ...r, mithril: r.mithril + gIncome.mithril }));
 
+            // TIMERS
+            const deltaSeconds = effectiveTick / 1000;
+
+            // Dungeon Timer
+            if (dungeonActive) {
+                setDungeonTimer(t => {
+                    if (t <= 0) { setDungeonActive(false); return 0; }
+                    const next = t - deltaSeconds;
+                    if (next <= 0) { setDungeonActive(false); return 0; }
+                    return next;
+                });
+            }
+
+            // Void Timer
+            if (voidActive) {
+                setVoidTimer(t => {
+                    if (t <= 0) { setVoidActive(false); return 0; }
+                    const next = t - deltaSeconds;
+                    if (next <= 0) { setVoidActive(false); return 0; }
+                    return next;
+                });
+            }
+
+            // Raid Timer
+            if (raidActive) {
+                setRaidTimer(t => {
+                    if (t <= 0) { setRaidActive(false); return 0; }
+                    const next = t - deltaSeconds;
+                    if (next <= 0) { setRaidActive(false); return 0; }
+                    return next;
+                });
+            }
+
             const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements);
             const critTalent = talents.find(t => t.stat === 'crit');
             const critChance = critTalent ? (critTalent.level * critTalent.valuePerLevel) : 0;
@@ -872,6 +964,10 @@ export const useGame = () => {
                 setBoss(p => ({ ...p, stats: { ...p.stats, hp: newBossHp } }));
             }
 
+            // Calc Power
+            const currentPwr = finalHeroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + calculateHeroPower(h), 0);
+            setPartyPower(currentPwr);
+
             setHeroes(finalHeroes);
         }, effectiveTick / (1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0)));
 
@@ -890,7 +986,8 @@ export const useGame = () => {
         eternalFragments, setEternalFragments,
         starlight, setStarlight,
         starlightUpgrades, setStarlightUpgrades,
-        theme, setTheme
+        theme, setTheme,
+        galaxy, setGalaxy
     );
 
 
@@ -899,6 +996,6 @@ export const useGame = () => {
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: { ...ACTIONS, conquerSector }, partyDps, combatEvents, theme, galaxy, synergies: activeSynergies
+        actions: { ...ACTIONS, conquerSector }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies
     };
 };

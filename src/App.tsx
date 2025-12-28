@@ -32,7 +32,7 @@ function App() {
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-    actions, partyDps, combatEvents, theme, galaxy
+    actions, partyDps, partyPower, combatEvents, theme, galaxy
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
@@ -128,7 +128,7 @@ function App() {
 
         <BattleArea
           boss={boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
-          ultimateCharge={ultimateCharge} pet={pet} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps}
+          ultimateCharge={ultimateCharge} pet={pet} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps} partyPower={partyPower}
           combatEvents={combatEvents}
           // @ts-ignore
           synergies={useGame().synergies} // Wait, I returned 'synergies' from useGame, so I can just access it from destructuring?

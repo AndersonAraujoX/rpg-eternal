@@ -12,6 +12,23 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
     return 1;
 };
 
+export const calculateHeroPower = (hero: Hero): number => {
+    // Power = (Attack + Magic + (HP / 10) + (Defense / 2)) * (1 + CritChance) * SpeedMultiplier
+    // Base Stats
+    const stats = hero.stats;
+    const baseScore = stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2);
+
+    // Multipliers (Simplistic approximation based on class/skills not available here, just stats)
+    // We don't have crit chance accessible directly on hero stats without talents/eq calculation which is external.
+    // For now, let's use Speed as a proxy for DPS multiplier.
+
+    // Speed: 0 is baseline (1x). Each point is +5% speed? No, let's say linear scale.
+    // In useGame, effectiveTick = baseTick * speedBonus. 
+    // Let's approximate: Power = BaseScore * (1 + stats.speed * 0.05).
+
+    return Math.floor(baseScore * (1 + (stats.speed * 0.05)));
+};
+
 export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], boss: Boss, cards: MonsterCard[], achievements: Achievement[] = []) => {
     const dmgTalent = talents.find(t => t.stat === 'attack');
     const cScale = constellations.find(c => c.bonusType === 'bossDamage');
