@@ -30,7 +30,7 @@ function App() {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-    arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity,
+    arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
     actions, partyDps, combatEvents, theme
   } = useGame();
 
@@ -157,7 +157,7 @@ function App() {
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
       <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
-      <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} onFight={actions.fightArena} />
+      <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} opponents={arenaOpponents} onFight={actions.fightArena} />
       <QuestModal isOpen={showQuests} onClose={() => setShowQuests(false)} quests={quests} onClaim={actions.claimQuest} />
       <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
       <AchievementsModal isOpen={showAchievements} onClose={() => setShowAchievements(false)} achievements={achievements} />

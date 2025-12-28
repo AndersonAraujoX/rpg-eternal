@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats } from '../engine/types';
 import { GUILDS } from '../engine/types';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
@@ -15,15 +15,15 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
 ];
 
 export const INITIAL_HEROES: Hero[] = [
-    { id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 } },
-    { id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 } },
-    { id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], corruption: false, stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 } },
-    { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 } },
-    { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 } },
-    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 } },
-    { id: 'h7', name: 'Dragoon', type: 'hero', class: 'Dragoon', unlocked: false, emoji: '🐉', isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 130, maxHp: 130, mp: 50, maxMp: 50, attack: 35, magic: 10, defense: 8, speed: 14 } },
-    { id: 'h8', name: 'Sage', type: 'hero', class: 'Sage', unlocked: false, emoji: '📜', isDead: false, element: 'light', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 75, maxHp: 75, mp: 150, maxMp: 150, attack: 5, magic: 40, defense: 4, speed: 10 } },
-    { id: 'h9', name: 'Necromancer', type: 'hero', class: 'Necromancer', unlocked: false, emoji: '🦴', isDead: false, element: 'dark', assignment: 'combat', gambits: [], corruption: false, stats: { hp: 90, maxHp: 90, mp: 100, maxMp: 100, attack: 10, magic: 30, defense: 6, speed: 8 } }
+    { id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 } },
+    { id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 } },
+    { id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 } },
+    { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 } },
+    { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 } },
+    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 } },
+    { id: 'h7', name: 'Dragoon', type: 'hero', class: 'Dragoon', unlocked: false, emoji: '🐉', isDead: false, element: 'fire', assignment: 'combat', gambits: [], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 130, maxHp: 130, mp: 50, maxMp: 50, attack: 35, magic: 10, defense: 8, speed: 14 } },
+    { id: 'h8', name: 'Sage', type: 'hero', class: 'Sage', unlocked: false, emoji: '📜', isDead: false, element: 'light', assignment: 'combat', gambits: [], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 75, maxHp: 75, mp: 150, maxMp: 150, attack: 5, magic: 40, defense: 4, speed: 10 } },
+    { id: 'h9', name: 'Necromancer', type: 'hero', class: 'Necromancer', unlocked: false, emoji: '🦴', isDead: false, element: 'dark', assignment: 'combat', gambits: [], corruption: false, level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [], stats: { hp: 90, maxHp: 90, mp: 100, maxMp: 100, attack: 10, magic: 30, defense: 6, speed: 8 } }
 ];
 
 export const INITIAL_BOSS: Boss = {
@@ -109,13 +109,30 @@ export const useGame = () => {
     // PHASE 10 STATE
     const [arenaRank, setArenaRank] = useState<number>(1000);
     const [glory, setGlory] = useState<number>(0);
+    const [partyDps, setPartyDps] = useState(0);
+    const [arenaOpponents, setArenaOpponents] = useState<ArenaOpponent[]>([]);
+
+    // Generate opponents if empty
+    useEffect(() => {
+        if (arenaOpponents.length === 0) {
+            const newOpponents: ArenaOpponent[] = Array(3).fill(null).map((_, i) => ({
+                id: `opp-${Date.now()}-${i}`,
+                name: `Bot Player ${Math.floor(Math.random() * 1000)}`,
+                power: Math.floor(partyDps * (0.8 + (i * 0.2))), // 0.8x, 1.0x, 1.2x difficulty
+                rank: arenaRank + ((i - 1) * 25), // +/- rank
+                avatar: ['🤖', '👽', '👺', '🤡', '🤠'][Math.floor(Math.random() * 5)]
+            }));
+            setArenaOpponents(newOpponents);
+        }
+    }, [arenaOpponents.length, arenaRank, partyDps]);
+
     const [quests, setQuests] = useState<Quest[]>([
         { id: 'q1', description: 'Slay 50 Monsters', target: 50, progress: 0, reward: { type: 'gold', amount: 500 }, isCompleted: false, isClaimed: false },
         { id: 'q2', description: 'Collect 100 Souls', target: 100, progress: 0, reward: { type: 'souls', amount: 50 }, isCompleted: false, isClaimed: false },
         { id: 'q3', description: 'Enter the Tower', target: 1, progress: 0, reward: { type: 'voidMatter', amount: 1 }, isCompleted: false, isClaimed: false }
     ]);
     const [autoSellRarity, setAutoSellRarity] = useState<'none' | 'common' | 'rare'>('none');
-    const [partyDps, setPartyDps] = useState(0);
+    // partyDps moved up
     const damageAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
     const [combatEvents, setCombatEvents] = useState<{ id: string, damage: number, isCrit: boolean, x: number, y: number }[]>([]);
@@ -160,6 +177,23 @@ export const useGame = () => {
             }
         },
 
+        spendStatPoint: (heroId: string, stat: keyof Stats) => {
+            setHeroes(prev => prev.map(h => {
+                if (h.id === heroId && h.statPoints > 0) {
+                    let hpGain = 10, mpGain = 5, otherGain = 1;
+                    let newStats = { ...h.stats };
+
+                    if (stat === 'hp') { newStats.hp += hpGain; newStats.maxHp += hpGain; }
+                    else if (stat === 'mp') { newStats.mp += mpGain; newStats.maxMp += mpGain; }
+                    else { (newStats as any)[stat] = (newStats as any)[stat] + otherGain; }
+
+                    soundManager.playLevelUp();
+                    return { ...h, statPoints: h.statPoints - 1, stats: newStats };
+                }
+                return h;
+            }));
+        },
+
         buyTalent: (id: string, amount: number = 1) => {
             const t = talents.find(t => t.id === id);
             if (!t) return;
@@ -169,10 +203,9 @@ export const useGame = () => {
             let totalCost = 0;
             let count = 0;
 
-            // Prevent infinite loop crash if maxLevel is high, cap at amount (1, 10, 100)
             for (let i = 0; i < amount; i++) {
                 if (level >= t.maxLevel) break;
-                if ((souls - totalCost) < cost) break; // Check affordability
+                if ((souls - totalCost) < cost) break;
 
                 totalCost += cost;
                 level++;
@@ -194,6 +227,82 @@ export const useGame = () => {
                 return c;
             }));
         },
+
+        // TOWER
+        enterTower: () => {
+            if (tower.active) {
+                setTower(t => ({ ...t, active: false }));
+                setBoss(INITIAL_BOSS);
+                addLog("Escaped the Tower.", 'info');
+                return;
+            }
+            setTower(t => ({ ...t, active: true }));
+            setBoss({
+                id: `tower-${tower.floor}`, name: `Tower Guardian ${tower.floor}`, emoji: '🏯', type: 'boss',
+                level: tower.floor * 10, isDead: false, element: 'neutral',
+                stats: {
+                    hp: 500 * Math.pow(1.5, tower.floor), maxHp: 500 * Math.pow(1.5, tower.floor),
+                    attack: 20 * tower.floor, defense: 5 * tower.floor,
+                    magic: 10 * tower.floor, speed: 10 + tower.floor, mp: 9999, maxMp: 9999
+                }
+            });
+            addLog(`Entering Tower Floor ${tower.floor}...`, 'death');
+        },
+        prestigeTower: () => {
+            if (tower.floor < 20) { addLog("Reach Floor 20 to Ascend.", 'info'); return; }
+            const reward = Math.floor(tower.maxFloor / 10);
+            setStarlight(s => s + reward);
+            setTower({ active: false, floor: 1, maxFloor: 1 });
+            setBoss(INITIAL_BOSS);
+            addLog(`TOWER ASCENDED! +${reward} Starlight`, 'achievement');
+            soundManager.playLevelUp();
+        },
+
+        // SOCIAL ACTIONS
+        joinGuild: (guildName: string) => {
+            if (guild) return;
+            const template = GUILDS.find(g => g.name === guildName);
+            if (template) {
+                setGuild({ name: template.name, level: 1, xp: 0, maxXp: 1000, bonus: template.bonus, members: Math.floor(Math.random() * 50) + 10, description: template.description || 'A bot guild.' });
+                addLog(`Joined ${guildName}!`, 'heal');
+            }
+        },
+        contributeGuild: (amount: number) => {
+            if (!guild) return;
+            if (gold < amount) { addLog("Not enough Gold", 'info'); return; }
+            setGold(g => g - amount);
+            setGuild(g => {
+                if (!g) return null;
+                const newXp = g.xp + (amount / 10);
+                if (newXp >= g.maxXp) {
+                    addLog(`Guild Leveled Up to ${g.level + 1}!`, 'achievement');
+                    return { ...g, level: g.level + 1, xp: newXp - g.maxXp, maxXp: g.maxXp * 1.5 };
+                }
+                return { ...g, xp: newXp };
+            });
+            addLog(`Contributed ${amount} Gold to Guild`, 'info');
+        },
+        fightArena: (opponent: ArenaOpponent) => {
+            const winChance = partyDps > opponent.power ? 0.8 : 0.2;
+            const isWin = Math.random() < winChance;
+
+            if (isWin) {
+                const rankGain = 25;
+                const gloryGain = 10;
+                setArenaRank(r => r + rankGain);
+                setGlory(g => g + gloryGain);
+                addLog(`Won Arena Match vs ${opponent.name}! +${rankGain} Rank, +${gloryGain} Glory`, 'achievement');
+                soundManager.playLevelUp();
+            } else {
+                const rankLoss = 15;
+                setArenaRank(r => Math.max(0, r - rankLoss));
+                addLog(`Lost Arena Match vs ${opponent.name}. -${rankLoss} Rank`, 'death');
+            }
+            // Refresh opponents
+            setArenaOpponents([]);
+        },
+
+        // CORE GAMEPLAY
         summonTavern: () => {
             const COST = 500;
             if (gold < COST) return;
@@ -267,7 +376,6 @@ export const useGame = () => {
             setResources({ copper: 0, iron: 0, mithril: 0 });
             setDungeonActive(false);
             setRaidActive(false);
-            setRaidActive(false);
             setVoidMatter(0);
             addLog("ASCENDED! GAINED DIVINITY!", 'death');
         },
@@ -331,78 +439,7 @@ export const useGame = () => {
             });
             addLog("Pet fed!", 'heal');
         },
-        // TOWER
-        enterTower: () => {
-            if (tower.active) {
-                // Fleeing
-                setTower(t => ({ ...t, active: false }));
-                setBoss(INITIAL_BOSS); // Reset to normal boss
-                addLog("Escaped the Tower.", 'info');
-                return;
-            }
-            setTower(t => ({ ...t, active: true }));
-            setBoss({
-                id: `tower-${tower.floor}`, name: `Tower Guardian ${tower.floor}`, emoji: '🏯', type: 'boss',
-                level: tower.floor * 10, isDead: false, element: 'neutral',
-                stats: {
-                    hp: 500 * Math.pow(1.5, tower.floor), maxHp: 500 * Math.pow(1.5, tower.floor),
-                    attack: 20 * tower.floor, defense: 5 * tower.floor,
-                    magic: 10 * tower.floor, speed: 10 + tower.floor, mp: 9999, maxMp: 9999
-                }
-            });
-            addLog(`Entering Tower Floor ${tower.floor}...`, 'death');
-        },
-        // GUILD
-        joinGuild: (guildName: string) => {
-            if (guild) return; // Already in one
-            const template = GUILDS.find(g => g.name === guildName);
-            if (template) {
-                setGuild({ name: template.name, level: 1, xp: 0, maxXp: 1000, bonus: template.bonus, members: 1 });
-                addLog(`Joined ${guildName}!`, 'heal');
-            }
-        },
-        donateGuild: (amount: number, currency: 'gold' | 'ore') => {
-            if (!guild) return;
-            let xpGain = 0;
-            if (currency === 'gold') {
-                if (gold >= amount) { setGold(g => g - amount); xpGain = Math.floor(amount / 10); }
-            } else {
-                // Assume amount is 100 copper for simplicity in this MVP
-                if (resources.copper >= amount) { setResources(r => ({ ...r, copper: r.copper - amount })); xpGain = 50; }
-            }
 
-            if (xpGain > 0) {
-                setGuild(prev => {
-                    if (!prev) return null;
-                    let newXp = prev.xp + xpGain;
-                    let newLevel = prev.level;
-                    let newMax = prev.maxXp;
-                    if (newXp >= prev.maxXp) {
-                        newLevel++;
-                        newXp -= prev.maxXp;
-                        newMax = Math.floor(newMax * 1.5);
-                        addLog(`GUILD LEVEL UP! Lvl ${newLevel}`, 'heal');
-                        soundManager.playLevelUp();
-                    }
-                    return { ...prev, xp: newXp, level: newLevel, maxXp: newMax };
-                });
-            }
-        },
-        // ARENA
-        fightArena: (opponent: ArenaOpponent) => {
-            const teamPower = heroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + h.stats.attack + h.stats.hp / 10, 0);
-            const winChance = teamPower / (teamPower + opponent.power); // Simplified ELO-ish
-
-            if (Math.random() < winChance) {
-                addLog(`Arena Victory! Defeated ${opponent.name}`, 'death');
-                setArenaRank(r => Math.max(1, r - Math.floor(Math.random() * 5 + 1))); // Rank up (lower is better)
-                setGlory(g => g + 10);
-                soundManager.playLevelUp();
-            } else {
-                addLog(`Arena Defeat against ${opponent.name}`, 'damage');
-                setArenaRank(r => r + Math.floor(Math.random() * 3 + 1)); // Rank down
-            }
-        },
         // QUESTS
         claimQuest: (id: string) => {
             setQuests(prev => prev.map(q => {
@@ -416,6 +453,7 @@ export const useGame = () => {
                 return q;
             }));
         },
+
         // RUNES
         craftRune: () => {
             const COST = { mithril: 10, souls: 50 };
@@ -478,22 +516,14 @@ export const useGame = () => {
             setVoidMatter(v => v - 5);
             addLog("Item Reforged with Void energy.", 'craft');
         },
+
         closeOfflineModal: () => setOfflineGains(null),
         setAutoSellRarity: setAutoSellRarity,
         setGameSpeed: setGameSpeed,
         toggleSound: toggleSound,
         resetSave: () => { localStorage.clear(); window.location.reload(); },
         exportSave: () => btoa(localStorage.getItem('rpg_eternal_save_v6') || ''),
-        importSave: (str: string) => { try { JSON.parse(atob(str)); localStorage.setItem('rpg_eternal_save_v6', atob(str)); window.location.reload(); } catch { alert("Invalid Save"); } },
-        prestigeTower: () => {
-            if (tower.floor < 20) { addLog("Reach Floor 20 to Ascend.", 'info'); return; }
-            const reward = Math.floor(tower.maxFloor / 10);
-            setStarlight(s => s + reward);
-            setTower({ active: false, floor: 1, maxFloor: 1 }); // Reset tower
-            setBoss(INITIAL_BOSS);
-            addLog(`TOWER ASCENDED! +${reward} Starlight`, 'achievement');
-            soundManager.playLevelUp();
-        }
+        importSave: (str: string) => { try { JSON.parse(atob(str)); localStorage.setItem('rpg_eternal_save_v6', atob(str)); window.location.reload(); } catch { alert("Invalid Save"); } }
     };
 
 
@@ -597,12 +627,31 @@ export const useGame = () => {
                 }
             }
 
-            setHeroes(updatedHeroes);
+            let finalHeroes = updatedHeroes;
 
             let newBossHp = Math.max(0, boss.stats.hp - totalDmg);
             if (totalDmg > 0 && Math.random() > 0.8) soundManager.playHit();
 
             if (newBossHp === 0) {
+                // XP GAIN
+                const xpGain = Math.max(10, boss.level * 10);
+                finalHeroes = finalHeroes.map(h => {
+                    if (!h.isDead && h.assignment === 'combat' && h.unlocked) {
+                        let newXp = (h.xp || 0) + xpGain;
+                        // Level Up
+                        while (newXp >= (h.maxXp || 100)) {
+                            newXp -= (h.maxXp || 100);
+                            h.level = (h.level || 1) + 1;
+                            h.maxXp = Math.floor((h.maxXp || 100) * 1.5);
+                            h.statPoints = (h.statPoints || 0) + 3;
+                            addLog(`${h.name} reached Lvl ${h.level}!`, 'achievement');
+                            soundManager.playLevelUp();
+                        }
+                        return { ...h, xp: newXp };
+                    }
+                    return h;
+                });
+
                 // Drops
                 const loot = generateLoot(boss.level);
 
@@ -692,7 +741,7 @@ export const useGame = () => {
                     }));
                 }
 
-                setHeroes(prev => prev.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } })));
+                finalHeroes = finalHeroes.map(h => ({ ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } }));
                 soundManager.playLevelUp();
 
                 if (tower.active) {
@@ -706,6 +755,7 @@ export const useGame = () => {
                 setBoss(p => ({ ...p, stats: { ...p.stats, hp: newBossHp } }));
             }
 
+            setHeroes(finalHeroes);
         }, effectiveTick);
 
         return () => clearTimeout(timer);
@@ -731,7 +781,7 @@ export const useGame = () => {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pet, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity,
+        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
         actions: ACTIONS, partyDps, combatEvents, theme
     };
 };

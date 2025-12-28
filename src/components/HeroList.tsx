@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull } from 'lucide-react';
 import type { Hero } from '../engine/types';
 import { GambitModal } from './modals/GambitModal';
+import { HeroDetailModal } from './modals/HeroDetailModal';
+import { Info } from 'lucide-react';
 
 interface HeroListProps {
     heroes: Hero[];
@@ -10,10 +12,12 @@ interface HeroListProps {
 
 export const HeroList: React.FC<HeroListProps> = ({ heroes, actions }) => {
     const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
+    const [viewingHero, setViewingHero] = useState<Hero | null>(null);
 
     return (
         <div className="flex-1 bg-gray-800 p-2 overflow-y-auto no-scrollbar grid grid-cols-2 md:grid-cols-3 gap-2 border-t-4 border-gray-600">
             <GambitModal isOpen={!!selectedHero} onClose={() => setSelectedHero(null)} hero={selectedHero} actions={actions} />
+            <HeroDetailModal isOpen={!!viewingHero} onClose={() => setViewingHero(null)} hero={viewingHero} actions={actions} />
 
             {heroes.map(hero => (
                 <div key={hero.id} className={`relative p-2 rounded border-2 flex flex-col gap-1 transition-all ${!hero.unlocked ? 'opacity-50 border-gray-700 bg-gray-900 pointer-events-none grayscale' :
@@ -49,6 +53,13 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions }) => {
                                     title="Corrupt Hero (+100% ATK, -50% HP/DEF)"
                                 >
                                     <Skull size={10} />
+                                </button>
+                                <button
+                                    onClick={() => setViewingHero(hero)}
+                                    className="p-1 rounded bg-green-900 border border-green-500 text-green-200"
+                                    title="View Stats & Skills"
+                                >
+                                    <Info size={10} />
                                 </button>
                             </div>
                         )}

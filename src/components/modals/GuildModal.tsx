@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building, Shield, Coins, Pickaxe } from 'lucide-react';
+import { Building, Shield, Coins } from 'lucide-react';
 import { GUILDS } from '../../engine/types';
 import type { Guild } from '../../engine/types';
 
@@ -27,7 +27,8 @@ export const GuildModal: React.FC<GuildModalProps> = ({ isOpen, onClose, guild, 
                             {GUILDS.map(g => (
                                 <button key={g.name} onClick={() => actions.joinGuild(g.name)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 p-4 rounded flex flex-col items-center">
                                     <span className="text-green-300 font-bold text-lg">{g.name}</span>
-                                    <span className="text-gray-400 text-xs">{g.bonus}</span>
+                                    <span className="text-gray-400 text-xs italic mb-1">{g.description}</span>
+                                    <span className="text-yellow-400 text-xs">{g.bonus}</span>
                                 </button>
                             ))}
                         </div>
@@ -49,13 +50,13 @@ export const GuildModal: React.FC<GuildModalProps> = ({ isOpen, onClose, guild, 
 
                         <h4 className="text-white font-bold mb-2 flex items-center justify-center gap-2"><Shield size={16} /> Contribute</h4>
                         <div className="grid grid-cols-2 gap-2">
-                            <button onClick={() => actions.donateGuild(1000, 'gold')} className="btn-retro bg-amber-700 text-white p-2 rounded flex flex-col items-center justify-center disabled:opacity-50" disabled={gold < 1000}>
-                                <div className="flex items-center gap-1 font-bold"><Coins size={12} /> Donate Gold</div>
-                                <div className="text-[10px] opacity-75">1000 Gold (+100 XP)</div>
+                            <button onClick={() => actions.contributeGuild(100)} className="btn-retro bg-amber-700 text-white p-2 rounded flex flex-col items-center justify-center disabled:opacity-50" disabled={gold < 100}>
+                                <div className="flex items-center gap-1 font-bold"><Coins size={12} /> Small Donation</div>
+                                <div className="text-[10px] opacity-75">100 Gold (+10 XP)</div>
                             </button>
-                            <button onClick={() => actions.donateGuild(100, 'ore')} className="btn-retro bg-orange-700 text-white p-2 rounded flex flex-col items-center justify-center">
-                                <div className="flex items-center gap-1 font-bold"><Pickaxe size={12} /> Donate Ore</div>
-                                <div className="text-[10px] opacity-75">100 Copper (+50 XP)</div>
+                            <button onClick={() => actions.contributeGuild(1000)} className="btn-retro bg-amber-600 text-white p-2 rounded flex flex-col items-center justify-center disabled:opacity-50" disabled={gold < 1000}>
+                                <div className="flex items-center gap-1 font-bold"><Coins size={12} /> Large Donation</div>
+                                <div className="text-[10px] opacity-75">1000 Gold (+100 XP)</div>
                             </button>
                         </div>
                     </div>

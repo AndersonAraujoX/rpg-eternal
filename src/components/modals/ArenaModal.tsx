@@ -8,20 +8,14 @@ interface ArenaModalProps {
     rank: number;
     glory: number;
     heroes: Hero[];
+    opponents: ArenaOpponent[];
     onFight: (opponent: ArenaOpponent) => void;
 }
 
-export const ArenaModal: React.FC<ArenaModalProps> = ({ isOpen, onClose, rank, glory, heroes, onFight }) => {
+export const ArenaModal: React.FC<ArenaModalProps> = ({ isOpen, onClose, rank, glory, heroes, opponents, onFight }) => {
     if (!isOpen) return null;
 
     const teamPower = heroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + h.stats.attack + h.stats.hp / 10, 0);
-
-    // Simulate Opponents based on rank
-    const opponents: ArenaOpponent[] = [
-        { id: 'op1', name: 'Rival Guild', rank: rank, power: Math.floor(teamPower * 0.9), avatar: '🐺' },
-        { id: 'op2', name: 'Dark Knights', rank: rank + 1, power: Math.floor(teamPower * 1.1), avatar: '🦇' },
-        { id: 'op3', name: 'Void Walkers', rank: rank + 5, power: Math.floor(teamPower * 1.5), avatar: '👻' },
-    ];
 
     return (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95">

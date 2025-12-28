@@ -132,6 +132,18 @@ export interface GameStats {
 
 export type ElementType = 'fire' | 'water' | 'nature' | 'neutral' | 'light' | 'dark';
 
+export interface Skill {
+    id: string;
+    name: string;
+    description: string;
+    unlockLevel: number;
+    cooldown: number; // Turns/seconds
+    currentCooldown: number;
+    effectType: 'damage' | 'heal' | 'buff' | 'passive';
+    element?: ElementType;
+    value: number; // Multiplier (e.g. 1.5x damage)
+}
+
 export interface Hero extends Entity {
     class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer';
     emoji: string;
@@ -140,6 +152,11 @@ export interface Hero extends Entity {
     assignment: 'combat' | 'mine';
     gambits: Gambit[];
     corruption: boolean;
+    level: number;
+    xp: number;
+    maxXp: number;
+    statPoints: number;
+    skills: Skill[];
 }
 
 export type LogEntry = {
@@ -209,6 +226,7 @@ export interface Guild {
     maxXp: number;
     bonus: string; // e.g., "+10% Gold"
     members: number;
+    description: string;
 }
 
 export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'ally_hp<50' | 'enemy_boss';
@@ -222,9 +240,9 @@ export interface Gambit {
 }
 
 export const GUILDS = [
-    { name: 'The Iron Legion', bonus: '+10% Defense' },
-    { name: 'The Arcane Order', bonus: '+10% Magic' },
-    { name: 'The Shadow Syndicate', bonus: '+10% Crit Damage' }
+    { name: 'The Iron Legion', bonus: '+10% Defense', description: 'Strong defenders.' },
+    { name: 'The Arcane Order', bonus: '+10% Magic', description: 'Masters of magic.' },
+    { name: 'The Shadow Syndicate', bonus: '+10% Crit Damage', description: 'Assassins and thieves.' }
 ];
 
 
