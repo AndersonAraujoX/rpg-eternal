@@ -145,13 +145,14 @@ export const simulateTavernSummon = (
                     level: 1,
                     xp: 0,
                     maxXp: 100,
-                    stats: { hp: 50, maxHp: 50, attack: 20, defense: 10, magic: 0, speed: 2, mp: 0, maxMp: 0 },
+                    statPoints: 0,
+                    skills: [],
+                    stats: { hp: 80, maxHp: 80, mp: 30, maxMp: 30, attack: 10, magic: 5, defense: 5, speed: 10 },
+                    equipment: {},
                     element: 'neutral',
                     assignment: 'mine',
                     gambits: [],
                     corruption: false,
-                    statPoints: 0,
-                    skills: [],
                     type: 'hero',
                     isDead: false
                 };

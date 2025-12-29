@@ -95,19 +95,28 @@ export const useGame = () => {
     const [partyPower, setPartyPower] = useState(0);
     const [arenaOpponents, setArenaOpponents] = useState<ArenaOpponent[]>([]);
 
-    // Generate opponents if empty
+    // Generate opponents if empty OR if they have invalid power (Migration fix)
     useEffect(() => {
-        if (arenaOpponents.length === 0) {
-            const newOpponents: ArenaOpponent[] = Array(3).fill(null).map((_, i) => ({
-                id: `opp - ${Date.now()} -${i} `,
-                name: `Bot Player ${Math.floor(Math.random() * 1000)} `,
-                power: Math.floor(partyDps * (0.8 + (i * 0.2))), // 0.8x, 1.0x, 1.2x difficulty
-                rank: arenaRank + ((i - 1) * 25), // +/- rank
-                avatar: ['🤖', '👽', '👺', '🤡', '🤠'][Math.floor(Math.random() * 5)]
-            }));
+        const hasInvalidOpponents = arenaOpponents.some(op => op.power === 0);
+
+        if ((arenaOpponents.length === 0 || hasInvalidOpponents) && partyPower > 0) {
+            const newOpponents: ArenaOpponent[] = Array(3).fill(null).map((_, i) => {
+                // Dynamic Difficulty: Opponents get stronger as you climb ranks (Rank 1 is hardest)
+                // Rank 1000 = 0% bonus. Rank 1 = +50% bonus power.
+                const rankScaling = 1 + ((1000 - arenaRank) / 2000);
+                const difficultyMult = (0.8 + (i * 0.2)) * rankScaling;
+
+                return {
+                    id: `opp-${Date.now()}-${i}`,
+                    name: `Bot Player ${Math.floor(Math.random() * 1000)}`,
+                    power: Math.floor(partyPower * difficultyMult),
+                    rank: Math.max(1, arenaRank + ((i - 1) * 25)),
+                    avatar: ['🤖', '👽', '👺', '🤡', '🤠'][Math.floor(Math.random() * 5)]
+                };
+            });
             setArenaOpponents(newOpponents);
         }
-    }, [arenaOpponents.length, arenaRank, partyDps]);
+    }, [arenaOpponents.length, arenaRank, partyPower]);
 
     const [gameStats, setGameStats] = useState<GameStats>(INITIAL_GAME_STATS);
     const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
@@ -344,22 +353,32 @@ export const useGame = () => {
         },
 
         fightArena: (opponent: ArenaOpponent) => {
-            const winChance = partyPower > opponent.power ? 0.8 : 0.2;
-            const isWin = Math.random() < winChance;
+            // Power-based win chance
+            // Example: 100 vs 100 = 50%
+            // 200 vs 100 = 66%
+            // 50 vs 430 = 50 / 480 = 10%
+            const totalPower = partyPower + opponent.power;
+            const winChance = totalPower > 0 ? (partyPower / totalPower) : 0.5;
+
+            const roll = Math.random();
+            const isWin = roll < winChance;
 
             if (isWin) {
-                const rankGain = 25;
+                // Diminishing returns for farming weaklings?
+                // For now, static reward.
+                const rankGain = Math.floor(10 + (opponent.rank / arenaRank) * 20); // More rank for beating higher ranks
                 const gloryGain = 10;
-                setArenaRank(r => r + rankGain);
+                setArenaRank(r => Math.max(1, r - rankGain)); // Rank goes DOWN (1 is best)
                 setGlory(g => g + gloryGain);
-                addLog(`Won Arena Match vs ${opponent.name} ! +${rankGain} Rank, +${gloryGain} Glory`, 'achievement');
+                addLog(`VICTORY! Defeated ${opponent.name}. Rank improved by ${rankGain}.`, 'achievement');
                 soundManager.playLevelUp();
             } else {
-                const rankLoss = 15;
-                setArenaRank(r => Math.max(0, r - rankLoss));
-                addLog(`Lost Arena Match vs ${opponent.name}.-${rankLoss} Rank`, 'death');
+                const rankLoss = 5;
+                setArenaRank(r => Math.min(9999, r + rankLoss)); // Rank goes UP (worse)
+                addLog(`DEFEAT! Crushed by ${opponent.name}. Rank dropped by ${rankLoss}.`, 'death');
             }
-            // Refresh opponents
+            // Refresh opponents to reflect new Rank scaling
+            // Clearing the list triggers the useEffect to regenerate them with updated difficulty
             setArenaOpponents([]);
         },
 
@@ -1468,7 +1487,7 @@ export const useGame = () => {
     };
 
     // PHASE 55: Card Battle
-    const winCardBattle = (opponentId: string, difficulty: number) => {
+    const winCardBattle = (_opponentId: string, difficulty: number) => {
         const goldReward = difficulty * 10;
         setGold(g => g + goldReward);
         setGameStats(s => ({ ...s, cardBattlesWon: (s.cardBattlesWon || 0) + 1 })); // Ensure type exists in next step

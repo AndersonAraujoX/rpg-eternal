@@ -1,4 +1,4 @@
-import { DailyQuest, GameStats } from './types';
+import type { DailyQuest } from './types';
 
 // 7-Day Login Rewards
 export const LOGIN_REWARDS = [
@@ -17,7 +17,7 @@ export const checkDailyReset = (lastReset: number): boolean => {
     return (now - lastReset) > oneDay;
 };
 
-export const generateDailyQuests = (previousQuests: DailyQuest[], playerLevel: number): DailyQuest[] => {
+export const generateDailyQuests = (_previousQuests: DailyQuest[], _playerLevel: number): DailyQuest[] => {
     // Generate 3 random quests
     // Difficulty scales or static? Static for now.
 

@@ -91,7 +91,8 @@ export const usePersistence = (
                     element: h.element || INITIAL_HEROES[i].element, // Backfill
                     assignment: h.assignment || 'combat',
                     gambits: h.gambits || INITIAL_HEROES[i].gambits,
-                    corruption: h.corruption || false
+                    corruption: h.corruption || false,
+                    equipment: h.equipment || {}
                 }));
 
                 setHeroes(updatedHeroes);

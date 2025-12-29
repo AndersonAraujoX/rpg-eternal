@@ -1,4 +1,4 @@
-import { Building } from '../engine/types';
+import type { Building } from '../engine/types';
 
 export const INITIAL_BUILDINGS: Building[] = [
     {

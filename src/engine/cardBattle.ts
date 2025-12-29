@@ -1,5 +1,5 @@
-import { MonsterCard, ElementType } from './types';
-import { MONSTERS } from './bestiary';
+import type { MonsterCard, ElementType } from './types';
+
 
 export interface BattleCard {
     id: string;

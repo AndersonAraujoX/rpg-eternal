@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Sword, Trophy, Shield, HelpCircle, User, Skull } from 'lucide-react';
-import type { MonsterCard, CardOpponent, Hero, GameStats } from '../../engine/types';
-import { BattleCard, convertToBattleCard, resolveDuel } from '../../engine/cardBattle';
+import { Trophy, Shield, Skull } from 'lucide-react';
+import type { MonsterCard, CardOpponent } from '../../engine/types';
+import { type BattleCard, convertToBattleCard, resolveDuel } from '../../engine/cardBattle';
 import { soundManager } from '../../engine/sound';
 
 interface CardBattleModalProps {
     isOpen: boolean;
     onClose: () => void;
     cards: MonsterCard[];
-    onWin: (opponentId: string, diff: number) => void;
-    stats: GameStats;
+    onWin: (opponentId: string, difficulty: number) => void;
+    stats: any; // Keeping for now if needed later, or remove
 }
 
 const OPPONENTS: CardOpponent[] = [
@@ -18,7 +18,7 @@ const OPPONENTS: CardOpponent[] = [
     { id: 'npc_master', name: 'Deck Master', difficulty: 400, deck: ['Dragon', 'Demon', 'Lich'], avatar: '🧙‍♂️' },
 ];
 
-export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClose, cards, onWin, stats }) => {
+export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClose, cards, onWin }) => {
     const [selectedOpponent, setSelectedOpponent] = useState<CardOpponent | null>(null);
     const [myDeck, setMyDeck] = useState<BattleCard[]>([]);
     const [battleLog, setBattleLog] = useState<string[]>([]);

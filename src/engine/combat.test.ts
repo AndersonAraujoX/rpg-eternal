@@ -3,10 +3,12 @@ import { processCombatTurn } from './combat';
 import type { Hero, Boss } from './types';
 
 // Mocks
-const mockHero = (element: any): Hero => ({
+const mockHero = (_element: any): Hero => ({
     id: 'h1', name: 'Test', class: 'Warrior', stats: { hp: 100, maxHp: 100, attack: 10, defense: 0, magic: 0, speed: 10, mp: 0, maxMp: 0 },
-    isDead: false, unlocked: true, element, assignment: 'combat', gambits: [], corruption: false, emoji: '🦸', type: 'hero',
-    level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: []
+    element: 'fire', assignment: 'combat', gambits: [], corruption: false,
+    emoji: '🦸', type: 'hero', unlocked: true, isDead: false,
+    level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [],
+    equipment: {}
 });
 
 const mockBoss = (element: any): Boss => ({

@@ -42,7 +42,7 @@ export const executeGambit = (hero: Hero, gambit: Gambit, enemies: Boss[], allie
 
         case 'strong_attack':
             if (targetEnemy && hero.stats.mp >= 10) {
-                const dmg = hero.stats.attack * 1.5;
+                // const dmg = hero.stats.attack * 1.5;
                 // We can't easily modify enemy hp here without referencing the state setter or context
                 // This function might need to return a 'DamageInst' or similar
                 // For this refactor, we will rely on the main loop calling this and handling the result
