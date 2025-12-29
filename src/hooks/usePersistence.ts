@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Quest, Rune, Achievement, GalaxySector, StarlightUpgrade, GameStats, Resources } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector, GameStats, Resources } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../engine/initialData';
 
 export const usePersistence = (

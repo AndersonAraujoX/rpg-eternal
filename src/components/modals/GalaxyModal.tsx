@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Globe, Star, MapPinned } from 'lucide-react';
+import { X, Globe, Star } from 'lucide-react';
 import type { GalaxySector } from '../../engine/types';
 
 interface GalaxyModalProps {

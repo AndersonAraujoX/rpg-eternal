@@ -1,7 +1,9 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Layers, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild } from '../engine/types';
+import type { WeatherType } from '../engine/weather'; // Phase 48
+import { WEATHER_DATA } from '../engine/weather'; // Phase 48
 
 interface HeaderProps {
     boss: Boss;
@@ -43,13 +45,26 @@ interface HeaderProps {
     setShowFishing?: (v: boolean) => void;
     setShowAlchemy?: (v: boolean) => void;
     setShowExpeditions?: (v: boolean) => void;
+    setShowGarden?: (v: boolean) => void;
+    setShowRiftModal?: (v: boolean) => void;
+    setShowBreedingModal?: (v: boolean) => void; // Phase 46
+    setShowGuildWar?: (v: boolean) => void; // Phase 47
+    weather?: WeatherType; // Phase 48
+    weatherTimer?: number; // Phase 48
+    setShowMuseum?: (v: boolean) => void; // Phase 49
 }
 
 export const Header: React.FC<HeaderProps> = ({
     boss, souls, gold, divinity, tower, guild, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowBestiary, setShowSettings, setShowStats,
     setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy,
-    setShowFishing, setShowAlchemy, setShowExpeditions
+    setShowFishing, setShowAlchemy, setShowExpeditions,
+    setShowGarden,
+    // setShowRiftModal, // Handled via actions? Check usage. actually it is unused in the component body currently provided.
+    setShowBreedingModal, // Phase 46
+    setShowGuildWar, // Phase 47
+    weather, weatherTimer, // Phase 48
+    setShowMuseum // Phase 49
 }) => {
     return (
         <div className="bg-gray-900 p-2 border-b-4 border-gray-600 flex flex-col gap-2 rounded-t-lg">
@@ -78,6 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <button onClick={() => setShowQuests && setShowQuests(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Quests"><Scroll size={12} /></button>
                     <button onClick={() => setShowRunes && setShowRunes(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Rune Forge"><Gem size={12} /></button>
                     <button onClick={() => setShowAchievements && setShowAchievements(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Achievements"><Trophy size={12} /></button>
+                    {setShowMuseum && <button onClick={() => setShowMuseum(true)} className="btn-retro bg-emerald-900 text-emerald-200 px-2 py-1 rounded border border-emerald-500 flex items-center gap-1 hover:bg-emerald-800" title="The Museum"><BookOpen size={12} /></button>}
                     <button onClick={() => setShowStats(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Stats"><BarChart2 size={12} /></button>
                     <button onClick={() => setShowHelp(true)} className="btn-retro bg-gray-600 text-gray-200 px-2 py-1 rounded border border-gray-400 flex items-center gap-1 hover:bg-gray-500" title="Help"><HelpCircle size={12} /></button>
                     {setShowStarlight && <button onClick={() => setShowStarlight(true)} className="btn-retro bg-cyan-950 text-cyan-400 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-900 animate-pulse" title="Automation Constellations"><Settings size={12} /></button>}
@@ -85,6 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {setShowFishing && <button onClick={() => setShowFishing(true)} className="btn-retro bg-cyan-800 text-cyan-200 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-700" title="Fishing"><Anchor size={12} /></button>}
                     {setShowAlchemy && <button onClick={() => setShowAlchemy(true)} className="btn-retro bg-purple-800 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-700" title="Alchemy"><FlaskConical size={12} /></button>}
                     {setShowExpeditions && <button onClick={() => setShowExpeditions(true)} className="btn-retro bg-amber-800 text-amber-200 px-2 py-1 rounded border border-amber-500 flex items-center gap-1 hover:bg-amber-700" title="Expeditions"><Map size={12} /></button>}
+                    {setShowGarden && <button onClick={() => setShowGarden(true)} className="btn-retro bg-green-800 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-700" title="The Great Garden"><Leaf size={12} /></button>}
 
                     {/* GALAXY BUTTON */}
                     {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /></button>}
@@ -94,9 +111,31 @@ export const Header: React.FC<HeaderProps> = ({
                             <Ghost size={12} /> {voidMatter}
                         </button>
                     )}
+
+                    {/* Phase 46: Breeding Button */}
+                    <button onClick={() => setShowBreedingModal && setShowBreedingModal(true)} className="btn-retro bg-pink-700 text-white px-2 py-1 rounded border border-pink-500 hover:bg-pink-600 flex items-center gap-1" title="Pet Breeding"> 🧬 Breed </button>
+
+                    {/* Phase 47: Guild War */}
+                    <button onClick={() => setShowGuildWar && setShowGuildWar(true)} className="btn-retro bg-orange-700 text-white px-2 py-1 rounded border border-orange-500 hover:bg-orange-600 flex items-center gap-1" title="Guild Wars"> ⚔️ War </button>
                 </div>
 
                 <div className="flex gap-2 items-center">
+                    {/* Phase 48: Weather Widget */}
+                    {weather && weatherTimer && (
+                        <div className="bg-gray-800 px-2 py-1 rounded text-xs flex items-center gap-1 border border-gray-600 group relative cursor-help">
+                            <span>{WEATHER_DATA[weather].icon}</span>
+                            <span className="hidden sm:inline text-gray-300">{weather}</span>
+                            <span className="text-gray-500 font-mono text-[10px]">{Math.floor(weatherTimer / 60)}:{(weatherTimer % 60).toString().padStart(2, '0')}</span>
+
+                            {/* Tooltip */}
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900 border border-gray-600 p-2 rounded shadow-xl hidden group-hover:block z-50">
+                                <div className="font-bold text-white mb-1">{WEATHER_DATA[weather].name}</div>
+                                <div className="text-[10px] text-gray-400 mb-1">{WEATHER_DATA[weather].description}</div>
+                                <div className="text-[10px] text-green-400">Bonus: +{Math.abs(WEATHER_DATA[weather].bonus.value * 100)}% {WEATHER_DATA[weather].bonus.stat.toUpperCase()}</div>
+                            </div>
+                        </div>
+                    )}
+
                     {keys > 0 && <span className="text-amber-500 flex items-center gap-1 bg-gray-800 px-2 py-1 rounded"><Key size={10} /> {keys}</span>}
                     {keys > 0 && !dungeonActive && (
                         <button onClick={actions.enterDungeon} className="btn-retro bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-500 text-[10px] animate-pulse border border-yellow-300">VAULT</button>

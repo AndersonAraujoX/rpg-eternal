@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'; // Refresh timestamp: 1
+import { formatNumber } from '../utils';
 
 import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources } from '../engine/types';
 import { CLASS_SKILLS } from '../engine/skills';
@@ -21,6 +22,11 @@ import { processFishing } from '../engine/fishing';
 import { brewPotion } from '../engine/alchemy';
 import type { Expedition, Potion } from '../engine/types';
 import { startExpedition, checkExpeditionCompletion, claimExpeditionRewards } from '../engine/expeditions';
+import { tickGarden, INITIAL_GARDEN } from '../engine/garden'; // Phase 43
+import type { GardenPlot } from '../engine/types';
+import { generateMarketStock } from '../engine/market'; // Phase 44
+import type { MarketItem, Rift } from '../engine/types';
+import { calculateBreedingResult } from '../engine/breeding'; // Phase 46
 
 import {
     INITIAL_HEROES,
@@ -31,6 +37,10 @@ import {
     INITIAL_CONSTELLATIONS,
     GUILDS
 } from '../engine/initialData';
+import { INITIAL_TERRITORIES, simulateSiege } from '../engine/guildWar'; // Phase 47
+import { getRandomWeather, WEATHER_DATA } from '../engine/weather'; // Phase 48
+import type { Territory } from '../engine/types';
+import type { WeatherType } from '../engine/weather';
 
 export const useGame = () => {
     // STATE
@@ -59,6 +69,13 @@ export const useGame = () => {
     // PHASE 41
     const [activeExpeditions, setActiveExpeditions] = useState<Expedition[]>([]);
     const [activePotions, setActivePotions] = useState<{ id: string, name: string, effect: Potion['effect'], value: number, endTime: number }[]>([]);
+
+    // PHASE 43
+    const [gardenPlots, setGardenPlots] = useState<GardenPlot[]>(INITIAL_GARDEN);
+    const [activeRift, setActiveRift] = useState<Rift | null>(null);
+    const [riftTimer, setRiftTimer] = useState<number>(0);
+    const [marketStock, setMarketStock] = useState<MarketItem[]>([]);
+    const [marketTimer, setMarketTimer] = useState<number>(0);
 
     const [dungeonActive, setDungeonActive] = useState<boolean>(false);
     const [dungeonTimer, setDungeonTimer] = useState<number>(0);
@@ -147,9 +164,14 @@ export const useGame = () => {
     // LOAD
     // PERSISTENCE
 
+    // PERSISTENCE
+
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
-        setLogs(prev => [...prev.slice(-49), { id: Math.random().toString(36), message, type }]);
+        const newLog: LogEntry = { id: (Date.now() + Math.random()).toString(), message, type, timestamp: Date.now() };
+        setLogs(prev => [newLog, ...prev].slice(0, 20)); // Limit to 20 logs for max memory saving
     };
+
+    // Removed unused combatEvents to save memory
     const toggleSound = () => { setIsSoundOn(!isSoundOn); soundManager.toggle(!isSoundOn); };
 
     // DPS Calculation Loop
@@ -793,12 +815,30 @@ export const useGame = () => {
             const miners = heroes.filter(h => h.unlocked && h.assignment === 'mine');
             const miningYield = processMining(miners);
             if (miningYield) {
+                // ... mining logic existing ... 
+            }
+
+            // PHASE 43 - Garden
+            if (now % 1000 < 100) {
+                setGardenPlots(prev => tickGarden(prev, now));
+            }
+            if (miningYield) {
                 setResources(r => ({
                     ...r,
                     copper: r.copper + (miningYield.copper || 0),
                     iron: r.iron + (miningYield.iron || 0),
                     mithril: r.mithril + (miningYield.mithril || 0)
                 }));
+            }
+
+
+            // PHASE 44 - Black Market
+            if (marketTimer > 0) {
+                setMarketTimer(t => Math.max(0, t - 1000));
+            } else if (Math.random() < 0.001) { // 0.1% chance per second (approx avg 16 mins) to spawn
+                setMarketStock(generateMarketStock(1));
+                setMarketTimer(300000); // 5 minutes
+                // Play sound?
             }
 
             // Fishing (Passive)
@@ -918,7 +958,7 @@ export const useGame = () => {
                 soundManager.playLevelUp();
             } else { setUltimateCharge(p => Math.min(100, p + (5 * activeHeroes.length / 6) * gameSpeed)); } // Charge slower if fewer heroes
 
-            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pets, effectiveTick, defenseMult, synergyVampirism);
+            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pets, effectiveTick, defenseMult, synergyVampirism, activeRift?.restriction);
             damageAccumulator.current += totalDmg; // Track DPS
 
             if (totalDmg > 0) {
@@ -1102,6 +1142,12 @@ export const useGame = () => {
                         }
                     }
 
+                    // Drop Herbs Logic
+                    if (Math.random() < 0.15) { // 15% Chance
+                        setResources(prev => ({ ...prev, herbs: prev.herbs + Math.floor(Math.random() * 5) + 1 }));
+                        addLog(`Found Herbs!`, 'achievement');
+                    }
+
                     // Track Kills (Bestiary & Stats)
                     setMonsterKills(prev => ({ ...prev, [boss.name]: (prev[boss.name] || 0) + 1 }));
                     setGameStats(prev => ({
@@ -1189,6 +1235,69 @@ export const useGame = () => {
                 }));
             }
 
+            // --- PHASE 51: AUTOMATION MECHANICS ---
+            // Run every 10 ticks (approx 1s) to avoid spam
+            const tick = Date.now();
+            if (tick % 1000 < 100) { // Rough 1s check
+
+                // 1. AUTO-MINING (Miners Lv 3+)
+                const miners = heroes.filter(h => h.class === 'Miner' && h.level >= 3 && !h.isDead && h.unlocked);
+                if (miners.length > 0) {
+                    const copperGain = miners.length * 2;
+                    const ironGain = miners.filter(m => m.level >= 10).length; // Lv 10+ miners find iron
+                    setResources(r => ({
+                        ...r,
+                        copper: r.copper + copperGain,
+                        iron: r.iron + ironGain
+                    }));
+                    // Silent update or maybe log rarely
+                }
+
+                // 2. AUTO-FEEDING (Fishermen Lv 3+)
+                const fishermen = heroes.filter(h => h.class === 'Fisherman' && h.level >= 3 && !h.isDead && h.unlocked);
+                if (fishermen.length > 0 && pets.length > 0) {
+                    setResources(prevRes => {
+                        if (prevRes.fish >= fishermen.length) {
+                            // Feed pets
+                            setPets(prevPets => prevPets.map(p => {
+                                // Simple XP gain
+                                const nxp = p.xp + 5 * fishermen.length;
+                                if (nxp >= p.maxXp) {
+                                    return { ...p, level: p.level + 1, xp: nxp - p.maxXp, maxXp: Math.floor(p.maxXp * 1.5) };
+                                }
+                                return { ...p, xp: nxp };
+                            }));
+                            return { ...prevRes, fish: prevRes.fish - fishermen.length };
+                        }
+                        return prevRes;
+                    });
+                }
+
+                // 3. AUTO-CRAFTING (Blacksmiths Lv 3+)
+                // Run less frequently? Maybe 10% chance per second per blacksmith
+                const blacksmiths = heroes.filter(h => h.class === 'Blacksmith' && h.level >= 3 && !h.isDead && h.unlocked);
+                blacksmiths.forEach(bs => {
+                    if (Math.random() < 0.05) { // 5% chance per second
+                        const rarityRoll = Math.random();
+                        const rarity = rarityRoll > 0.95 ? 'epic' : rarityRoll > 0.8 ? 'rare' : 'common';
+                        const newItem: Item = {
+                            id: `auto_forged_${Date.now()}_${Math.random()}`,
+                            name: `Forged ${rarity} Sword`,
+                            type: 'weapon',
+                            rarity: rarity,
+                            stat: 'attack',
+                            value: bs.level * 2, // Scales with smith level
+                            runes: [],
+                            sockets: 0 // Added default
+                        };
+                        setItems(prev => [...prev.slice(-99), newItem]); // Keep inventory cap handled?
+                        addLog(`Blacksmith ${bs.name} forged a ${newItem.name}!`, 'craft');
+                    }
+                });
+            }
+
+            // --- END AUTOMATION ---
+
             // Calc Power
             const currentPwr = finalHeroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + calculateHeroPower(h), 0);
             setPartyPower(currentPwr);
@@ -1220,13 +1329,175 @@ export const useGame = () => {
         activePotions, setActivePotions
     );
 
+    // PHASE 44 - Black Market Action
+    const buyMarketItem = (item: MarketItem) => {
+        if (item.currency === 'gold' && gold >= item.cost) {
+            setGold(g => g - item.cost);
+        } else if (item.currency === 'divinity' && divinity >= item.cost) {
+            setDivinity(d => d - item.cost);
+        } else if (item.currency === 'voidMatter' && voidMatter >= item.cost) {
+            setVoidMatter(v => v - item.cost);
+        } else {
+            return; // Cannot afford
+        }
+
+        // Apply Effect
+        if (item.type === 'potion') {
+            // Stat boosts
+            if (item.id.includes('void')) setVoidMatter(v => v + (item.value || 0));
+            if (item.id.includes('divinity')) setDivinity(d => d + (item.value || 0));
+            if (item.id.includes('gold')) setGold(g => g + (item.value || 0));
+        } else if (item.type === 'gambit_box') {
+            setGold(g => g + 1000); // Placeholder
+            addLog("Gambit Unlocked (Simulated)", "achievement");
+        }
+
+        // Remove from stock
+        setMarketStock(prev => prev.filter(i => i.id !== item.id));
+        addLog(`Bought ${item.name}`, 'action');
+    };
+
+
+    // PHASE 45: Rifts
+    const enterRift = (rift: Rift) => {
+        if (partyPower < rift.difficulty) {
+            addLog(`Rift too dangerous! Recommended Power: ${formatNumber(rift.difficulty)}`, 'info');
+            return;
+        }
+        setActiveRift(rift);
+        setRiftTimer(rift.restriction === 'time_crunch' ? 10 : 300); // 10s for time crunch, 5m for others
+        setDungeonActive(false); // Can't be in dungeon and rift
+        addLog(`Entered Rift: ${rift.name} (${rift.restriction})`, 'info');
+    };
+
+    const exitRift = (success: boolean) => {
+        if (!activeRift) return;
+
+        if (success) {
+            addLog(`Conquered Rift: ${activeRift.name}!`, 'achievement');
+            // Give Rewards
+            activeRift.rewards.forEach(r => {
+                if (r.type === 'starlight') setStarlight(s => s + r.amount);
+                if (r.type === 'voidMatter') setVoidMatter(v => v + r.amount);
+                if (r.type === 'gold') setGold(g => g + r.amount);
+            });
+            // Restore HP on exit? Or let them suffer? Let's restore for convenience.
+            setHeroes(prev => prev.map(h => ({ ...h, stats: { ...h.stats, hp: h.stats.maxHp } })));
+        } else {
+            addLog(`Failed Rift: ${activeRift.name}.`, 'death');
+        }
+        setActiveRift(null);
+        setRiftTimer(0);
+    };
+
+    // Rift Timer Tick
+    useEffect(() => {
+        if (!activeRift) return;
+        const timer = setInterval(() => {
+            setRiftTimer(prev => {
+                if (prev <= 1) {
+                    exitRift(false); // Time ran out
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [activeRift]);
+
+
+    // Phase 46: Breeding
+    const breedPets = (parent1: Pet, parent2: Pet) => {
+        const cost = 5000;
+        if (gold < cost) return;
+
+        setGold(g => g - cost);
+        const child = calculateBreedingResult(parent1, parent2);
+
+        setPets(prev => {
+            const others = prev.filter(p => p.id !== parent1.id && p.id !== parent2.id);
+            return [...others, child];
+        });
+
+        addLog(`Transmuted ${parent1.name} and ${parent2.name} into ${child.name}!`, 'achievement');
+    };
+
+
+    // Phase 47: Guild Wars
+    const [territories, setTerrories] = useState<Territory[]>(INITIAL_TERRITORIES);
+
+    // Phase 48: Weather
+    const [weather, setWeather] = useState<WeatherType>('Clear');
+    const [weatherTimer, setWeatherTimer] = useState(300); // 5 minutes per cycle
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setWeatherTimer(prev => {
+                if (prev <= 1) {
+                    const nextWeather = getRandomWeather();
+                    setWeather(nextWeather);
+                    const effect = WEATHER_DATA[nextWeather];
+                    if (nextWeather !== 'Clear') {
+                        addLog(`Weather changed to ${effect.name}! ${effect.description}`, 'info');
+                    }
+                    return 300; // Reset to 5 mins
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // Apply Weather Bonuses inside hooks/logic?
+    // For now, simply exporting the state so components can react (e.g. Header, BattleArea)
+
+    const attackTerritory = (id: string) => {
+        const territory = territories.find(t => t.id === id);
+        if (!territory) return;
+
+        // Simple cost to attack? Maybe Energy? For now, free or small gold cost
+        const siegeCost = 1000;
+        if (gold < siegeCost) {
+            addLog("Not enough gold to fund the siege!", "action"); // Changed from error to action to satisfy type
+            return;
+        }
+        setGold(g => g - siegeCost);
+
+        const won = simulateSiege(territory, partyPower);
+        if (won) {
+            setTerrories(prev => prev.map(t => t.id === id ? { ...t, owner: 'player' } : t));
+            addLog(`Victory! Captured ${territory.name}.`, 'achievement');
+        } else {
+            addLog(`Defeat! Your army failed to take ${territory.name}.`, 'death');
+            // Perhaps lose some troops or temp debuff?
+        }
+    };
+
+    // Inject bonuses into state/getters if possible, or export them.
+    // For now, let's export them so App or other hooks can use them? 
+    // Actually, gold generation is inside this hook mostly (via mining/combat).
+    // We should modify the useEffect loops for passive gain.
+
+    // NOTE: This hook is getting HUGE. Refactoring is recommended for Phase 48.
 
     return {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: { ...ACTIONS, conquerSector }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
-        monsterKills, gameStats, activeExpeditions, activePotions
+        actions: { ...ACTIONS, conquerSector, breedPets, attackTerritory }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
+        monsterKills, gameStats, activeExpeditions, activePotions,
+        // PHASE 43
+        gardenPlots, setGardenPlots,
+        setResources, setGold,
+        marketStock, marketTimer, buyMarketItem,
+        // PHASE 45
+        activeRift, riftTimer, enterRift, exitRift,
+        // PHASE 46
+        breedPets,
+        // PHASE 47
+        territories, attackTerritory,
+        // PHASE 48
+        weather, weatherTimer
     };
 };

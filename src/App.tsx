@@ -29,6 +29,12 @@ import { GalaxyModal } from './components/modals/GalaxyModal';
 import { FishingModal } from './components/modals/FishingModal';
 import { AlchemyModal } from './components/modals/AlchemyModal';
 import { ExpeditionsModal } from './components/modals/ExpeditionsModal';
+import { GardenModal } from './components/modals/GardenModal';
+import { MarketModal } from './components/modals/MarketModal';
+import { RiftModal } from './components/modals/RiftModal';
+import { BreedingModal } from './components/modals/BreedingModal'; // Phase 46
+import { GuildWarModal } from './components/modals/GuildWarModal'; // Phase 47
+import { MuseumModal } from './components/modals/MuseumModal'; // Phase 49
 
 import './index.css';
 
@@ -39,10 +45,17 @@ function App() {
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
-    activeExpeditions, activePotions
+    activeExpeditions, activePotions, gardenPlots, setGardenPlots, setResources, setGold,
+    marketStock, marketTimer, buyMarketItem,
+    activeRift, riftTimer, enterRift, exitRift,
+    breedPets, // Phase 46
+    territories, attackTerritory, // Phase 47
+    weather, weatherTimer // Phase 48
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
+  const [showMarket, setShowMarket] = useState(false);
+  const [showRiftModal, setShowRiftModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showTavern, setShowTavern] = useState(false);
   const [showStars, setShowStars] = useState(false);
@@ -65,6 +78,10 @@ function App() {
   const [showFishing, setShowFishing] = useState(false);
   const [showAlchemy, setShowAlchemy] = useState(false);
   const [showExpeditions, setShowExpeditions] = useState(false);
+  const [showGarden, setShowGarden] = useState(false);
+  const [showBreedingModal, setShowBreedingModal] = useState(false); // Phase 46
+  const [showGuildWar, setShowGuildWar] = useState(false); // Phase 47
+  const [showMuseum, setShowMuseum] = useState(false); // Phase 49
 
   const [importString, setImportString] = useState('');
 
@@ -138,7 +155,13 @@ function App() {
           setShowInventory={setShowInventory} setShowBestiary={setShowBestiary} setShowSettings={setShowSettings} setShowStats={setShowStats}
           setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
           setShowArena={setShowArena} setShowQuests={setShowQuests} setShowGalaxy={setShowGalaxy}
+          setShowRiftModal={setShowRiftModal}
+          setShowBreedingModal={setShowBreedingModal} // Phase 46
+          setShowGuildWar={setShowGuildWar} // Phase 47
+          weather={weather} weatherTimer={weatherTimer} // Phase 48
+          setShowMuseum={setShowMuseum} // Phase 49
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
+          setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy} setShowExpeditions={setShowExpeditions} setShowGarden={setShowGarden}
         />
 
         <BattleArea
@@ -167,12 +190,12 @@ function App() {
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
       <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />
       <StarChartModal isOpen={showStars} onClose={() => setShowStars(false)} divinity={divinity} constellations={constellations} actions={actions} />
-      <ForgeModal isOpen={showForge} onClose={() => setShowForge(false)} resources={resources} actions={actions} items={items} voidMatter={voidMatter} />
       <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} theme={theme} />
-      <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />
-      <TavernModal isOpen={showTavern} onClose={() => setShowTavern(false)} gold={gold} actions={actions} tavernPurchases={gameStats.tavernPurchases || 0} />
-      <InventoryModal isOpen={showInventory} onClose={() => setShowInventory(false)} items={items} />
+      {showShop && <ShopModal isOpen={true} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />}
+      {showTavern && <TavernModal heroes={heroes} gold={gold} summonTavern={actions.summonTavern} onClose={() => setShowTavern(false)} setGold={setGold} />}
+      {showForge && <ForgeModal resources={resources} forgeUpgrade={actions.forgeUpgrade} onClose={() => setShowForge(false)} setResources={setResources} />}
+      {showInventory && <InventoryModal isOpen={true} items={items} onClose={() => setShowInventory(false)} />}
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
       <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
@@ -196,6 +219,37 @@ function App() {
       <AlchemyModal isOpen={showAlchemy} onClose={() => setShowAlchemy(false)} resources={resources} activePotions={activePotions || []} brewPotion={actions.brewPotion} />
 
       <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} />
+
+      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} />
+
+      <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} />
+
+      {/* RIFT OVERLAY */}
+      {activeRift && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-red-900/90 border-2 border-red-500 text-white px-6 py-2 rounded-full z-50 flex items-center gap-4 shadow-[0_0_20px_rgba(220,38,38,0.5)] animate-pulse backdrop-blur-md">
+          <span className="font-bold uppercase tracking-widest text-sm flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            {activeRift.name}
+          </span>
+          <span className="font-mono text-xl text-yellow-300 font-bold">{riftTimer}s</span>
+          <button
+            onClick={() => exitRift(false)}
+            className="bg-black/50 hover:bg-black/80 px-3 py-1 rounded text-xs border border-red-500/50 uppercase font-bold tracking-wider hover:text-red-400 transition-colors"
+          >
+            Abandon
+          </button>
+        </div>
+      )}
+
+      <RiftModal
+        isOpen={showRiftModal}
+        onClose={() => setShowRiftModal(false)}
+        partyPower={partyPower}
+        startRift={(rift) => { enterRift(rift); setShowRiftModal(false); }}
+      />
+      {showBreedingModal && <BreedingModal isOpen={true} onClose={() => setShowBreedingModal(false)} pets={pets} breedPets={breedPets} gold={gold} />}
+      {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} partyPower={partyPower} />}
+      {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} />}
     </div>
   );
 }

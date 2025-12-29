@@ -85,18 +85,18 @@ export const simulateTavernSummon = (
             }
         } else if (roll < 0.50) {
             const PETS: Pet[] = [
-                { id: 'p1', name: 'Baby Dragon', type: 'pet', emoji: '🐉', level: 1, xp: 0, maxXp: 100, bonus: '+10% DPS', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                { id: 'p2', name: 'Floating Eye', type: 'pet', emoji: '👁️', level: 1, xp: 0, maxXp: 100, bonus: '+10% Gold', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                { id: 'p3', name: 'Slime', type: 'pet', emoji: '💧', level: 1, xp: 0, maxXp: 100, bonus: '+10% HP', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 0, speed: 0 }, isDead: false },
-                { id: 'p4', name: 'Phoenix', type: 'pet', emoji: '🦅🔥', level: 1, xp: 0, maxXp: 100, bonus: '+5% Revive Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 8, defense: 0, magic: 5, speed: 0 }, isDead: false },
-                { id: 'p5', name: 'Dire Wolf', type: 'pet', emoji: '🐺', level: 1, xp: 0, maxXp: 100, bonus: '+10% Crit Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 12, defense: 0, magic: 0, speed: 2 }, isDead: false },
-                { id: 'p6', name: 'Fairy', type: 'pet', emoji: '🧚', level: 1, xp: 0, maxXp: 100, bonus: '+5 HP/sec Regen', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 10, speed: 0 }, isDead: false },
-                { id: 'p7', name: 'Mimic', type: 'pet', emoji: '📦', level: 1, xp: 0, maxXp: 100, bonus: '+15% Magic Find', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 0, speed: 0 }, isDead: false },
-                { id: 'p8', name: 'Rock Golem', type: 'pet', emoji: '🗿', level: 1, xp: 0, maxXp: 100, bonus: '+20% Defense', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 20, magic: 0, speed: -1 }, isDead: false },
-                { id: 'p9', name: 'Ghost', type: 'pet', emoji: '👻', level: 1, xp: 0, maxXp: 100, bonus: '+10% Evasion', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 0, defense: 0, magic: 10, speed: 5 }, isDead: false },
-                { id: 'p10', name: 'Unicorn', type: 'pet', emoji: '🦄', level: 1, xp: 0, maxXp: 100, bonus: '+10% Magic', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 15, speed: 2 }, isDead: false },
-                { id: 'p11', name: 'Griffin', type: 'pet', emoji: '🦅', level: 1, xp: 0, maxXp: 100, bonus: '+10% Speed', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 5, magic: 0, speed: 10 }, isDead: false },
-                { id: 'p12', name: 'Kraken', type: 'pet', emoji: '🦑', level: 1, xp: 0, maxXp: 100, bonus: '+15% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 20, defense: 5, magic: 0, speed: -2 }, isDead: false }
+                { id: 'p1', name: 'Wolf Pup', type: 'pet', emoji: '🐺', rarity: 'common', level: 1, xp: 0, maxXp: 100, bonus: '+5% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 0, magic: 0, speed: 1 }, isDead: false },
+                { id: 'p2', name: 'Cat Spirit', type: 'pet', emoji: '🐱', rarity: 'common', level: 1, xp: 0, maxXp: 100, bonus: '+5% Speed', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 2, speed: 5 }, isDead: false },
+                { id: 'p3', name: 'Slime', type: 'pet', emoji: '💧', rarity: 'common', level: 1, xp: 0, maxXp: 100, bonus: '+5% HP', stats: { hp: 20, maxHp: 20, mp: 0, maxMp: 0, attack: 1, defense: 1, magic: 0, speed: 0 }, isDead: false },
+                { id: 'p4', name: 'Bat', type: 'pet', emoji: '🦇', rarity: 'common', level: 1, xp: 0, maxXp: 100, bonus: '+2% Life Steal', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 3, defense: 0, magic: 0, speed: 3 }, isDead: false },
+                { id: 'p5', name: 'Dire Wolf', type: 'pet', emoji: '🐺', rarity: 'rare', level: 1, xp: 0, maxXp: 100, bonus: '+10% Crit Chance', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 12, defense: 0, magic: 0, speed: 2 }, isDead: false },
+                { id: 'p6', name: 'Fairy', type: 'pet', emoji: '🧚', rarity: 'rare', level: 1, xp: 0, maxXp: 100, bonus: '+5 HP/sec Regen', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 10, speed: 0 }, isDead: false },
+                { id: 'p7', name: 'Mimic', type: 'pet', emoji: '📦', rarity: 'epic', level: 1, xp: 0, maxXp: 100, bonus: '+15% Magic Find', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 0, speed: 0 }, isDead: false },
+                { id: 'p8', name: 'Rock Golem', type: 'pet', emoji: '🗿', rarity: 'rare', level: 1, xp: 0, maxXp: 100, bonus: '+20% Defense', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 20, magic: 0, speed: -1 }, isDead: false },
+                { id: 'p9', name: 'Ghost', type: 'pet', emoji: '👻', rarity: 'rare', level: 1, xp: 0, maxXp: 100, bonus: '+10% Evasion', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 0, defense: 0, magic: 10, speed: 5 }, isDead: false },
+                { id: 'p10', name: 'Unicorn', type: 'pet', emoji: '🦄', rarity: 'epic', level: 1, xp: 0, maxXp: 100, bonus: '+10% Magic', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 5, magic: 15, speed: 2 }, isDead: false },
+                { id: 'p11', name: 'Griffin', type: 'pet', emoji: '🦅', rarity: 'epic', level: 1, xp: 0, maxXp: 100, bonus: '+10% Speed', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 10, defense: 5, magic: 0, speed: 10 }, isDead: false },
+                { id: 'p12', name: 'Kraken', type: 'pet', emoji: '🦑', rarity: 'legendary', level: 1, xp: 0, maxXp: 100, bonus: '+15% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 20, defense: 5, magic: 0, speed: -2 }, isDead: false }
             ];
 
             const basePet = PETS[Math.floor(Math.random() * PETS.length)];

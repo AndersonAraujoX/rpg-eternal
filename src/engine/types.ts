@@ -13,6 +13,20 @@ export type Stats = {
 export type EntityType = 'hero' | 'boss' | 'pet';
 
 
+
+export interface Territory {
+    id: string;
+    name: string;
+    description: string;
+    owner: 'player' | 'Xang' | 'Zhauw' | 'Yang' | 'Neutral';
+    difficulty: number;
+    bonus: {
+        type: 'gold' | 'xp' | 'damage';
+        value: number;
+    };
+    coordinates: { x: number; y: number };
+}
+
 export interface Entity {
     id: string;
     name: string;
@@ -29,6 +43,11 @@ export interface Pet extends Entity {
     level: number;
     xp: number;
     maxXp: number;
+    // Phase 46
+    rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    ability?: string;
+    chimera?: boolean;
+    parents?: string[];
 }
 
 export interface Talent {
@@ -124,7 +143,7 @@ export interface Skill {
 }
 
 export interface Hero extends Entity {
-    class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate';
+    class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate' | 'Fisherman' | 'Blacksmith';
     emoji: string;
     unlocked: boolean;
     element: ElementType;
@@ -154,8 +173,11 @@ export interface GalaxySector {
 export type LogEntry = {
     id: string;
     message: string;
-    type: 'info' | 'damage' | 'heal' | 'death' | 'craft' | 'achievement';
+    type: 'info' | 'damage' | 'heal' | 'death' | 'craft' | 'achievement' | 'action';
+    timestamp: number;
 };
+
+export type Log = LogEntry;
 
 export interface Item {
     id: string;
@@ -282,5 +304,56 @@ export const GUILDS: Guild[] = [
     { id: 'g3', name: 'Yang', description: '+10% Critical Damage', bonusType: 'crit', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Critical Damage', members: 0 }
 ];
 
+export type SeedType = 'moonleaf' | 'starbloom' | 'fireweed';
 
-export type Log = LogEntry;
+export interface Seed {
+    id: SeedType;
+    name: string;
+    description: string;
+    growthTime: number; // Seconds
+    harvestYield: { min: number, max: number };
+    cost: number; // Gold
+    emoji: string;
+}
+
+export const SEEDS: Record<SeedType, Seed> = {
+    moonleaf: { id: 'moonleaf', name: 'Moonleaf Seed', description: 'Grows in moonlight.', growthTime: 60, harvestYield: { min: 2, max: 5 }, cost: 100, emoji: '🌱' },
+    starbloom: { id: 'starbloom', name: 'Starbloom Seed', description: 'Radiant petals.', growthTime: 300, harvestYield: { min: 5, max: 10 }, cost: 500, emoji: '🌟' },
+    fireweed: { id: 'fireweed', name: 'Fireweed Seed', description: 'Warm to the touch.', growthTime: 600, harvestYield: { min: 10, max: 20 }, cost: 1200, emoji: '🔥' }
+};
+
+export interface GardenPlot {
+    id: number;
+    unlocked: boolean;
+    seed: SeedType | null;
+    growth: number; // 0-100
+    plantedAt: number; // timestamp
+}
+
+
+
+// Phase 44: Black Market
+export interface MarketItem {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    currency: 'gold' | 'divinity' | 'voidMatter';
+    stock: number;
+    type: 'potion' | 'gambit_box' | 'corrupted_scroll' | 'pet_egg_fragment' | 'mysterious_item';
+    value?: number; // Effect magnitude
+    emoji: string;
+}
+
+// Phase 45: Challenge Rifts
+export type RiftRestriction = 'no_heal' | 'phys_immune' | 'magic_immune' | 'no_ult' | 'time_crunch';
+
+export interface Rift {
+    id: string;
+    name: string;
+    description: string;
+    level: number;
+    difficulty: number; // Power requirement
+    restriction: RiftRestriction;
+    rewards: { type: 'starlight' | 'voidMatter' | 'gold', amount: number }[];
+}

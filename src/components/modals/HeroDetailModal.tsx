@@ -9,7 +9,7 @@ interface HeroDetailModalProps {
     actions: any;
 }
 
-export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClose, hero, actions }) => {
+export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClose, hero }) => {
     if (!isOpen || !hero) return null;
 
     const ElementIcon = {

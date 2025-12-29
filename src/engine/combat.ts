@@ -29,7 +29,7 @@ export const calculateHeroPower = (hero: Hero): number => {
     return Math.floor(baseScore * (1 + (stats.speed * 0.05)));
 };
 
-export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], boss: Boss, cards: MonsterCard[], achievements: Achievement[] = [], pets: Pet[] = []) => {
+export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], _boss: Boss, cards: MonsterCard[], achievements: Achievement[] = [], pets: Pet[] = []) => {
     const dmgTalent = talents.find(t => t.stat === 'attack');
     const cScale = constellations.find(c => c.bonusType === 'bossDamage');
     const starMult = cScale ? (1 + cScale.level * cScale.valuePerLevel) : 1;
@@ -85,8 +85,9 @@ export const processCombatTurn = (
     isUltimate: boolean,
     pets: Pet[] = [],
     tickDuration: number = 1000,
-    defenseMult: number = 1,
-    lifeSteal: number = 0
+    _defenseMult: number = 1,
+    lifeSteal: number = 0,
+    riftRestriction?: 'no_heal' | 'phys_immune' | 'magic_immune' | 'no_ult' | 'time_crunch'
 ) => {
     let totalDmg = 0;
     let crits = 0;
@@ -120,33 +121,38 @@ export const processCombatTurn = (
 
                     if (s.currentCooldown <= 0) {
                         // Activate Skill
-                        let skillDmg = 0;
-                        if (s.effectType === 'damage') {
-                            // Apply Skill Multiplier to Base Damage (includes all buffs)
-                            skillDmg = baseDmg * s.value;
+                        let canCast = true;
+                        // RIFT: No Ult?
+                        if (isUltimate && riftRestriction === 'no_ult') canCast = false;
 
-                            // Element Bonus for Skill? (Optional, if skill has element)
-                            if (s.element) {
-                                skillDmg = skillDmg * getElementalMult(s.element, boss.element);
+                        if (canCast) {
+                            let skillDmg = 0;
+                            if (s.effectType === 'damage') {
+                                // Apply Skill Multiplier to Base Damage (includes all buffs)
+                                skillDmg = baseDmg * s.value;
+
+                                // Element Bonus for Skill? (Optional, if skill has element)
+                                if (s.element) {
+                                    skillDmg = skillDmg * getElementalMult(s.element, boss.element);
+                                }
+
+                                // RIFT: Immunities
+                                if (riftRestriction === 'phys_immune' && (h.class === 'Warrior' || h.class === 'Rogue' || h.class === 'Berserker')) skillDmg = 0;
+                                if (riftRestriction === 'magic_immune' && (h.class === 'Mage' || h.class === 'Warlock' || h.class === 'Sorcerer')) skillDmg = 0;
+
+                            } else if (s.effectType === 'heal' || s.effectType === 'buff') {
+                                // Healing
+                                if (riftRestriction !== 'no_heal') {
+                                    const healAmount = stats.maxHp * s.value;
+                                    hp = Math.min(stats.maxHp, hp + healAmount);
+                                }
+                                baseDmg = 0;
+                                skillDmg = 0;
                             }
-                        } else if (s.effectType === 'heal' || s.effectType === 'buff') {
-                            // Healing (Simulated or Real)
-                            const healAmount = stats.maxHp * s.value;
-                            // Heal self or lowest hp ally?
-                            // For simplicity in this function, we treat healing as damage mitigation or direct heal
-                            // Let's heal SELF for now or rely on game loop to update heroes state.
-                            // Limitation: updatedHeroes is map() result. Can't easily modify other heroes.
-                            // So we heal SELF or add "healing" to output to process later?
-                            // Simpler: Heal SELF here.
-                            hp = Math.min(stats.maxHp, hp + healAmount);
-                            baseDmg = 0; // Skill cast replaces attack? Or adds to it? 
-                            // Usually auto-cast is separate. Let's make it separate (ADDITIVE).
-                            // But if healing, it deals 0 dmg.
-                            skillDmg = 0;
-                        }
 
-                        totalDmg += Math.floor(skillDmg);
-                        s.currentCooldown = s.cooldown;
+                            totalDmg += Math.floor(skillDmg);
+                            s.currentCooldown = s.cooldown;
+                        }
                     }
                 }
             });
