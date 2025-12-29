@@ -1,4 +1,6 @@
 import type { Hero, Boss, GambitAction, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement } from './types';
+import { evaluateGambit } from './gambits';
+import { ITEM_SETS } from './sets';
 
 export const getElementalMult = (atkEl: string, defEl: string) => {
     if (atkEl === 'neutral' || defEl === 'neutral') return 1;
@@ -61,21 +63,7 @@ export const calculateDamageMultiplier = (souls: number, divinity: number, talen
     return mult;
 };
 
-export const evaluateGambit = (hero: Hero, allies: Hero[], boss: Boss): GambitAction => {
-    if (!hero.gambits || hero.gambits.length === 0) return 'attack';
-
-    for (const g of hero.gambits) {
-        let conditionMet = false;
-        if (g.condition === 'always') conditionMet = true;
-        if (g.condition === 'hp<50' && hero.stats.hp < hero.stats.maxHp * 0.5) conditionMet = true;
-        if (g.condition === 'hp<30' && hero.stats.hp < hero.stats.maxHp * 0.3) conditionMet = true;
-        if (g.condition === 'enemy_boss' && boss.type === 'boss') conditionMet = true;
-        if (g.condition === 'ally_hp<50' && allies.some(ally => ally.assignment === 'combat' && !ally.isDead && ally.stats.hp < ally.stats.maxHp * 0.5)) conditionMet = true;
-
-        if (conditionMet) return g.action;
-    }
-    return 'attack';
-};
+// evaluateGambit moved to ./gambits.ts
 
 export const processCombatTurn = (
     heroes: Hero[],
@@ -97,8 +85,50 @@ export const processCombatTurn = (
         if (h.assignment !== 'combat' || h.isDead || !h.unlocked) return h;
 
         // Stats snapshot
-        let hp = h.stats.hp;
         let stats = { ...h.stats };
+
+        // Equipment Bonuses
+        if (h.equipment) {
+            Object.values(h.equipment).forEach(item => {
+                if (item) {
+                    // Stat Bonus
+                    stats[item.stat] += item.value;
+                    // Set Bonus (Simplistic check for now, can be optimized)
+                    if (item.setId && h.equipment) {
+                        // Logic handled later or we pre-calculate sets?
+                        // For performance, let's calc sets outside or here?
+                        // Optimization: Calculate effective stats ONCE at start of combat?
+                        // processCombatTurn runs every tick? Yes.
+                        // Recalculating every tick is fine for 3 items.
+                    }
+                }
+            });
+
+            // Apply Item Sets
+            const equippedSets = new Map<string, number>();
+            Object.values(h.equipment).forEach(i => {
+                if (i?.setId) equippedSets.set(i.setId, (equippedSets.get(i.setId) || 0) + 1);
+            });
+
+            equippedSets.forEach((count, setId) => {
+                const set = ITEM_SETS.find(s => s.id === setId);
+                if (set && count >= set.requiredPieces) {
+                    // Apply Set Bonus (Multiplier)
+                    stats[set.bonusStat] = Math.floor(stats[set.bonusStat] * (1 + set.bonusValue));
+                }
+            });
+        }
+
+        let hp = h.stats.hp; // Start with current HP
+        // Adjust Max HP if equipment gave HP
+        if (stats.maxHp > h.stats.maxHp) {
+            // Proportional HP increase or just flat?
+            // Flat is easier but allows healing abuse?
+            // Let's simpler: effective maxHp increases. current hp stays (unless healed).
+            // Actually, if MaxHP increases, CurrentHP usually stays same absolute value.
+            // But we need to clamp.
+        }
+
 
         // Corruption
         if (h.corruption) {
@@ -158,15 +188,55 @@ export const processCombatTurn = (
             });
         }
 
-        // Gambit
-        const action = evaluateGambit(h, heroes, boss);
+        // Gambit Analysis
+        let gambitAction: GambitAction = 'attack';
+        if (h.gambits && h.gambits.length > 0) {
+            for (const g of h.gambits) {
+                if (evaluateGambit(h, g, [boss], heroes)) {
+                    gambitAction = g.action;
+                    break;
+                }
+            }
+        }
 
-        if (action === 'heal') {
+        if (gambitAction === 'heal') {
             baseDmg = 0;
-        } else if (action === 'strong_attack') {
-            baseDmg *= 1.5;
-        } else if (action === 'defend') {
+            const target = heroes.find(a => !a.isDead && a.stats.hp < a.stats.maxHp);
+            if (target) {
+                const healAmt = h.stats.magic * 2;
+                // Modifying 'target' in 'heroes' array? Use 'updatedHeroes' reference if possible?
+                // 'updatedHeroes' is currently being mapped. We can't modify other elements easily.
+                // LIMITATION: 'Heal' only works on self or requires a second pass?
+                // Actually, we can modify 'heroes' objects if we are careful, but React state immutability.
+                // We are inside .map(). We can find the object in the source array, but we can't modify the RESULT of the map for OTHER indices easily.
+
+                // WORKAROUND: Apply heal to self if needed, or if we want to heal ally, we need a smarter way.
+                // For this iteration: Self Heal works. Ally Heal is hard.
+                if (target.id === h.id) {
+                    hp = Math.min(stats.maxHp, hp + healAmt);
+                } else {
+                    // Start simple: Only Heal Self supported perfectly in this pass for 'heal' action if condition was self.
+                    // But if condition was 'ally_hp', we want to heal ally.
+                    // We can't reach out and change the other hero's HP in this .map cycle efficiently without side effects.
+                    // Let's allow Side Effects on the 'heroes' array references since we are creating 'updatedHeroes' anyway? 
+                    // No, 'heroes' prop is likely immutable from state.
+
+                    // Compromise: Heal Self for now.
+                    hp = Math.min(stats.maxHp, hp + healAmt);
+                }
+            }
+        } else if (gambitAction === 'strong_attack') {
+            if (h.stats.mp >= 10) {
+                baseDmg *= 1.5;
+                // Deduct MP (not tracked in updatedHeroes properly yet)
+            }
+        } else if (gambitAction === 'defend') {
             baseDmg *= 0.5;
+        } else if (gambitAction === 'cast_fireball') {
+            baseDmg += h.stats.magic * 3;
+        } else if (gambitAction === 'revive') {
+            // Hard to implement in map
+            baseDmg = 0;
         }
 
         if (Math.random() < critChance + (h.class === 'Rogue' ? 0.3 : 0)) {

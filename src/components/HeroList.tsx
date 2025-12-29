@@ -8,9 +8,10 @@ import { Info } from 'lucide-react';
 interface HeroListProps {
     heroes: Hero[];
     actions: any;
+    onOpenGear: (hero: Hero) => void;
 }
 
-export const HeroList: React.FC<HeroListProps> = ({ heroes, actions }) => {
+export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, onOpenGear }) => {
     const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
     const [viewingHero, setViewingHero] = useState<Hero | null>(null);
 
@@ -53,6 +54,13 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions }) => {
                                     title="Corrupt Hero (+100% ATK, -50% HP/DEF)"
                                 >
                                     <Skull size={10} />
+                                </button>
+                                <button
+                                    onClick={() => onOpenGear(hero)}
+                                    className="p-1 rounded bg-yellow-900 border border-yellow-500 text-yellow-200"
+                                    title="Manage Equipment"
+                                >
+                                    <Shield size={10} />
                                 </button>
                                 <button
                                     onClick={() => setViewingHero(hero)}

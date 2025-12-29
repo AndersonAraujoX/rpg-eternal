@@ -11,9 +11,10 @@ interface MuseumModalProps {
     pets: Pet[];
     cards: MonsterCard[];
     items: Item[]; // Use inventory to check for Legendaries
+    onDuel: () => void; // Phase 55
 }
 
-export function MuseumModal({ onClose, heroes, pets, cards, items }: MuseumModalProps) {
+export function MuseumModal({ onClose, heroes, pets, cards, items, onDuel }: MuseumModalProps) {
     const [activeTab, setActiveTab] = useState<'heroes' | 'pets' | 'cards' | 'artifacts'>('heroes');
 
     // Calculate Progress
@@ -114,7 +115,12 @@ export function MuseumModal({ onClose, heroes, pets, cards, items }: MuseumModal
 
                     {activeTab === 'cards' && (
                         <div>
-                            {renderProgress(collectedCards, totalCards)}
+                            <div className="flex justify-between items-center mb-2">
+                                {renderProgress(collectedCards, totalCards)}
+                                <button onClick={onDuel} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold flex items-center gap-1 animate-pulse">
+                                    <Trophy size={12} /> ENTER BATTLE ARENA
+                                </button>
+                            </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                 {MONSTERS.map((m, idx) => {
                                     // Match by monsterName

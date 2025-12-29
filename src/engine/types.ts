@@ -93,6 +93,14 @@ export interface MonsterCard {
     value: number; // e.g. 0.01 per card
 }
 
+export interface CardOpponent {
+    id: string;
+    name: string;
+    deck: string[]; // List of monster names/IDs
+    difficulty: number;
+    avatar: string; // Emoji
+}
+
 
 
 export interface Quest {
@@ -113,6 +121,20 @@ export interface ArenaOpponent {
     avatar: string; // Emoji
 }
 
+export interface Achievement {
+    id: string;
+    name: string;
+    description: string;
+    isUnlocked: boolean;
+    condition: {
+        type: 'kills' | 'gold' | 'clicks' | 'bossKills' | 'itemsForged' | 'oreMined' | 'fishCaught' | 'ascensions';
+        value: number;
+    };
+    rewardType: 'damage' | 'gold' | 'bossDamage' | 'mining' | 'crafting' | 'fishing' | 'speed';
+    rewardValue: number;
+    rewardText: string;
+}
+
 export interface GameStats {
     totalGoldEarned: number;
     totalKills: number;
@@ -123,6 +145,22 @@ export interface GameStats {
     playTime: number;
     ascensions: number;
     tavernPurchases: number;
+    itemsForged: number;
+    oreMined: number;
+    fishCaught: number;
+    cardBattlesWon?: number; // Phase 55
+    lastLogin?: number;      // Phase 56
+    loginStreak?: number;    // Phase 56
+}
+
+export interface DailyQuest {
+    id: string;
+    description: string;
+    target: number;
+    current: number;
+    type: 'kill' | 'mine' | 'craft' | 'arena' | 'gold_earn';
+    reward: { type: 'gold' | 'souls' | 'starlight', amount: number };
+    claimed: boolean;
 }
 
 export type ElementType = 'fire' | 'water' | 'nature' | 'neutral' | 'light' | 'dark';
@@ -143,18 +181,27 @@ export interface Skill {
 }
 
 export interface Hero extends Entity {
+    id: string;
+    name: string;
     class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate' | 'Fisherman' | 'Blacksmith';
     emoji: string;
     unlocked: boolean;
+    isDead: boolean;
     element: ElementType;
     assignment: 'combat' | 'mine' | 'expedition';
-    gambits: Gambit[];
+    gambits: any[];
     corruption: boolean;
     level: number;
     xp: number;
     maxXp: number;
     statPoints: number;
+    stats: Stats;
     skills: Skill[];
+    equipment: {
+        weapon?: Item;
+        armor?: Item;
+        accessory?: Item;
+    };
 }
 
 export interface GalaxySector {
@@ -179,10 +226,20 @@ export type LogEntry = {
 
 export type Log = LogEntry;
 
+export interface ItemSet {
+    id: string;
+    name: string;
+    bonusStat: 'attack' | 'defense' | 'hp' | 'magic' | 'speed';
+    bonusValue: number; // Multiplier e.g. 0.2 for +20%
+    requiredPieces: number;
+}
+
 export interface Item {
     id: string;
     name: string;
-    type: 'weapon' | 'armor' | 'potion';
+    type: 'weapon' | 'armor' | 'potion' | 'accessory'; // Added accessory
+    slot?: 'weapon' | 'armor' | 'accessory'; // Added slot
+    setId?: string; // Added Set ID
     stat: 'attack' | 'defense' | 'hp' | 'magic' | 'speed';
     value: number;
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
@@ -206,19 +263,6 @@ export interface StarlightUpgrade {
     description: string;
 }
 
-
-
-export interface Achievement {
-    id: string;
-    name: string;
-    description: string;
-    isUnlocked: boolean;
-    condition: { type: 'kills' | 'bossKills' | 'gold' | 'clicks' | 'crafts' | 'cards' | 'ascension', value: number };
-    rewardType: 'damage' | 'gold' | 'xp' | 'speed' | 'bossDamage';
-    rewardValue: number; // e.g. 0.1 for 10%
-    rewardText: string; // "10% Damage"
-    reward?: string;
-}
 
 export interface Boss extends Entity {
     level: number;
@@ -288,14 +332,29 @@ export interface Guild {
     bonusValue?: number;
 }
 
-export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'ally_hp<50' | 'enemy_boss';
-export type GambitAction = 'attack' | 'heal' | 'strong_attack' | 'defend';
+export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'mp<50' | 'ally_hp<50' | 'ally_dead' | 'enemy_boss' | 'enemy_count>2';
+export type GambitAction = 'attack' | 'strong_attack' | 'heal' | 'defend' | 'use_potion' | 'cast_fireball' | 'revive' | 'buff_attack';
 
 export interface Gambit {
     id: string;
     condition: GambitCondition;
     action: GambitAction;
     target?: string; // 'self', 'weakest_ally', 'boss'
+}
+
+export interface Building {
+    id: string;
+    name: string;
+    description: string;
+    level: number;
+    maxLevel: number;
+    cost: number;
+    costScaling: number;
+    bonus: string; // Text description
+    effectValue: number; // The actual multiplier/value
+    currency: 'gold' | 'souls' | 'wood' | 'stone'; // Adding basic resource types if needed, but sticking to gold/souls for now or 'materials'
+    // Simplified: Just Gold for now as per plan
+    emoji: string;
 }
 
 export const GUILDS: Guild[] = [

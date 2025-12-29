@@ -1,5 +1,4 @@
-import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild } from '../engine/types';
 import type { WeatherType } from '../engine/weather'; // Phase 48
@@ -36,6 +35,7 @@ interface HeaderProps {
     setShowVoid?: (v: boolean) => void;
     setShowArena?: (v: boolean) => void;
     setShowQuests: (v: boolean) => void;
+    setShowDailyRewards?: (v: boolean) => void; // Phase 56
     setShowRunes: (v: boolean) => void;
     setShowAchievements: (v: boolean) => void;
     setShowStarlight: (v: boolean) => void;
@@ -52,19 +52,22 @@ interface HeaderProps {
     weather?: WeatherType; // Phase 48
     weatherTimer?: number; // Phase 48
     setShowMuseum?: (v: boolean) => void; // Phase 49
+    // Phase 53
+    setShowTown?: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     boss, souls, gold, divinity, tower, guild, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowBestiary, setShowSettings, setShowStats,
-    setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy,
+    setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowDailyRewards, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy,
     setShowFishing, setShowAlchemy, setShowExpeditions,
     setShowGarden,
     // setShowRiftModal, // Handled via actions? Check usage. actually it is unused in the component body currently provided.
     setShowBreedingModal, // Phase 46
     setShowGuildWar, // Phase 47
     weather, weatherTimer, // Phase 48
-    setShowMuseum // Phase 49
+    setShowMuseum, // Phase 49
+    setShowTown // Phase 53
 }) => {
     return (
         <div className="bg-gray-900 p-2 border-b-4 border-gray-600 flex flex-col gap-2 rounded-t-lg">
@@ -91,9 +94,11 @@ export const Header: React.FC<HeaderProps> = ({
                     <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guild"><Building size={12} /> {guild ? guild.level : '+'}</button>
                     <button onClick={() => setShowArena && setShowArena(true)} className="btn-retro bg-red-900 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-800" title="Arena"><Swords size={12} /></button>
                     <button onClick={() => setShowQuests && setShowQuests(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Quests"><Scroll size={12} /></button>
+                    {setShowDailyRewards && <button onClick={() => setShowDailyRewards(true)} className="btn-retro bg-pink-900 text-pink-200 px-2 py-1 rounded border border-pink-500 flex items-center gap-1 hover:bg-pink-800" title="Daily Rewards"><Calendar size={12} /></button>}
                     <button onClick={() => setShowRunes && setShowRunes(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Rune Forge"><Gem size={12} /></button>
                     <button onClick={() => setShowAchievements && setShowAchievements(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Achievements"><Trophy size={12} /></button>
                     {setShowMuseum && <button onClick={() => setShowMuseum(true)} className="btn-retro bg-emerald-900 text-emerald-200 px-2 py-1 rounded border border-emerald-500 flex items-center gap-1 hover:bg-emerald-800" title="The Museum"><BookOpen size={12} /></button>}
+                    {setShowTown && <button onClick={() => setShowTown(true)} className="btn-retro bg-stone-700 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-600" title="Town"><Home size={12} /></button>}
                     <button onClick={() => setShowStats(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Stats"><BarChart2 size={12} /></button>
                     <button onClick={() => setShowHelp(true)} className="btn-retro bg-gray-600 text-gray-200 px-2 py-1 rounded border border-gray-400 flex items-center gap-1 hover:bg-gray-500" title="Help"><HelpCircle size={12} /></button>
                     {setShowStarlight && <button onClick={() => setShowStarlight(true)} className="btn-retro bg-cyan-950 text-cyan-400 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-900 animate-pulse" title="Automation Constellations"><Settings size={12} /></button>}

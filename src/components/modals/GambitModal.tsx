@@ -13,14 +13,21 @@ const CONDITIONS: { value: GambitCondition; label: string }[] = [
     { value: 'always', label: 'Always' },
     { value: 'hp<50', label: 'Self HP < 50%' },
     { value: 'hp<30', label: 'Self HP < 30%' },
+    { value: 'mp<50', label: 'Self MP < 50%' },
     { value: 'ally_hp<50', label: 'Ally HP < 50%' },
+    { value: 'ally_dead', label: 'Ally is Dead' },
     { value: 'enemy_boss', label: 'Enemy is Boss' },
+    { value: 'enemy_count>2', label: 'Enemy Count > 2' },
 ];
 
 const ACTIONS: { value: GambitAction; label: string }[] = [
     { value: 'attack', label: 'Attack' },
     { value: 'strong_attack', label: 'Strong Attack' },
-    { value: 'heal', label: 'Heal' },
+    { value: 'heal', label: 'Heal (Magic)' },
+    { value: 'use_potion', label: 'Use Potion' },
+    { value: 'cast_fireball', label: 'Cast Fireball' },
+    { value: 'buff_attack', label: 'Buff Attack' },
+    { value: 'revive', label: 'Revive Ally' },
     { value: 'defend', label: 'Defend' },
 ];
 

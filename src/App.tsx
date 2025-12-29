@@ -14,6 +14,8 @@ import { BestiaryModal } from './components/modals/BestiaryModal';
 import { StatisticsModal } from './components/modals/StatisticsModal';
 import { HelpModal } from './components/modals/HelpModal';
 import { OfflineModal } from './components/modals/OfflineModal';
+import { DailyRewardsModal } from './components/modals/DailyRewardsModal'; // Phase 56
+import { HeroGearModal } from './components/modals/HeroGearModal'; // Phase 57
 
 import { TowerModal } from './components/modals/TowerModal';
 import { GuildModal } from './components/modals/GuildModal';
@@ -34,9 +36,11 @@ import { MarketModal } from './components/modals/MarketModal';
 import { RiftModal } from './components/modals/RiftModal';
 import { BreedingModal } from './components/modals/BreedingModal'; // Phase 46
 import { GuildWarModal } from './components/modals/GuildWarModal'; // Phase 47
-import { MuseumModal } from './components/modals/MuseumModal'; // Phase 49
+import { TownModal } from './components/modals/TownModal'; // Phase 53
+import { MuseumModal } from './components/modals/MuseumModal';
 
 import './index.css';
+import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
 
 function App() {
   const {
@@ -50,10 +54,17 @@ function App() {
     activeRift, riftTimer, enterRift, exitRift,
     breedPets, // Phase 46
     territories, attackTerritory, // Phase 47
-    weather, weatherTimer // Phase 48
+    weather, weatherTimer, // Phase 48
+    buildings, upgradeBuilding, // Phase 53
+    dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies, // Phase 56
+    winCardBattle, // Phase 55
+    equipItem, unequipItem // Phase 57
   } = useGame();
 
   const [showShop, setShowShop] = useState(false);
+  const [showTown, setShowTown] = useState(false); // Phase 53
+  const [showCardBattle, setShowCardBattle] = useState(false); // Phase 55
+  const [showDailyRewards, setShowDailyRewards] = useState(false); // Phase 56
   const [showMarket, setShowMarket] = useState(false);
   const [showRiftModal, setShowRiftModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -82,6 +93,7 @@ function App() {
   const [showBreedingModal, setShowBreedingModal] = useState(false); // Phase 46
   const [showGuildWar, setShowGuildWar] = useState(false); // Phase 47
   const [showMuseum, setShowMuseum] = useState(false); // Phase 49
+  const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null); // Phase 57
 
   const [importString, setImportString] = useState('');
 
@@ -137,7 +149,20 @@ function App() {
     }
   };
 
+  // Phase 56: Auto-show Daily Rewards on new day/unclaimed
+  // Phase 56: Auto-show Daily Rewards on new day/unclaimed
+  useEffect(() => {
+    // Check for reset on load
+    if (checkDailies) checkDailies();
+
+    // If not claimed, show modal
+    if (dailyLoginClaimed === false) {
+      setShowDailyRewards(true);
+    }
+  }, [dailyLoginClaimed]);
+
   const themeClass = getThemeClasses(theme);
+
 
   return (
     <div className={`h-screen w-full flex flex-col items-center justify-center p-2 relative overflow-hidden ${raidActive ? 'bg-red-900' : getBackgroundClass(boss.level)}`}>
@@ -154,12 +179,14 @@ function App() {
           setShowShop={setShowShop} setShowTavern={setShowTavern} setShowStars={setShowStars} setShowForge={setShowForge}
           setShowInventory={setShowInventory} setShowBestiary={setShowBestiary} setShowSettings={setShowSettings} setShowStats={setShowStats}
           setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
-          setShowArena={setShowArena} setShowQuests={setShowQuests} setShowGalaxy={setShowGalaxy}
+          setShowArena={setShowArena} setShowQuests={setShowQuests} setShowDailyRewards={setShowDailyRewards} setShowGalaxy={setShowGalaxy}
           setShowRiftModal={setShowRiftModal}
           setShowBreedingModal={setShowBreedingModal} // Phase 46
           setShowGuildWar={setShowGuildWar} // Phase 47
           weather={weather} weatherTimer={weatherTimer} // Phase 48
           setShowMuseum={setShowMuseum} // Phase 49
+          setShowTown={setShowTown} // Phase 53
+          // setShowCardBattle - Triggered from Museum
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
           setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy} setShowExpeditions={setShowExpeditions} setShowGarden={setShowGarden}
         />
@@ -172,7 +199,7 @@ function App() {
           synergies={useGame().synergies} // Wait, I returned 'synergies' from useGame, so I can just access it from destructuring?
         />
 
-        <HeroList heroes={heroes} actions={actions} />
+        <HeroList heroes={heroes} actions={actions} onOpenGear={(hero) => setSelectedHeroId(hero.id)} />
 
 
         <GameLog logs={logs} onShowHistory={() => setShowLog(true)} />
@@ -249,7 +276,32 @@ function App() {
       />
       {showBreedingModal && <BreedingModal isOpen={true} onClose={() => setShowBreedingModal(false)} pets={pets} breedPets={breedPets} gold={gold} />}
       {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} partyPower={partyPower} />}
-      {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} />}
+      <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} />
+      {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
+      <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
+
+      {showDailyRewards && (
+        <DailyRewardsModal
+          onClose={() => setShowDailyRewards(false)}
+          dailyQuests={dailyQuests || []}
+          gameStats={gameStats}
+          claimLoginReward={claimLoginReward}
+          claimDailyQuest={claimDailyQuest}
+          dailyLoginClaimed={dailyLoginClaimed}
+        />
+      )}
+
+      {/* PHASE 57: Hero Gear */}
+      {selectedHeroId && (
+        <HeroGearModal
+          isOpen={!!selectedHeroId}
+          hero={heroes.find(h => h.id === selectedHeroId)!}
+          inventory={items}
+          onClose={() => setSelectedHeroId(null)}
+          onEquip={equipItem}
+          onUnequip={unequipItem}
+        />
+      )}
     </div>
   );
 }

@@ -22,6 +22,9 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({ isOpen, on
         if (ach.condition.type === 'bossKills') current = stats.bossKills;
         if (ach.condition.type === 'gold') current = stats.totalGoldEarned;
         if (ach.condition.type === 'clicks') current = stats.clicks;
+        if (ach.condition.type === 'itemsForged') current = stats.itemsForged;
+        if (ach.condition.type === 'oreMined') current = stats.oreMined;
+        if (ach.condition.type === 'fishCaught') current = stats.fishCaught;
 
         return Math.min(100, (current / ach.condition.value) * 100);
     };
@@ -31,6 +34,9 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({ isOpen, on
         if (ach.condition.type === 'bossKills') return formatNumber(stats.bossKills);
         if (ach.condition.type === 'gold') return formatNumber(stats.totalGoldEarned);
         if (ach.condition.type === 'clicks') return formatNumber(stats.clicks);
+        if (ach.condition.type === 'itemsForged') return formatNumber(stats.itemsForged);
+        if (ach.condition.type === 'oreMined') return formatNumber(stats.oreMined);
+        if (ach.condition.type === 'fishCaught') return formatNumber(stats.fishCaught);
         return 0;
     };
 
