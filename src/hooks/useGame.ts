@@ -4,7 +4,8 @@ import { formatNumber } from '../utils';
 import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources, Building, DailyQuest } from '../engine/types';
 import { POTIONS, GUILDS } from '../engine/types'; // Phase 41 & 47
 import { CLASS_SKILLS } from '../engine/skills';
-import { INITIAL_GALAXY, calculateGalaxyIncome } from '../engine/galaxy';
+import { INITIAL_GALAXY, calculateGalaxyIncome, calculateGalaxyBuffs } from '../engine/galaxy';
+import { STARLIGHT_UPGRADES, getStarlightUpgradeCost } from '../engine/starlight';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
 import {
@@ -16,7 +17,7 @@ import {
 import { checkSynergies } from '../engine/synergies';
 import { MONSTERS } from '../engine/bestiary';
 import { generateLoot } from '../engine/loot';
-import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim } from '../engine/automation';
+import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim, getAutoEquip, getAutoSell } from '../engine/automation';
 import { simulateTavernSummon } from '../engine/tavern';
 import { processMining } from '../engine/mining';
 import { processFishing } from '../engine/fishing';
@@ -141,31 +142,69 @@ export const useGame = () => {
 
     const [eternalFragments, setEternalFragments] = useState(0);
     const [starlight, setStarlight] = useState(0);
-    const [starlightUpgrades, setStarlightUpgrades] = useState<string[]>([]);
+
+    // Starlight Upgrades: ID -> Level
+    const [starlightUpgrades, setStarlightUpgrades] = useState<Record<string, number>>({});
+    const [isStarlightModalOpen, setIsStarlightModalOpen] = useState(false);
+
     const [theme, setTheme] = useState('default');
+
+    // ...
+
+    // Starlight Upgrades: ID -> Level
+
+
+    // MIGRATION: Convert old array to object if needed
+    useEffect(() => {
+        if (Array.isArray(starlightUpgrades)) {
+            const newUpgrades: Record<string, number> = {};
+            (starlightUpgrades as string[]).forEach(id => newUpgrades[id] = 1);
+            setStarlightUpgrades(newUpgrades);
+        }
+    }, []);
+
+
+
     const [galaxy, setGalaxy] = useState(INITIAL_GALAXY);
 
     // GALAXY LOGIC
+    // Migration: Update old galaxy data with new rewards
+    useEffect(() => {
+        const needsUpdate = galaxy.length > 0 && galaxy[0].id === 'g1' && galaxy[0].reward.type === 'gold';
+        if (needsUpdate) {
+            console.log("Migrating Galaxy Data to new system...");
+            setGalaxy(prev => prev.map(oldS => {
+                const newS = INITIAL_GALAXY.find(i => i.id === oldS.id);
+                return newS ? { ...newS, isOwned: oldS.isOwned } : oldS;
+            }));
+        }
+    }, [galaxy]);
+
     const conquerSector = (sectorId: string) => {
         const sector = galaxy.find(s => s.id === sectorId);
         if (!sector || sector.isOwned) return;
 
-        // Difficulty Check: Party Power (Sum of Attack) vs Difficulty
-        // Difficulty Check: Party Power (Sum of Power Score) vs Difficulty
         const partyPower = heroes.filter(h => h.assignment === 'combat' && !h.isDead).reduce((acc, h) => acc + calculateHeroPower(h), 0);
 
-        // Random variance: Party Power * (0.8 to 1.2)
         const roll = partyPower * (0.8 + Math.random() * 0.4);
 
-        const hasScanner = starlightUpgrades.includes('galaxy_scanner');
-        const effectiveDifficulty = hasScanner ? Math.floor(sector.difficulty * 0.8) : sector.difficulty;
+        // Galaxy Scanner Logic: Reduces difficulty by 10% per level
+        const scannerLevel = starlightUpgrades['galaxy_scanner'] || 0;
+        const discount = scannerLevel * 0.1; // 10% per level
+        const effectiveDifficulty = Math.floor(sector.difficulty * (1 - discount));
 
         if (roll >= effectiveDifficulty) {
             setGalaxy(prev => prev.map(s => s.id === sectorId ? { ...s, isOwned: true } : s));
-            addLog(`Conquered ${sector.name} !`, 'achievement');
+
+            // Add Starlight & Fragments on first conquer
+            const starlightGain = Math.floor(sector.level * 0.5); // Example amount
+            setStarlight(s => s + starlightGain);
+            setEternalFragments(f => f + 1);
+
+            addLog(`Conquered ${sector.name}! (+${starlightGain} Starlight, +1 Fragment)`, 'achievement');
             soundManager.playLevelUp(); // Re-use fanfare
         } else {
-            addLog(`Failed to conquer ${sector.name}. Need more power! (Rolled: ${Math.floor(roll)} vs ${sector.difficulty})`, 'info');
+            addLog(`Failed to conquer ${sector.name}. Need more power! (Rolled: ${Math.floor(roll)} vs ${effectiveDifficulty})`, 'info');
         }
     };
 
@@ -196,16 +235,23 @@ export const useGame = () => {
         return () => clearInterval(dpsInterval);
     }, []);
 
+    const getBuildingEffect = (id: string, baseValue: number = 0): number => {
+        const b = buildings.find(b => b.id === id);
+        if (!b) return baseValue;
+        return Math.max(0, (b.level - 1) * b.effectValue);
+    };
+
     const ACTIONS = {
         buyStarlightUpgrade: (id: string, cost: number) => {
-            if (starlight >= cost && !starlightUpgrades.includes(id)) {
-                setStarlight(s => s - cost);
-                setStarlightUpgrades(prev => [...prev, id]);
-                addLog(`Unlocked Constellation: ${id} `, 'achievement');
+            if (starlight >= cost) {
+                setStarlight(prev => prev - cost);
+                setStarlightUpgrades(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+                addLog(`Upgraded ${id}`, 'achievement');
                 soundManager.playLevelUp();
+            } else {
+                addLog("Not enough Starlight", 'info');
             }
         },
-
         spendStatPoint: (heroId: string, stat: keyof Stats) => {
             setHeroes(prev => prev.map(h => {
                 if (h.id === heroId && h.statPoints > 0) {
@@ -321,7 +367,11 @@ export const useGame = () => {
             setGold(g => g - amount);
             setGuild(g => {
                 if (!g) return null;
-                const newXp = g.xp + (amount / 10);
+                // Guild Bonus: +20% XP per Level
+                const guildBonus = getBuildingEffect('b_guild');
+                const xpGain = (amount / 10) * (1 + guildBonus);
+
+                const newXp = g.xp + xpGain;
                 if (newXp >= g.maxXp) {
                     addLog(`Guild Leveled Up to ${g.level + 1} !`, 'achievement');
                     return { ...g, level: g.level + 1, xp: newXp - g.maxXp, maxXp: g.maxXp * 1.5 };
@@ -384,8 +434,25 @@ export const useGame = () => {
 
         forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => {
             const COSTS = { copper: 100, iron: 50, mithril: 10 };
-            const COST = COSTS[material];
-            if (resources[material] < COST) { addLog(`Not enough ${material}`, 'info'); return; }
+            let COST = COSTS[material];
+
+            // Stellar Forge Logic: -10% cost per level
+            const stellarLevel = starlightUpgrades['stellar_forge'] || 0;
+            let discount = 0;
+            if (stellarLevel > 0) {
+                discount += Math.min(0.9, stellarLevel * 0.1);
+            }
+
+            // Town Forge Logic: -5% cost per level
+            const townForgeDiscount = getBuildingEffect('b_forge');
+            discount += townForgeDiscount;
+
+            // Cap Total Discount at 90%
+            discount = Math.min(0.9, discount);
+
+            COST = Math.max(1, Math.floor(COST * (1 - discount)));
+
+            if (resources[material] < COST) { addLog(`Not enough ${material}. Cost: ${COST}`, 'info'); return; }
 
             setResources(r => ({ ...r, [material]: r[material] - COST }));
 
@@ -410,14 +477,19 @@ export const useGame = () => {
             soundManager.playLevelUp();
         },
         summonTavern: (amount: number = 1) => {
-            const result = simulateTavernSummon(amount, gold, gameStats.tavernPurchases || 0, heroes, artifacts, pets);
+            const tavernLevel = buildings.find(b => b.id === 'b_tavern')?.level || 1;
+            const result = simulateTavernSummon(amount, gold, gameStats.tavernPurchases || 0, heroes, artifacts, pets, tavernLevel);
 
             if (!result.success) {
                 result.logs.forEach(l => addLog(l, 'info'));
                 return;
             }
 
-            setGold(g => g - result.cost);
+            // Apply Tavern Discount
+            const tavernDiscount = getBuildingEffect('b_tavern');
+            const finalCost = Math.floor(result.cost * (1 - tavernDiscount));
+
+            setGold(g => g - finalCost);
             setGameStats(prev => ({ ...prev, tavernPurchases: (prev.tavernPurchases || 0) + amount }));
 
             // Update Heroes
@@ -509,8 +581,10 @@ export const useGame = () => {
             // const achBossMult = achievements.filter(a => a.isUnlocked && a.rewardType === 'bossDamage').reduce((acc, a) => acc + a.rewardValue, 0);
 
             // -- MEMOIZED CALCULATIONS --
-            // const clickDmg = Math.floor(10 * (1 + boss.level * 0.5) * (1 + achDamageMult));
-            const soulsGain = Math.floor(boss.level / 5);
+            // Temple Bonus: +10% Souls per Level
+            const templeBonus = getBuildingEffect('b_temple');
+            const soulsGain = Math.floor((boss.level / 5) * (1 + templeBonus));
+
             if (soulsGain <= 0) return;
             setSouls(p => p + soulsGain);
             setHeroes(INITIAL_HEROES.map(h => ({ ...h, unlocked: heroes.find(curr => curr.id === h.id)?.unlocked || false }))); // Keep unlocks
@@ -786,7 +860,7 @@ export const useGame = () => {
         }
 
         // AUTOMATION LOGIC
-        if (starlightUpgrades.includes('auto_rebirth')) {
+        if ((starlightUpgrades['auto_rebirth'] || 0) > 0) {
             // Rebirth if boss level > 100 AND slow kill (simulated by time or just level cap)
             if (boss.level >= 105) { ACTIONS.triggerRebirth(); }
         }
@@ -827,7 +901,7 @@ export const useGame = () => {
         // const synergies = checkSynergies(activeHeroes); // already done in prev step logic
 
         // AUTO PET XP UPGRADE CHECK
-        if (starlightUpgrades.includes('auto_pet_xp')) {
+        if ((starlightUpgrades['auto_pet_xp'] || 0) > 0) {
             setPets(prev => prev.map(p => {
                 if (p.xp + 1 >= p.maxXp) {
                     // Don't auto-level logic here to avoid spam/complexity, just cap or overflow?
@@ -859,8 +933,29 @@ export const useGame = () => {
             const potionXpBonus = activePotions.filter(p => p.effect === 'xp').reduce((acc, p) => acc + p.value, 0);
             const potionAtkBonus = activePotions.filter(p => p.effect === 'attack').reduce((acc, p) => acc + p.value, 0);
 
-            const goldMult = 1 + cards.filter(c => c.stat === 'gold').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources + petGoldBonus;
-            const xpMult = 1 + cards.filter(c => c.stat === 'xp').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources + potionXpBonus;
+            // Calculate Galaxy Buffs
+            const galaxyBuffs = calculateGalaxyBuffs(galaxy);
+
+            // Apply to Multipliers
+            const goldMult = 1 + cards.filter(c => c.stat === 'gold').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources + petGoldBonus + galaxyBuffs.goldMult;
+            const xpMult = 1 + cards.filter(c => c.stat === 'xp').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyResources + potionXpBonus + galaxyBuffs.xpMult;
+
+            // ... (rest of loop) 
+
+            // Galaxy Notification (Throttle)
+            if (Date.now() % 30000 < 1000) { // Every ~30s check (approx) -> Actually using 'tick' is cleaner but this works for now if tick is frequent
+                const gIncome = calculateGalaxyIncome(galaxy);
+                if (gIncome.gold > 0 || gIncome.mithril > 0 || gIncome.souls > 0 || gIncome.starlight > 0) {
+                    // We don't want to spam addLog, so maybe just one generic log
+                    // But useEffect runs frequently. Let's use a ref or modulo of effectiveTick accumulator?
+                    // Simplification: We rely on the player noticing the resources going up.
+                    // Or just add a rare log.
+                }
+            }
+
+            // ...
+
+            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, pets) + potionAtkBonus + galaxyBuffs.damageMult;
             const defenseMult = 1 + cards.filter(c => c.stat === 'defense').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyDefense + petDefenseBonus;
             // const speedMult = 1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0);
 
@@ -1000,7 +1095,7 @@ export const useGame = () => {
                 });
             }
 
-            const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, pets) + potionAtkBonus;
+
             const critTalent = talents.find(t => t.stat === 'crit');
             const critChance = critTalent ? (critTalent.level * critTalent.valuePerLevel) : 0;
 
@@ -1119,7 +1214,7 @@ export const useGame = () => {
 
 
                 // AUTO EQUIP & AUTO SELL
-                if (starlightUpgrades.includes('auto_equip')) {
+                if ((starlightUpgrades['auto_equip'] || 0) > 0) {
                     const isTrash = (autoSellRarity === 'common' && loot.rarity === 'common') ||
                         (autoSellRarity === 'rare' && (loot.rarity === 'common' || loot.rarity === 'rare'));
 
@@ -1406,6 +1501,8 @@ export const useGame = () => {
         // PHASE 41
         activeExpeditions, setActiveExpeditions,
         activePotions, setActivePotions,
+        // Starlight
+        starlightUpgrades, buyStarlightUpgrade, isStarlightModalOpen, setIsStarlightModalOpen,
         // PHASE 53
         buildings, setBuildings,
         setRaidActive, setDungeonActive, setOfflineGains,
@@ -1715,6 +1812,8 @@ export const useGame = () => {
         // PHASE 48
         weather, weatherTimer,
         // PHASE 53
-        buildings, upgradeBuilding
+        buildings, upgradeBuilding,
+        // Starlight
+        starlightUpgrades, buyStarlightUpgrade, isStarlightModalOpen, setIsStarlightModalOpen
     };
 };

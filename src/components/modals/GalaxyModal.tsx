@@ -8,14 +8,14 @@ interface GalaxyModalProps {
     galaxy: GalaxySector[];
     onConquer: (id: string) => void;
     partyPower: number;
-    starlightUpgrades: string[];
+    starlightUpgrades: Record<string, number>;
 }
 
 export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galaxy, onConquer, partyPower, starlightUpgrades }) => {
     const [selectedSector, setSelectedSector] = useState<GalaxySector | null>(null);
 
-    const hasScanner = starlightUpgrades.includes('galaxy_scanner');
-    const getDifficulty = (base: number) => hasScanner ? Math.floor(base * 0.8) : base;
+    const scannerLevel = starlightUpgrades['galaxy_scanner'] || 0;
+    const getDifficulty = (base: number) => scannerLevel > 0 ? Math.floor(base * (1 - (scannerLevel * 0.1))) : base;
 
     if (!isOpen || !galaxy) return null;
 
@@ -83,7 +83,10 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                                     Status: {selectedSector.isOwned ? 'CONQUERED' : 'HOSTILE'}
                                 </span>
                                 <span className="text-yellow-400">
-                                    Reward: +{selectedSector.reward.value} {selectedSector.reward.type}/s
+                                    Reward: {selectedSector.reward.type.includes('global') || selectedSector.reward.type.includes('speed')
+                                        ? `+${Math.floor(selectedSector.reward.value * 100)}% ${selectedSector.reward.type.replace('global_', '').replace('_speed', ' Speed').toUpperCase()}`
+                                        : `+${selectedSector.reward.value} ${selectedSector.reward.type}/s`
+                                    }
                                 </span>
                                 <span className="text-blue-300">
                                     Difficulty: {selectedSector.difficulty.toLocaleString()} Power

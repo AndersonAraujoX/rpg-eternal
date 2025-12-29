@@ -212,7 +212,7 @@ export interface GalaxySector {
     y: number;
     level: number; // Enemy Level
     difficulty: number; // Recommended Power
-    reward: { type: 'gold' | 'mithril' | 'souls' | 'starlight', value: number }; // Value per tick
+    reward: { type: 'gold' | 'mithril' | 'souls' | 'starlight' | 'global_damage' | 'global_gold' | 'global_xp' | 'mining_speed', value: number }; // Value per tick or Multiplier
     isOwned: boolean;
     type: 'planet' | 'asteroid' | 'nebula' | 'star';
 }
@@ -261,6 +261,10 @@ export interface StarlightUpgrade {
     name: string;
     cost: number;
     description: string;
+    maxLevel: number;
+    effectType: 'galaxy_difficulty' | 'crafting_cost' | 'auto_equip' | 'auto_sell';
+    effectValue: number; // e.g. 0.2 for 20%
+    icon: string; // Emoji
 }
 
 
