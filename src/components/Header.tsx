@@ -41,6 +41,7 @@ interface HeaderProps {
     setShowAchievements: (v: boolean) => void;
     setShowStarlight: (v: boolean) => void;
     setShowGalaxy: (v: boolean) => void;
+    setShowLeaderboard: (v: boolean) => void; // Phase 60
     setShowHelp: (v: boolean) => void;
     // PHASE 41
     setShowFishing?: (v: boolean) => void;
@@ -61,6 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
     boss, souls, gold, divinity, tower, guild, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowBestiary, setShowSettings, setShowStats,
     setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowDailyRewards, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy,
+    setShowLeaderboard,
     setShowFishing, setShowAlchemy, setShowExpeditions,
     setShowGarden,
     // setShowRiftModal, // Handled via actions? Check usage. actually it is unused in the component body currently provided.
@@ -117,6 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button onClick={() => setShowQuests && setShowQuests(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Quests"><Scroll size={12} /> Quests</button>
             {setShowDailyRewards && <button onClick={() => setShowDailyRewards(true)} className="btn-retro bg-pink-900 text-pink-200 px-2 py-1 rounded border border-pink-500 flex items-center gap-1 hover:bg-pink-800" title="Daily Rewards"><Calendar size={12} /> Dailies</button>}
             <button onClick={() => setShowAchievements && setShowAchievements(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Achievements"><Trophy size={12} /> Trophies</button>
+            {setShowLeaderboard && <button onClick={() => setShowLeaderboard(true)} className="btn-retro bg-yellow-600 text-white px-2 py-1 rounded border border-yellow-400 flex items-center gap-1 hover:bg-yellow-500" title="Leaderboards"><Crown size={12} /> Rank</button>}
             {setShowMuseum && <button onClick={() => setShowMuseum(true)} className="btn-retro bg-emerald-900 text-emerald-200 px-2 py-1 rounded border border-emerald-500 flex items-center gap-1 hover:bg-emerald-800" title="The Museum"><BookOpen size={12} /> Museum</button>}
             <button onClick={() => setShowStats(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Stats"><BarChart2 size={12} /> Stats</button>
             <button onClick={() => setShowBestiary(true)} className="btn-retro bg-amber-900 text-amber-200 px-2 py-1 rounded border border-amber-600 flex items-center hover:bg-amber-800 text-[10px]" title="Bestiary (Monster Log)"><BookOpen size={12} /> Bestiary</button>
@@ -205,3 +208,4 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
     );
 };
+

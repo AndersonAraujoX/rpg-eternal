@@ -3,7 +3,9 @@ import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull } from 'lucide-react';
 import type { Hero } from '../engine/types';
 import { GambitModal } from './modals/GambitModal';
 import { HeroDetailModal } from './modals/HeroDetailModal';
-import { Info } from 'lucide-react';
+
+import { Info, Crown } from 'lucide-react'; // Phase 58
+
 
 interface HeroListProps {
     heroes: Hero[];
@@ -69,6 +71,16 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, onOpenGear 
                                 >
                                     <Info size={10} />
                                 </button>
+                                {/* Phase 58: Evolution */}
+                                {hero.level >= 50 && (
+                                    <button
+                                        onClick={() => actions.evolveHero(hero.id)}
+                                        className="p-1 rounded bg-gradient-to-tr from-yellow-600 to-yellow-300 border border-yellow-100 text-yellow-900 animate-pulse shadow-[0_0_10px_rgba(234,179,8,0.5)]"
+                                        title="Evolve Hero (Reset Lv to 1, Massive Stats!)"
+                                    >
+                                        <Crown size={10} />
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>

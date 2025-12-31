@@ -5,10 +5,12 @@ import type { MonsterCard } from '../../engine/types';
 interface CardsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onClose: () => void;
     cards: MonsterCard[];
+    onDuel: () => void;
 }
 
-export const CardsModal: React.FC<CardsModalProps> = ({ isOpen, onClose, cards }) => {
+export const CardsModal: React.FC<CardsModalProps> = ({ isOpen, onClose, cards, onDuel }) => {
     if (!isOpen) return null;
 
     return (
@@ -31,15 +33,24 @@ export const CardsModal: React.FC<CardsModalProps> = ({ isOpen, onClose, cards }
                             <div className="text-2xl">{c.id}</div>
                             <div className="text-[10px] text-gray-400 mt-1">x{c.count}</div>
                             <div className={`absolute top-0 right-0 p-0.5 text-[8px] rounded font-bold ${c.stat === 'attack' ? 'bg-red-900 text-red-200' :
-                                    c.stat === 'gold' ? 'bg-yellow-900 text-yellow-200' :
-                                        c.stat === 'xp' ? 'bg-purple-900 text-purple-200' :
-                                            c.stat === 'defense' ? 'bg-blue-900 text-blue-200' : 'bg-green-900 text-green-200'
+                                c.stat === 'gold' ? 'bg-yellow-900 text-yellow-200' :
+                                    c.stat === 'xp' ? 'bg-purple-900 text-purple-200' :
+                                        c.stat === 'defense' ? 'bg-blue-900 text-blue-200' : 'bg-green-900 text-green-200'
                                 }`}>
                                 {c.stat.substring(0, 3).toUpperCase()}
                             </div>
                         </div>
                     ))}
                     {cards.length === 0 && <div className="col-span-4 text-center text-gray-500 py-10">No cards collected yet. Keep fighting!</div>}
+                </div>
+
+                <div className="mt-4 flex justify-center">
+                    <button
+                        onClick={onDuel}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center justify-center gap-2"
+                    >
+                        ⚔️ Duel Opponents
+                    </button>
                 </div>
             </div>
         </div>

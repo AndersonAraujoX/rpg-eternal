@@ -1,119 +1,82 @@
-import type { MonsterCard, ElementType } from './types';
-
-
-export interface BattleCard {
-    id: string;
-    name: string;
-    element: ElementType;
-    power: number;
-    avatar: string;
-    rarity: 'common' | 'rare' | 'epic' | 'legendary';
-}
+import type { MonsterCard, CardOpponent } from './types';
 
 export interface BattleResult {
-    winner: 'player' | 'opponent' | 'draw';
-    log: string[];
-    playerScore: number;
-    opponentScore: number;
+    winner: 'player' | 'opponent';
+    score: { player: number, opponent: number };
+    logs: string[];
+    reward?: { type: 'starlight' | 'voidMatter' | 'gold', amount: number };
 }
 
-export const getCardElement = (monsterName: string): ElementType => {
-    // Determine element based on name or bestiary data
-    // Fallback logic if not explicit in MonsterCard type yet (we should add element to MonsterCard or lookup in Bestiary)
+export const simulateCardBattle = (
+    playerDeck: MonsterCard[],
+    opponent: CardOpponent,
+    allCards: MonsterCard[] // Needed to resolve opponent deck IDs to stats
+): BattleResult => {
+    let playerScore = 0;
+    let opponentScore = 0;
+    const logs: string[] = [];
 
-    // Simple heuristic or lookup
-    if (monsterName.includes('Fire') || monsterName.includes('Dragon') || monsterName.includes('Magma')) return 'fire';
-    if (monsterName.includes('Water') || monsterName.includes('Tide') || monsterName.includes('Ice')) return 'water';
-    if (monsterName.includes('Forest') || monsterName.includes('Ent') || monsterName.includes('Goblin')) return 'nature';
-    if (monsterName.includes('Light') || monsterName.includes('Angel')) return 'light';
-    if (monsterName.includes('Dark') || monsterName.includes('Demon') || monsterName.includes('Void')) return 'dark';
+    logs.push(`Battle Started: YOU vs ${opponent.name}!`);
 
-    // Lookup in MONSTERS (Bestiary) if possible, but MONSTERS is simple right now.
-    // Let's rely on a consistent hash or just random for unknown? No, needs to be deterministic.
-    // Let's use the 'element' form Types if we had it.
-    // For now, let's map generic monsters:
-    const map: Record<string, ElementType> = {
-        'Slime': 'nature',
-        'Rat': 'neutral',
-        'Bat': 'dark',
-        'Wolf': 'nature',
-        'Skeleton': 'dark',
-        'Goblin': 'nature',
-        'Orc': 'fire',
-        'Troll': 'nature',
-        'Ghost': 'dark',
-        'Golem': 'neutral',
-        'Dragon': 'fire',
-        'Demon': 'fire',
-        'Vampire': 'dark',
-        'Kraken': 'water',
-        'Lich': 'dark',
-        'Yeti': 'water',
-        'Hydra': 'water',
-        'Phoenix': 'fire',
-        'Basilisk': 'nature',
-        'Cyclops': 'neutral',
-        'Minotaur': 'neutral',
-        'Chimera': 'fire',
-        'Raid Boss': 'dark',
-        'Void Entity': 'dark',
-        'World Eater': 'dark'
-    };
-    return map[monsterName] || 'neutral';
-};
+    // 3 Rounds
+    for (let i = 0; i < 3; i++) {
+        const playerCard = playerDeck[i % playerDeck.length];
+        // Resolve opponent card
+        const oppCardId = opponent.deck[i % opponent.deck.length];
 
-export const convertToBattleCard = (card: MonsterCard): BattleCard => {
-    const element = getCardElement(card.monsterName);
-    // Power Calculation:
-    // Base 10 + (Count * 2) + RarityBonus?
-    // We don't have Rarity on MonsterCard explicitly, derived from Bestiary? 
-    // Simplified: Power = (count * 5) + (value * 1000)
-    // Actually, Card Value is 0.01 per card usually. 
-    // Let's use 'count' (Level) as primary driver.
+        // Find opponent card stats (simulated or real)
+        // For simplicity, we'll assume opponent uses standard cards but maybe with a multiplier for difficulty?
+        // Actually, let's just find the card in the global list or create a "ghost" card if missing.
+        let oppCard = allCards.find(c => c.id === oppCardId);
 
-    let power = card.count * 10;
+        // Fallback for opponent card if not found (shouldn't happen with valid data)
+        if (!oppCard) {
+            oppCard = { id: oppCardId, monsterName: 'Unknown', count: 1, stat: 'attack', value: 0 };
+        }
 
-    // Rarity Bonus (Fake it based on Power/Gold stat type?)
-    if (card.stat === 'gold') power *= 0.8; // Utility cards weak in combat
-    if (card.stat === 'attack') power *= 1.2;
+        const statType = playerCard.stat; // The stat chosen for the duel is determined by the Player's card type for simplicity? 
+        // OR random stat? Let's go with Random Stat for the round to make it fair/varied.
+        const stats: ('attack' | 'defense' | 'speed' | 'gold' | 'xp')[] = ['attack', 'defense', 'speed', 'gold', 'xp'];
+        const roundStat = stats[Math.floor(Math.random() * stats.length)];
 
-    return {
-        id: card.id,
-        name: card.monsterName,
-        element,
-        power: Math.floor(power),
-        avatar: card.id, // Emoji
-        rarity: 'common' // Placeholder
-    };
-};
+        logs.push(`Round ${i + 1}: Competing in ${roundStat.toUpperCase()}!`);
+        logs.push(`${playerCard.monsterName} (${playerCard.stat}) vs ${oppCard.monsterName} (${oppCard.stat})`);
 
-export const resolveDuel = (playerCard: BattleCard, opponentCard: BattleCard): { winner: 'player' | 'opponent' | 'draw', log: string } => {
-    let pPower = playerCard.power;
-    let oPower = opponentCard.power;
-    const pEl = playerCard.element;
-    const oEl = opponentCard.element;
+        // Calculate Scores
+        // Base score is just the card's value. 
+        // Bonus if the card's main stat MATCHES the round stat.
+        let pVal = playerCard.value * (playerCard.count); // scaling with count
+        if (playerCard.stat === roundStat) pVal *= 2; // Bonus
 
-    let log = `${playerCard.name} (${pEl}, ${pPower}) VS ${opponentCard.name} (${oEl}, ${oPower}). `;
+        let oVal = oppCard.value * (1 + (opponent.difficulty * 0.5)); // Opponent scaling
+        if (oppCard.stat === roundStat) oVal *= 2;
 
-    // Elemental Bonus
-    let pBonus = 1;
-    let oBonus = 1;
+        // Noise
+        pVal *= (0.9 + Math.random() * 0.2);
+        oVal *= (0.9 + Math.random() * 0.2);
 
-    if ((pEl === 'fire' && oEl === 'nature') || (pEl === 'nature' && oEl === 'water') || (pEl === 'water' && oEl === 'fire') || (pEl === 'light' && oEl === 'dark')) {
-        pBonus = 1.5;
-        log += `Elemental Advantage for ${playerCard.name}! `;
-    }
-    if ((oEl === 'fire' && pEl === 'nature') || (oEl === 'nature' && pEl === 'water') || (oEl === 'water' && pEl === 'fire') || (oEl === 'light' && pEl === 'dark')) {
-        oBonus = 1.5;
-        log += `Elemental Advantage for ${opponentCard.name}! `;
+        if (pVal > oVal) {
+            playerScore++;
+            logs.push(`WIN! Your ${playerCard.monsterName} overpowered the enemy!`);
+        } else {
+            opponentScore++;
+            logs.push(`LOSS! ${oppCard.monsterName} was too strong!`);
+        }
     }
 
-    const finalPPower = Math.floor(pPower * pBonus);
-    const finalOPower = Math.floor(oPower * oBonus);
+    const winner = playerScore > opponentScore ? 'player' : 'opponent';
+    logs.push(winner === 'player' ? "VICTORY!" : "DEFEAT!");
 
-    log += `Final Power: ${finalPPower} vs ${finalOPower}.`;
+    const result: BattleResult = {
+        winner,
+        score: { player: playerScore, opponent: opponentScore },
+        logs
+    };
 
-    if (finalPPower > finalOPower) return { winner: 'player', log };
-    if (finalOPower > finalPPower) return { winner: 'opponent', log };
-    return { winner: 'draw', log };
+    if (winner === 'player') {
+        // Rewards
+        result.reward = { type: 'starlight', amount: 5 + Math.floor(opponent.difficulty * 2) };
+    }
+
+    return result;
 };

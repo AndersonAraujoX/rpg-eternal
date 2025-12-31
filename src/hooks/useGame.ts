@@ -28,6 +28,11 @@ import type { MarketItem, Rift, Expedition, GardenPlot, Potion } from '../engine
 import { calculateBreedingResult } from '../engine/breeding'; // Phase 46
 import { generateMarketStock } from '../engine/market';
 import { checkDailyReset, generateDailyQuests, getLoginStreak, LOGIN_REWARDS } from '../engine/dailies'; // Phase 56
+import type { BattleResult } from '../engine/cardBattle'; // Phase 55
+import { PRESTIGE_CLASSES, PRESTIGE_MULTIPLIERS } from '../engine/classes'; // Phase 58
+import type { Spaceship } from '../engine/types'; // Phase 59
+
+
 
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_STATS as INITIAL_GAME_STATS, INITIAL_TALENTS, INITIAL_CONSTELLATIONS } from '../engine/initialData'; // Added GUILDS, Renamed INITIAL_STATS
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -430,6 +435,19 @@ export const useGame = () => {
             // Refresh opponents to reflect new Rank scaling
             // Clearing the list triggers the useEffect to regenerate them with updated difficulty
             setArenaOpponents([]);
+            setArenaOpponents([]);
+        },
+
+        completeCardBattle: (result: BattleResult) => {
+            if (result.winner === 'player' && result.reward) {
+                if (result.reward.type === 'starlight') {
+                    setStarlight(s => s + result.reward!.amount);
+                    addLog(`Duel Victory! Won ${result.reward!.amount} Starlight.`, 'achievement');
+                }
+                soundManager.playLevelUp();
+            } else {
+                addLog('Duel Lost. Try improving your deck!', 'death');
+            }
         },
 
         forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => {
@@ -1498,7 +1516,10 @@ export const useGame = () => {
         galaxy, setGalaxy,
         monsterKills, setMonsterKills,
         gameStats, setGameStats,
+        // PHASE 59
+        spaceship, setSpaceship,
         // PHASE 41
+
         activeExpeditions, setActiveExpeditions,
         activePotions, setActivePotions,
         // Starlight
@@ -1597,7 +1618,76 @@ export const useGame = () => {
         }
     };
 
+    // Phase 58: Prestige
+    const evolveHero = (heroId: string) => {
+        const hero = heroes.find(h => h.id === heroId);
+        if (!hero) return;
+
+        if (hero.level < 50) {
+            addLog(`${hero.name} must be Level 50 to Evolve.`, 'info');
+            return;
+        }
+
+        const newClass = PRESTIGE_CLASSES[hero.class];
+        if (!newClass) {
+            addLog(`${hero.class} cannot evolve further (yet).`, 'info');
+            return;
+        }
+
+        setHeroes(prev => prev.map(h => {
+            if (h.id === heroId) {
+                const mult = PRESTIGE_MULTIPLIERS.statBonus;
+                const newStats = {
+                    hp: Math.floor(h.stats.hp * mult),
+                    maxHp: Math.floor(h.stats.maxHp * mult),
+                    mp: Math.floor(h.stats.mp * mult),
+                    maxMp: Math.floor(h.stats.maxMp * mult),
+                    attack: Math.floor(h.stats.attack * mult),
+                    defense: Math.floor(h.stats.defense * mult),
+                    magic: Math.floor(h.stats.magic * mult),
+                    speed: Math.floor(h.stats.speed * mult)
+                };
+
+                addLog(`EVOLUTION! ${h.name} became a ${newClass}! Stats increased massively!`, 'achievement');
+                soundManager.playLevelUp(); // Maybe a more epic sound?
+
+                return {
+                    ...h,
+                    class: newClass,
+                    prestigeClass: newClass,
+                    level: 1,
+                    xp: 0,
+                    maxXp: 100, // Reset XP curve
+                    evolutionCount: (h.evolutionCount || 0) + 1,
+                    stats: newStats,
+                    emoji: '🌟' + h.emoji // Add sparkle to emoji
+                };
+            }
+            return h;
+        }));
+    };
+
+    // Phase 59: Spaceship
+    const upgradeSpaceship = (part: 'hull' | 'engine' | 'scanner') => {
+        const costGold = Math.floor(1000 * Math.pow(1.5, spaceship[part]));
+        const costMithril = Math.floor(10 * Math.pow(1.5, spaceship[part]));
+
+        // Check resources (Assuming 'gold' is state, 'resources' has 'mithril')
+        const mithril = resources['mithril'] || 0;
+
+        if (gold < costGold || mithril < costMithril) {
+            addLog(`Need ${costGold} Gold & ${costMithril} Mithril to upgrade ${part}`, 'error');
+            return;
+        }
+
+        setGold(g => g - costGold);
+        setResources(prev => ({ ...prev, mithril: (prev.mithril || 0) - costMithril }));
+        setSpaceship(prev => ({ ...prev, [part]: prev[part] + 1 }));
+        addLog(`Upgraded Spaceship ${part.toUpperCase()} to Level ${spaceship[part] + 1}`, 'achievement');
+    };
+
     // PHASE 56: Dailies
+
     const checkDailies = () => {
         const now = Date.now();
         if (checkDailyReset(lastDailyReset)) {
@@ -1801,9 +1891,10 @@ export const useGame = () => {
         // PHASE 46
         breedPets,
         // PHASE 54
-        renameHero, updateGambits,
+        renameHero: ACTIONS.renameHero, updateGambits: ACTIONS.updateGambits,
         // PHASE 55
-        winCardBattle,
+        winCardBattle, // Exported directly
+        evolveHero, // Exported directly
         equipItem, unequipItem,
         // PHASE 56
         dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies,

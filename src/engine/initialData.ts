@@ -1,4 +1,5 @@
-import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameStats, Achievement, Building } from './types';
+import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameStats, Achievement, Building, CardOpponent, LeaderboardEntry } from './types';
+
 
 export const INITIAL_ACHIEVEMENTS: Achievement[] = [
     { id: 'k1', name: 'Slayer I', description: 'Kill 100 Monsters', isUnlocked: false, condition: { type: 'kills', value: 100 }, rewardType: 'damage', rewardValue: 0.05, rewardText: '+5% Attack' },
@@ -101,6 +102,33 @@ export const INITIAL_CONSTELLATIONS: ConstellationNode[] = [
     { id: 'c4', name: 'Draco', description: 'Revive Speed', level: 0, maxLevel: 5, cost: 5, costScaling: 4, bonusType: 'autoReviveSpeed', valuePerLevel: 0.50, x: 50, y: 80 }
 ];
 
+
+export const FAKE_LEADERBOARD: LeaderboardEntry[] = [
+    { id: '1', name: 'TheLegend27', power: 1000000000, avatar: '🐉' },
+    { id: '2', name: 'NoobMaster69', power: 500000000, avatar: '🎮' },
+    { id: '3', name: 'Kirito_SAO', power: 250000000, avatar: '⚔️' },
+    { id: '4', name: 'Leroy_Jenkins', power: 100000000, avatar: '🍗' },
+    { id: '5', name: 'Geralt', power: 50000000, avatar: '🐺' },
+    { id: '6', name: 'Cloud_Strife', power: 25000000, avatar: '🗡️' },
+    { id: '7', name: 'Sephiroth', power: 10000000, avatar: '☄️' },
+    { id: '8', name: 'Mario', power: 5000000, avatar: '🍄' },
+    { id: '9', name: 'Link', power: 2500000, avatar: '🛡️' },
+    { id: '10', name: 'Zelda', power: 1000000, avatar: '👑' },
+    // Filler
+    { id: '11', name: 'Gandalf', power: 500000, avatar: '🧙' },
+    { id: '12', name: 'Aragorn', power: 250000, avatar: '👑' },
+    { id: '13', name: 'Legolas', power: 100000, avatar: '🏹' },
+    { id: '14', name: 'Gimli', power: 50000, avatar: '🪓' },
+    { id: '15', name: 'Frodo', power: 25000, avatar: '💍' },
+    { id: '16', name: 'Samwise', power: 10000, avatar: '🍳' },
+    { id: '17', name: 'Gollum', power: 5000, avatar: '🐟' },
+    { id: '18', name: 'Sauron', power: 5000000000, avatar: '👁️' }, // Top of list
+    { id: '19', name: 'Voldemort', power: 2000000, avatar: '🐍' },
+    { id: '20', name: 'Harry', power: 1500000, avatar: '⚡' },
+];
+
+
+
 export const RARE_ARTIFACTS: Artifact[] = [
     { id: 'a1', name: 'Crown of Kings', description: 'Start at Lvl 5', emoji: '👑', bonus: 'lvl+5', unlocked: false },
     { id: 'a2', name: 'Void Stone', description: '+50% All Stats', emoji: '🌑', bonus: 'stats+50', unlocked: false },
@@ -111,4 +139,10 @@ export const GUILDS: Guild[] = [
     { id: 'g1', name: 'Xang', description: '+10% Physical Damage', bonusType: 'physical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Physical Damage', members: 0 },
     { id: 'g2', name: 'Zhauw', description: '+10% Magical Damage', bonusType: 'magical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Magical Damage', members: 0 },
     { id: 'g3', name: 'Yang', description: '+10% Critical Damage', bonusType: 'crit', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Critical Damage', members: 0 }
+];
+
+export const NPC_DUELISTS: CardOpponent[] = [
+    { id: 'npc1', name: 'Novice Trainer', difficulty: 1, avatar: '🧢', deck: ['slime', 'bat', 'rat'] },
+    { id: 'npc2', name: 'Card Shark', difficulty: 3, avatar: '🦈', deck: ['wolf', 'snake', 'goblin'] },
+    { id: 'npc3', name: 'Grandmaster', difficulty: 10, avatar: '🧙‍♂️', deck: ['dragon', 'demon', 'golem'] }
 ];

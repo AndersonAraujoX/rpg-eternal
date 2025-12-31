@@ -27,7 +27,11 @@ import { AchievementsModal } from './components/modals/AchievementsModal';
 import { StarlightModal } from './components/modals/StarlightModal';
 import { LogModal } from './components/modals/LogModal';
 import { GalaxyModal } from './components/modals/GalaxyModal';
+import { LeaderboardModal } from './components/modals/LeaderboardModal'; // Phase 60
+import { DungeonModal } from './components/modals/DungeonModal'; // Phase 61
 // PHASE 41
+
+
 import { FishingModal } from './components/modals/FishingModal';
 import { AlchemyModal } from './components/modals/AlchemyModal';
 import { ExpeditionsModal } from './components/modals/ExpeditionsModal';
@@ -58,8 +62,11 @@ function App() {
     buildings, upgradeBuilding, // Phase 53
     dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies, // Phase 56
     winCardBattle, // Phase 55
-    equipItem, unequipItem // Phase 57
+    equipItem, unequipItem, // Phase 57
+    spaceship, upgradeSpaceship, // Phase 59
+    dungeonState, moveDungeon, exitDungeon // Phase 61
   } = useGame();
+
 
   const [showShop, setShowShop] = useState(false);
   const [showTown, setShowTown] = useState(false); // Phase 53
@@ -84,8 +91,11 @@ function App() {
   const [showAchievements, setShowAchievements] = useState(false);
   const [showLog, setShowLog] = useState(false);
   const [showStarlight, setShowStarlight] = useState(false);
+
   const [showGalaxy, setShowGalaxy] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   // PHASE 41
+
   const [showFishing, setShowFishing] = useState(false);
   const [showAlchemy, setShowAlchemy] = useState(false);
   const [showExpeditions, setShowExpeditions] = useState(false);
@@ -180,7 +190,9 @@ function App() {
           setShowInventory={setShowInventory} setShowBestiary={setShowBestiary} setShowSettings={setShowSettings} setShowStats={setShowStats}
           setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
           setShowArena={setShowArena} setShowQuests={setShowQuests} setShowDailyRewards={setShowDailyRewards} setShowGalaxy={setShowGalaxy}
+          setShowLeaderboard={setShowLeaderboard}
           setShowRiftModal={setShowRiftModal}
+
           setShowBreedingModal={setShowBreedingModal} // Phase 46
           setShowGuildWar={setShowGuildWar} // Phase 47
           weather={weather} weatherTimer={weatherTimer} // Phase 48
@@ -238,7 +250,16 @@ function App() {
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
-      <GalaxyModal isOpen={showGalaxy} onClose={() => setShowGalaxy(false)} galaxy={galaxy} onConquer={actions.conquerSector} partyPower={partyPower} starlightUpgrades={starlightUpgrades} />
+      <GalaxyModal
+        isOpen={showGalaxy}
+        onClose={() => setShowGalaxy(false)}
+        galaxy={galaxy}
+        onConquer={actions.conquerSector}
+        partyPower={partyPower}
+        starlightUpgrades={starlightUpgrades}
+        spaceship={spaceship}
+        onUpgradeShip={upgradeSpaceship}
+      />
 
       {/* PHASE 41 Modals */}
       <FishingModal isOpen={showFishing} onClose={() => setShowFishing(false)} fishCount={resources.fish || 0} setFish={() => actions.manualFish && actions.manualFish()} />

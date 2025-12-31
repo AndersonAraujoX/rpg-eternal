@@ -33,8 +33,14 @@ export interface Entity {
     type: EntityType;
     stats: Stats;
     spriteUrl?: string;
+    stats: Stats;
+    spriteUrl?: string;
     isDead: boolean;
+    // Phase 58: Prestige
+    prestigeClass?: string;
+    evolutionCount?: number;
 }
+
 
 export interface Pet extends Entity {
     type: 'pet';
@@ -420,3 +426,24 @@ export interface Rift {
     restriction: RiftRestriction;
     rewards: { type: 'starlight' | 'voidMatter' | 'gold', amount: number }[];
 }
+
+export interface LeaderboardEntry {
+    id: string;
+    name: string;
+    power: number;
+    avatar: string;
+    isPlayer?: boolean;
+}
+
+export type DungeonCellType = 'empty' | 'wall' | 'start' | 'exit' | 'chest' | 'enemy' | 'trap';
+
+export interface DungeonState {
+    active: boolean;
+    level: number;
+    width: number;
+    height: number;
+    grid: DungeonCellType[][];
+    playerPos: { x: number; y: number };
+    revealed: boolean[][];
+}
+
