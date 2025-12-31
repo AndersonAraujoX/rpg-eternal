@@ -33,8 +33,7 @@ export interface Entity {
     type: EntityType;
     stats: Stats;
     spriteUrl?: string;
-    stats: Stats;
-    spriteUrl?: string;
+
     isDead: boolean;
     // Phase 58: Prestige
     prestigeClass?: string;
@@ -186,10 +185,13 @@ export interface Skill {
     statBonus?: Partial<Stats>; // For passives
 }
 
+// Force Rebuild
+export type HeroClass = 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate' | 'Fisherman' | 'Blacksmith' | 'hunter' | 'cleric';
+
 export interface Hero extends Entity {
     id: string;
     name: string;
-    class: 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate' | 'Fisherman' | 'Blacksmith';
+    class: HeroClass;
     emoji: string;
     unlocked: boolean;
     isDead: boolean;
@@ -221,6 +223,23 @@ export interface GalaxySector {
     reward: { type: 'gold' | 'mithril' | 'souls' | 'starlight' | 'global_damage' | 'global_gold' | 'global_xp' | 'mining_speed', value: number }; // Value per tick or Multiplier
     isOwned: boolean;
     type: 'planet' | 'asteroid' | 'nebula' | 'star';
+    hazardLevel?: 'safe' | 'low' | 'medium' | 'high' | 'extreme'; // Added for GalaxyModal compatibility
+}
+
+export interface Spaceship {
+    name: string;
+    level: number;
+    fuel: number;
+    maxFuel: number;
+    hull: number;
+    maxHull: number;
+    parts: {
+        engine: number;
+        scanners: number;
+        miningLaser: number;
+        shields: number;
+    };
+    upgrades: string[]; // Upgrade IDs
 }
 
 export type LogEntry = {
@@ -435,15 +454,4 @@ export interface LeaderboardEntry {
     isPlayer?: boolean;
 }
 
-export type DungeonCellType = 'empty' | 'wall' | 'start' | 'exit' | 'chest' | 'enemy' | 'trap';
-
-export interface DungeonState {
-    active: boolean;
-    level: number;
-    width: number;
-    height: number;
-    grid: DungeonCellType[][];
-    playerPos: { x: number; y: number };
-    revealed: boolean[][];
-}
 

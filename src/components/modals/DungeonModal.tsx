@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Shield, Key, Grid, Footprints, Skull, Archive, AlertTriangle, DoorOpen } from 'lucide-react';
-import { DungeonState, DungeonCellType } from '../../engine/types';
+import type { DungeonState } from '../../engine/dungeon';
+
 
 interface DungeonModalProps {
     dungeon: DungeonState | null;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'; // Refresh timestamp: 1
 import { formatNumber } from '../utils';
 
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources, Building, DailyQuest } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources, Building, DailyQuest, Spaceship } from '../engine/types';
 import { POTIONS, GUILDS } from '../engine/types'; // Phase 41 & 47
 import { CLASS_SKILLS } from '../engine/skills';
 import { INITIAL_GALAXY, calculateGalaxyIncome, calculateGalaxyBuffs } from '../engine/galaxy';
@@ -25,12 +25,15 @@ import { brewPotion } from '../engine/alchemy';
 import { startExpedition, checkExpeditionCompletion, claimExpeditionRewards } from '../engine/expeditions';
 import { tickGarden, INITIAL_GARDEN } from '../engine/garden'; // Phase 43
 import type { MarketItem, Rift, Expedition, GardenPlot, Potion } from '../engine/types'; // Added missing types
+import type { DungeonState } from '../engine/dungeon';
+import { generateDungeon, DUNGEON_WIDTH, DUNGEON_HEIGHT } from '../engine/dungeon';
+
 import { calculateBreedingResult } from '../engine/breeding'; // Phase 46
 import { generateMarketStock } from '../engine/market';
 import { checkDailyReset, generateDailyQuests, getLoginStreak, LOGIN_REWARDS } from '../engine/dailies'; // Phase 56
 import type { BattleResult } from '../engine/cardBattle'; // Phase 55
 import { PRESTIGE_CLASSES, PRESTIGE_MULTIPLIERS } from '../engine/classes'; // Phase 58
-import type { Spaceship } from '../engine/types'; // Phase 59
+
 
 
 
@@ -65,10 +68,25 @@ export const useGame = () => {
     const [keys, setKeys] = useState<number>(0);
     const [resources, setResources] = useState<Resources>({ copper: 0, iron: 0, mithril: 0, fish: 0, herbs: 0 });
 
+
+    // Phase 53: Town
+    const [buildings, setBuildings] = useState<Building[]>(INITIAL_BUILDINGS);
     // Phase 56: Dailies
     const [dailyQuests, setDailyQuests] = useState<DailyQuest[]>([]);
-    const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
+    const [dailyLoginClaimed, setDailyLoginClaimed] = useState<boolean>(false);
     const [lastDailyReset, setLastDailyReset] = useState<number>(Date.now());
+    // Phase 59: Spaceship
+    const [spaceship, setSpaceship] = useState<Spaceship>({
+        name: 'Stellar Voyager',
+        level: 1,
+        fuel: 100,
+        maxFuel: 100,
+        hull: 100,
+        maxHull: 100,
+        parts: { engine: 1, scanners: 1, miningLaser: 1, shields: 1 },
+        upgrades: []
+    });
+
 
     // PHASE 41
     const [activeExpeditions, setActiveExpeditions] = useState<Expedition[]>([]);
@@ -80,9 +98,9 @@ export const useGame = () => {
     const [riftTimer, setRiftTimer] = useState<number>(0);
     const [marketStock, setMarketStock] = useState<MarketItem[]>([]);
     const [marketTimer, setMarketTimer] = useState<number>(0);
-    const [buildings, setBuildings] = useState<Building[]>(INITIAL_BUILDINGS); // Phase 53
 
     const [dungeonActive, setDungeonActive] = useState<boolean>(false);
+    const [dungeonState, setDungeonState] = useState<DungeonState | null>(null);
     const [dungeonTimer, setDungeonTimer] = useState<number>(0);
 
     const [ultimateCharge, setUltimateCharge] = useState<number>(0);
@@ -1502,6 +1520,29 @@ export const useGame = () => {
 
 
 
+    // Starlight Logic
+
+    const buyStarlightUpgrade = (id: string) => {
+        const upgrade = STARLIGHT_UPGRADES.find(u => u.id === id);
+        if (!upgrade) return;
+
+        const currentLevel = starlightUpgrades[id] || 0;
+        if (currentLevel >= upgrade.maxLevel) return;
+
+        const cost = getStarlightUpgradeCost(id, currentLevel);
+        if (starlight >= cost) {
+            setStarlight(s => s - cost);
+            setStarlightUpgrades(prev => ({
+                ...prev,
+                [id]: currentLevel + 1
+            }));
+            addLog(`Purchased Starlight Upgrade: ${upgrade.name}`, 'craft');
+            soundManager.playLevelUp();
+        } else {
+            addLog(`Not enough Starlight! Need ${formatNumber(cost)}`, 'error');
+        }
+    };
+
     usePersistence(
         heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
         divinity, setDivinity, pets, setPets, talents, setTalents, artifacts, setArtifacts,
@@ -1523,7 +1564,7 @@ export const useGame = () => {
         activeExpeditions, setActiveExpeditions,
         activePotions, setActivePotions,
         // Starlight
-        starlightUpgrades, buyStarlightUpgrade, isStarlightModalOpen, setIsStarlightModalOpen,
+        starlightUpgrades, setStarlightUpgrades,
         // PHASE 53
         buildings, setBuildings,
         setRaidActive, setDungeonActive, setOfflineGains,
@@ -1667,24 +1708,7 @@ export const useGame = () => {
         }));
     };
 
-    // Phase 59: Spaceship
-    const upgradeSpaceship = (part: 'hull' | 'engine' | 'scanner') => {
-        const costGold = Math.floor(1000 * Math.pow(1.5, spaceship[part]));
-        const costMithril = Math.floor(10 * Math.pow(1.5, spaceship[part]));
 
-        // Check resources (Assuming 'gold' is state, 'resources' has 'mithril')
-        const mithril = resources['mithril'] || 0;
-
-        if (gold < costGold || mithril < costMithril) {
-            addLog(`Need ${costGold} Gold & ${costMithril} Mithril to upgrade ${part}`, 'error');
-            return;
-        }
-
-        setGold(g => g - costGold);
-        setResources(prev => ({ ...prev, mithril: (prev.mithril || 0) - costMithril }));
-        setSpaceship(prev => ({ ...prev, [part]: prev[part] + 1 }));
-        addLog(`Upgraded Spaceship ${part.toUpperCase()} to Level ${spaceship[part] + 1}`, 'achievement');
-    };
 
     // PHASE 56: Dailies
 
@@ -1873,6 +1897,77 @@ export const useGame = () => {
         soundManager.playLevelUp();
     };
 
+    // Phase 59: Spaceship Logic
+    const upgradeSpaceship = (part: keyof Spaceship['parts']) => {
+        if (!spaceship) return;
+        const partLevel = spaceship.parts[part];
+        const cost = partLevel * 1000;
+        if (gold >= cost) {
+            setGold(g => g - cost);
+            setSpaceship(prev => prev ? ({
+                ...prev,
+                parts: { ...prev.parts, [part]: prev.parts[part] + 1 }
+            }) : prev);
+            addLog(`Upgraded spaceship ${part} to level ${partLevel + 1}`, 'craft');
+        } else {
+            addLog(`Not enough gold to upgrade ${part}`, 'info');
+        }
+    };
+
+    // Phase 61: Dungeon Logic
+    const enterDungeon = () => {
+        const level = 1 + Math.floor(boss.level / 5);
+        const newState = generateDungeon(level);
+        setDungeonState(newState);
+        setDungeonActive(true);
+        addLog(`Entered Dungeon Level ${level}!`, 'action');
+    };
+
+    const exitDungeon = () => {
+        setDungeonActive(false);
+        setDungeonState(null);
+        addLog('Left the dungeon.', 'info');
+    };
+
+    const moveDungeon = (dx: number, dy: number) => {
+        if (!dungeonState) return;
+        const { grid, playerPos, width, height, revealed } = dungeonState;
+        const nx = playerPos.x + dx;
+        const ny = playerPos.y + dy;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) return;
+
+        const targetCell = grid[ny][nx];
+        if (targetCell === 'wall') return;
+
+        const newRevealed = [...revealed.map(row => [...row])];
+        const dirs = [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]];
+        dirs.forEach(([rx, ry]) => {
+            const cx = nx + rx, cy = ny + ry;
+            if (cx >= 0 && cx < width && cy >= 0 && cy < height) newRevealed[cy][cx] = true;
+        });
+
+        let newGrid = [...grid.map(row => [...row])];
+        if (targetCell === 'chest') {
+            addLog("Found a Treasure Chest!", "action");
+            setGold(g => g + 500);
+            newGrid[ny][nx] = 'empty';
+        } else if (targetCell === 'enemy') {
+            addLog("Encountered a Dungeon Monster!", "danger");
+            newGrid[ny][nx] = 'empty';
+        } else if (targetCell === 'exit') {
+            addLog("Found the exit! Dungeon Complete.", "success");
+            exitDungeon();
+            return;
+        }
+
+        setDungeonState(prev => prev ? ({
+            ...prev,
+            playerPos: { x: nx, y: ny },
+            revealed: newRevealed,
+            grid: newGrid
+        }) : null);
+    };
+
     // NOTE: This hook is getting HUGE. Refactoring is recommended for Phase 48.
 
     return {
@@ -1880,7 +1975,7 @@ export const useGame = () => {
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: { ...ACTIONS, conquerSector, breedPets, attackTerritory }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
+        actions: { ...ACTIONS, conquerSector, breedPets, attackTerritory, enterDungeon, moveDungeon, exitDungeon }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
         monsterKills, gameStats, activeExpeditions, activePotions,
         // PHASE 43
         gardenPlots, setGardenPlots,
@@ -1905,6 +2000,8 @@ export const useGame = () => {
         // PHASE 53
         buildings, upgradeBuilding,
         // Starlight
-        starlightUpgrades, buyStarlightUpgrade, isStarlightModalOpen, setIsStarlightModalOpen
+        buyStarlightUpgrade, isStarlightModalOpen, setIsStarlightModalOpen,
+        spaceship, upgradeSpaceship, // Phase 59
+        dungeonState, moveDungeon, exitDungeon, enterDungeon // Phase 61
     };
 };

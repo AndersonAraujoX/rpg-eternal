@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Swords, Trophy, Skull } from 'lucide-react';
 import type { MonsterCard, CardOpponent } from '../../engine/types';
-import { simulateCardBattle, BattleResult } from '../../engine/cardBattle';
+import { simulateCardBattle } from '../../engine/cardBattle';
+import type { BattleResult } from '../../engine/cardBattle';
 import { NPC_DUELISTS } from '../../engine/initialData';
 
 interface CardBattleModalProps {

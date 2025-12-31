@@ -46,6 +46,8 @@ import { MuseumModal } from './components/modals/MuseumModal';
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
 
+import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
+
 function App() {
   const {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
@@ -64,7 +66,8 @@ function App() {
     winCardBattle, // Phase 55
     equipItem, unequipItem, // Phase 57
     spaceship, upgradeSpaceship, // Phase 59
-    dungeonState, moveDungeon, exitDungeon // Phase 61
+    dungeonState, moveDungeon, exitDungeon, // Phase 61
+    synergies // Fixed: Destructured from useGame
   } = useGame();
 
 
@@ -207,8 +210,7 @@ function App() {
           boss={boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
           ultimateCharge={ultimateCharge} pets={pets} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps} partyPower={partyPower}
           combatEvents={combatEvents}
-          // @ts-ignore
-          synergies={useGame().synergies} // Wait, I returned 'synergies' from useGame, so I can just access it from destructuring?
+          synergies={synergies}
         />
 
         <HeroList heroes={heroes} actions={actions} onOpenGear={(hero) => setSelectedHeroId(hero.id)} />
@@ -300,6 +302,9 @@ function App() {
       <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
+
+      <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={FAKE_LEADERBOARD} currentPower={partyPower} />
+      {dungeonActive && <DungeonModal dungeon={dungeonState} onMove={moveDungeon} onExit={exitDungeon} />}
 
       {showDailyRewards && (
         <DailyRewardsModal

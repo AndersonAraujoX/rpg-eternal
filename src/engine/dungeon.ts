@@ -1,6 +1,18 @@
-import { DungeonState, DungeonCellType } from './types';
+
+export type DungeonCellType = 'empty' | 'wall' | 'start' | 'exit' | 'chest' | 'enemy' | 'trap';
+
+export interface DungeonState {
+    active: boolean;
+    level: number;
+    width: number;
+    height: number;
+    grid: DungeonCellType[][];
+    playerPos: { x: number; y: number };
+    revealed: boolean[][];
+}
 
 export const DUNGEON_WIDTH = 15;
+
 export const DUNGEON_HEIGHT = 15;
 
 export const generateDungeon = (level: number): DungeonState => {
