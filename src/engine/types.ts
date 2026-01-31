@@ -197,7 +197,7 @@ export interface Hero extends Entity {
     isDead: boolean;
     element: ElementType;
     assignment: 'combat' | 'mine' | 'expedition';
-    gambits: any[];
+    gambits: Gambit[];
     corruption: boolean;
     level: number;
     xp: number;

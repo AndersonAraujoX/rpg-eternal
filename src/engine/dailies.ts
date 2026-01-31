@@ -38,7 +38,7 @@ export const generateDailyQuests = (): DailyQuest[] => {
             target: template.target,
             current: 0,
             type: template.type,
-            reward: { type: template.reward.type as any, amount: template.reward.amount },
+            reward: { type: template.reward.type as DailyQuest['reward']['type'], amount: template.reward.amount },
             claimed: false
         });
     }

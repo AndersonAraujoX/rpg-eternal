@@ -12,14 +12,17 @@ interface ExpeditionsModalProps {
 }
 
 export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onClose, activeExpeditions, heroes, startExpedition }) => {
-    if (!isOpen) return null;
-
-    const [now, setNow] = React.useState(Date.now());
+    const [now, setNow] = React.useState(0);
 
     React.useEffect(() => {
-        const interval = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(interval);
-    }, []);
+        if (isOpen) {
+            setNow(Date.now());
+            const interval = setInterval(() => setNow(Date.now()), 1000);
+            return () => clearInterval(interval);
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
 
     const handleStart = (exp: Expedition) => {
         // Simple logic: Send up to 3 strongest IDLE heroes

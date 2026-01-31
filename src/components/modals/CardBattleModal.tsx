@@ -13,7 +13,7 @@ interface CardBattleModalProps {
     stats: GameStats;
 }
 
-export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClose, cards, onWin, stats: _stats }) => {
+export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClose, cards, onWin }) => {
     const [selectedOpponent, setSelectedOpponent] = useState<CardOpponent | null>(null);
     const [selectedDeck, setSelectedDeck] = useState<string[]>([]); // IDs
     const [battleResult, setBattleResult] = useState<BattleResult | null>(null);

@@ -169,7 +169,7 @@ function App() {
 
     // If not claimed, show modal
     if (dailyLoginClaimed === false) {
-      setShowDailyRewards(true);
+      setTimeout(() => setShowDailyRewards(true), 0);
     }
   }, [dailyLoginClaimed]);
 

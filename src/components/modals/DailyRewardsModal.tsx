@@ -26,7 +26,10 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
 
     // Auto-switch to quests if login claimed
     useEffect(() => {
-        if (dailyLoginClaimed) setActiveTab('quests');
+        if (dailyLoginClaimed) {
+            const timer = setTimeout(() => setActiveTab('quests'), 0);
+            return () => clearTimeout(timer);
+        }
     }, [dailyLoginClaimed]);
 
     return (

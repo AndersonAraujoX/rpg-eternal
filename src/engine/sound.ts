@@ -6,7 +6,7 @@ export class SoundManager {
         try {
             // Defer initialization until user interaction if needed, 
             // but provided toggle will handle it.
-            this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            this.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         } catch { // Removed unused e
             console.error('AudioContext not supported');
         }
