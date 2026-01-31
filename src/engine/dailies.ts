@@ -17,7 +17,7 @@ export const checkDailyReset = (lastReset: number): boolean => {
     return (now - lastReset) > oneDay;
 };
 
-export const generateDailyQuests = (_previousQuests: DailyQuest[], _playerLevel: number): DailyQuest[] => {
+export const generateDailyQuests = (): DailyQuest[] => {
     // Generate 3 random quests
     // Difficulty scales or static? Static for now.
 

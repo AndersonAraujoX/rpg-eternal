@@ -59,7 +59,7 @@ export const SYNERGY_DEFINITIONS: SynergyDefinition[] = [
         classSet: ['Rogue', 'Assassin', 'Ninja'],
         classSetCount: 2
     },
-    
+
     // --- ELEMENTAL REACTIONS ---
     {
         id: 'reaction_burn',

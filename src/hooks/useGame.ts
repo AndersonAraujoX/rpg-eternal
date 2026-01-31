@@ -1023,7 +1023,7 @@ export const useGame = () => {
             if (marketTimer > 0) {
                 setMarketTimer(t => Math.max(0, t - 1000));
             } else if (Math.random() < 0.001) { // 0.1% chance per second (approx avg 16 mins) to spawn
-                setMarketStock(generateMarketStock(1));
+                setMarketStock(generateMarketStock());
                 setMarketTimer(300000); // 5 minutes
                 // Play sound?
             }
@@ -1721,7 +1721,7 @@ export const useGame = () => {
             // New Day!
             setLastDailyReset(now);
             setDailyLoginClaimed(false);
-            setDailyQuests(generateDailyQuests([], 1)); // Level 1 placeholder
+            setDailyQuests(generateDailyQuests()); // Level 1 placeholder
 
             // Update Streak
             setGameStats(prev => ({
