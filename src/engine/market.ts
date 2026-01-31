@@ -10,7 +10,7 @@ const POSSIBLE_ITEMS: Partial<MarketItem>[] = [
     { id: 'gold_crate', name: 'Illicit Gold Shipment', description: 'Gain massive gold', cost: 2, currency: 'divinity', type: 'potion', value: 100000, emoji: '💰' },
 ];
 
-export const generateMarketStock = (_level: number): MarketItem[] => {
+export const generateMarketStock = (_level: number): MarketItem[] => { // _level unused
     // Generate 3-5 random items
     const stockSize = Math.floor(Math.random() * 3) + 3;
     const stock: MarketItem[] = [];

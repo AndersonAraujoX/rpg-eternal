@@ -1,20 +1,27 @@
 import React from 'react';
 import { Sword, Flame, Droplets, Leaf } from 'lucide-react';
-import type { Boss, Pet, Artifact, Hero } from '../engine/types';
+import type { Boss, Hero, LogEntry, GameActions, CombatEvent, Pet, Artifact } from '../engine/types';
+import type { Synergy } from '../engine/synergies';
+// Imports removed
+import { formatNumber } from '../utils';
 
 interface BattleAreaProps {
     boss: Boss;
+    heroes: Hero[];
+    actions: GameActions;
+    logs: LogEntry[];
+    partyPower: number;
+    partyDps: number;
+    gameSpeed: number;
+    combatEvents?: CombatEvent[];
+    synergies?: Synergy[];
+
+    // Additional props found in usage
     dungeonActive: boolean;
     dungeonTimer: number;
     ultimateCharge: number;
     pets: Pet[];
-    actions: any;
     artifacts: Artifact[];
-    heroes: Hero[]; // Passed for hero effects or rendering behind boss
-    synergies?: { id: string, name: string, icon: string, description: string }[];
-    partyDps?: number;
-    partyPower?: number;
-    combatEvents?: any[]; // Using any for now to avoid circular dependency or import type
 }
 
 const getElementIcon = (el: string) => {
@@ -33,7 +40,7 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [] }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [], synergies = [] }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
     const lastEventId = React.useRef<string | null>(null);
 
@@ -78,12 +85,12 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {/* Party DPS Meter & Synergies */}
             <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
                 <div className="bg-black bg-opacity-50 p-1 rounded text-xs font-mono text-yellow-300">
-                    DPS: {actions.formatNumber ? actions.formatNumber(partyDps || 0) : partyDps} | PWR: {actions.formatNumber ? actions.formatNumber(partyPower || 0) : partyPower}
+                    DPS: {formatNumber(partyDps || 0)} | PWR: {formatNumber(partyPower || 0)}
                 </div>
 
                 {/* Active Synergies */}
                 <div className="flex gap-1">
-                    {actions.synergies?.map((s: any) => (
+                    {synergies.map((s) => (
                         <div key={s.id} className="bg-gray-800 p-1 rounded border border-yellow-500 text-lg cursor-help relative group" title={s.description}>
                             {s.icon}
                             <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block w-48 bg-gray-900 border border-white p-2 text-[10px] text-white z-50 rounded shadow-xl">
@@ -113,7 +120,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
                 <div className="w-48 h-4 bg-gray-700 mt-2 bar-container relative rounded">
                     <div className="h-full bg-red-600 transition-all duration-300" style={{ width: `${(boss.stats.hp / boss.stats.maxHp) * 100}%` }} />
-                    <div className="absolute inset-0 flex items-center justify-center text-[8px] text-white z-10">{boss.stats.hp}/{boss.stats.maxHp}</div>
+                    <div className="absolute inset-0 flex items-center justify-center text-[8px] text-white z-10">{formatNumber(boss.stats.hp)}/{formatNumber(boss.stats.maxHp)}</div>
                 </div>
 
                 <div className="w-48 h-1 bg-gray-800 mt-1 relative rounded overflow-hidden">
@@ -121,11 +128,10 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                 </div>
 
                 <div className="mt-2 text-xs font-mono text-gray-400 flex flex-col items-center">
-                    <span className="text-red-400 font-bold">{partyDps.toLocaleString()} DPS</span>
+                    <span className="text-red-400 font-bold">{formatNumber(partyDps)} DPS</span>
                 </div>
             </div>
 
-            {/* Pet */}
             {/* Pets List */}
             <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col gap-2 z-20 max-h-[80%] overflow-y-auto w-24 no-scrollbar">
                 {pets && pets.length > 0 && (

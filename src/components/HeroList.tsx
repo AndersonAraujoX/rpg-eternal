@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull } from 'lucide-react';
-import type { Hero } from '../engine/types';
+import type { Hero, GameActions } from '../engine/types';
 import { GambitModal } from './modals/GambitModal';
 import { HeroDetailModal } from './modals/HeroDetailModal';
 
@@ -9,7 +9,7 @@ import { Info, Crown } from 'lucide-react'; // Phase 58
 
 interface HeroListProps {
     heroes: Hero[];
-    actions: any;
+    actions: GameActions;
     onOpenGear: (hero: Hero) => void;
 }
 

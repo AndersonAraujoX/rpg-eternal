@@ -1,12 +1,12 @@
 import React from 'react';
-import type { Hero, Stats } from '../../engine/types';
+import type { Hero, GameActions, Stats } from '../../engine/types';
 import { X, Sword, Shield, Zap, Heart, Wind, Flame, Droplets, Leaf } from 'lucide-react';
 
 interface HeroDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     hero: Hero | null;
-    actions: any;
+    actions: GameActions;
 }
 
 export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClose, hero }) => {

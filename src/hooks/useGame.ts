@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'; // Refresh timestamp: 1
 import { formatNumber } from '../utils';
 
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources, Building, DailyQuest, Spaceship } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GameStats, Resources, LogEntry, Building, Quest, Expedition, ActivePotion, DailyQuest, MarketItem, ElementType, Gambit, ArenaOpponent, Stats, Spaceship, HeroClass, Rift, GardenPlot } from '../engine/types';
 import { POTIONS, GUILDS } from '../engine/types'; // Phase 41 & 47
 import { CLASS_SKILLS } from '../engine/skills';
 import { INITIAL_GALAXY, calculateGalaxyIncome, calculateGalaxyBuffs } from '../engine/galaxy';
@@ -17,16 +17,16 @@ import {
 import { checkSynergies } from '../engine/synergies';
 import { MONSTERS } from '../engine/bestiary';
 import { generateLoot } from '../engine/loot';
-import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim, getAutoEquip, getAutoSell } from '../engine/automation';
+import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim } from '../engine/automation';
 import { simulateTavernSummon } from '../engine/tavern';
 import { processMining } from '../engine/mining';
 import { processFishing } from '../engine/fishing';
 import { brewPotion } from '../engine/alchemy';
 import { startExpedition, checkExpeditionCompletion, claimExpeditionRewards } from '../engine/expeditions';
 import { tickGarden, INITIAL_GARDEN } from '../engine/garden'; // Phase 43
-import type { MarketItem, Rift, Expedition, GardenPlot, Potion } from '../engine/types'; // Added missing types
+// Consolidated imports above
 import type { DungeonState } from '../engine/dungeon';
-import { generateDungeon, DUNGEON_WIDTH, DUNGEON_HEIGHT } from '../engine/dungeon';
+import { generateDungeon } from '../engine/dungeon';
 
 import { calculateBreedingResult } from '../engine/breeding'; // Phase 46
 import { generateMarketStock } from '../engine/market';
@@ -90,7 +90,7 @@ export const useGame = () => {
 
     // PHASE 41
     const [activeExpeditions, setActiveExpeditions] = useState<Expedition[]>([]);
-    const [activePotions, setActivePotions] = useState<{ id: string, name: string, effect: Potion['effect'], value: number, endTime: number }[]>([]);
+    const [activePotions, setActivePotions] = useState<ActivePotion[]>([]);
 
     // PHASE 43
     const [gardenPlots, setGardenPlots] = useState<GardenPlot[]>(INITIAL_GARDEN);
@@ -278,12 +278,12 @@ export const useGame = () => {
         spendStatPoint: (heroId: string, stat: keyof Stats) => {
             setHeroes(prev => prev.map(h => {
                 if (h.id === heroId && h.statPoints > 0) {
-                    let hpGain = 10, mpGain = 5, otherGain = 1;
-                    let newStats = { ...h.stats };
+                    const hpGain = 10, mpGain = 5, otherGain = 1;
+                    const newStats = { ...h.stats };
 
                     if (stat === 'hp') { newStats.hp += hpGain; newStats.maxHp += hpGain; }
                     else if (stat === 'mp') { newStats.mp += mpGain; newStats.maxMp += mpGain; }
-                    else { (newStats as any)[stat] = (newStats as any)[stat] + otherGain; }
+                    else { newStats[stat as keyof Stats] = (newStats[stat as keyof Stats] || 0) + otherGain; }
 
                     soundManager.playLevelUp();
                     return { ...h, statPoints: h.statPoints - 1, stats: newStats };
@@ -531,7 +531,7 @@ export const useGame = () => {
             // Update Heroes
             if (result.unlockedHeroIds.length > 0 || result.statBoosts > 0 || result.minerBoosts > 0 || result.newHeroes.length > 0) {
                 setHeroes(prev => {
-                    let updated = prev.map(h => {
+                    const updated = prev.map(h => {
                         if (result.unlockedHeroIds.includes(h.id)) return { ...h, unlocked: true };
                         if (result.statBoosts > 0 && h.unlocked && h.class !== 'Miner') {
                             return { ...h, stats: { ...h.stats, hp: h.stats.hp + (10 * result.statBoosts), attack: h.stats.attack + (2 * result.statBoosts) } };
@@ -557,7 +557,7 @@ export const useGame = () => {
             if (result.newArtifacts.length > 0) setArtifacts(p => [...p, ...result.newArtifacts]);
 
             setPets(prev => {
-                let updated = [...prev];
+                const updated = [...prev];
                 Object.entries(result.petXpBoosts).forEach(([id, xp]) => {
                     const p = updated.find(pet => pet.id === id);
                     if (p) {
@@ -706,7 +706,7 @@ export const useGame = () => {
                 let newXp = p.xp + xpGain;
                 let newLvl = p.level;
                 let newMax = p.maxXp;
-                let newStats = { ...p.stats };
+                const newStats = { ...p.stats };
 
                 if (newXp >= p.maxXp) {
                     newXp -= p.maxXp;
@@ -951,10 +951,11 @@ export const useGame = () => {
 
         // I need to Fix the return statement to return `activeSynergies`
         // Apply Synergy Buffs
-        const synergyDefense = synergies.find(s => s.type === 'defense') ? 0.2 : 0;
-        const synergyVampirism = synergies.find(s => s.type === 'vampirism') ? 0.15 : 0;
-        const synergyAttackSpeed = synergies.find(s => s.type === 'attackSpeed') ? 0.2 : 0;
-        const synergyResources = synergies.find(s => s.type === 'resources') ? 0.1 : 0;
+        // Apply Synergy Buffs
+        // const synergyDefense = synergies.filter(s => s.type === 'defense' || s.type === 'mitigation').reduce((acc, s) => acc + s.value, 0);
+        // Vampirism handled in combat.ts via 'activeSynergies'
+        const synergyAttackSpeed = synergies.filter(s => s.type === 'attackSpeed' || s.type === 'freeze').reduce((acc, s) => acc + (s.type === 'freeze' ? 0.1 : s.value), 0);
+        const synergyResources = synergies.filter(s => s.type === 'resources').reduce((acc, s) => acc + s.value, 0);
 
         const hasteTalent = talents.find(t => t.stat === 'speed');
         const speedBonus = (hasteTalent ? (1 - (hasteTalent.level * hasteTalent.valuePerLevel)) : 1) * (1 - synergyAttackSpeed);
@@ -964,7 +965,7 @@ export const useGame = () => {
         const timer = setTimeout(() => {
             // Card Buffs & Pet Buffs & Potion Buffs
             const petGoldBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('Gold') ? 0.1 : 0), 0);
-            const petDefenseBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('Defense') ? 0.2 : 0), 0);
+            // const petDefenseBonus = pets.reduce((acc, p) => acc + (p.bonus.includes('Defense') ? 0.2 : 0), 0);
 
             const potionXpBonus = activePotions.filter(p => p.effect === 'xp').reduce((acc, p) => acc + p.value, 0);
             const potionAtkBonus = activePotions.filter(p => p.effect === 'attack').reduce((acc, p) => acc + p.value, 0);
@@ -992,7 +993,7 @@ export const useGame = () => {
             // ...
 
             const damageMult = calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, pets) + potionAtkBonus + galaxyBuffs.damageMult;
-            const defenseMult = 1 + cards.filter(c => c.stat === 'defense').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyDefense + petDefenseBonus;
+            // const defenseMult = 1 + cards.filter(c => c.stat === 'defense').reduce((acc, c) => acc + (c.count * c.value), 0) + synergyDefense + petDefenseBonus; // Unused
             // const speedMult = 1 + cards.filter(c => c.stat === 'speed').reduce((acc, c) => acc + (c.count * c.value), 0);
 
             // Time Tick
@@ -1040,14 +1041,14 @@ export const useGame = () => {
                 const finished = activeExpeditions.filter(e => checkExpeditionCompletion(e));
                 if (finished.length > 0) {
                     let totalGold = 0;
-                    let totalXp = 0;
-                    let rewardsLog: string[] = [];
+                    // let totalXp = 0; // Unused
+                    const rewardsLog: string[] = [];
 
                     finished.forEach(exp => {
                         const rewards = claimExpeditionRewards(exp);
                         rewards.forEach(r => {
                             if (r.type === 'gold') totalGold += r.amount;
-                            if (r.type === 'xp') totalXp += r.amount;
+                            // if (r.type === 'xp') totalXp += r.amount;
                             if (r.type === 'item') rewardsLog.push(`${r.amount} Items`);
                             if (r.type === 'artifact') rewardsLog.push("Artifact found!");
                         });
@@ -1144,7 +1145,7 @@ export const useGame = () => {
                 soundManager.playLevelUp();
             } else { setUltimateCharge(p => Math.min(100, p + (5 * activeHeroes.length / 6) * gameSpeed)); } // Charge slower if fewer heroes
 
-            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pets, effectiveTick, defenseMult, synergyVampirism, activeRift?.restriction);
+            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pets, effectiveTick, activeSynergies, activeRift?.restriction);
             damageAccumulator.current += totalDmg; // Track DPS
 
             if (totalDmg > 0) {
@@ -1170,7 +1171,7 @@ export const useGame = () => {
 
             let finalHeroes = updatedHeroes;
 
-            let newBossHp = Math.max(0, boss.stats.hp - totalDmg);
+            const newBossHp = Math.max(0, boss.stats.hp - totalDmg);
             if (totalDmg > 0 && Math.random() > 0.8) soundManager.playHit();
 
             if (newBossHp === 0) {
@@ -1220,7 +1221,7 @@ export const useGame = () => {
                                     if (!h.skills) h.skills = [];
                                     const known = h.skills.find(s => s.id === skillDef.id);
                                     if (!known) {
-                                        let newSkill = { ...skillDef };
+                                        const newSkill = { ...skillDef };
                                         h.skills.push(newSkill);
                                         addLog(`${h.name} learned ${newSkill.name} !`, 'achievement');
 
@@ -1529,7 +1530,7 @@ export const useGame = () => {
         const currentLevel = starlightUpgrades[id] || 0;
         if (currentLevel >= upgrade.maxLevel) return;
 
-        const cost = getStarlightUpgradeCost(id, currentLevel);
+        const cost = getStarlightUpgradeCost(upgrade, currentLevel);
         if (starlight >= cost) {
             setStarlight(s => s - cost);
             setStarlightUpgrades(prev => ({
@@ -1553,18 +1554,20 @@ export const useGame = () => {
         eternalFragments, setEternalFragments,
         starlight, setStarlight,
         starlightUpgrades, setStarlightUpgrades,
+        autoSellRarity, setAutoSellRarity,
+        arenaOpponents, setArenaOpponents,
         theme, setTheme,
         galaxy, setGalaxy,
         monsterKills, setMonsterKills,
         gameStats, setGameStats,
         // PHASE 59
-        spaceship, setSpaceship,
+        // spaceship, setSpaceship, // Removed to match usePersistence signature
         // PHASE 41
 
         activeExpeditions, setActiveExpeditions,
         activePotions, setActivePotions,
         // Starlight
-        starlightUpgrades, setStarlightUpgrades,
+        // starlightUpgrades, setStarlightUpgrades, // Removed duplicate
         // PHASE 53
         buildings, setBuildings,
         setRaidActive, setDungeonActive, setOfflineGains,
@@ -1602,9 +1605,9 @@ export const useGame = () => {
     };
 
     // PHASE 54: Gambit Actions
-    const renameHero = (heroId: string, newName: string) => {
-        setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, name: newName } : h));
-    };
+    // const renameHero = (heroId: string, newName: string) => {
+    //     setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, name: newName } : h));
+    // };
 
     const equipItem = (heroId: string, item: Item) => {
         setHeroes(prev => prev.map(h => {
@@ -1640,10 +1643,10 @@ export const useGame = () => {
         soundManager.playLevelUp();
     };
 
-    const updateGambits = (heroId: string, gambits: Gambit[]) => {
-        setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, gambits } : h));
-        addLog("Tactics Updated", "info"); // Brief log
-    };
+    // const updateGambits = (heroId: string, gambits: Gambit[]) => {
+    //     setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, gambits } : h));
+    //     addLog("Tactics Updated", "info"); // Brief log
+    // };
 
     // PHASE 55: Card Battle
     const winCardBattle = (_opponentId: string, difficulty: number) => {
@@ -1694,7 +1697,7 @@ export const useGame = () => {
 
                 return {
                     ...h,
-                    class: newClass,
+                    class: newClass as HeroClass,
                     prestigeClass: newClass,
                     level: 1,
                     xp: 0,
@@ -1946,7 +1949,7 @@ export const useGame = () => {
             if (cx >= 0 && cx < width && cy >= 0 && cy < height) newRevealed[cy][cx] = true;
         });
 
-        let newGrid = [...grid.map(row => [...row])];
+        const newGrid = [...grid.map(row => [...row])];
         if (targetCell === 'chest') {
             addLog("Found a Treasure Chest!", "action");
             setGold(g => g + 500);
@@ -1975,33 +1978,28 @@ export const useGame = () => {
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: { ...ACTIONS, conquerSector, breedPets, attackTerritory, enterDungeon, moveDungeon, exitDungeon }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
+        actions: {
+            ...ACTIONS,
+            setTheme, conquerSector, breedPets, attackTerritory, enterDungeon, moveDungeon, exitDungeon, buyStarlightUpgrade,
+            evolveHero, equipItem, unequipItem, winCardBattle,
+            buyMarketItem, enterRift, exitRift,
+            upgradeBuilding, upgradeSpaceship,
+            claimLoginReward, claimDailyQuest, checkDailies,
+            renameHero: ACTIONS.renameHero, updateGambits: ACTIONS.updateGambits
+        },
+        partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
         monsterKills, gameStats, activeExpeditions, activePotions,
-        // PHASE 43
         gardenPlots, setGardenPlots,
         setResources, setGold,
         marketStock, marketTimer, buyMarketItem,
-        // PHASE 45
         activeRift, riftTimer, enterRift, exitRift,
-        // PHASE 46
         breedPets,
-        // PHASE 54
-        renameHero: ACTIONS.renameHero, updateGambits: ACTIONS.updateGambits,
-        // PHASE 55
-        winCardBattle, // Exported directly
-        evolveHero, // Exported directly
-        equipItem, unequipItem,
-        // PHASE 56
         dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies,
-        // PHASE 47
         territories, attackTerritory,
-        // PHASE 48
         weather, weatherTimer,
-        // PHASE 53
         buildings, upgradeBuilding,
-        // Starlight
         buyStarlightUpgrade, isStarlightModalOpen, setIsStarlightModalOpen,
-        spaceship, upgradeSpaceship, // Phase 59
-        dungeonState, moveDungeon, exitDungeon, enterDungeon // Phase 61
+        spaceship, upgradeSpaceship,
+        dungeonState, moveDungeon, exitDungeon, enterDungeon
     };
 };

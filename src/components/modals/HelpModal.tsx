@@ -7,9 +7,9 @@ interface HelpModalProps {
 }
 
 export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
+    const [tab, setTab] = useState<'basics' | 'advanced' | 'automation'>('basics');
     if (!isOpen) return null;
 
-    const [tab, setTab] = useState<'basics' | 'advanced' | 'automation'>('basics');
 
     return (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95">

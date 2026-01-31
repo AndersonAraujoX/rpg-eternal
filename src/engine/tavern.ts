@@ -49,13 +49,13 @@ export const simulateTavernSummon = (
     }
 
     // Bulk Processing
-    let pendingHeroes: Hero[] = [];
-    let pendingArtifacts: Artifact[] = [];
-    let pendingPets: Pet[] = [];
+    const pendingHeroes: Hero[] = [];
+    const pendingArtifacts: Artifact[] = [];
+    const pendingPets: Pet[] = [];
     let statBoosts = 0;
     let minerBoosts = 0;
-    let petXpBoosts: Record<string, number> = {};
-    let logs: string[] = [];
+    const petXpBoosts: Record<string, number> = {};
+    const logs: string[] = [];
 
     const newlyUnlockedIds = new Set<string>();
     const currentMinerCount = heroes.filter(h => h.class === 'Miner').length;

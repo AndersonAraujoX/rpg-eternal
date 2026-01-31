@@ -186,7 +186,7 @@ export interface Skill {
 }
 
 // Force Rebuild
-export type HeroClass = 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate' | 'Fisherman' | 'Blacksmith' | 'hunter' | 'cleric';
+export type HeroClass = 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate' | 'Fisherman' | 'Blacksmith' | 'hunter' | 'cleric' | 'Warlord' | 'Archmage' | 'Saint' | 'Crusader' | 'Demonologist' | 'Dragon Lord' | 'Prophet' | 'Lich' | 'Virtuoso' | 'Grandmaster' | 'Sniper' | 'Archdruid' | 'Chieftain' | 'Arcanist' | 'High Templar' | 'Shadowblade' | 'Artificer' | 'Transmuter' | 'Mirage' | 'Shogun' | 'Jarl' | 'Shinobi' | 'Admiral' | 'Leviathan' | 'Forge Master' | 'Deep King';
 
 export interface Hero extends Entity {
     id: string;
@@ -245,7 +245,7 @@ export interface Spaceship {
 export type LogEntry = {
     id: string;
     message: string;
-    type: 'info' | 'damage' | 'heal' | 'death' | 'craft' | 'achievement' | 'action';
+    type: 'info' | 'damage' | 'heal' | 'death' | 'craft' | 'achievement' | 'action' | 'error' | 'success' | 'danger';
     timestamp: number;
 };
 
@@ -317,6 +317,14 @@ export interface Potion {
     duration: number; // Seconds (0 for instant)
     cost: { type: keyof Resources, amount: number }[];
     emoji: string;
+}
+
+export interface ActivePotion {
+    id: string;
+    name: string;
+    effect: 'heal' | 'attack' | 'xp' | 'mana';
+    value: number;
+    endTime: number;
 }
 
 export const POTIONS: Potion[] = [
@@ -455,3 +463,105 @@ export interface LeaderboardEntry {
 }
 
 
+
+export interface GameActions {
+    // Basic
+    toggleSound: () => void;
+    setGameSpeed: (speed: number) => void;
+
+    // Heroes
+    spendStatPoint: (heroId: string, stat: keyof Stats) => void;
+    recruitHero: (heroId: string) => void;
+    evolveHero: (heroId: string) => void;
+    toggleAssignment: (heroId: string) => void;
+    toggleCorruption: (heroId: string) => void;
+    // renameHero removed (duplicate)
+    // updateGambits?: (heroId: string, gambits: Gambit[]) => void; // Commented out in source
+    equipItem: (heroId: string, item: Item) => void;
+    unequipItem: (heroId: string, slot: 'weapon' | 'armor' | 'accessory') => void;
+
+    // Progression
+    buyTalent: (id: string, amount?: number) => void;
+    buyConstellation: (id: string) => void;
+    buyStarlightUpgrade: (id: string) => void; // Overridden signature from useGame
+
+    // Exploration & Combat
+    enterTower: () => void;
+    prestigeTower: () => void;
+    enterDungeon: () => void;
+    exitDungeon: () => void;
+    moveDungeon: (dx: number, dy: number) => void;
+    toggleRaid: () => void;
+    fightArena: (opponent: ArenaOpponent) => void;
+
+    // Galaxy & Territories
+    conquerSector: (id: string) => void;
+    attackTerritory: (id: string) => void;
+
+    // Minigames/Features
+    breedPets: (parent1: Pet, parent2: Pet) => void;
+    feedPet: (foodType: 'gold' | 'souls', petId?: string) => void;
+    winCardBattle: (opponentId: string, difficulty: number) => void;
+    forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => void;
+
+    // Social/Guild
+    joinGuild: (guildName: string) => void;
+    contributeGuild: (amount: number) => void;
+
+    // Town
+    upgradeBuilding: (id: string) => void;
+
+    // Spaceship
+    upgradeSpaceship: (part: keyof Spaceship['parts']) => void;
+
+    // Dailies
+    claimLoginReward: () => void;
+    claimDailyQuest: (questId: string) => void;
+    checkDailies: () => void;
+
+    // Void & Rebirth
+    enterVoid: () => void;
+    triggerRebirth: () => void;
+    triggerAscension: () => void;
+    buyDarkGift: (cost: number, effect: string) => void;
+
+    // Crafting & Items
+    craftRune: () => void;
+    socketRune: (itemId: string, runeId: string) => void;
+    reforgeItem: (itemId: string) => void;
+    manualFish: () => void;
+    brewPotion: (potionId: string) => void;
+
+    // Settings & State
+    setTheme: (theme: string) => void;
+    setAutoSellRarity: (rarity: 'none' | 'common' | 'rare') => void;
+    resetSave: () => void;
+    exportSave: () => string;
+    importSave: (str: string) => void;
+    closeOfflineModal: () => void;
+
+    // Quests
+    claimQuest: (id: string) => void;
+
+    // Expeditions
+    startExpedition: (exp: Expedition, heroIds: string[]) => void;
+
+    // Legacy/Other
+    updateGambits?: (heroId: string, gambits: Gambit[]) => void;
+    renameHero?: (heroId: string, newName: string) => void;
+
+    // Market (from return object usually)
+    buyMarketItem: (item: MarketItem) => void;
+
+    // Rifts (from return object)
+    enterRift: (rift: Rift) => void;
+    exitRift: (success: boolean) => void;
+}
+
+export interface CombatEvent {
+    id: string;
+    damage: number;
+    isCrit: boolean;
+    x: number;
+    y: number;
+}

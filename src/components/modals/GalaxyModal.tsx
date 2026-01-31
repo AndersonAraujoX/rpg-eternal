@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Globe, Star, Rocket, Shield, Map as MapIcon, AlertTriangle } from 'lucide-react';
+import { X, Globe, Star, Rocket, Shield } from 'lucide-react';
 import type { GalaxySector, Spaceship } from '../../engine/types';
 
 interface GalaxyModalProps {
@@ -10,7 +10,7 @@ interface GalaxyModalProps {
     partyPower: number;
     starlightUpgrades: Record<string, number>;
     spaceship: Spaceship;
-    onUpgradeShip: (part: 'hull' | 'engine' | 'scanner') => void;
+    onUpgradeShip: (part: 'shields' | 'engine' | 'scanners') => void;
 }
 
 export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galaxy, onConquer, partyPower, starlightUpgrades, spaceship, onUpgradeShip }) => {
@@ -20,6 +20,10 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
     const scannerLevel = starlightUpgrades['galaxy_scanner'] || 0;
     const getDifficulty = (base: number) => scannerLevel > 0 ? Math.floor(base * (1 - (scannerLevel * 0.1))) : base;
 
+    // Helper for hazard level comparison
+    const hazardMap: Record<string, number> = { 'safe': 1, 'low': 2, 'medium': 3, 'high': 4, 'extreme': 5 };
+    const getHazardValue = (h?: string) => h ? hazardMap[h] || 1 : 1;
+
     if (!isOpen || !galaxy) return null;
 
     // Map coordinates to percentage (Assume range -100 to 100)
@@ -27,7 +31,7 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
     const mapY = (y: number) => 50 + (y / 2);
 
     const getDistance = (s: GalaxySector) => Math.sqrt(s.x * s.x + s.y * s.y);
-    const maxRange = spaceship.engine * 25;
+    const maxRange = spaceship.parts.engine * 25;
 
     return (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md">
@@ -82,7 +86,8 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                                 {galaxy.map(sector => {
                                     const dist = getDistance(sector);
                                     const inRange = dist <= maxRange;
-                                    const hazardSafe = (sector.hazardLevel || 0) <= spaceship.hull;
+                                    const sectorHazard = getHazardValue(sector.hazardLevel);
+                                    const hazardSafe = sectorHazard <= spaceship.parts.shields;
 
                                     return (
                                         <button
@@ -121,8 +126,8 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                                                 Dist: {Math.floor(getDistance(selectedSector))} ly
                                             </span>
                                             {selectedSector.hazardLevel && (
-                                                <span className={`${spaceship.hull >= selectedSector.hazardLevel ? 'text-green-400' : 'text-orange-500 font-bold'}`}>
-                                                    Hazard: Lv {selectedSector.hazardLevel} {spaceship.hull < selectedSector.hazardLevel && '(HULL TOO WEAK)'}
+                                                <span className={`${spaceship.parts.shields >= getHazardValue(selectedSector.hazardLevel) ? 'text-green-400' : 'text-orange-500 font-bold'}`}>
+                                                    Hazard: {selectedSector.hazardLevel.toUpperCase()} {spaceship.parts.shields < getHazardValue(selectedSector.hazardLevel) && '(SHIELDS TOO WEAK)'}
                                                 </span>
                                             )}
                                         </div>
@@ -133,18 +138,18 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                                             onClick={() => onConquer(selectedSector.id)}
                                             disabled={
                                                 getDistance(selectedSector) > maxRange ||
-                                                (selectedSector.hazardLevel || 0) > spaceship.hull ||
+                                                getHazardValue(selectedSector.hazardLevel) > spaceship.parts.shields ||
                                                 partyPower < getDifficulty(selectedSector.difficulty) * 0.5
                                             }
                                             className={`px-6 py-3 rounded font-bold transition-all ${getDistance(selectedSector) > maxRange ? 'bg-gray-800 text-gray-500 cursor-not-allowed' :
-                                                (selectedSector.hazardLevel || 0) > spaceship.hull ? 'bg-orange-900/50 text-orange-500 cursor-not-allowed border border-orange-500' :
+                                                getHazardValue(selectedSector.hazardLevel) > spaceship.parts.shields ? 'bg-orange-900/50 text-orange-500 cursor-not-allowed border border-orange-500' :
                                                     partyPower >= getDifficulty(selectedSector.difficulty)
                                                         ? 'bg-gradient-to-r from-green-600 to-green-500 hover:scale-105 text-white shadow-[0_0_15px_rgba(0,255,0,0.5)]'
                                                         : 'bg-red-900/50 text-red-400 cursor-not-allowed'
                                                 }`}
                                         >
                                             {getDistance(selectedSector) > maxRange ? 'OUT OF RANGE' :
-                                                (selectedSector.hazardLevel || 0) > spaceship.hull ? 'HAZARD LETHAL' :
+                                                getHazardValue(selectedSector.hazardLevel) > spaceship.parts.shields ? 'HAZARD LETHAL' :
                                                     partyPower >= getDifficulty(selectedSector.difficulty) ? 'CONQUER' : 'Too Dangerous'}
                                         </button>
                                     ) : (
@@ -170,7 +175,7 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                                 <div className="bg-gray-800 p-4 rounded-lg flex items-center justify-between border border-gray-700">
                                     <div>
                                         <h4 className="text-lg font-bold text-cyan-400 flex items-center gap-2"><Rocket size={18} /> Hyperdrive Engine</h4>
-                                        <p className="text-gray-400 text-sm">Level {spaceship.engine} → {spaceship.engine + 1}</p>
+                                        <p className="text-gray-400 text-sm">Level {spaceship.parts.engine} → {spaceship.parts.engine + 1}</p>
                                         <p className="text-xs text-gray-500">Increases Travel Range (+25 ly)</p>
                                     </div>
                                     <button
@@ -179,25 +184,25 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                                     >
                                         Upgrade
                                         <div className="text-[10px] font-normal opacity-80">
-                                            {Math.floor(1000 * Math.pow(1.5, spaceship.engine))} G + {Math.floor(10 * Math.pow(1.5, spaceship.engine))} M
+                                            {Math.floor(1000 * Math.pow(1.5, spaceship.parts.engine))} G + {Math.floor(10 * Math.pow(1.5, spaceship.parts.engine))} M
                                         </div>
                                     </button>
                                 </div>
 
-                                {/* Hull */}
+                                {/* Hull/Shields */}
                                 <div className="bg-gray-800 p-4 rounded-lg flex items-center justify-between border border-gray-700">
                                     <div>
-                                        <h4 className="text-lg font-bold text-orange-400 flex items-center gap-2"><Shield size={18} /> Void Hull</h4>
-                                        <p className="text-gray-400 text-sm">Level {spaceship.hull} → {spaceship.hull + 1}</p>
+                                        <h4 className="text-lg font-bold text-orange-400 flex items-center gap-2"><Shield size={18} /> Void Shields</h4>
+                                        <p className="text-gray-400 text-sm">Level {spaceship.parts.shields} → {spaceship.parts.shields + 1}</p>
                                         <p className="text-xs text-gray-500">Resists Planetary Hazards</p>
                                     </div>
                                     <button
-                                        onClick={() => onUpgradeShip('hull')}
+                                        onClick={() => onUpgradeShip('shields')} // Keeping 'hull' label for onUpgradeShip mapping if backend expects it
                                         className="px-4 py-2 bg-orange-600 rounded text-white font-bold hover:bg-orange-500 transition-colors"
                                     >
                                         Upgrade
                                         <div className="text-[10px] font-normal opacity-80">
-                                            {Math.floor(1000 * Math.pow(1.5, spaceship.hull))} G + {Math.floor(10 * Math.pow(1.5, spaceship.hull))} M
+                                            {Math.floor(1000 * Math.pow(1.5, spaceship.parts.shields))} G + {Math.floor(10 * Math.pow(1.5, spaceship.parts.shields))} M
                                         </div>
                                     </button>
                                 </div>

@@ -20,7 +20,7 @@ export const generateDungeon = (level: number): DungeonState => {
     const height = DUNGEON_HEIGHT;
 
     // 1. Initialize empty grid
-    let grid: DungeonCellType[][] = Array(height).fill(null).map(() => Array(width).fill('empty'));
+    const grid: DungeonCellType[][] = Array(height).fill(null).map(() => Array(width).fill('empty'));
 
     // 2. Add randomized walls (avoiding borders slightly for playability)
     for (let y = 0; y < height; y++) {

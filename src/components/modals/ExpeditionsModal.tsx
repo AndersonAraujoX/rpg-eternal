@@ -14,6 +14,13 @@ interface ExpeditionsModalProps {
 export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onClose, activeExpeditions, heroes, startExpedition }) => {
     if (!isOpen) return null;
 
+    const [now, setNow] = React.useState(Date.now());
+
+    React.useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     const handleStart = (exp: Expedition) => {
         // Simple logic: Send up to 3 strongest IDLE heroes
         const idleHeroes = heroes
@@ -64,8 +71,8 @@ export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onCl
                 <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-2">
                     {EXPEDITIONS.map(exp => {
                         const active = activeExpeditions.find(e => e.id === exp.id);
-                        const progress = active ? Math.min(100, ((Date.now() - (active.startTime || 0)) / (exp.duration * 1000)) * 100) : 0;
-                        const timeLeft = active ? Math.max(0, (exp.duration * 1000) - (Date.now() - (active.startTime || 0))) : 0;
+                        const progress = active ? Math.min(100, ((now - (active.startTime || 0)) / (exp.duration * 1000)) * 100) : 0;
+                        const timeLeft = active ? Math.max(0, (exp.duration * 1000) - (now - (active.startTime || 0))) : 0;
 
                         return (
                             <div key={exp.id} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-amber-900/50 transition-colors">

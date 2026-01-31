@@ -1,17 +1,18 @@
 import React from 'react';
 import { Settings, Download, Upload, RotateCcw } from 'lucide-react';
+import type { GameActions } from '../../engine/types';
 
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    actions: any;
-    importString: string;
-    setImportString: (s: string) => void;
+    actions: GameActions;
     autoSellRarity: 'none' | 'common' | 'rare';
     theme: string;
+    importString: string;
+    setImportString: (value: string) => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, actions, importString, setImportString, autoSellRarity, theme }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, actions, autoSellRarity, theme, importString, setImportString }) => {
     if (!isOpen) return null;
 
     return (
@@ -40,7 +41,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
                         <label className="text-xs text-gray-400 block mb-1">Auto-Sell Threshold (Requires Auto-Loader)</label>
                         <select
                             value={autoSellRarity}
-                            onChange={(e) => actions.setAutoSellRarity(e.target.value)}
+                            onChange={(e) => actions.setAutoSellRarity(e.target.value as 'none' | 'common' | 'rare')}
                             className="w-full bg-black text-white p-2 rounded border border-gray-600"
                         >
                             <option value="none">Keep All</option>

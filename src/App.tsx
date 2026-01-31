@@ -63,8 +63,7 @@ function App() {
     weather, weatherTimer, // Phase 48
     buildings, upgradeBuilding, // Phase 53
     dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies, // Phase 56
-    winCardBattle, // Phase 55
-    equipItem, unequipItem, // Phase 57
+    // winCardBattle, equipItem, unequipItem moved to actions
     spaceship, upgradeSpaceship, // Phase 59
     dungeonState, moveDungeon, exitDungeon, // Phase 61
     synergies // Fixed: Destructured from useGame
@@ -207,10 +206,10 @@ function App() {
         />
 
         <BattleArea
-          boss={boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
-          ultimateCharge={ultimateCharge} pets={pets} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps} partyPower={partyPower}
-          combatEvents={combatEvents}
-          synergies={synergies}
+          boss={boss} heroes={heroes} logs={logs} gameSpeed={gameSpeed}
+          dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
+          ultimateCharge={ultimateCharge} pets={pets} actions={actions} artifacts={artifacts} partyDps={partyDps} partyPower={partyPower}
+          combatEvents={combatEvents} synergies={synergies}
         />
 
         <HeroList heroes={heroes} actions={actions} onOpenGear={(hero) => setSelectedHeroId(hero.id)} />
@@ -237,7 +236,7 @@ function App() {
       {showTavern && <TavernModal heroes={heroes} gold={gold} summonTavern={actions.summonTavern} onClose={() => setShowTavern(false)} setGold={setGold} />}
       {showForge && <ForgeModal resources={resources} forgeUpgrade={actions.forgeUpgrade} onClose={() => setShowForge(false)} setResources={setResources} />}
       {showInventory && <InventoryModal isOpen={true} items={items} onClose={() => setShowInventory(false)} />}
-      <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
+      <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
       <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
       <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} opponents={arenaOpponents} onFight={actions.fightArena} />
@@ -301,7 +300,7 @@ function App() {
       {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} partyPower={partyPower} />}
       <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
-      <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
+      <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={actions.winCardBattle} stats={gameStats} />
 
       <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={FAKE_LEADERBOARD} currentPower={partyPower} />
       {dungeonActive && <DungeonModal dungeon={dungeonState} onMove={moveDungeon} onExit={exitDungeon} />}
@@ -324,8 +323,8 @@ function App() {
           hero={heroes.find(h => h.id === selectedHeroId)!}
           inventory={items}
           onClose={() => setSelectedHeroId(null)}
-          onEquip={equipItem}
-          onUnequip={unequipItem}
+          onEquip={actions.equipItem}
+          onUnequip={actions.unequipItem}
         />
       )}
     </div>

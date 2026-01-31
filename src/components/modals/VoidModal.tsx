@@ -1,11 +1,12 @@
 import React from 'react';
 import { Ghost, Zap, Skull } from 'lucide-react';
+import type { GameActions } from '../../engine/types';
 
 interface VoidModalProps {
     isOpen: boolean;
     onClose: () => void;
     voidMatter: number;
-    actions: any;
+    actions: GameActions;
 }
 
 export const VoidModal: React.FC<VoidModalProps> = ({ isOpen, onClose, voidMatter, actions }) => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Sprout, Lock } from 'lucide-react';
-import type { GardenPlot, SeedType } from '../../engine/types';
+import type { GardenPlot, SeedType, Resources } from '../../engine/types';
 import { SEEDS } from '../../engine/types';
 import { plantSeed, harvestPlot, unlockPlot, UNLOCK_COSTS } from '../../engine/garden';
 
@@ -9,8 +9,8 @@ interface GardenModalProps {
     onClose: () => void;
     plots: GardenPlot[];
     setPlots: (plots: GardenPlot[]) => void;
-    resources: { herbs: number;[key: string]: number }; // Keep it flexible or specific
-    setResources: (res: any) => void;
+    resources: Resources;
+    setResources: React.Dispatch<React.SetStateAction<Resources>>;
     gold: number;
     setGold: (g: number) => void;
 }
@@ -32,7 +32,7 @@ export const GardenModal: React.FC<GardenModalProps> = ({ isOpen, onClose, plots
         const { newPlots, yieldAmount, success } = harvestPlot(plots, index);
         if (success) {
             setPlots(newPlots);
-            setResources({ ...resources, herbs: resources.herbs + yieldAmount });
+            setResources(prev => ({ ...prev, herbs: (prev.herbs || 0) + yieldAmount }));
         }
     };
 

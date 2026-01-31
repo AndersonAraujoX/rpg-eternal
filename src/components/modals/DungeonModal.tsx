@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Shield, Key, Grid, Footprints, Skull, Archive, AlertTriangle, DoorOpen } from 'lucide-react';
+import { Shield, Grid, Archive, AlertTriangle, DoorOpen, Skull } from 'lucide-react';
 import type { DungeonState } from '../../engine/dungeon';
 
 

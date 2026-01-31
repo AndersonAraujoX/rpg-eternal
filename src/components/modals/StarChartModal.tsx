@@ -1,13 +1,13 @@
 import React from 'react';
 import { Star } from 'lucide-react';
-import type { ConstellationNode } from '../../engine/types';
+import type { ConstellationNode, GameActions } from '../../engine/types';
 
 interface StarChartModalProps {
     isOpen: boolean;
     onClose: () => void;
-    divinity: number;
     constellations: ConstellationNode[];
-    actions: any;
+    divinity: number;
+    actions: GameActions;
 }
 
 export const StarChartModal: React.FC<StarChartModalProps> = ({ isOpen, onClose, divinity, constellations, actions }) => {

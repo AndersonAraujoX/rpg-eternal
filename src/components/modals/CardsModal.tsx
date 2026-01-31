@@ -5,7 +5,7 @@ import type { MonsterCard } from '../../engine/types';
 interface CardsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onClose: () => void;
+
     cards: MonsterCard[];
     onDuel: () => void;
 }

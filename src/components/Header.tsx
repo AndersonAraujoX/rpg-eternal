@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar } from 'lucide-react';
 import { formatNumber } from '../utils';
-import type { Boss, Resources, Tower, Guild } from '../engine/types';
+import type { Boss, Resources, Tower, Guild, GameActions } from '../engine/types';
 import type { WeatherType } from '../engine/weather'; // Phase 48
 import { WEATHER_DATA } from '../engine/weather'; // Phase 48
 
@@ -22,7 +22,7 @@ interface HeaderProps {
     voidTimer: number;
     isSoundOn: boolean;
     gameSpeed: number;
-    actions: any;
+    actions: GameActions;
     setShowShop: (v: boolean) => void;
     setShowTavern: (v: boolean) => void;
     setShowStars: (v: boolean) => void;
@@ -59,7 +59,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-    boss, souls, gold, divinity, tower, guild, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
+    boss, souls, gold, divinity, tower, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowBestiary, setShowSettings, setShowStats,
     setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowDailyRewards, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy,
     setShowLeaderboard,
