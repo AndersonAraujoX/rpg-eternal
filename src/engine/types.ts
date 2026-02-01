@@ -248,7 +248,7 @@ export interface Spaceship {
 export type LogEntry = {
     id: string;
     message: string;
-    type: 'info' | 'damage' | 'heal' | 'death' | 'craft' | 'achievement' | 'action' | 'danger' | 'success' | 'error';
+    type: 'info' | 'battle' | 'loot' | 'achievement' | 'death' | 'craft' | 'action' | 'damage' | 'heal' | 'error' | 'danger' | 'success';
     timestamp: number;
 };
 
@@ -324,6 +324,14 @@ export interface Potion {
     duration: number; // Seconds (0 for instant)
     cost: { type: keyof Resources, amount: number }[];
     emoji: string;
+}
+
+export interface ActivePotion {
+    id: string;
+    name: string;
+    effect: Potion['effect'];
+    value: number;
+    endTime: number;
 }
 
 export const POTIONS: Potion[] = [

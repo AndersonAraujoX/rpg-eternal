@@ -3,6 +3,7 @@ import { Sword, Flame, Droplets, Leaf } from 'lucide-react';
 import type { Boss, Pet, Artifact, Hero, CombatEvent } from '../engine/types';
 import type { Synergy } from '../engine/synergies';
 import { SynergyTracker } from './SynergyTracker';
+import { formatNumber } from '../utils';
 
 interface BattleAreaProps {
     boss: Boss;
@@ -36,7 +37,7 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [] }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [] }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
     const [showSynergyTracker, setShowSynergyTracker] = React.useState(false);
     const lastEventId = React.useRef<string | null>(null);
@@ -89,7 +90,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {/* Party DPS Meter & Synergies */}
             <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
                 <div className="bg-black bg-opacity-50 p-1 rounded text-xs font-mono text-yellow-300">
-                    DPS: {actions.formatNumber ? actions.formatNumber(partyDps || 0) : partyDps} | PWR: {actions.formatNumber ? actions.formatNumber(partyPower || 0) : partyPower}
+                    DPS: {formatNumber(partyDps || 0)} | PWR: {formatNumber(partyPower || 0)}
                 </div>
 
 
@@ -102,7 +103,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                     >
                         INTEL
                     </button>
-                    {actions.synergies?.some(s => ['burn', 'freeze', 'steam', 'overload'].includes(s.type)) && (
+                    {synergies?.some(s => ['burn', 'freeze', 'steam', 'overload'].includes(s.type)) && (
                         <div className="animate-pulse text-xs font-bold text-orange-400 bg-black bg-opacity-50 px-1 rounded ml-1">
                             REACTION ACTIVE
                         </div>
@@ -111,8 +112,8 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
                 {showSynergyTracker && (
                     <SynergyTracker
-                        activeSynergies={actions.synergies || []}
-                        suggestions={actions.suggestions || []}
+                        activeSynergies={synergies || []}
+                        suggestions={suggestions || []}
                         onClose={() => setShowSynergyTracker(false)}
                         className="bottom-12 right-0"
                     />
@@ -136,10 +137,10 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                     {/* Status Icons based on recent events or state */}
                     <div className="flex gap-1">
                         {combatEvents?.some(e => e.type === 'reaction' && e.text.includes('BURN') && (Date.now() - parseInt(e.id.split('-')[1] || '0')) < 3000) && (
-                            <Flame size={16} className="text-orange-500 animate-pulse" title="Burning" />
+                            <span title="Burning"><Flame size={16} className="text-orange-500 animate-pulse" /></span>
                         )}
                         {combatEvents?.some(e => e.type === 'status' && e.text.includes('FROZEN') && (Date.now() - parseInt(e.id.split('-')[1] || '0')) < 3000) && (
-                            <Droplets size={16} className="text-cyan-400 animate-pulse" title="Frozen" />
+                            <span title="Frozen"><Droplets size={16} className="text-cyan-400 animate-pulse" /></span>
                         )}
                     </div>
                 </div>

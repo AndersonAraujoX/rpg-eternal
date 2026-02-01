@@ -308,11 +308,17 @@ export const useGame = () => {
     };
 
     const ACTIONS = {
-        buyStarlightUpgrade: (id: string, cost: number) => {
+        buyStarlightUpgrade: (id: string) => {
+            const upgrade = STARLIGHT_UPGRADES.find(u => u.id === id);
+            if (!upgrade) return;
+            const currentLevel = starlightUpgrades[id] || 0;
+            if (currentLevel >= upgrade.maxLevel) return;
+            const cost = getStarlightUpgradeCost(upgrade, currentLevel);
+
             if (starlight >= cost) {
                 setStarlight(prev => prev - cost);
-                setStarlightUpgrades(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-                addLog(`Upgraded ${id}`, 'achievement');
+                setStarlightUpgrades(prev => ({ ...prev, [id]: currentLevel + 1 }));
+                addLog(`Upgraded ${upgrade.name}`, 'achievement');
                 soundManager.playLevelUp();
             } else {
                 addLog("Not enough Starlight", 'info');
@@ -719,6 +725,9 @@ export const useGame = () => {
         toggleAssignment: (heroId: string) => {
             setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, assignment: h.assignment === 'combat' ? 'mine' : 'combat' } : h));
         },
+        assignHero: (heroId: string, assignment: Hero['assignment']) => {
+            setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, assignment } : h) as Hero[]);
+        },
         updateGambits: (heroId: string, gambits: Gambit[]) => {
             setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, gambits } : h));
         },
@@ -893,6 +902,7 @@ export const useGame = () => {
                 addLog(`Cannot brew: ${result.error}`, 'info');
             }
         },
+
 
         startExpedition: (exp: Expedition, heroIds: string[]) => {
             // Validate
@@ -1703,7 +1713,7 @@ export const useGame = () => {
         }
     };
 
-    usePersistence(
+    usePersistence({
         heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
         divinity, setDivinity, pets, setPets, talents, setTalents, artifacts, setArtifacts,
         cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
@@ -1713,25 +1723,20 @@ export const useGame = () => {
         eternalFragments, setEternalFragments,
         starlight, setStarlight,
         starlightUpgrades, setStarlightUpgrades,
+        autoSellRarity, setAutoSellRarity,
+        arenaOpponents, setArenaOpponents,
         theme, setTheme,
         galaxy, setGalaxy,
         monsterKills, setMonsterKills,
         gameStats, setGameStats,
-        // PHASE 59
-        spaceship, setSpaceship,
-        // PHASE 41
-
         activeExpeditions, setActiveExpeditions,
         activePotions, setActivePotions,
-        // Starlight
-        starlightUpgrades, setStarlightUpgrades,
-        // PHASE 53
         buildings, setBuildings,
         setRaidActive, setDungeonActive, setOfflineGains,
         dailyQuests, setDailyQuests,
         dailyLoginClaimed, setDailyLoginClaimed,
         lastDailyReset, setLastDailyReset
-    );
+    });
 
     // PHASE 44 - Black Market Action
     const buyMarketItem = (item: MarketItem) => {
@@ -1854,18 +1859,18 @@ export const useGame = () => {
 
                 return {
                     ...h,
-                    class: newClass,
-                    prestigeClass: newClass,
+                    class: newClass as any,
+                    prestigeClass: newClass as any,
                     level: 1,
                     xp: 0,
                     maxXp: 100, // Reset XP curve
                     evolutionCount: (h.evolutionCount || 0) + 1,
                     stats: newStats,
                     emoji: '🌟' + h.emoji // Add sparkle to emoji
-                };
+                } as Hero;
             }
             return h;
-        }));
+        }) as Hero[]);
     };
 
 
@@ -1878,7 +1883,7 @@ export const useGame = () => {
             // New Day!
             setLastDailyReset(now);
             setDailyLoginClaimed(false);
-            setDailyQuests(generateDailyQuests([], 1)); // Level 1 placeholder
+            setDailyQuests(generateDailyQuests()); // Corrected call
 
             // Update Streak
             setGameStats(prev => ({
@@ -2158,7 +2163,38 @@ export const useGame = () => {
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: { ...ACTIONS, conquerSector, breedPets, attackTerritory, enterDungeon, moveDungeon, exitDungeon }, partyDps, partyPower, combatEvents, theme, galaxy,
+        actions: {
+            ...ACTIONS,
+            conquerSector,
+            breedPets,
+            attackTerritory,
+            enterDungeon,
+            moveDungeon,
+            exitDungeon,
+            buyMarketItem,
+            enterRift,
+            exitRift,
+            claimLoginReward,
+            claimDailyQuest,
+            checkDailies,
+            winCardBattle,
+            evolveHero,
+            equipItem,
+            unequipItem,
+            upgradeBuilding,
+            buyStarlightUpgrade,
+            renameHero: ACTIONS.renameHero,
+            updateGambits: ACTIONS.updateGambits,
+            formatNumber
+        },
+        partyDps,
+        partyPower,
+        combatEvents,
+        theme,
+        galaxy,
+        territories,
+        weather,
+        weatherTimer,
         synergies: activeSynergies,
         suggestions: checkSynergies(heroes).length < 5 ? getSynergySuggestions(heroes) : [],
         formations,
@@ -2175,22 +2211,14 @@ export const useGame = () => {
         // PHASE 46
         breedPets,
         // PHASE 54
-        renameHero: ACTIONS.renameHero, updateGambits: ACTIONS.updateGambits,
-        // PHASE 55
-        winCardBattle, // Exported directly
-        evolveHero, // Exported directly
-        equipItem, unequipItem,
-        // PHASE 56
-        dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies,
-        // PHASE 47
-        territories, attackTerritory,
-        // PHASE 48
-        weather, weatherTimer,
-        // PHASE 53
-        buildings, upgradeBuilding,
-        // Starlight
         buyStarlightUpgrade, isStarlightModalOpen, setIsStarlightModalOpen,
         spaceship, upgradeSpaceship, // Phase 59
-        dungeonState, moveDungeon, exitDungeon, enterDungeon // Phase 61
+        dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies, // Phase 56
+        lastDailyReset,
+        buildings, upgradeBuilding,
+        winCardBattle, evolveHero, equipItem, unequipItem,
+        renameHero: ACTIONS.renameHero, updateGambits: ACTIONS.updateGambits,
+        attackTerritory,
+        moveDungeon, exitDungeon, enterDungeon, dungeonState
     };
 };

@@ -1,7 +1,7 @@
 import type { Hero, Boss, GambitAction, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement, CombatEvent } from './types';
 import type { Synergy } from './synergies';
-import { checkActiveCombos, ComboDefinition } from './combos';
-import { getDailyMutator, TowerMutator } from './mutators';
+import { checkActiveCombos, type ComboDefinition } from './combos';
+import { getDailyMutator, type TowerMutator } from './mutators';
 import { evaluateGambit } from './gambits';
 import { ITEM_SETS } from './sets';
 
@@ -88,7 +88,6 @@ export const processCombatTurn = (
         // 5% Max HP per second implies 0.05 * (tickDuration / 1000)
         // Cap burn to avoid instant cheese on huge bosses? No, % is fun.
         // Let's cap at 100 * Hero Power to prevent 1-shotting raid bosses? 
-        // For now, raw percentage.
         const burnDmg = Math.floor(boss.stats.maxHp * burnEffect.value * (tickDuration / 1000));
         const actualBurn = Math.max(1, burnDmg);
         totalDmg += actualBurn;

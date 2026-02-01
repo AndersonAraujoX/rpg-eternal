@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull, Flame, Droplets, Leaf, ShieldAlert } from 'lucide-react';
-import type { Hero, Synergy } from '../engine/types';
-import { HeroCard } from './HeroCard';
-import { FormationModal } from './modals/FormationModal';
+import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull, Flame, Droplets, ShieldAlert } from 'lucide-react';
+import type { Hero } from '../engine/types';
+import type { Synergy } from '../engine/synergies';
 import { SYNERGY_DEFINITIONS } from '../engine/synergies';
 import { GambitModal } from './modals/GambitModal';
 import { HeroDetailModal } from './modals/HeroDetailModal';
@@ -20,12 +19,7 @@ interface HeroListProps {
 export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSynergies = [], onOpenGear }) => {
     const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
     const [viewingHero, setViewingHero] = useState<Hero | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterClass, setFilterClass] = useState<string>('All');
-    const [filterElement, setFilterElement] = useState<string>('All');
-
     // Update 74
-    const [showFormationModal, setShowFormationModal] = useState(false);
 
     const getContributingSynergies = (hero: Hero) => {
         if (!activeSynergies || activeSynergies.length === 0) return [];

@@ -1,0 +1,50 @@
+src/App.tsx(63,18): error TS2339: Property 'attackTerritory' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(65,5): error TS2339: Property 'buildings' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(65,16): error TS2339: Property 'upgradeBuilding' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(66,5): error TS2339: Property 'dailyQuests' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(66,18): error TS2339: Property 'dailyLoginClaimed' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(66,37): error TS2339: Property 'claimLoginReward' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(66,55): error TS2339: Property 'claimDailyQuest' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(66,72): error TS2339: Property 'checkDailies' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(67,5): error TS2339: Property 'winCardBattle' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(68,5): error TS2339: Property 'equipItem' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/App.tsx(68,16): error TS2339: Property 'unequipItem' does not exist on type '{ heroes: Hero[]; boss: Boss; logs: LogEntry[]; items: Item[]; gameSpeed: number; isSoundOn: boolean; souls: number; gold: number; divinity: number; pets: Pet[]; offlineGains: string | null; ... 65 more ...; enterDungeon: () => void; }'.
+src/components/Header.tsx(1,17): error TS6133: 'useState' is declared but its value is never read.
+src/components/Header.tsx(63,41): error TS6133: 'guild' is declared but its value is never read.
+src/components/HeroList.tsx(2,77): error TS6133: 'Leaf' is declared but its value is never read.
+src/components/HeroList.tsx(3,21): error TS2305: Module '"../engine/types"' has no exported member 'Synergy'.
+src/components/HeroList.tsx(4,1): error TS6133: 'HeroCard' is declared but its value is never read.
+src/components/HeroList.tsx(4,26): error TS2307: Cannot find module './HeroCard' or its corresponding type declarations.
+src/components/HeroList.tsx(5,1): error TS6133: 'FormationModal' is declared but its value is never read.
+src/components/HeroList.tsx(23,12): error TS6133: 'searchTerm' is declared but its value is never read.
+src/components/HeroList.tsx(23,24): error TS6133: 'setSearchTerm' is declared but its value is never read.
+src/components/HeroList.tsx(24,12): error TS6133: 'filterClass' is declared but its value is never read.
+src/components/HeroList.tsx(24,25): error TS6133: 'setFilterClass' is declared but its value is never read.
+src/components/HeroList.tsx(25,12): error TS6133: 'filterElement' is declared but its value is never read.
+src/components/HeroList.tsx(25,27): error TS6133: 'setFilterElement' is declared but its value is never read.
+src/components/HeroList.tsx(28,12): error TS6133: 'showFormationModal' is declared but its value is never read.
+src/components/HeroList.tsx(28,32): error TS6133: 'setShowFormationModal' is declared but its value is never read.
+src/components/modals/CampfireModal.tsx(2,10): error TS1484: 'Hero' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/modals/DungeonModal.tsx(2,18): error TS6133: 'Key' is declared but its value is never read.
+src/components/modals/DungeonModal.tsx(2,29): error TS6133: 'Footprints' is declared but its value is never read.
+src/components/modals/GambitModal.tsx(3,21): error TS2305: Module '"../../engine/types"' has no exported member 'GameActions'.
+src/components/modals/GuildModal.tsx(4,22): error TS2305: Module '"../../engine/types"' has no exported member 'GameActions'.
+src/components/modals/HeroDetailModal.tsx(2,21): error TS2305: Module '"../../engine/types"' has no exported member 'GameActions'.
+src/components/modals/SettingsModal.tsx(3,15): error TS2305: Module '"../../engine/types"' has no exported member 'GameActions'.
+src/components/modals/ShopModal.tsx(3,15): error TS2305: Module '"../../engine/types"' has no exported member 'GameActions'.
+src/components/modals/StarChartModal.tsx(3,34): error TS2305: Module '"../../engine/types"' has no exported member 'GameActions'.
+src/components/modals/VoidModal.tsx(3,15): error TS2305: Module '"../../engine/types"' has no exported member 'GameActions'.
+src/engine/combat.test.ts(6,55): error TS2739: Type '{ id: string; name: string; class: "Warrior"; stats: { hp: number; maxHp: number; attack: number; defense: number; magic: number; speed: number; mp: number; maxMp: number; }; element: ElementType; ... 12 more ...; equipment: {}; }' is missing the following properties from type 'Hero': fatigue, maxFatigue
+src/engine/combat.ts(3,29): error TS1484: 'ComboDefinition' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/engine/combat.ts(3,29): error TS6133: 'ComboDefinition' is declared but its value is never read.
+src/engine/combat.ts(4,10): error TS6133: 'getDailyMutator' is declared but its value is never read.
+src/engine/combat.ts(4,27): error TS1484: 'TowerMutator' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/engine/combat.ts(77,11): error TS6133: 'mitigation' is declared but its value is never read.
+src/engine/tavern.ts(146,23): error TS2739: Type '{ id: string; name: string; class: "Miner"; emoji: string; unlocked: true; level: number; xp: number; maxXp: number; statPoints: number; skills: never[]; stats: { hp: number; maxHp: number; mp: number; maxMp: number; attack: number; magic: number; defense: number; speed: number; }; ... 6 more ...; isDead: false; }' is missing the following properties from type 'Hero': fatigue, maxFatigue
+src/hooks/useGame.ts(17,10): error TS6133: 'SYNERGY_DEFINITIONS' is declared but its value is never read.
+src/hooks/useGame.ts(20,106): error TS6133: 'getAutoEquip' is declared but its value is never read.
+src/hooks/useGame.ts(20,120): error TS6133: 'getAutoSell' is declared but its value is never read.
+src/hooks/useGame.ts(31,27): error TS6133: 'DUNGEON_WIDTH' is declared but its value is never read.
+src/hooks/useGame.ts(31,42): error TS6133: 'DUNGEON_HEIGHT' is declared but its value is never read.
+src/hooks/useGame.ts(1770,11): error TS6133: 'renameHero' is declared but its value is never read.
+src/hooks/useGame.ts(1808,11): error TS6133: 'updateGambits' is declared but its value is never read.

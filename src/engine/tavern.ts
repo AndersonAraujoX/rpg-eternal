@@ -161,7 +161,9 @@ export const simulateTavernSummon = (
                     gambits: [],
                     corruption: false,
                     type: 'hero',
-                    isDead: false
+                    isDead: false,
+                    fatigue: 0,
+                    maxFatigue: 100
                 };
                 pendingHeroes.push(newMiner);
                 addedMinerInBatch = true;

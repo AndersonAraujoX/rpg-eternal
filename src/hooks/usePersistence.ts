@@ -2,83 +2,109 @@ import { useEffect } from 'react';
 import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../engine/initialData';
 
-export const usePersistence = (
-    heroes: Hero[],
-    setHeroes: React.Dispatch<React.SetStateAction<Hero[]>>,
-    boss: Boss,
-    setBoss: React.Dispatch<React.SetStateAction<Boss>>,
-    items: Item[],
-    setItems: React.Dispatch<React.SetStateAction<Item[]>>,
-    souls: number,
-    setSouls: React.Dispatch<React.SetStateAction<number>>,
-    gold: number,
-    setGold: React.Dispatch<React.SetStateAction<number>>,
-    divinity: number,
-    setDivinity: React.Dispatch<React.SetStateAction<number>>,
-    pets: Pet[],
-    setPets: React.Dispatch<React.SetStateAction<Pet[]>>,
-    talents: Talent[],
-    setTalents: React.Dispatch<React.SetStateAction<Talent[]>>,
-    artifacts: Artifact[],
-    setArtifacts: React.Dispatch<React.SetStateAction<Artifact[]>>,
-    cards: MonsterCard[],
-    setCards: React.Dispatch<React.SetStateAction<MonsterCard[]>>,
-    constellations: ConstellationNode[],
-    setConstellations: React.Dispatch<React.SetStateAction<ConstellationNode[]>>,
-    keys: number,
-    setKeys: React.Dispatch<React.SetStateAction<number>>,
-    resources: Resources,
-    setResources: React.Dispatch<React.SetStateAction<Resources>>,
-    tower: Tower,
-    setTower: React.Dispatch<React.SetStateAction<Tower>>,
-    guild: Guild | null,
-    setGuild: React.Dispatch<React.SetStateAction<Guild | null>>,
-    voidMatter: number,
-    setVoidMatter: React.Dispatch<React.SetStateAction<number>>,
-    arenaRank: number,
-    setArenaRank: React.Dispatch<React.SetStateAction<number>>,
-    glory: number,
-    setGlory: React.Dispatch<React.SetStateAction<number>>,
-    quests: Quest[],
-    setQuests: React.Dispatch<React.SetStateAction<Quest[]>>,
-    runes: Rune[],
-    setRunes: React.Dispatch<React.SetStateAction<Rune[]>>,
-    achievements: Achievement[],
-    setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>,
-    eternalFragments: number,
-    setEternalFragments: React.Dispatch<React.SetStateAction<number>>,
-    starlight: number,
-    setStarlight: React.Dispatch<React.SetStateAction<number>>,
-    starlightUpgrades: Record<string, number>,
-    setStarlightUpgrades: React.Dispatch<React.SetStateAction<Record<string, number>>>,
-    autoSellRarity: 'none' | 'common' | 'rare',
-    setAutoSellRarity: React.Dispatch<React.SetStateAction<'none' | 'common' | 'rare'>>,
-    arenaOpponents: ArenaOpponent[],
-    setArenaOpponents: React.Dispatch<React.SetStateAction<ArenaOpponent[]>>,
-    theme: string,
-    setTheme: React.Dispatch<React.SetStateAction<string>>,
-    galaxy: GalaxySector[],
-    setGalaxy: React.Dispatch<React.SetStateAction<GalaxySector[]>>,
-    monsterKills: Record<string, number>,
-    setMonsterKills: React.Dispatch<React.SetStateAction<Record<string, number>>>,
-    gameStats: GameStats,
-    setGameStats: React.Dispatch<React.SetStateAction<GameStats>>,
-    activeExpeditions: Expedition[],
-    setActiveExpeditions: React.Dispatch<React.SetStateAction<Expedition[]>>,
-    activePotions: ActivePotion[],
-    setActivePotions: React.Dispatch<React.SetStateAction<ActivePotion[]>>,
-    buildings: Building[],
-    setBuildings: React.Dispatch<React.SetStateAction<Building[]>>,
-    setRaidActive: React.Dispatch<React.SetStateAction<boolean>>,
-    setDungeonActive: React.Dispatch<React.SetStateAction<boolean>>,
-    setOfflineGains: React.Dispatch<React.SetStateAction<string | null>>,
-    dailyQuests: DailyQuest[],
-    setDailyQuests: React.Dispatch<React.SetStateAction<DailyQuest[]>>,
-    dailyLoginClaimed: boolean,
-    setDailyLoginClaimed: React.Dispatch<React.SetStateAction<boolean>>,
-    lastDailyReset: number,
-    setLastDailyReset: React.Dispatch<React.SetStateAction<number>>
-) => {
+export interface PersistenceProps {
+    heroes: Hero[];
+    setHeroes: React.Dispatch<React.SetStateAction<Hero[]>>;
+    boss: Boss;
+    setBoss: React.Dispatch<React.SetStateAction<Boss>>;
+    items: Item[];
+    setItems: React.Dispatch<React.SetStateAction<Item[]>>;
+    souls: number;
+    setSouls: React.Dispatch<React.SetStateAction<number>>;
+    gold: number;
+    setGold: React.Dispatch<React.SetStateAction<number>>;
+    divinity: number;
+    setDivinity: React.Dispatch<React.SetStateAction<number>>;
+    pets: Pet[];
+    setPets: React.Dispatch<React.SetStateAction<Pet[]>>;
+    talents: Talent[];
+    setTalents: React.Dispatch<React.SetStateAction<Talent[]>>;
+    artifacts: Artifact[];
+    setArtifacts: React.Dispatch<React.SetStateAction<Artifact[]>>;
+    cards: MonsterCard[];
+    setCards: React.Dispatch<React.SetStateAction<MonsterCard[]>>;
+    constellations: ConstellationNode[];
+    setConstellations: React.Dispatch<React.SetStateAction<ConstellationNode[]>>;
+    keys: number;
+    setKeys: React.Dispatch<React.SetStateAction<number>>;
+    resources: Resources;
+    setResources: React.Dispatch<React.SetStateAction<Resources>>;
+    tower: Tower;
+    setTower: React.Dispatch<React.SetStateAction<Tower>>;
+    guild: Guild | null;
+    setGuild: React.Dispatch<React.SetStateAction<Guild | null>>;
+    voidMatter: number;
+    setVoidMatter: React.Dispatch<React.SetStateAction<number>>;
+    arenaRank: number;
+    setArenaRank: React.Dispatch<React.SetStateAction<number>>;
+    glory: number;
+    setGlory: React.Dispatch<React.SetStateAction<number>>;
+    quests: Quest[];
+    setQuests: React.Dispatch<React.SetStateAction<Quest[]>>;
+    runes: Rune[];
+    setRunes: React.Dispatch<React.SetStateAction<Rune[]>>;
+    achievements: Achievement[];
+    setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>;
+    eternalFragments: number;
+    setEternalFragments: React.Dispatch<React.SetStateAction<number>>;
+    starlight: number;
+    setStarlight: React.Dispatch<React.SetStateAction<number>>;
+    starlightUpgrades: Record<string, number>;
+    setStarlightUpgrades: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+    autoSellRarity: 'none' | 'common' | 'rare';
+    setAutoSellRarity: React.Dispatch<React.SetStateAction<'none' | 'common' | 'rare'>>;
+    arenaOpponents: ArenaOpponent[];
+    setArenaOpponents: React.Dispatch<React.SetStateAction<ArenaOpponent[]>>;
+    theme: string;
+    setTheme: React.Dispatch<React.SetStateAction<string>>;
+    galaxy: GalaxySector[];
+    setGalaxy: React.Dispatch<React.SetStateAction<GalaxySector[]>>;
+    monsterKills: Record<string, number>;
+    setMonsterKills: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+    gameStats: GameStats;
+    setGameStats: React.Dispatch<React.SetStateAction<GameStats>>;
+    activeExpeditions: Expedition[];
+    setActiveExpeditions: React.Dispatch<React.SetStateAction<Expedition[]>>;
+    activePotions: ActivePotion[];
+    setActivePotions: React.Dispatch<React.SetStateAction<ActivePotion[]>>;
+    buildings: Building[];
+    setBuildings: React.Dispatch<React.SetStateAction<Building[]>>;
+    setRaidActive: React.Dispatch<React.SetStateAction<boolean>>;
+    setDungeonActive: React.Dispatch<React.SetStateAction<boolean>>;
+    setOfflineGains: React.Dispatch<React.SetStateAction<string | null>>;
+    dailyQuests: DailyQuest[];
+    setDailyQuests: React.Dispatch<React.SetStateAction<DailyQuest[]>>;
+    dailyLoginClaimed: boolean;
+    setDailyLoginClaimed: React.Dispatch<React.SetStateAction<boolean>>;
+    lastDailyReset: number;
+    setLastDailyReset: React.Dispatch<React.SetStateAction<number>>;
+}
+
+export const usePersistence = (props: PersistenceProps) => {
+    const {
+        heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
+        divinity, setDivinity, pets, setPets, talents, setTalents, artifacts, setArtifacts,
+        cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
+        tower, setTower, guild, setGuild, voidMatter, setVoidMatter,
+        arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
+        runes, setRunes, achievements, setAchievements,
+        eternalFragments, setEternalFragments,
+        starlight, setStarlight,
+        starlightUpgrades, setStarlightUpgrades,
+        autoSellRarity, setAutoSellRarity,
+        arenaOpponents, setArenaOpponents,
+        theme, setTheme,
+        galaxy, setGalaxy,
+        monsterKills, setMonsterKills,
+        gameStats, setGameStats,
+        activeExpeditions, setActiveExpeditions,
+        activePotions, setActivePotions,
+        buildings, setBuildings,
+        setRaidActive, setDungeonActive, setOfflineGains,
+        dailyQuests, setDailyQuests,
+        dailyLoginClaimed, setDailyLoginClaimed,
+        lastDailyReset, setLastDailyReset
+    } = props;
 
 
     // LOAD
