@@ -1,6 +1,8 @@
 import React from 'react';
 import { Sword, Flame, Droplets, Leaf } from 'lucide-react';
-import type { Boss, Pet, Artifact, Hero } from '../engine/types';
+import type { Boss, Pet, Artifact, Hero, CombatEvent } from '../engine/types';
+import type { Synergy } from '../engine/synergies';
+import { SynergyTracker } from './SynergyTracker';
 
 interface BattleAreaProps {
     boss: Boss;
@@ -11,10 +13,11 @@ interface BattleAreaProps {
     actions: any;
     artifacts: Artifact[];
     heroes: Hero[]; // Passed for hero effects or rendering behind boss
-    synergies?: { id: string, name: string, icon: string, description: string }[];
+    synergies?: Synergy[];
     partyDps?: number;
     partyPower?: number;
-    combatEvents?: any[]; // Using any for now to avoid circular dependency or import type
+    combatEvents?: CombatEvent[];
+    suggestions?: string[];
 }
 
 const getElementIcon = (el: string) => {
@@ -33,20 +36,28 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [] }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [] }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
+    const [showSynergyTracker, setShowSynergyTracker] = React.useState(false);
     const lastEventId = React.useRef<string | null>(null);
 
     React.useEffect(() => {
         const last = combatEvents[combatEvents.length - 1];
         if (last && last.id !== lastEventId.current) {
             lastEventId.current = last.id;
+
+            let color = 'text-white text-lg';
+            if (last.type === 'reaction') color = 'text-orange-500 font-extrabold text-2xl animate-bounce shadow-black drop-shadow-md';
+            else if (last.type === 'status') color = 'text-cyan-400 font-bold text-xl shadow-black drop-shadow-sm';
+            else if (last.isCrit) color = 'text-yellow-400 font-bold text-xl';
+            else if (last.type === 'heal') color = 'text-green-400 font-bold text-lg';
+
             const newParticle: Particle = {
                 id: last.id,
-                text: last.isCrit ? `CRIT! ${Math.floor(last.damage)}` : `${Math.floor(last.damage)}`,
-                x: last.x + Math.random() * 10 - 5,
-                y: last.y,
-                color: last.isCrit ? 'text-yellow-400 font-bold text-xl' : 'text-white text-lg',
+                text: last.text,
+                x: last.x || (50 + Math.random() * 10 - 5),
+                y: last.y || 40,
+                color: color,
                 age: 0
             };
             setParticles(prev => [...prev, newParticle]);
@@ -81,18 +92,31 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                     DPS: {actions.formatNumber ? actions.formatNumber(partyDps || 0) : partyDps} | PWR: {actions.formatNumber ? actions.formatNumber(partyPower || 0) : partyPower}
                 </div>
 
+
                 {/* Active Synergies */}
-                <div className="flex gap-1">
-                    {actions.synergies?.map((s: any) => (
-                        <div key={s.id} className="bg-gray-800 p-1 rounded border border-yellow-500 text-lg cursor-help relative group" title={s.description}>
-                            {s.icon}
-                            <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block w-48 bg-gray-900 border border-white p-2 text-[10px] text-white z-50 rounded shadow-xl">
-                                <div className="font-bold text-yellow-400">{s.name}</div>
-                                <div>{s.description}</div>
-                            </div>
+                <div className="flex gap-1 items-end">
+                    <button
+                        onClick={() => setShowSynergyTracker(!showSynergyTracker)}
+                        className={`p-1 rounded text-xs border ${showSynergyTracker ? 'bg-yellow-600 border-yellow-300 text-black font-bold' : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-white'}`}
+                        title="Toggle Tactical Intel"
+                    >
+                        INTEL
+                    </button>
+                    {actions.synergies?.some(s => ['burn', 'freeze', 'steam', 'overload'].includes(s.type)) && (
+                        <div className="animate-pulse text-xs font-bold text-orange-400 bg-black bg-opacity-50 px-1 rounded ml-1">
+                            REACTION ACTIVE
                         </div>
-                    ))}
+                    )}
                 </div>
+
+                {showSynergyTracker && (
+                    <SynergyTracker
+                        activeSynergies={actions.synergies || []}
+                        suggestions={actions.suggestions || []}
+                        onClose={() => setShowSynergyTracker(false)}
+                        className="bottom-12 right-0"
+                    />
+                )}
             </div>
             {/* Artifacts */}
             <div className="absolute top-2 left-2 flex gap-1 z-20 flex-wrap max-w-[200px]">
@@ -109,6 +133,15 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                 <div className="flex items-center gap-2">
                     <div className={`text-6xl md:text-8xl filter drop-shadow-lg grayscale transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''}`}>{boss.emoji}</div>
                     <div className="text-white opacity-50" title={`Element: ${boss.element}`}>{getElementIcon(boss.element)}</div>
+                    {/* Status Icons based on recent events or state */}
+                    <div className="flex gap-1">
+                        {combatEvents?.some(e => e.type === 'reaction' && e.text.includes('BURN') && (Date.now() - parseInt(e.id.split('-')[1] || '0')) < 3000) && (
+                            <Flame size={16} className="text-orange-500 animate-pulse" title="Burning" />
+                        )}
+                        {combatEvents?.some(e => e.type === 'status' && e.text.includes('FROZEN') && (Date.now() - parseInt(e.id.split('-')[1] || '0')) < 3000) && (
+                            <Droplets size={16} className="text-cyan-400 animate-pulse" title="Frozen" />
+                        )}
+                    </div>
                 </div>
 
                 <div className="w-48 h-4 bg-gray-700 mt-2 bar-container relative rounded">

@@ -54,7 +54,17 @@ export const HeroGearModal: React.FC<HeroGearModalProps> = ({ hero, isOpen, onCl
                     )}
                 </div>
                 {item && (
-                    <div className="text-xs text-green-400 mt-1">+{item.value} {item.stat}</div>
+                    <div className="flex flex-col items-center mt-1 w-full">
+                        <div className="text-xs text-green-400">+{item.value} {item.stat}</div>
+                        {/* Item XP Bar */}
+                        <div className="w-16 h-1.5 bg-gray-700 rounded-full mt-1 relative overflow-hidden">
+                            <div
+                                className="h-full bg-blue-500"
+                                style={{ width: `${Math.min(100, ((item.xp || 0) / (item.maxXp || 100)) * 100)}%` }}
+                            />
+                        </div>
+                        <div className="text-[9px] text-gray-400">Lvl {item.level || 1}</div>
+                    </div>
                 )}
             </div>
         );

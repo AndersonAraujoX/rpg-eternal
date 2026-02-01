@@ -67,7 +67,8 @@ function App() {
     equipItem, unequipItem, // Phase 57
     spaceship, upgradeSpaceship, // Phase 59
     dungeonState, moveDungeon, exitDungeon, // Phase 61
-    synergies // Fixed: Destructured from useGame
+    synergies, // Fixed: Destructured from useGame
+    formations, saveFormation, loadFormation, deleteFormation // Update 74
   } = useGame();
 
 
@@ -212,8 +213,12 @@ function App() {
           combatEvents={combatEvents}
           synergies={synergies}
         />
-
-        <HeroList heroes={heroes} actions={actions} onOpenGear={(hero) => setSelectedHeroId(hero.id)} />
+        <HeroList
+          heroes={heroes}
+          activeSynergies={synergies}
+          actions={{ ...actions, formations, saveFormation, loadFormation, deleteFormation }}
+          onOpenGear={(hero) => setSelectedHeroId(hero.id)}
+        />
 
 
         <GameLog logs={logs} onShowHistory={() => setShowLog(true)} />

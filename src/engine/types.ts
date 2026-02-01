@@ -270,6 +270,10 @@ export interface Item {
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
     sockets: number;
     runes: Rune[];
+    // Phase 78: Evolving Gear
+    level?: number;
+    xp?: number;
+    maxXp?: number;
 }
 
 export interface Rune {
@@ -455,3 +459,22 @@ export interface LeaderboardEntry {
 }
 
 
+
+export interface CombatEvent {
+    id: string;
+    type: 'damage' | 'heal' | 'reaction' | 'buff' | 'status';
+    text: string;
+    value?: number;
+    isCrit?: boolean;
+    element?: ElementType;
+    sourceId?: string;
+    targetId?: string;
+    x?: number; // Position for particles
+    y?: number;
+}
+
+export interface Formation {
+    id: string;
+    name: string;
+    heroIds: string[];
+}

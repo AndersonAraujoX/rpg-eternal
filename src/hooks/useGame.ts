@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'; // Refresh timestamp: 1
 import { formatNumber } from '../utils';
 
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources, Building, DailyQuest, Spaceship } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources, Building, DailyQuest, Spaceship, CombatEvent, Formation } from '../engine/types';
 import { POTIONS, GUILDS } from '../engine/types'; // Phase 41 & 47
 import { CLASS_SKILLS } from '../engine/skills';
 import { INITIAL_GALAXY, calculateGalaxyIncome, calculateGalaxyBuffs } from '../engine/galaxy';
@@ -14,7 +14,7 @@ import {
     processCombatTurn,
     calculateHeroPower
 } from '../engine/combat';
-import { checkSynergies } from '../engine/synergies';
+import { SYNERGY_DEFINITIONS, checkSynergies, getSynergySuggestions } from '../engine/synergies';
 import { MONSTERS } from '../engine/bestiary';
 import { generateLoot } from '../engine/loot';
 import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim, getAutoEquip, getAutoSell } from '../engine/automation';
@@ -145,6 +145,55 @@ export const useGame = () => {
     const [gameStats, setGameStats] = useState<GameStats>(INITIAL_GAME_STATS);
     const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
 
+    // Update 74: Formations
+    const [formations, setFormations] = useState<Formation[]>([]);
+
+    const saveFormation = (name: string) => {
+        const activeIds = heroes.filter(h => h.assignment === 'combat').map(h => h.id);
+        if (activeIds.length === 0) return; // Don't save empty teams
+
+        const newFormation: Formation = {
+            id: Date.now().toString(),
+            name,
+            heroIds: activeIds
+        };
+        setFormations(prev => [...prev, newFormation]);
+        addLog(`Formation "${name}" saved!`, 'info');
+    };
+
+    const loadFormation = (id: string) => {
+        const formation = formations.find(f => f.id === id);
+        if (!formation) return;
+
+        setHeroes(prev => prev.map(h => {
+            // If hero is in the formation, set assignment to combat. 
+            // IMPORTANT: Only affect heroes that are currently 'combat' or 'none'. 
+            // Don't pull heroes from mining/expeditions unless desired. 
+            // For simplicity, we'll reset 'combat' assignments.
+
+            if (h.assignment === 'combat') {
+                // Unequip current combatants
+                return { ...h, assignment: 'none' };
+            }
+            return h;
+        }).map(h => {
+            // Re-equip formation heroes
+            if (formation.heroIds.includes(h.id)) {
+                // Check if valid (not dead, unlocked) - actually let's allow setting them, but game loop filters dead ones.
+                // Ideally check if they are busy elsewhere?
+                if (h.assignment === 'none') {
+                    return { ...h, assignment: 'combat' };
+                }
+            }
+            return h;
+        }));
+        addLog(`Formation "${formation.name}" loaded!`, 'info');
+    };
+
+    const deleteFormation = (id: string) => {
+        setFormations(prev => prev.filter(f => f.id !== id));
+    };
+
     const [quests, setQuests] = useState<Quest[]>([
         { id: 'q1', description: 'Slay 50 Monsters', target: 50, progress: 0, reward: { type: 'gold', amount: 500 }, isCompleted: false, isClaimed: false },
         { id: 'q2', description: 'Collect 100 Souls', target: 100, progress: 0, reward: { type: 'souls', amount: 50 }, isCompleted: false, isClaimed: false },
@@ -154,7 +203,7 @@ export const useGame = () => {
     // partyDps moved up
     const damageAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
-    const [combatEvents, setCombatEvents] = useState<{ id: string, damage: number, isCrit: boolean, x: number, y: number }[]>([]);
+    const [combatEvents, setCombatEvents] = useState<CombatEvent[]>([]);
 
     // Derived State: Active Synergies
     const activeHeroesList = heroes.filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked);
@@ -951,10 +1000,11 @@ export const useGame = () => {
 
         // I need to Fix the return statement to return `activeSynergies`
         // Apply Synergy Buffs
-        const synergyDefense = synergies.find(s => s.type === 'defense') ? 0.2 : 0;
-        const synergyVampirism = synergies.find(s => s.type === 'vampirism') ? 0.15 : 0;
-        const synergyAttackSpeed = synergies.find(s => s.type === 'attackSpeed') ? 0.2 : 0;
-        const synergyResources = synergies.find(s => s.type === 'resources') ? 0.1 : 0;
+        // Apply Synergy Buffs
+        const synergyDefense = synergies.filter(s => s.type === 'defense' || s.type === 'mitigation').reduce((acc, s) => acc + s.value, 0);
+        // Vampirism handled in combat.ts via 'activeSynergies'
+        const synergyAttackSpeed = synergies.filter(s => s.type === 'attackSpeed' || s.type === 'freeze').reduce((acc, s) => acc + (s.type === 'freeze' ? 0.1 : s.value), 0);
+        const synergyResources = synergies.filter(s => s.type === 'resources').reduce((acc, s) => acc + s.value, 0);
 
         const hasteTalent = talents.find(t => t.stat === 'speed');
         const speedBonus = (hasteTalent ? (1 - (hasteTalent.level * hasteTalent.valuePerLevel)) : 1) * (1 - synergyAttackSpeed);
@@ -1144,19 +1194,25 @@ export const useGame = () => {
                 soundManager.playLevelUp();
             } else { setUltimateCharge(p => Math.min(100, p + (5 * activeHeroes.length / 6) * gameSpeed)); } // Charge slower if fewer heroes
 
-            const { updatedHeroes, totalDmg, crits } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pets, effectiveTick, defenseMult, synergyVampirism, activeRift?.restriction);
+            const { updatedHeroes, totalDmg, crits, events } = processCombatTurn(heroes, boss, damageMult, critChance, isUltimate, pets, effectiveTick, defenseMult, activeSynergies, activeRift?.restriction);
             damageAccumulator.current += totalDmg; // Track DPS
 
+            // Gather all new events
+            const newEvents: CombatEvent[] = [...(events || [])];
             if (totalDmg > 0) {
-                // Add combat event for particles
-                const newEvent = {
+                newEvents.push({
                     id: Math.random().toString(36),
-                    damage: totalDmg,
+                    type: 'damage',
+                    text: crits > 0 ? `CRIT! ${Math.floor(totalDmg)}` : `${Math.floor(totalDmg)}`,
+                    value: totalDmg,
                     isCrit: crits > 0,
-                    x: 50 + (Math.random() * 20 - 10), // Randomize slightly around center
+                    x: 50 + (Math.random() * 20 - 10),
                     y: 40 + (Math.random() * 20 - 10)
-                };
-                setCombatEvents(prev => [...prev.slice(-4), newEvent]); // Keep last 5 events
+                });
+            }
+
+            if (newEvents.length > 0) {
+                setCombatEvents(prev => [...prev.slice(-10), ...newEvents]); // Keep last few
             }
 
             // Healer Logic (Simplified check for 'heal' action or just passive)
@@ -1181,16 +1237,24 @@ export const useGame = () => {
                 setGameStats(s => ({ ...s, totalGoldEarned: s.totalGoldEarned + goldGain }));
 
                 const xpGain = Math.max(10, Math.floor(boss.level * 10 * xpMult));
+                // Boss Defeated Logic
                 finalHeroes = finalHeroes.map(h => {
                     if (!h.isDead && h.assignment === 'combat' && h.unlocked) {
                         let newXp = (h.xp || 0) + xpGain;
-                        // Level Up
+                        // Level Up Logic
                         while (newXp >= (h.maxXp || 100)) {
                             newXp -= (h.maxXp || 100);
                             h.level = (h.level || 1) + 1;
                             h.maxXp = Math.floor((h.maxXp || 100) * 1.5);
 
-                            // Auto Stats Growth
+                            // Auto Stats Growth - (Existing logic skipped for brevity, assumed intact in this block replacement or careful merge?)
+                            // WAIT, I must include the existing growth logic if I am replacing the block!
+                            // Since I am replacing lines 1240-1302, I need to copy the growth logic back in.
+                            // Actually, let's keep the hero logic and Just append Item Logic?
+                            // No, I need to modify 'h' which contains 'equipment'.
+
+                            // Let's re-implement the hero growth quickly or use the existing one?
+                            // Copying from previous view_file:
                             let growth = { hp: 10, mp: 5, attack: 1, defense: 1, magic: 1, speed: 0 };
                             switch (h.class) {
                                 case 'Warrior': growth = { hp: 20, mp: 2, attack: 2, defense: 2, magic: 0, speed: 1 }; break;
@@ -1223,8 +1287,6 @@ export const useGame = () => {
                                         let newSkill = { ...skillDef };
                                         h.skills.push(newSkill);
                                         addLog(`${h.name} learned ${newSkill.name} !`, 'achievement');
-
-                                        // Apply Passive Stats
                                         if (newSkill.type === 'passive' && newSkill.statBonus) {
                                             if (newSkill.statBonus.hp) { h.stats.maxHp += newSkill.statBonus.hp; h.stats.hp += newSkill.statBonus.hp; }
                                             if (newSkill.statBonus.mp) { h.stats.maxMp += newSkill.statBonus.mp; h.stats.mp += newSkill.statBonus.mp; }
@@ -1240,6 +1302,32 @@ export const useGame = () => {
                             addLog(`${h.name} reached Lvl ${h.level} !(Auto - Upgraded)`, 'achievement');
                             soundManager.playLevelUp();
                         }
+
+                        // --- UPDATE 78: EVOLVING GEAR ---
+                        // Grant 10% of Hero XP to equipped items
+                        const itemXpGain = Math.floor(xpGain * 0.1);
+                        if (itemXpGain > 0) {
+                            (['weapon', 'armor', 'accessory'] as const).forEach(slot => {
+                                const item = h.equipment[slot];
+                                if (item) {
+                                    item.xp = (item.xp || 0) + itemXpGain;
+                                    item.maxXp = item.maxXp || 100; // Initialize if missing
+                                    item.level = item.level || 1;
+
+                                    if (item.xp >= item.maxXp) {
+                                        item.xp -= item.maxXp;
+                                        item.level++;
+                                        item.maxXp = Math.floor(item.maxXp * 1.5);
+                                        // Level Up Bonus: 10% Increase to main stat
+                                        item.value = Math.floor(item.value * 1.1) + 1;
+
+                                        addLog(`${item.name} evolved to Level ${item.level}!`, 'craft');
+                                        soundManager.playLevelUp();
+                                    }
+                                }
+                            });
+                        }
+
                         return { ...h, xp: newXp };
                     }
                     return h;
@@ -1939,6 +2027,29 @@ export const useGame = () => {
         const targetCell = grid[ny][nx];
         if (targetCell === 'wall') return;
 
+        // Elemental Lock Logic
+        if (typeof targetCell === 'string' && targetCell.startsWith('lock_')) {
+            const reqElement = targetCell.split('_')[1];
+            const hasElement = heroes.some(h => h.assignment === 'combat' && !h.isDead && h.element === reqElement);
+
+            if (hasElement) {
+                addLog(`Elemental Barrier (${reqElement}) shattered!`, 'action');
+                soundManager.playLevelUp(); // Reusing sound for feedback
+
+                // Remove lock
+                setDungeonState(prev => {
+                    if (!prev) return null;
+                    const newGrid = prev.grid.map(row => [...row]);
+                    newGrid[ny][nx] = 'empty';
+                    return { ...prev, grid: newGrid };
+                });
+                return; // Consume move to unlock
+            } else {
+                addLog(`Blocked! Requires a ${reqElement.toUpperCase()} Hero to bypass this barrier!`, 'error');
+                return;
+            }
+        }
+
         const newRevealed = [...revealed.map(row => [...row])];
         const dirs = [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]];
         dirs.forEach(([rx, ry]) => {
@@ -1975,7 +2086,13 @@ export const useGame = () => {
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
         arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: { ...ACTIONS, conquerSector, breedPets, attackTerritory, enterDungeon, moveDungeon, exitDungeon }, partyDps, partyPower, combatEvents, theme, galaxy, synergies: activeSynergies,
+        actions: { ...ACTIONS, conquerSector, breedPets, attackTerritory, enterDungeon, moveDungeon, exitDungeon }, partyDps, partyPower, combatEvents, theme, galaxy,
+        synergies: activeSynergies,
+        suggestions: checkSynergies(heroes).length < 5 ? getSynergySuggestions(heroes) : [],
+        formations,
+        saveFormation,
+        loadFormation,
+        deleteFormation,
         monsterKills, gameStats, activeExpeditions, activePotions,
         // PHASE 43
         gardenPlots, setGardenPlots,

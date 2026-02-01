@@ -1,5 +1,5 @@
 
-export type DungeonCellType = 'empty' | 'wall' | 'start' | 'exit' | 'chest' | 'enemy' | 'trap';
+export type DungeonCellType = 'empty' | 'wall' | 'start' | 'exit' | 'chest' | 'enemy' | 'trap' | 'lock_fire' | 'lock_water' | 'lock_nature' | 'lock_earth' | 'lock_air' | 'lock_light' | 'lock_dark';
 
 export interface DungeonState {
     active: boolean;
@@ -76,6 +76,18 @@ export const generateDungeon = (level: number): DungeonState => {
     for (let i = 0; i < trapCount; i++) {
         const pos = findEmpty();
         grid[pos.y][pos.x] = 'trap';
+    }
+
+    // 8. Place Elemental Locks (Puzzle Dungeons)
+    const lockCount = 2 + Math.floor(level / 8);
+    const elements = ['fire', 'water', 'nature', 'earth', 'air', 'light', 'dark'];
+
+    for (let i = 0; i < lockCount; i++) {
+        // Try to place locks near interesting things (chests/exit) to actually be obstacles
+        // Or specific random locations
+        const pos = findEmpty();
+        const element = elements[Math.floor(Math.random() * elements.length)];
+        grid[pos.y][pos.x] = `lock_${element}` as DungeonCellType;
     }
 
     // 7. Initialize Fog of War (All False)

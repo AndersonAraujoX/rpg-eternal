@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Shield, Key, Grid, Footprints, Skull, Archive, AlertTriangle, DoorOpen } from 'lucide-react';
+import { Shield, Key, Grid, Footprints, Skull, Archive, AlertTriangle, DoorOpen, Lock } from 'lucide-react';
 import type { DungeonState } from '../../engine/dungeon';
 
 
@@ -67,8 +67,21 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onE
 
                                 if (cell === 'chest') content = <Archive size={20} className="text-yellow-400" />;
                                 if (cell === 'enemy') content = <Skull size={20} className="text-red-500" />;
-                                if (cell === 'trap') content = <AlertTriangle size={20} className="text-orange-500 opacity-50" />; // Traps visible? Maybe partial visibility logic later.
+                                if (cell === 'trap') content = <AlertTriangle size={20} className="text-orange-500 opacity-50" />;
                                 if (cell === 'exit') content = <DoorOpen size={24} className="text-yellow-200" />;
+                                if (typeof cell === 'string' && cell.startsWith('lock_')) {
+                                    const el = cell.split('_')[1];
+                                    let color = 'text-gray-400';
+                                    if (el === 'fire') color = 'text-red-500';
+                                    if (el === 'water') color = 'text-blue-400';
+                                    if (el === 'nature') color = 'text-green-500';
+                                    if (el === 'earth') color = 'text-amber-700';
+                                    if (el === 'air') color = 'text-sky-200';
+                                    if (el === 'light') color = 'text-yellow-200';
+                                    if (el === 'dark') color = 'text-purple-900';
+                                    content = <Lock size={20} className={color} />;
+                                    bgClass = 'bg-slate-800 border-2 border-slate-600'; // Make it look sturdy
+                                }
                             }
 
                             if (isPlayer) {
