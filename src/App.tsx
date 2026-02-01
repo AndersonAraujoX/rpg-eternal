@@ -42,6 +42,7 @@ import { BreedingModal } from './components/modals/BreedingModal'; // Phase 46
 import { GuildWarModal } from './components/modals/GuildWarModal'; // Phase 47
 import { TownModal } from './components/modals/TownModal'; // Phase 53
 import { MuseumModal } from './components/modals/MuseumModal';
+import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
 
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
@@ -80,6 +81,7 @@ function App() {
   const [showRiftModal, setShowRiftModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showTavern, setShowTavern] = useState(false);
+  const [showCampfire, setShowCampfire] = useState(false); // Phase 80
   const [showStars, setShowStars] = useState(false);
   const [showBestiary, setShowBestiary] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -183,6 +185,8 @@ function App() {
 
       <div className="crt-overlay"></div>
 
+      <CampfireModal isOpen={showCampfire} onClose={() => setShowCampfire(false)} heroes={heroes} onAssign={(id, type) => actions.assignHero(id, type)} />
+
       {/* Game Container */}
       <div className={`w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-opacity-95 border-4 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm transition-colors duration-500 ${themeClass}`}>
 
@@ -202,6 +206,7 @@ function App() {
           weather={weather} weatherTimer={weatherTimer} // Phase 48
           setShowMuseum={setShowMuseum} // Phase 49
           setShowTown={setShowTown} // Phase 53
+          setShowCampfire={setShowCampfire} // Phase 80
           // setShowCardBattle - Triggered from Museum
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
           setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy} setShowExpeditions={setShowExpeditions} setShowGarden={setShowGarden}

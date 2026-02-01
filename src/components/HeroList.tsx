@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull, Flame, Droplets, Leaf } from 'lucide-react';
+import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull, Flame, Droplets, Leaf, ShieldAlert } from 'lucide-react';
 import type { Hero, Synergy } from '../engine/types';
 import { HeroCard } from './HeroCard';
 import { FormationModal } from './modals/FormationModal';
@@ -75,7 +75,12 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                 <span className="text-xl" role="img" aria-label={hero.name}>{hero.emoji}</span>
                                 <div className="flex flex-col">
                                     <span className={`text-xs font-bold ${hero.isDead ? 'text-red-500' : 'text-white'}`}>{hero.name}</span>
-                                    <span className="text-[10px] text-gray-400">{hero.class}</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] text-gray-400">{hero.class}</span>
+                                        {((hero.fatigue || 0) >= 50) && (
+                                            <ShieldAlert size={10} className={(hero.fatigue || 0) >= 80 ? 'text-red-500 animate-pulse' : 'text-yellow-500'} />
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {hero.unlocked && (

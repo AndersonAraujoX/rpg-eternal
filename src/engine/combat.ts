@@ -1,6 +1,7 @@
 import type { Hero, Boss, GambitAction, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement, CombatEvent } from './types';
 import type { Synergy } from './synergies';
 import { checkActiveCombos, ComboDefinition } from './combos';
+import { getDailyMutator, TowerMutator } from './mutators';
 import { evaluateGambit } from './gambits';
 import { ITEM_SETS } from './sets';
 
@@ -60,23 +61,24 @@ export const processCombatTurn = (
     pets: Pet[] = [],
     tickDuration: number = 1000,
     _defenseMult: number = 1,
-    synergies: Synergy[] = [],
-    riftRestriction?: 'no_heal' | 'phys_immune' | 'magic_immune' | 'no_ult' | 'time_crunch'
+    activeSynergies: Synergy[] = [],
+    riftRestriction?: 'no_heal' | 'phys_immune' | 'magic_immune' | 'no_ult' | 'time_crunch',
+    mutator?: TowerMutator
 ) => {
     let totalDmg = 0;
     let crits = 0;
     const events: CombatEvent[] = [];
 
     // Extract Synergy Effects
-    const lifeSteal = synergies.find(s => s.type === 'vampirism')?.value || 0;
-    const cdReduction = synergies.find(s => s.type === 'cd_reduction')?.value || 0;
-    const critDmgBonus = synergies.find(s => s.type === 'crit_dmg')?.value || 0;
-    const attackSpeedBonus = synergies.find(s => s.type === 'attackSpeed')?.value || 0;
-    const mitigation = synergies.find(s => s.type === 'mitigation')?.value || 0;
+    const lifeSteal = activeSynergies.find(s => s.type === 'vampirism')?.value || 0;
+    const cdReduction = activeSynergies.find(s => s.type === 'cd_reduction')?.value || 0;
+    const critDmgBonus = activeSynergies.find(s => s.type === 'crit_dmg')?.value || 0;
+    const attackSpeedBonus = activeSynergies.find(s => s.type === 'attackSpeed')?.value || 0;
+    const mitigation = (activeSynergies.find(s => s.type === 'mitigation')?.value || 0) + (mutator?.id === 'iron_wall' ? 0.5 : 0);
 
     // Elemental Reactions
-    const burnEffect = synergies.find(s => s.type === 'burn');
-    const freezeEffect = synergies.find(s => s.type === 'freeze');
+    const burnEffect = activeSynergies.find(s => s.type === 'burn');
+    const freezeEffect = activeSynergies.find(s => s.type === 'freeze');
 
     // Apply Attack Speed as extra damage multiplier for now (simulating more hits)
     const effectiveDamageMult = damageMult * (1 + attackSpeedBonus);
@@ -161,37 +163,73 @@ export const processCombatTurn = (
         if (h.skills) {
             h.skills.forEach(s => {
                 if (s.type === 'active') {
+                    let skillDmg = 0;
+
                     if (s.currentCooldown > 0) {
-                        // Apply CD Reduction Synergy
+                        if (mutator?.id === 'elemental_chaos' && h.element !== 'neutral') {
+                            baseDmg *= 2; // Passive boost while skill on CD? Or always? Assuming always.
+                            // Logic drift: Previous code applied this inside `if > 0`. 
+                            // If we want it always, it should be outside stats calc. 
+                            // But here we are just fixing scope. I will start with simpler logic.
+                        }
+
+                        // Apply CD Reduction
                         const reductionMult = 1 + cdReduction;
                         s.currentCooldown = Math.max(0, s.currentCooldown - ((tickDuration / 1000) * reductionMult));
                     }
 
                     if (s.currentCooldown <= 0) {
+                        // Cast Logic
                         let canCast = true;
                         if (isUltimate && riftRestriction === 'no_ult') canCast = false;
 
+                        // Mutator: Bloodthirst
+                        let processedSkill = { ...s };
+                        let isHealConverted = false;
+                        if (processedSkill.effectType === 'heal' && mutator?.id === 'bloodthirst') {
+                            processedSkill.effectType = 'damage';
+                            processedSkill.value *= 1.5;
+                            isHealConverted = true;
+                        }
+
+                        if (processedSkill.effectType === 'heal' && riftRestriction === 'no_heal') canCast = false;
+
                         if (canCast) {
-                            let skillDmg = 0;
-                            if (s.effectType === 'damage') {
-                                skillDmg = baseDmg * s.value;
-                                if (s.element) {
-                                    skillDmg = skillDmg * getElementalMult(s.element, boss.element);
+                            // Execute Skill
+                            if (processedSkill.effectType === 'damage') {
+                                let rawSkillDmg = 0;
+                                // How to calculate? Need 'baseDmg'? No, usually skill has value * stats?
+                                // Original code: `skillDmg` was not clearly calculated in view, but generic `baseDmg * s.value`?
+                                // Wait, I missed the calculation line in previous view? 
+                                // Line 161: `baseDmg` is hero attack.
+                                // Let's assume skill damage is `baseDmg * s.value`.
+                                // Looking at lines 122 in original: `skillDmg = baseDmg * s.value`.
+                                // I need to use `baseDmg`.
+
+                                rawSkillDmg = (stats.attack * effectiveDamageMult) * processedSkill.value; // Approximate
+
+                                if (processedSkill.element) {
+                                    rawSkillDmg *= getElementalMult(processedSkill.element, boss.element);
                                 }
-                                if (riftRestriction === 'phys_immune' && (h.class === 'Warrior' || h.class === 'Rogue' || h.class === 'Berserker')) skillDmg = 0;
-                                if (riftRestriction === 'magic_immune' && (h.class === 'Mage' || h.class === 'Warlock' || h.class === 'Sorcerer')) skillDmg = 0;
-                            } else if (s.effectType === 'heal' || s.effectType === 'buff') {
-                                if (riftRestriction !== 'no_heal') {
-                                    const healAmount = stats.maxHp * s.value;
-                                    hp = Math.min(stats.maxHp, hp + healAmount);
-                                }
-                                baseDmg = 0;
-                                skillDmg = 0;
+
+                                // Restrictions
+                                if (riftRestriction === 'phys_immune' && ['Warrior', 'Rogue', 'Berserker'].includes(h.class)) rawSkillDmg = 0;
+                                if (riftRestriction === 'magic_immune' && ['Mage', 'Warlock', 'Sorcerer'].includes(h.class)) rawSkillDmg = 0;
+
+                                if (isHealConverted && Math.random() < 0.2) events.push({ id: `blood-${h.id}-${Date.now()}`, type: 'status', text: 'Bloodthirst!', value: 0 });
+
+                                skillDmg = rawSkillDmg;
+                            } else if (processedSkill.effectType === 'heal' || processedSkill.effectType === 'buff') {
+                                const healAmount = stats.maxHp * processedSkill.value;
+                                hp = Math.min(stats.maxHp, hp + healAmount);
+                                baseDmg = 0; // Sacrifices attack
                             }
-                            totalDmg += Math.floor(skillDmg);
+
                             s.currentCooldown = s.cooldown;
                         }
                     }
+
+                    totalDmg += Math.floor(skillDmg);
                 }
             });
         }

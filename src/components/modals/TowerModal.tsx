@@ -1,6 +1,7 @@
 import React from 'react';
 import { Castle, Skull } from 'lucide-react';
 import type { Tower } from '../../engine/types';
+import { getDailyMutator } from '../../engine/mutators';
 
 interface TowerModalProps {
     isOpen: boolean;
@@ -32,6 +33,14 @@ export const TowerModal: React.FC<TowerModalProps> = ({ isOpen, onClose, tower, 
                         <li>Difficulty increases exponentially (x1.5 HP per floor).</li>
                         <li>Rewards: Ancient Knowledge (Coming Later).</li>
                     </ul>
+                </div>
+
+                {/* Daily Mutator Display */}
+                <div className="bg-red-950 bg-opacity-40 p-3 rounded mb-6 border border-red-700">
+                    <div className="text-red-400 font-bold mb-1 uppercase tracking-wider flex items-center justify-center gap-2 text-sm">
+                        ☠️ Daily Mutator: {getDailyMutator().name}
+                    </div>
+                    <p className="text-red-200 text-xs italic">{getDailyMutator().description}</p>
                 </div>
 
                 <button

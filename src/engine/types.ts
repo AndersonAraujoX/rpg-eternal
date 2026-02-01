@@ -196,12 +196,15 @@ export interface Hero extends Entity {
     unlocked: boolean;
     isDead: boolean;
     element: ElementType;
-    assignment: 'combat' | 'mine' | 'expedition';
+    assignment: 'combat' | 'mine' | 'expedition' | 'campfire';
     gambits: any[];
     corruption: boolean;
     level: number;
     xp: number;
     maxXp: number;
+    // Phase 80: Campfire System
+    fatigue: number; // 0-100
+    maxFatigue: number;
     statPoints: number;
     stats: Stats;
     skills: Skill[];
