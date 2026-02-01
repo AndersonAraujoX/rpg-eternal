@@ -16,10 +16,10 @@ interface RuneModalProps {
 }
 
 export const RuneModal: React.FC<RuneModalProps> = ({ isOpen, onClose, items, resources, souls, actions, runes }) => {
-    if (!isOpen) return null;
-
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
     const [selectedRune, setSelectedRune] = useState<Rune | null>(null);
+    if (!isOpen) return null;
+
 
     const CRAFT_COST = { mithril: 10, souls: 50 };
     const canCraft = resources.mithril >= CRAFT_COST.mithril && souls >= CRAFT_COST.souls;

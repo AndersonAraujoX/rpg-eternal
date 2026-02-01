@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector, GameStats, Resources, Building } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../engine/initialData';
 
 export const usePersistence = (
@@ -39,8 +39,8 @@ export const usePersistence = (
     setArenaRank: React.Dispatch<React.SetStateAction<number>>,
     glory: number,
     setGlory: React.Dispatch<React.SetStateAction<number>>,
-    quests: any[], // Simplified type for Quests as it's complex
-    setQuests: React.Dispatch<React.SetStateAction<any[]>>,
+    quests: Quest[],
+    setQuests: React.Dispatch<React.SetStateAction<Quest[]>>,
     runes: Rune[],
     setRunes: React.Dispatch<React.SetStateAction<Rune[]>>,
     achievements: Achievement[],
@@ -49,8 +49,12 @@ export const usePersistence = (
     setEternalFragments: React.Dispatch<React.SetStateAction<number>>,
     starlight: number,
     setStarlight: React.Dispatch<React.SetStateAction<number>>,
-    starlightUpgrades: any, // Simplified
-    setStarlightUpgrades: React.Dispatch<React.SetStateAction<any>>,
+    starlightUpgrades: Record<string, number>,
+    setStarlightUpgrades: React.Dispatch<React.SetStateAction<Record<string, number>>>,
+    autoSellRarity: 'none' | 'common' | 'rare',
+    setAutoSellRarity: React.Dispatch<React.SetStateAction<'none' | 'common' | 'rare'>>,
+    arenaOpponents: ArenaOpponent[],
+    setArenaOpponents: React.Dispatch<React.SetStateAction<ArenaOpponent[]>>,
     theme: string,
     setTheme: React.Dispatch<React.SetStateAction<string>>,
     galaxy: GalaxySector[],
@@ -59,17 +63,17 @@ export const usePersistence = (
     setMonsterKills: React.Dispatch<React.SetStateAction<Record<string, number>>>,
     gameStats: GameStats,
     setGameStats: React.Dispatch<React.SetStateAction<GameStats>>,
-    activeExpeditions: any[],
-    setActiveExpeditions: React.Dispatch<React.SetStateAction<any[]>>,
-    activePotions: any[],
-    setActivePotions: React.Dispatch<React.SetStateAction<any[]>>,
+    activeExpeditions: Expedition[],
+    setActiveExpeditions: React.Dispatch<React.SetStateAction<Expedition[]>>,
+    activePotions: ActivePotion[],
+    setActivePotions: React.Dispatch<React.SetStateAction<ActivePotion[]>>,
     buildings: Building[],
     setBuildings: React.Dispatch<React.SetStateAction<Building[]>>,
     setRaidActive: React.Dispatch<React.SetStateAction<boolean>>,
     setDungeonActive: React.Dispatch<React.SetStateAction<boolean>>,
     setOfflineGains: React.Dispatch<React.SetStateAction<string | null>>,
-    dailyQuests: any[],
-    setDailyQuests: React.Dispatch<React.SetStateAction<any[]>>,
+    dailyQuests: DailyQuest[],
+    setDailyQuests: React.Dispatch<React.SetStateAction<DailyQuest[]>>,
     dailyLoginClaimed: boolean,
     setDailyLoginClaimed: React.Dispatch<React.SetStateAction<boolean>>,
     lastDailyReset: number,
@@ -134,6 +138,8 @@ export const usePersistence = (
                 if (state.activePotions) setActivePotions(state.activePotions);
                 if (state.buildings) setBuildings(state.buildings);
                 if (state.dailyQuests) setDailyQuests(state.dailyQuests);
+                if (state.autoSellRarity) setAutoSellRarity(state.autoSellRarity);
+                if (state.arenaOpponents) setArenaOpponents(state.arenaOpponents);
                 if (state.dailyLoginClaimed !== undefined) setDailyLoginClaimed(state.dailyLoginClaimed);
                 if (state.lastDailyReset) setLastDailyReset(state.lastDailyReset);
 
@@ -192,7 +198,7 @@ export const usePersistence = (
             const state = {
                 heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys,
                 resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight,
-                starlightUpgrades, theme, galaxy, monsterKills, gameStats,
+                starlightUpgrades, theme, galaxy, monsterKills, gameStats, autoSellRarity, arenaOpponents,
                 activeExpeditions, activePotions, buildings,
                 dailyQuests, dailyLoginClaimed, lastDailyReset,
                 lastSaveTime: Date.now()

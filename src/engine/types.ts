@@ -196,7 +196,7 @@ export interface Hero extends Entity {
     unlocked: boolean;
     isDead: boolean;
     element: ElementType;
-    assignment: 'combat' | 'mine' | 'expedition' | 'campfire';
+    assignment: 'combat' | 'mine' | 'expedition' | 'campfire' | 'none';
     gambits: any[];
     corruption: boolean;
     level: number;
@@ -248,7 +248,7 @@ export interface Spaceship {
 export type LogEntry = {
     id: string;
     message: string;
-    type: 'info' | 'damage' | 'heal' | 'death' | 'craft' | 'achievement' | 'action';
+    type: 'info' | 'damage' | 'heal' | 'death' | 'craft' | 'achievement' | 'action' | 'danger' | 'success' | 'error';
     timestamp: number;
 };
 

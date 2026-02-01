@@ -12,6 +12,16 @@ interface AlchemyModalProps {
 }
 
 export const AlchemyModal: React.FC<AlchemyModalProps> = ({ isOpen, onClose, resources, activePotions, brewPotion }) => {
+    const [now, setNow] = React.useState(0);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setNow(Date.now());
+            const interval = setInterval(() => setNow(Date.now()), 1000);
+            return () => clearInterval(interval);
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const canAfford = (p: Potion) => {
@@ -50,7 +60,7 @@ export const AlchemyModal: React.FC<AlchemyModalProps> = ({ isOpen, onClose, res
                             {activePotions.map(p => (
                                 <div key={p.id} className="text-xs flex justify-between text-purple-200">
                                     <span>{p.name} (+{(p.value * 100).toFixed(0)}% {p.effect.toUpperCase()})</span>
-                                    <span>{Math.ceil((p.endTime - Date.now()) / 1000)}s</span>
+                                    <span>{Math.ceil((p.endTime - now) / 1000)}s</span>
                                 </div>
                             ))}
                         </div>
@@ -68,8 +78,8 @@ export const AlchemyModal: React.FC<AlchemyModalProps> = ({ isOpen, onClose, res
                                     <div className="flex gap-2 mt-1">
                                         {p.cost.map((c, i) => (
                                             <span key={i} className={`text-xs px-1.5 py-0.5 rounded border ${(resources[c.type] || 0) >= c.amount
-                                                    ? 'bg-gray-700 text-gray-300 border-gray-600'
-                                                    : 'bg-red-900/20 text-red-400 border-red-900/50'
+                                                ? 'bg-gray-700 text-gray-300 border-gray-600'
+                                                : 'bg-red-900/20 text-red-400 border-red-900/50'
                                                 }`}>
                                                 {c.amount} {c.type}
                                             </span>
@@ -81,8 +91,8 @@ export const AlchemyModal: React.FC<AlchemyModalProps> = ({ isOpen, onClose, res
                                 onClick={() => brewPotion(p.id)}
                                 disabled={!canAfford(p)}
                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${canAfford(p)
-                                        ? 'bg-purple-600 hover:bg-purple-500 text-white'
-                                        : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                    ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                                    : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                                     }`}
                             >
                                 Brew

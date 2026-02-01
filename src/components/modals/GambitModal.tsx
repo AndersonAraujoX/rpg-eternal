@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Brain, Save, Trash2, PlusCircle, Pencil } from 'lucide-react';
-import type { Hero, Gambit, GambitCondition, GambitAction } from '../../engine/types';
+import type { Hero, GameActions, Gambit, GambitCondition, GambitAction } from '../../engine/types';
 
 interface GambitModalProps {
     isOpen: boolean;
     onClose: () => void;
     hero: Hero | null;
-    actions: any;
+    actions: GameActions;
 }
 
 const CONDITIONS: { value: GambitCondition; label: string }[] = [
@@ -32,15 +32,22 @@ const ACTIONS: { value: GambitAction; label: string }[] = [
 ];
 
 export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero, actions }) => {
-    if (!isOpen || !hero) return null;
-
-    const [gambits, setGambits] = useState<Gambit[]>(hero.gambits || []);
+    const [gambits, setGambits] = useState<Gambit[]>([]);
     const [isRenaming, setIsRenaming] = useState(false);
-    const [newName, setNewName] = useState(hero.name);
+    const [newName, setNewName] = useState('');
+
+    React.useEffect(() => {
+        if (hero) {
+            setGambits(hero.gambits || []);
+            setNewName(hero.name);
+        }
+    }, [hero]);
+
+    if (!isOpen || !hero) return null;
 
     const handleRename = () => {
         if (newName.trim()) {
-            actions.renameHero(hero.id, newName);
+            actions.renameHero?.(hero.id, newName);
             setIsRenaming(false);
         }
     };
@@ -63,7 +70,7 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
     };
 
     const handleSave = () => {
-        actions.updateGambits(hero.id, gambits);
+        actions.updateGambits?.(hero.id, gambits);
         onClose();
     };
     //...

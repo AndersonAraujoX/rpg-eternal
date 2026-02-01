@@ -1,0 +1,201 @@
+
+> rpg-eternal@0.0.0 lint
+> eslint .
+
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/App.tsx
+  173:7  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/App.tsx:173:7
+  171 |     // If not claimed, show modal
+  172 |     if (dailyLoginClaimed === false) {
+> 173 |       setShowDailyRewards(true);
+      |       ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  174 |     }
+  175 |   }, [dailyLoginClaimed]);
+  176 |  react-hooks/set-state-in-effect
+  175:6  warning  React Hook useEffect has a missing dependency: 'checkDailies'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/exhaustive-deps
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/BattleArea.tsx
+  5:10  error  'calculateHeroPower' is defined but never used  @typescript-eslint/no-unused-vars
+  6:15  error  'ElementType' is defined but never used         @typescript-eslint/no-unused-vars
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/AlchemyModal.tsx
+  53:67  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/AlchemyModal.tsx:53:67
+  51 |                                 <div key={p.id} className="text-xs flex justify-between text-purple-200">
+  52 |                                     <span>{p.name} (+{(p.value * 100).toFixed(0)}% {p.effect.toUpperCase()})</span>
+> 53 |                                     <span>{Math.ceil((p.endTime - Date.now()) / 1000)}s</span>
+     |                                                                   ^^^^^^^^^^ Cannot call impure function
+  54 |                                 </div>
+  55 |                             ))}
+  56 |                         </div>  react-hooks/purity
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/CardBattleModal.tsx
+  16:105  error  '_stats' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/DailyRewardsModal.tsx
+  29:32  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/DailyRewardsModal.tsx:29:32
+  27 |     // Auto-switch to quests if login claimed
+  28 |     useEffect(() => {
+> 29 |         if (dailyLoginClaimed) setActiveTab('quests');
+     |                                ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  30 |     }, [dailyLoginClaimed]);
+  31 |
+  32 |     return (  react-hooks/set-state-in-effect
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/ExpeditionsModal.tsx
+  67:67  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/ExpeditionsModal.tsx:67:67
+  65 |                     {EXPEDITIONS.map(exp => {
+  66 |                         const active = activeExpeditions.find(e => e.id === exp.id);
+> 67 |                         const progress = active ? Math.min(100, ((Date.now() - (active.startTime || 0)) / (exp.duration * 1000)) * 100) : 0;
+     |                                                                   ^^^^^^^^^^ Cannot call impure function
+  68 |                         const timeLeft = active ? Math.max(0, (exp.duration * 1000) - (Date.now() - (active.startTime || 0))) : 0;
+  69 |
+  70 |                         return (                                                                                                                                        react-hooks/purity
+  68:88  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/ExpeditionsModal.tsx:68:88
+  66 |                         const active = activeExpeditions.find(e => e.id === exp.id);
+  67 |                         const progress = active ? Math.min(100, ((Date.now() - (active.startTime || 0)) / (exp.duration * 1000)) * 100) : 0;
+> 68 |                         const timeLeft = active ? Math.max(0, (exp.duration * 1000) - (Date.now() - (active.startTime || 0))) : 0;
+     |                                                                                        ^^^^^^^^^^ Cannot call impure function
+  69 |
+  70 |                         return (
+  71 |                             <div key={exp.id} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-amber-900/50 transition-colors">  react-hooks/purity
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/GambitModal.tsx
+  37:35  error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  38:41  error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  39:35  error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/HelpModal.tsx
+  12:27  error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/RuneModal.tsx
+  21:45  error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+  22:45  error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/SettingsModal.tsx
+  18:45  error  React Hook "React.useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/ShopModal.tsx
+   3:28   error  'Resources' is defined but never used                                                                                              @typescript-eslint/no-unused-vars
+  19:72   error  'gold' is defined but never used                                                                                                   @typescript-eslint/no-unused-vars
+  19:78   error  'divinity' is defined but never used                                                                                               @typescript-eslint/no-unused-vars
+  19:88   error  'voidMatter' is defined but never used                                                                                             @typescript-eslint/no-unused-vars
+  19:109  error  'marketStock' is defined but never used                                                                                            @typescript-eslint/no-unused-vars
+  19:122  error  'marketTimer' is defined but never used                                                                                            @typescript-eslint/no-unused-vars
+  21:39   error  React Hook "React.useState" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/TowerModal.tsx
+   3:15  error  'Boss' is defined but never used        @typescript-eslint/no-unused-vars
+  13:90  error  'partyPower' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/components/modals/VoidModal.tsx
+  3:15  error  'Boss' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/automation.ts
+  48:9  error  'newHero' is never reassigned. Use 'const' instead       prefer-const
+  49:9  error  'newInventory' is never reassigned. Use 'const' instead  prefer-const
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/combat.ts
+  61:5   error  '_defenseMult' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  88:13  error  'stats' is never reassigned. Use 'const' instead   prefer-const
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/dailies.ts
+  20:37  error  '_previousQuests' is defined but never used  @typescript-eslint/no-unused-vars
+  20:68  error  '_playerLevel' is defined but never used     @typescript-eslint/no-unused-vars
+  41:53  error  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/dungeon.ts
+  23:9  error  'grid' is never reassigned. Use 'const' instead  prefer-const
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/galaxy.ts
+  25:9  error  'income' is never reassigned. Use 'const' instead  prefer-const
+  36:9  error  'buffs' is never reassigned. Use 'const' instead   prefer-const
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/gambits.ts
+  38:13  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/market.ts
+  13:37  error  '_level' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/sound.ts
+   9:63  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:18  error  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/synergies.ts
+  114:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/tavern.ts
+  52:9  error  'pendingHeroes' is never reassigned. Use 'const' instead     prefer-const
+  53:9  error  'pendingArtifacts' is never reassigned. Use 'const' instead  prefer-const
+  54:9  error  'pendingPets' is never reassigned. Use 'const' instead       prefer-const
+  57:9  error  'petXpBoosts' is never reassigned. Use 'const' instead       prefer-const
+  58:9  error  'logs' is never reassigned. Use 'const' instead              prefer-const
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/engine/types.ts
+  200:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/hooks/useGame.ts
+   143:8   warning  React Hook useEffect has a missing dependency: 'arenaOpponents'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react-hooks/exhaustive-deps
+   187:8   warning  React Hook useEffect has a missing dependency: 'starlightUpgrades'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+   281:25  error    'hpGain' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     prefer-const
+   281:38  error    'mpGain' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     prefer-const
+   281:50  error    'otherGain' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  prefer-const
+   282:25  error    'newStats' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   prefer-const
+   286:41  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+   286:67  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+   534:25  error    'updated' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    prefer-const
+   560:21  error    'updated' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    prefer-const
+   709:21  error    'newStats' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   prefer-const
+  1044:25  error    'totalXp' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  1045:25  error    'rewardsLog' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 prefer-const
+  1174:17  error    'newBossHp' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  prefer-const
+  1224:45  error    'newSkill' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   prefer-const
+  1520:8   warning  React Hook useEffect has missing dependencies: 'ACTIONS', 'achievements', 'activeExpeditions', 'activePotions', 'activeRift?.restriction', 'activeSynergies', 'autoSellRarity', 'galaxy', 'gameStats.bossKills', 'gameStats.clicks', 'gameStats.fishCaught', 'gameStats.itemsForged', 'gameStats.oreMined', 'gameStats.totalGoldEarned', 'gameStats.totalKills', 'marketTimer', 'quests', 'raidTimer', 'starlightUpgrades', 'tower', 'ultimateCharge', and 'voidActive'. Either include them or remove the dependency array. You can also replace multiple useState variables with useReducer if 'setAchievements' needs the current value of 'gameStats.totalKills'  react-hooks/exhaustive-deps
+  1818:8   warning  React Hook useEffect has a missing dependency: 'exitRift'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  1952:13  error    'newGrid' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    prefer-const
+
+/home/anderson/Documents/projeto/eternal-rpg/rpg-eternal/src/hooks/usePersistence.ts
+    2:189  error    'Expedition' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+    2:201  error    'Potion' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+    2:209  error    'DailyQuest' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+    2:221  error    'MarketItem' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+    2:233  error    'GardenPlot' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+   66:24   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   67:63   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   68:20   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   69:59   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   75:18   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   76:57   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  193:8    warning  React Hook useEffect has missing dependencies: 'setAchievements', 'setActiveExpeditions', 'setActivePotions', 'setArenaOpponents', 'setArenaRank', 'setArtifacts', 'setAutoSellRarity', 'setBoss', 'setBuildings', 'setCards', 'setConstellations', 'setDailyLoginClaimed', 'setDailyQuests', 'setDivinity', 'setDungeonActive', 'setEternalFragments', 'setGalaxy', 'setGameStats', 'setGlory', 'setGold', 'setGuild', 'setHeroes', 'setItems', 'setKeys', 'setLastDailyReset', 'setMonsterKills', 'setOfflineGains', 'setPets', 'setQuests', 'setRaidActive', 'setResources', 'setRunes', 'setSouls', 'setStarlight', 'setStarlightUpgrades', 'setTalents', 'setTheme', 'setTower', and 'setVoidMatter'. Either include them or remove the dependency array. If 'setHeroes' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+  210:8    warning  React Hook useEffect has missing dependencies: 'arenaOpponents' and 'autoSellRarity'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/exhaustive-deps
+
+✖ 78 problems (71 errors, 7 warnings)
+  20 errors and 0 warnings potentially fixable with the `--fix` option.
+

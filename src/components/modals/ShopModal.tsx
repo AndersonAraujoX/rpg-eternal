@@ -1,6 +1,6 @@
 import React from 'react';
 import { Ghost } from 'lucide-react';
-import type { Boss, Talent } from '../../engine/types';
+import type { GameActions, Talent, Boss } from '../../engine/types';
 
 interface ShopModalProps {
     isOpen: boolean;
@@ -8,12 +8,13 @@ interface ShopModalProps {
     souls: number;
     talents: Talent[];
     boss: Boss;
-    actions: any;
+    actions: GameActions;
 }
 
-export const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose, souls, talents, boss, actions }) => {
-    if (!isOpen) return null;
+export const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose, actions, souls, talents, boss }) => {
     const [buyAmount, setBuyAmount] = React.useState<1 | 10 | 100>(1);
+    if (!isOpen) return null;
+
 
     return (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black bg-opacity-95">

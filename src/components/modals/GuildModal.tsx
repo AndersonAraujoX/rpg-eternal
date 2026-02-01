@@ -1,14 +1,14 @@
 import React from 'react';
 import { Building, Shield, Coins } from 'lucide-react';
 import { GUILDS } from '../../engine/types';
-import type { Guild } from '../../engine/types';
+import type { Guild, GameActions } from '../../engine/types';
 
 interface GuildModalProps {
     isOpen: boolean;
     onClose: () => void;
     guild: Guild | null;
     gold: number;
-    actions: any;
+    actions: GameActions;
 }
 
 export const GuildModal: React.FC<GuildModalProps> = ({ isOpen, onClose, guild, gold, actions }) => {

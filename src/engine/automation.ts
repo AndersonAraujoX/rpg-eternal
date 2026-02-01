@@ -45,12 +45,12 @@ export const getAutoEquip = (upgrades: Record<string, number>, hero: Hero, inven
     if (!(upgrades['auto_equip'] > 0)) return null;
 
     let changed = false;
-    let newHero = { ...hero };
-    let newInventory = [...inventory];
+    const newHero = { ...hero };
+    const newInventory = [...inventory];
 
     // Simple Logic: Check inventory for items of same type with higher power
     // Power = (attack + defense + magic + speed + hp/10)
-    const getPower = (item: Item | undefined) => item ? (item.stats.attack + item.stats.defense + item.stats.magic + item.stats.speed + (item.stats.hp || 0) / 10) : 0;
+    const getPower = (item: Item | undefined) => item ? (item.stat === 'hp' ? item.value / 10 : item.value) : 0;
 
     ['weapon', 'armor', 'accessory'].forEach(slot => {
         const currentItem = newHero.equipment?.[slot as keyof typeof newHero.equipment];

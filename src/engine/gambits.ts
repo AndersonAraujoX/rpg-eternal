@@ -33,12 +33,13 @@ export const executeGambit = (hero: Hero, gambit: Gambit, enemies: Boss[], allie
     const deadAlly = allies.find(a => a.isDead);
 
     switch (gambit.action) {
-        case 'heal':
+        case 'heal': {
             // Simple heal logic
             const healAmount = hero.stats.magic * 2;
             weakAlly.stats.hp = Math.min(weakAlly.stats.maxHp, weakAlly.stats.hp + healAmount);
             addLog(`${hero.name} heals ${weakAlly.name} for ${Math.floor(healAmount)} (Gambit: ${gambit.condition})`, 'heal');
             break;
+        }
 
         case 'strong_attack':
             if (targetEnemy && hero.stats.mp >= 10) {

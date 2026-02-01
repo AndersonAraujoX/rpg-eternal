@@ -17,7 +17,7 @@ export const checkDailyReset = (lastReset: number): boolean => {
     return (now - lastReset) > oneDay;
 };
 
-export const generateDailyQuests = (_previousQuests: DailyQuest[], _playerLevel: number): DailyQuest[] => {
+export const generateDailyQuests = (): DailyQuest[] => {
     // Generate 3 random quests
     // Difficulty scales or static? Static for now.
 
@@ -38,7 +38,7 @@ export const generateDailyQuests = (_previousQuests: DailyQuest[], _playerLevel:
             target: template.target,
             current: 0,
             type: template.type,
-            reward: { type: template.reward.type as any, amount: template.reward.amount },
+            reward: { type: template.reward.type as DailyQuest['reward']['type'], amount: template.reward.amount },
             claimed: false
         });
     }

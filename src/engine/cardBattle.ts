@@ -34,7 +34,7 @@ export const simulateCardBattle = (
             oppCard = { id: oppCardId, monsterName: 'Unknown', count: 1, stat: 'attack', value: 0 };
         }
 
-        const statType = playerCard.stat; // The stat chosen for the duel is determined by the Player's card type for simplicity? 
+        // const statType = playerCard.stat; // The stat chosen for the duel is determined by the Player's card type for simplicity? 
         // OR random stat? Let's go with Random Stat for the round to make it fair/varied.
         const stats: ('attack' | 'defense' | 'speed' | 'gold' | 'xp')[] = ['attack', 'defense', 'speed', 'gold', 'xp'];
         const roundStat = stats[Math.floor(Math.random() * stats.length)];

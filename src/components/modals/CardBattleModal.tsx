@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Swords, Trophy, Skull } from 'lucide-react';
-import type { MonsterCard, CardOpponent } from '../../engine/types';
+import { Swords } from 'lucide-react';
+import type { MonsterCard, CardOpponent, GameStats } from '../../engine/types';
 import { simulateCardBattle } from '../../engine/cardBattle';
 import type { BattleResult } from '../../engine/cardBattle';
 import { NPC_DUELISTS } from '../../engine/initialData';
@@ -8,11 +8,12 @@ import { NPC_DUELISTS } from '../../engine/initialData';
 interface CardBattleModalProps {
     isOpen: boolean;
     onClose: () => void;
-    playerCards: MonsterCard[];
-    onBattleComplete: (result: BattleResult) => void;
+    cards: MonsterCard[]; // Renamed from playerCards
+    onWin: (opponentId: string, difficulty: number) => void;
+    stats: GameStats;
 }
 
-export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClose, playerCards, onBattleComplete }) => {
+export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClose, cards, onWin }) => {
     const [selectedOpponent, setSelectedOpponent] = useState<CardOpponent | null>(null);
     const [selectedDeck, setSelectedDeck] = useState<string[]>([]); // IDs
     const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
@@ -32,12 +33,14 @@ export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClos
     const startBattle = () => {
         if (!selectedOpponent || selectedDeck.length !== 3) return;
 
-        const deck = playerCards.filter(c => selectedDeck.includes(c.id));
-        const result = simulateCardBattle(deck, selectedOpponent, playerCards); // Note: Passing all playerCards as 'allCards' context might be incomplete if opponent uses cards player doesn't have.
+        const deck = cards.filter(c => selectedDeck.includes(c.id));
+        const result = simulateCardBattle(deck, selectedOpponent, cards); // Note: Passing all playerCards as 'allCards' context might be incomplete if opponent uses cards player doesn't have.
         // Fix: Ideally 'allCards' should be a global list, but for now assuming opponents use subset of existing or we handle 'unknown' in engine.
 
         setBattleResult(result);
-        onBattleComplete(result);
+        if (result.winner === 'player') {
+            onWin(selectedOpponent.id, selectedOpponent.difficulty);
+        }
     };
 
     const reset = () => {
@@ -87,7 +90,7 @@ export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClos
                                 <span>Select 3 Cards ({selectedDeck.length}/3)</span>
                             </h3>
                             <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2 pr-2 custom-scrollbar max-h-60">
-                                {playerCards.map(card => (
+                                {cards.map(card => (
                                     <div
                                         key={card.id}
                                         onClick={() => toggleCard(card.id)}

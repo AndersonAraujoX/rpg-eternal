@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, X, Shield, Crown, Medal } from 'lucide-react';
+import { Trophy, X, Crown, Medal } from 'lucide-react';
 import type { LeaderboardEntry } from '../../engine/types';
 
 interface LeaderboardModalProps {
@@ -59,8 +59,8 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                             <div
                                 key={entry.id}
                                 className={`flex items-center gap-4 p-3 rounded border ${isMe
-                                        ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]'
-                                        : 'bg-gray-800 border-gray-700'
+                                    ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]'
+                                    : 'bg-gray-800 border-gray-700'
                                     }`}
                             >
                                 <div className="flex items-center justify-center w-8 font-bold text-xl">
