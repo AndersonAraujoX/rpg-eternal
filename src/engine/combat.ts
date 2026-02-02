@@ -1,7 +1,8 @@
 import type { Hero, Boss, GambitAction, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement, CombatEvent } from './types';
 import type { Synergy } from './synergies';
 import { checkActiveCombos, type ComboDefinition } from './combos';
-import { getDailyMutator, type TowerMutator } from './mutators';
+import { type TowerMutator } from './mutators';
+import { type WeatherType } from './weather';
 import { evaluateGambit } from './gambits';
 import { ITEM_SETS } from './sets';
 
@@ -63,7 +64,8 @@ export const processCombatTurn = (
     _defenseMult: number = 1,
     activeSynergies: Synergy[] = [],
     riftRestriction?: 'no_heal' | 'phys_immune' | 'magic_immune' | 'no_ult' | 'time_crunch',
-    mutator?: TowerMutator
+    mutator?: TowerMutator,
+    weather?: WeatherType
 ) => {
     let totalDmg = 0;
     let crits = 0;
@@ -74,7 +76,7 @@ export const processCombatTurn = (
     const cdReduction = activeSynergies.find(s => s.type === 'cd_reduction')?.value || 0;
     const critDmgBonus = activeSynergies.find(s => s.type === 'crit_dmg')?.value || 0;
     const attackSpeedBonus = activeSynergies.find(s => s.type === 'attackSpeed')?.value || 0;
-    const mitigation = (activeSynergies.find(s => s.type === 'mitigation')?.value || 0) + (mutator?.id === 'iron_wall' ? 0.5 : 0);
+    // const mitigation = (activeSynergies.find(s => s.type === 'mitigation')?.value || 0) + (mutator?.id === 'iron_wall' ? 0.5 : 0);
 
     // Elemental Reactions
     const burnEffect = activeSynergies.find(s => s.type === 'burn');
@@ -237,7 +239,7 @@ export const processCombatTurn = (
         let gambitAction: GambitAction = 'attack';
         if (h.gambits && h.gambits.length > 0) {
             for (const g of h.gambits) {
-                if (evaluateGambit(h, g, [boss], heroes)) {
+                if (evaluateGambit(h, g, [boss], heroes, weather)) {
                     gambitAction = g.action;
                     break;
                 }
@@ -259,9 +261,9 @@ export const processCombatTurn = (
             if (h.stats.mp >= 10) {
                 baseDmg *= 1.5;
             }
-        } else if (gambitAction === 'defend') {
-            baseDmg *= 0.5;
-        } else if (gambitAction === 'cast_fireball') {
+        } else if (gambitAction === 'buff_def') {
+            baseDmg *= 0.5; // Represents reduced attack power while defending
+        } else if (gambitAction === 'aoe_attack') {
             baseDmg += h.stats.magic * 3;
         }
 
@@ -278,7 +280,7 @@ export const processCombatTurn = (
             const activeCombos = checkActiveCombos(heroes);
             if (activeCombos.length > 0) {
                 // Sort by multiplier descending to pick the strongest match
-                const bestCombo = activeCombos.sort((a, b) => b.multiplier - a.multiplier)[0];
+                const bestCombo = activeCombos.sort((a: ComboDefinition, b: ComboDefinition) => b.multiplier - a.multiplier)[0];
                 baseDmg *= bestCombo.multiplier;
 
                 // We only want to push the event once per turn, but this loop runs per hero.

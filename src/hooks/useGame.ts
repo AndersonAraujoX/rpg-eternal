@@ -58,6 +58,7 @@ export const useGame = () => {
     const [gold, setGold] = useState<number>(0);
     const [divinity, setDivinity] = useState<number>(0);
     const [voidMatter, setVoidMatter] = useState<number>(0);
+    const [voidAscensions, setVoidAscensions] = useState<number>(0);
 
     const [pets, setPets] = useState<Pet[]>([]);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
@@ -703,6 +704,28 @@ export const useGame = () => {
         },
         renameHero: (heroId: string, newName: string) => {
             setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, name: newName.substring(0, 12) } : h));
+        },
+        changeHeroEmoji: (heroId: string, newEmoji: string) => {
+            setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, emoji: newEmoji } : h));
+            addLog(`Hero skin updated!`, 'achievement');
+        },
+        ascendToVoid: () => {
+            if (tower.floor < 100) {
+                addLog("Need Tower Floor 100 to Ascend to Void!", "info");
+                return;
+            }
+            setVoidAscensions(v => v + 1);
+            setGold(0);
+            setSouls(0);
+            setItems([]);
+            setTower(prev => ({ ...prev, floor: 1, active: false }));
+            setHeroes(prev => prev.map(h => ({
+                ...h,
+                level: 1,
+                xp: 0,
+                stats: { ...h.stats, hp: h.stats.maxHp }
+            })));
+            addLog("ASCENDED TO THE VOID! Permanent power increased.", "achievement");
         },
         enterVoid: () => {
             if (tower.floor < 10) { addLog("Reach Tower Floor 10 to unlock Void.", 'info'); return; }
@@ -2159,66 +2182,32 @@ export const useGame = () => {
     // NOTE: This hook is getting HUGE. Refactoring is recommended for Phase 48.
 
     return {
+        // State
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-        actions: {
-            ...ACTIONS,
-            conquerSector,
-            breedPets,
-            attackTerritory,
-            enterDungeon,
-            moveDungeon,
-            exitDungeon,
-            buyMarketItem,
-            enterRift,
-            exitRift,
-            claimLoginReward,
-            claimDailyQuest,
-            checkDailies,
-            winCardBattle,
-            evolveHero,
-            equipItem,
-            unequipItem,
-            upgradeBuilding,
-            buyStarlightUpgrade,
-            renameHero: ACTIONS.renameHero,
-            updateGambits: ACTIONS.updateGambits,
-            formatNumber
-        },
-        partyDps,
-        partyPower,
-        combatEvents,
-        theme,
-        galaxy,
-        territories,
-        weather,
-        weatherTimer,
+        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades,
+        autoSellRarity, arenaOpponents, voidAscensions,
+        partyDps, partyPower, combatEvents, theme, galaxy, territories, weather, weatherTimer,
         synergies: activeSynergies,
         suggestions: checkSynergies(heroes).length < 5 ? getSynergySuggestions(heroes) : [],
-        formations,
-        saveFormation,
-        loadFormation,
-        deleteFormation,
+        formations, gardenPlots, marketStock, marketTimer, spaceship, dungeonState, riftTimer, activeRift,
+        lastDailyReset, isStarlightModalOpen,
         monsterKills, gameStats, activeExpeditions, activePotions,
-        // PHASE 43
-        gardenPlots, setGardenPlots,
-        setResources, setGold,
-        marketStock, marketTimer, buyMarketItem,
-        // PHASE 45
-        activeRift, riftTimer, enterRift, exitRift,
-        // PHASE 46
-        breedPets,
-        // PHASE 54
-        buyStarlightUpgrade, isStarlightModalOpen, setIsStarlightModalOpen,
-        spaceship, upgradeSpaceship, // Phase 59
-        dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies, // Phase 56
-        lastDailyReset,
-        buildings, upgradeBuilding,
-        winCardBattle, evolveHero, equipItem, unequipItem,
-        renameHero: ACTIONS.renameHero, updateGambits: ACTIONS.updateGambits,
-        attackTerritory,
-        moveDungeon, exitDungeon, enterDungeon, dungeonState
+        setGardenPlots, setResources, setGold, buyMarketItem, enterRift, exitRift, breedPets,
+        attackTerritory, buildings, upgradeBuilding, dailyQuests, dailyLoginClaimed, claimLoginReward,
+        claimDailyQuest, checkDailies, winCardBattle, equipItem, unequipItem, upgradeSpaceship,
+        moveDungeon, exitDungeon, saveFormation, loadFormation, deleteFormation, setTheme, setIsStarlightModalOpen,
+
+        // Actions
+        actions: {
+            ...ACTIONS,
+            conquerSector, breedPets, attackTerritory, enterDungeon, moveDungeon, exitDungeon,
+            buyMarketItem, enterRift, exitRift, claimLoginReward, claimDailyQuest, checkDailies,
+            winCardBattle, evolveHero, equipItem, unequipItem, upgradeBuilding, buyStarlightUpgrade,
+            setTheme, upgradeSpaceship, formatNumber,
+            saveFormation, loadFormation, deleteFormation,
+            setGardenPlots, setResources, setGold, setIsStarlightModalOpen
+        }
     };
 };

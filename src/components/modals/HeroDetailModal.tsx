@@ -9,8 +9,20 @@ interface HeroDetailModalProps {
     actions: GameActions;
 }
 
-export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClose, hero }) => {
+export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClose, hero, actions }) => {
+    const [isEditingName, setIsEditingName] = React.useState(false);
+    const [newName, setNewName] = React.useState('');
+
     if (!isOpen || !hero) return null;
+
+    const EMOJIS = ['⚔️', '🧙', '🌿', '🛡️', '🏹', '🗡️', '🔥', '❄️', '⚡', '🐉', '🧛', '👹', '🧚'];
+
+    const handleRename = () => {
+        if (newName.trim()) {
+            actions.renameHero(hero.id, newName.trim());
+            setIsEditingName(false);
+        }
+    };
 
     const ElementIcon = {
         fire: <Flame size={16} className="text-orange-500" />,
@@ -39,11 +51,42 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
 
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-6">
-                    <div className="text-4xl shadow-inner bg-gray-800 rounded-xl p-2 border border-gray-700">{hero.emoji}</div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                            {hero.name} {ElementIcon}
-                        </h2>
+                    <div className="group relative">
+                        <div className="text-4xl shadow-inner bg-gray-800 rounded-xl p-2 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors">
+                            {hero.emoji}
+                        </div>
+                        {/* Emoji Picker Overlay */}
+                        <div className="absolute top-full left-0 mt-2 bg-gray-800 border border-gray-700 p-2 rounded-lg grid grid-cols-4 gap-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto z-10 transition-opacity shadow-xl">
+                            {EMOJIS.map(e => (
+                                <button key={e} onClick={() => actions.changeHeroEmoji(hero.id, e)} className="hover:bg-gray-700 p-1 rounded transition-colors">
+                                    {e}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex-1">
+                        {isEditingName ? (
+                            <div className="flex gap-2">
+                                <input
+                                    autoFocus
+                                    className="bg-gray-800 border border-blue-500 text-white px-2 py-1 rounded text-xl font-bold w-full"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    maxLength={12}
+                                    placeholder={hero.name}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                                />
+                                <button onClick={handleRename} className="bg-green-600 px-3 rounded text-sm font-bold">OK</button>
+                                <button onClick={() => setIsEditingName(false)} className="bg-gray-600 px-3 rounded text-sm">X</button>
+                            </div>
+                        ) : (
+                            <h2
+                                className="text-2xl font-bold text-white flex items-center gap-2 cursor-pointer hover:text-blue-400 transition-colors"
+                                onClick={() => { setNewName(hero.name); setIsEditingName(true); }}
+                            >
+                                {hero.name} {ElementIcon}
+                            </h2>
+                        )}
                         <div className="text-gray-400 text-sm">{hero.class} - Level {hero.level || 1}</div>
                     </div>
                 </div>

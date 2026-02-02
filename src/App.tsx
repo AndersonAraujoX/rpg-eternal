@@ -69,6 +69,7 @@ function App() {
     spaceship, upgradeSpaceship, // Phase 59
     dungeonState, moveDungeon, exitDungeon, // Phase 61
     synergies, // Fixed: Destructured from useGame
+    voidAscensions,
     formations, saveFormation, loadFormation, deleteFormation // Update 74
   } = useGame();
 
@@ -271,6 +272,9 @@ function App() {
         starlightUpgrades={starlightUpgrades}
         spaceship={spaceship}
         onUpgradeShip={upgradeSpaceship}
+        towerFloor={tower.floor}
+        voidAscensions={voidAscensions}
+        onAscend={actions.ascendToVoid}
       />
 
       {/* PHASE 41 Modals */}

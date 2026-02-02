@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Globe, Star, Rocket, Shield } from 'lucide-react';
+import { X, Globe, Star, Rocket, Zap } from 'lucide-react';
 import type { GalaxySector, Spaceship } from '../../engine/types';
 
 interface GalaxyModalProps {
@@ -11,11 +11,17 @@ interface GalaxyModalProps {
     starlightUpgrades: Record<string, number>;
     spaceship: Spaceship;
     onUpgradeShip: (part: 'shields' | 'engine' | 'scanners') => void;
+    towerFloor: number;
+    voidAscensions: number;
+    onAscend: () => void;
 }
 
-export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galaxy, onConquer, partyPower, starlightUpgrades, spaceship, onUpgradeShip }) => {
+export const GalaxyModal: React.FC<GalaxyModalProps> = ({
+    isOpen, onClose, galaxy, onConquer, partyPower, starlightUpgrades, spaceship, onUpgradeShip,
+    towerFloor, voidAscensions, onAscend
+}) => {
     const [selectedSector, setSelectedSector] = useState<GalaxySector | null>(null);
-    const [view, setView] = useState<'map' | 'hangar'>('map');
+    const [view, setView] = useState<'map' | 'hangar' | 'void'>('map');
 
     const scannerLevel = starlightUpgrades['galaxy_scanner'] || 0;
     const getDifficulty = (base: number) => scannerLevel > 0 ? Math.floor(base * (1 - (scannerLevel * 0.1))) : base;
@@ -50,6 +56,12 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                             className={`flex items-center gap-2 px-4 py-2 rounded ${view === 'hangar' ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
                         >
                             <Rocket size={18} /> Hangar
+                        </button>
+                        <button
+                            onClick={() => setView('void')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded ${view === 'void' ? 'bg-purple-600 text-white animate-pulse' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+                        >
+                            <Zap size={18} /> Void Ascension
                         </button>
                     </div>
 
@@ -160,54 +172,65 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({ isOpen, onClose, galax
                                 </div>
                             )}
                         </div>
-                    ) : (
-                        // HANGAR VIEW
-                        <div className="p-8 grid grid-cols-2 gap-8 h-full bg-slate-900">
-                            {/* Visual Preview */}
-                            <div className="bg-slate-800 rounded-xl flex items-center justify-center border border-slate-700">
-                                <div className="text-[10rem]">🚀</div>
-                            </div>
-                            {/* Upgrades */}
-                            <div className="flex flex-col gap-6">
-                                <h3 className="text-2xl font-bold text-white border-b border-gray-700 pb-2">Ship Upgrades</h3>
-
-                                {/* Engine */}
-                                <div className="bg-gray-800 p-4 rounded-lg flex items-center justify-between border border-gray-700">
-                                    <div>
-                                        <h4 className="text-lg font-bold text-cyan-400 flex items-center gap-2"><Rocket size={18} /> Hyperdrive Engine</h4>
-                                        <p className="text-gray-400 text-sm">Level {spaceship.parts.engine} → {spaceship.parts.engine + 1}</p>
-                                        <p className="text-xs text-gray-500">Increases Travel Range (+25 ly)</p>
-                                    </div>
-                                    <button
-                                        onClick={() => onUpgradeShip('engine')}
-                                        className="px-4 py-2 bg-blue-600 rounded text-white font-bold hover:bg-blue-500 transition-colors"
-                                    >
-                                        Upgrade
-                                        <div className="text-[10px] font-normal opacity-80">
-                                            {Math.floor(1000 * Math.pow(1.5, spaceship.parts.engine))} G + {Math.floor(10 * Math.pow(1.5, spaceship.parts.engine))} M
+                    ) : view === 'hangar' ? (
+                        <div className="p-8 h-full bg-slate-900 overflow-y-auto">
+                            <h3 className="text-2xl font-bold text-orange-400 mb-6 flex items-center gap-2">
+                                <Rocket /> Spaceship Hangar
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {(['shields', 'engine', 'scanners'] as const).map(part => (
+                                    <div key={part} className="bg-gray-800 border border-gray-700 p-6 rounded-xl shadow-xl">
+                                        <h4 className="text-xl font-bold capitalize mb-2">{part}</h4>
+                                        <div className="text-sm text-gray-400 mb-4">
+                                            Current Level: <span className="text-orange-400 font-bold">{spaceship.parts[part]}</span>
                                         </div>
-                                    </button>
-                                </div>
-
-                                {/* Hull/Shields */}
-                                <div className="bg-gray-800 p-4 rounded-lg flex items-center justify-between border border-gray-700">
-                                    <div>
-                                        <h4 className="text-lg font-bold text-orange-400 flex items-center gap-2"><Shield size={18} /> Void Shields</h4>
-                                        <p className="text-gray-400 text-sm">Level {spaceship.parts.shields} → {spaceship.parts.shields + 1}</p>
-                                        <p className="text-xs text-gray-500">Resists Planetary Hazards</p>
+                                        <button
+                                            onClick={() => onUpgradeShip(part)}
+                                            className="w-full py-2 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold rounded shadow-lg transition-all"
+                                        >
+                                            UPGRADE
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => onUpgradeShip('shields')} // Keeping 'hull' label for onUpgradeShip mapping if backend expects it
-                                        className="px-4 py-2 bg-orange-600 rounded text-white font-bold hover:bg-orange-500 transition-colors"
-                                    >
-                                        Upgrade
-                                        <div className="text-[10px] font-normal opacity-80">
-                                            {Math.floor(1000 * Math.pow(1.5, spaceship.parts.shields))} G + {Math.floor(10 * Math.pow(1.5, spaceship.parts.shields))} M
-                                        </div>
-                                    </button>
-                                </div>
+                                ))}
                             </div>
                         </div>
+                    ) : view === 'void' ? (
+                        <div className="p-12 flex flex-col items-center justify-center h-full bg-slate-950 text-center">
+                            <div className="text-8xl mb-8 animate-bounce">🌌</div>
+                            <h3 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 mb-4">Void Ascension</h3>
+                            <p className="text-gray-400 max-w-lg mb-8">
+                                Reset your current progress to transcend the physical realm.
+                                Gain permanent <span className="text-purple-400 font-bold">Void Power</span> and unlock cosmic secrets.
+                            </p>
+
+                            <div className="bg-gray-900 border border-purple-500/30 p-6 rounded-xl mb-8 w-full max-w-md">
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-gray-400">Current Void Level:</span>
+                                    <span className="text-purple-400 font-mono font-bold">{voidAscensions}</span>
+                                </div>
+                                <div className="flex justify-between mb-4">
+                                    <span className="text-gray-400">Tower Floor Required:</span>
+                                    <span className={`${towerFloor >= 100 ? 'text-green-400' : 'text-red-400'} font-mono`}>100</span>
+                                </div>
+                                <div className="text-sm text-gray-500 italic">
+                                    Ascending will reset: Gold, Souls, Items, Tower Floor, and Hero Levels.
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={onAscend}
+                                disabled={towerFloor < 100}
+                                className={`px-12 py-4 rounded-xl font-black text-xl transition-all shadow-2xl 
+                                    ${towerFloor >= 100
+                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-110 text-white shadow-purple-500/50'
+                                        : 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700'}`}
+                            >
+                                {towerFloor >= 100 ? 'ASCEND TO THE VOID' : 'LOCKED (Reach Floor 100)'}
+                            </button>
+                        </div>
+                    ) : (
+                        // FALLBACK FOR OTHER VIEWS
+                        <div className="p-8">...</div>
                     )}
                 </div>
             </div>

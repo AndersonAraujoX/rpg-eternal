@@ -156,6 +156,7 @@ export interface GameStats {
     cardBattlesWon?: number; // Phase 55
     lastLogin?: number;      // Phase 56
     loginStreak?: number;    // Phase 56
+    voidAscensions: number;
 }
 
 export interface DailyQuest {
@@ -197,7 +198,7 @@ export interface Hero extends Entity {
     isDead: boolean;
     element: ElementType;
     assignment: 'combat' | 'mine' | 'expedition' | 'campfire' | 'none';
-    gambits: any[];
+    gambits: Gambit[];
     corruption: boolean;
     level: number;
     xp: number;
@@ -270,7 +271,7 @@ export interface Item {
     setId?: string; // Added Set ID
     stat: 'attack' | 'defense' | 'hp' | 'magic' | 'speed';
     value: number;
-    rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'chimera';
     sockets: number;
     runes: Rune[];
     // Phase 78: Evolving Gear
@@ -376,8 +377,11 @@ export interface Guild {
     bonusValue?: number;
 }
 
-export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'mp<50' | 'ally_hp<50' | 'ally_dead' | 'enemy_boss' | 'enemy_count>2';
-export type GambitAction = 'attack' | 'strong_attack' | 'heal' | 'defend' | 'use_potion' | 'cast_fireball' | 'revive' | 'buff_attack';
+export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'mp<50' | 'ally_hp<50' | 'ally_dead' | 'enemy_boss' | 'enemy_count>2' |
+    'enemy_fire' | 'enemy_water' | 'enemy_nature' | 'enemy_dark' | 'enemy_light' |
+    'weather_rain' | 'weather_blizzard' | 'weather_sandstorm' | 'weather_eclipse' | 'weather_aurora' |
+    'party_full' | 'party_low_hp';
+export type GambitAction = 'attack' | 'heal' | 'strong_attack' | 'aoe_attack' | 'use_potion' | 'revive' | 'buff_atk' | 'buff_def';
 
 export interface Gambit {
     id: string;
@@ -470,6 +474,97 @@ export interface LeaderboardEntry {
 }
 
 
+
+export interface GameActions {
+    // Basic
+    toggleSound: () => void;
+    setGameSpeed: (speed: number) => void;
+
+    // Heroes
+    spendStatPoint: (heroId: string, stat: keyof Stats) => void;
+    recruitHero: (heroId: string) => void;
+    evolveHero: (heroId: string) => void;
+    toggleAssignment: (heroId: string) => void;
+    toggleCorruption: (heroId: string) => void;
+    renameHero: (heroId: string, name: string) => void;
+    changeHeroEmoji: (heroId: string, emoji: string) => void;
+    equipItem: (heroId: string, item: Item) => void;
+    unequipItem: (heroId: string, slot: 'weapon' | 'armor' | 'accessory') => void;
+
+    // Progression
+    buyTalent: (id: string, amount?: number) => void;
+    buyConstellation: (id: string) => void;
+    buyStarlightUpgrade: (id: string) => void;
+
+    // Exploration & Combat
+    enterTower: () => void;
+    prestigeTower: () => void;
+    enterDungeon: () => void;
+    exitDungeon: () => void;
+    moveDungeon: (dx: number, dy: number) => void;
+    toggleRaid: () => void;
+    fightArena: (opponent: ArenaOpponent) => void;
+
+    // Galaxy & Territories
+    conquerSector: (id: string) => void;
+    attackTerritory: (id: string) => void;
+
+    // Minigames/Features
+    breedPets: (parent1: Pet, parent2: Pet) => void;
+    feedPet: (foodType: 'gold' | 'souls', petId?: string) => void;
+    winCardBattle: (opponentId: string, difficulty: number) => void;
+    forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => void;
+
+    // Social/Guild
+    joinGuild: (guildName: string) => void;
+    contributeGuild: (amount: number) => void;
+
+    // Town
+    upgradeBuilding: (id: string) => void;
+
+    // Spaceship
+    upgradeSpaceship: (part: keyof Spaceship['parts']) => void;
+
+    // Dailies
+    claimLoginReward: () => void;
+    claimDailyQuest: (questId: string) => void;
+    checkDailies: () => void;
+
+    // Void & Rebirth
+    enterVoid: () => void;
+    triggerRebirth: () => void;
+    triggerAscension: () => void;
+    buyDarkGift: (cost: number, effect: string) => void;
+    ascendToVoid: () => void;
+
+    // Crafting & Items
+    craftRune: () => void;
+    socketRune: (itemId: string, runeId: string) => void;
+    reforgeItem: (itemId: string) => void;
+    manualFish: () => void;
+    brewPotion: (potionId: string) => void;
+
+    // Settings & State
+    setTheme: (theme: string) => void;
+    setAutoSellRarity: (rarity: 'none' | 'common' | 'rare') => void;
+    resetSave: () => void;
+    exportSave: () => string;
+    importSave: (str: string) => void;
+    closeOfflineModal: () => void;
+
+    // Quests
+    claimQuest: (id: string) => void;
+
+    // Expeditions
+    startExpedition: (exp: Expedition, heroIds: string[]) => void;
+
+    // Market
+    buyMarketItem: (item: MarketItem) => void;
+
+    // Rifts
+    enterRift: (rift: Rift) => void;
+    exitRift: (success: boolean) => void;
+}
 
 export interface CombatEvent {
     id: string;
