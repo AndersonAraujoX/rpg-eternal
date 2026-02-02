@@ -2168,43 +2168,6 @@ export const useGame = () => {
         addLog(`Contributed ${amount} Gold to Guild!`, 'action');
     };
 
-    const upgradeMonument = (id: string) => {
-        if (!guild) return;
-        const level = guild.monuments[id] || 0;
-        const monument = MONUMENT_DEFINITIONS.find(m => m.id === id);
-        if (!monument) return;
-
-        if (level >= monument.maxLevel) {
-            addLog("Monument is already at Max Level!", "error");
-            return;
-        }
-
-        if (level >= guild.level) {
-            addLog(`Guild Level ${guild.level + 1} required to upgrade further!`, "error");
-            return;
-        }
-
-        const cost = getMonumentCost(monument.baseCost, level, monument.costScaling);
-        if (gold < cost) {
-            addLog(`Not enough Gold! Need ${formatNumber(cost)}`, "error");
-            return;
-        }
-
-        setGold(g => g - cost);
-        setGuild(prev => {
-            if (!prev) return null;
-            return {
-                ...prev,
-                monuments: {
-                    ...prev.monuments,
-                    [id]: level + 1
-                }
-            };
-        });
-        addLog(`Upgraded ${monument.name} to Level ${level + 1}!`, "craft");
-        soundManager.playLevelUp();
-    };
-
     const [territories, setTerrories] = useState<Territory[]>(INITIAL_TERRITORIES);
 
     // Phase 48: Weather
@@ -2394,7 +2357,7 @@ export const useGame = () => {
             saveFormation, loadFormation, deleteFormation,
             setGardenPlots, setResources, setGold, setIsStarlightModalOpen,
             startRift, selectBlessing, // Update 81: Added to actions
-            joinGuild, contributeGuild, upgradeMonument // Phase 3
+            joinGuild, contributeGuild // Phase 3
         }
     };
 };
