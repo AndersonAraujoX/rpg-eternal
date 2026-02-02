@@ -207,3 +207,37 @@ body {
 .bar-container {
   box-shadow: inset 2px 2px 0px 0px #000000;
 }
+
+/* Update 81: Rift Visuals */
+.bg-rift {
+  background: radial-gradient(circle at center, #2e1065 0%, #0f172a 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-rift::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
+  animation: rift-swirl 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rift-swirl {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.text-rift {
+  color: #c084fc;
+  text-shadow: 0 0 10px #a855f7;
+}
+
+.rift-border {
+  border-color: #a855f7;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+}

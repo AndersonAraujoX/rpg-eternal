@@ -41,19 +41,6 @@ export interface Entity {
 }
 
 
-export interface Pet extends Entity {
-    type: 'pet';
-    bonus: string; // e.g., "+10% DPS"
-    emoji: string;
-    level: number;
-    xp: number;
-    maxXp: number;
-    // Phase 46
-    rarity: 'common' | 'rare' | 'epic' | 'legendary';
-    ability?: string;
-    chimera?: boolean;
-    parents?: string[];
-}
 
 export interface Talent {
     id: string;
@@ -157,6 +144,7 @@ export interface GameStats {
     lastLogin?: number;      // Phase 56
     loginStreak?: number;    // Phase 56
     voidAscensions: number;
+    highestRiftFloor?: number; // Update 81
 }
 
 export interface DailyQuest {
@@ -388,6 +376,9 @@ export interface Guild {
     description: string;
     bonusType?: 'physical' | 'magical' | 'crit' | 'gold' | 'xp';
     bonusValue?: number;
+    // Phase 3: Monuments
+    monuments: Record<string, number>; // id -> level
+    totalContribution: number;
 }
 
 export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'mp<50' | 'ally_hp<50' | 'ally_dead' | 'enemy_boss' | 'enemy_count>2' |
@@ -419,9 +410,9 @@ export interface Building {
 }
 
 export const GUILDS: Guild[] = [
-    { id: 'g1', name: 'Xang', description: '+10% Physical Damage', bonusType: 'physical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Physical Damage', members: 0 },
-    { id: 'g2', name: 'Zhauw', description: '+10% Magical Damage', bonusType: 'magical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Magical Damage', members: 0 },
-    { id: 'g3', name: 'Yang', description: '+10% Critical Damage', bonusType: 'crit', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Critical Damage', members: 0 }
+    { id: 'g1', name: 'Xang', description: '+10% Physical Damage', bonusType: 'physical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Physical Damage', members: 0, monuments: {}, totalContribution: 0 },
+    { id: 'g2', name: 'Zhauw', description: '+10% Magical Damage', bonusType: 'magical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Magical Damage', members: 0, monuments: {}, totalContribution: 0 },
+    { id: 'g3', name: 'Yang', description: '+10% Critical Damage', bonusType: 'crit', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Critical Damage', members: 0, monuments: {}, totalContribution: 0 }
 ];
 
 export type SeedType = 'moonleaf' | 'starbloom' | 'fireweed';
@@ -476,6 +467,42 @@ export interface Rift {
     difficulty: number; // Power requirement
     restriction: RiftRestriction;
     rewards: { type: 'starlight' | 'voidMatter' | 'gold', amount: number }[];
+}
+
+// Update 81: Temporal Anomalies
+export interface Pet extends Entity {
+    id: string;
+    name: string;
+    type: 'pet';
+    rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'chimera';
+    level: number;
+    stats: Stats;
+    bonus: string;
+    ability?: string;
+    emoji: string;
+    xp: number;
+    maxXp: number;
+    isDead: boolean;
+    // Phase 4: Chimera
+    chimera?: boolean;
+    parents?: string[];
+    fusionCount?: number;
+}
+export interface RiftBlessing {
+    id: string;
+    name: string;
+    description: string;
+    rarity: 'common' | 'rare' | 'legendary';
+    effect: (stats: Stats) => Stats;
+    icon: string;
+}
+
+export interface RiftState {
+    active: boolean;
+    floor: number;
+    blessings: RiftBlessing[];
+    tempHeroes: Hero[]; // Using Hero[] for now, might need TempHero wrapper later
+    maxFloor: number;
 }
 
 export interface LeaderboardEntry {
@@ -577,6 +604,13 @@ export interface GameActions {
     // Rifts
     enterRift: (rift: Rift) => void;
     exitRift: (success: boolean) => void;
+
+    // Update 81
+    startRift: () => void;
+    selectBlessing: (blessing: RiftBlessing) => void;
+
+    // Phase 3
+    upgradeMonument: (id: string) => void;
 }
 
 export interface CombatEvent {

@@ -1,15 +1,30 @@
 import type { Pet } from './types';
 
 export const calculateBreedingResult = (parent1: Pet, parent2: Pet): Pet => {
-    // 1. Determine new ID and Name
+    // 1. Determine new ID
     const newId = `chimera_${Date.now()}`;
-    // Simple naming: "Half-P1 Half-P2" or just "Chimera of X & Y"
-    const name = `Chimera: ${parent1.name.split(' ')[0]} & ${parent2.name.split(' ')[0]}`;
+    const generation = Math.max((parent1.fusionCount || 0), (parent2.fusionCount || 0)) + 1;
 
-    // 2. Calculate Stats (Average + 20% bonus)
-    const multiplier = 1.2;
-    // Helper to calc stat
-    const calc = (s1: number, s2: number) => Math.floor(((s1 + s2) / 2) * multiplier);
+    // 2. Naming Logic
+    // If parents are already Chimeras, use "Chimera Prime" or "Void Walker" etc?
+    // Let's keep it simple distinct halves for now, or randomize cool suffixes.
+    const p1Name = parent1.name.split(' ')[0].split('-')[0]; // First word base
+    const p2Name = parent2.name.split(' ')[0].split('-')[0];
+
+    // 30% chance for a unique "Void" or "Cosmic" prefix if generation is high
+    let prefix = "";
+    if (generation > 1 && Math.random() < 0.3) prefix = "Void-";
+    if (generation > 3 && Math.random() < 0.3) prefix = "Cosmic ";
+
+    const name = `${prefix}${p1Name}-${p2Name}`;
+
+    // 3. Stats Calculation (Average + BonusMultiplier)
+    // Bonus scales with generation, capped to avoid infinity too fast
+    const baseMult = 1.2;
+    const genBonus = Math.min(0.5, (generation - 1) * 0.1); // +10% per gen, max +50%
+    const finalMult = baseMult + genBonus;
+
+    const calc = (s1: number, s2: number) => Math.floor(((s1 + s2) / 2) * finalMult);
 
     const newStats = {
         attack: calc(parent1.stats.attack, parent2.stats.attack),
@@ -22,30 +37,31 @@ export const calculateBreedingResult = (parent1: Pet, parent2: Pet): Pet => {
         speed: calc(parent1.stats.speed, parent2.stats.speed),
     };
 
-    // 3. Determine Bonus (Combine or Random?)
-    // Let's take the STRONGER bonus or combine strings?
-    // "Wait, bonus is a string currently? e.g. '+10% DPS'"
-    // Ideally we'd parse it. For now, let's inherit Parent 1's bonus type but boosted.
-    // Or better: "Hybrid: +X% Stats"
-    const newBonus = `Chimera Strength: Super Boost`;
+    // 4. Bonus Inheritance
+    // Pick the "Better" bonus string or Combine? 
+    // Simplified: Just a generic strong bonus text for UI display, actual logic might need parsing later.
+    const newBonus = `Fusion Power: +${Math.round((finalMult - 1) * 100)}% Stats`;
 
-    // 4. Emoji
-    const emoji = '🦁'; // Generic Chimera for now
+    // 5. Emoji & Visuals
+    const possibleEmojis = ['🦁', '🦅', '🐉', '🐍', '🐺', '🦊', '🦄', '🐲', '👹'];
+    // Try to mix? No, random specific Chimera emoji or a "New" one.
+    const emoji = possibleEmojis[Math.floor(Math.random() * possibleEmojis.length)];
 
     return {
         id: newId,
         name: name,
         type: 'pet',
-        rarity: 'legendary',
-        level: 1,
+        rarity: 'chimera',
+        level: 1, // Reset level but keep high base stats
         stats: newStats,
         bonus: newBonus,
-        ability: parent1.ability || 'Generic Boost',
+        ability: parent1.ability || parent2.ability || 'Genetic Harmony',
         emoji: emoji,
         xp: 0,
-        maxXp: 100,
+        maxXp: 100 * generation, // Harder to level up higher gens
         isDead: false,
         chimera: true,
-        parents: [parent1.name, parent2.name]
+        parents: [parent1.name, parent2.name],
+        fusionCount: generation
     };
 };

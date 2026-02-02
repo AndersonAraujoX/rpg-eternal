@@ -29,6 +29,8 @@ import { getDailyMutator } from '../engine/mutators';
 import type { TowerMutator } from '../engine/mutators';
 import type { DungeonState } from '../engine/dungeon';
 import { generateDungeon, DUNGEON_WIDTH, DUNGEON_HEIGHT } from '../engine/dungeon';
+import type { RiftState, RiftBlessing } from '../engine/types'; // Update 81
+import { MONUMENT_DEFINITIONS, getMonumentCost, getMonumentValue } from '../engine/guild'; // Phase 3
 
 import { calculateBreedingResult } from '../engine/breeding'; // Phase 46
 import { generateMarketStock } from '../engine/market';
@@ -201,8 +203,26 @@ export const useGame = () => {
     const [combatEvents, setCombatEvents] = useState<CombatEvent[]>([]);
 
     // Derived State: Active Synergies
-    const activeHeroesList = heroes.filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked);
-    const activeSynergies = checkSynergies(activeHeroesList);
+    const activeHeroes = heroes.filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked);
+
+    // Guild Buffs (Phase 3) - Calculated early to affect combat and loot
+    const guildGoldMult = guild ? 1 + ((guild.monuments?.['statue_midas'] || 0) * 0.05) : 1;
+    const guildXpMult = guild ? 1 + ((guild.monuments?.['shrine_wisdom'] || 0) * 0.03) : 1;
+    const guildAtkMult = guild ? 1 + ((guild.monuments?.['altar_war'] || 0) * 0.02) : 1;
+    const guildHpMult = guild ? 1 + ((guild.monuments?.['fountain_life'] || 0) * 0.02) : 1;
+
+    // Apply guild buffs to active heroes for combat calculations
+    const heroesWithGuildBuffs = activeHeroes.map(h => ({
+        ...h,
+        stats: {
+            ...h.stats,
+            attack: Math.floor(h.stats.attack * guildAtkMult),
+            maxHp: Math.floor(h.stats.maxHp * guildHpMult),
+            hp: Math.floor(h.stats.hp * guildHpMult), // Also update current HP
+        }
+    }));
+
+    const activeSynergies = checkSynergies(heroesWithGuildBuffs);
 
     // PHASE 11
     const [runes, setRunes] = useState<Rune[]>([]);
@@ -213,6 +233,9 @@ export const useGame = () => {
     // Starlight Upgrades: ID -> Level
     const [starlightUpgrades, setStarlightUpgrades] = useState<Record<string, number>>({});
     const [isStarlightModalOpen, setIsStarlightModalOpen] = useState(false);
+
+    // Update 81: Rift State
+    const [riftState, setRiftState] = useState<RiftState | null>(null);
 
     const [theme, setTheme] = useState('default');
 
@@ -427,31 +450,67 @@ export const useGame = () => {
 
         // SOCIAL ACTIONS
         joinGuild: (guildName: string) => {
-            if (guild) return;
-            const template = GUILDS.find(g => g.name === guildName);
-            if (template) {
-                setGuild({ id: template.id, name: template.name, level: 1, xp: 0, maxXp: 1000, bonus: template.bonus, members: Math.floor(Math.random() * 50) + 10, description: template.description || 'A bot guild.' });
-                addLog(`Joined ${guildName} !`, 'heal');
+            if (guild) return; // Already in guild
+            const gTemplate = GUILDS.find(g => g.name === guildName);
+            if (gTemplate) {
+                setGuild({ ...gTemplate, members: 1, monuments: {}, totalContribution: 0 }); // Phase 3 Init
+                addLog(`Joined ${guildName}!`, 'achievement');
+                soundManager.playLevelUp();
             }
         },
         contributeGuild: (amount: number) => {
-            if (!guild) return;
-            if (gold < amount) { addLog("Not enough Gold", 'info'); return; }
+            if (!guild || gold < amount) return;
             setGold(g => g - amount);
-            setGuild(g => {
-                if (!g) return null;
-                // Guild Bonus: +20% XP per Level
-                const guildBonus = getBuildingEffect('b_guild');
-                const xpGain = (amount / 10) * (1 + guildBonus);
+            setGuild(prev => {
+                if (!prev) return null;
+                const xpGain = amount / 10; // 10 gold = 1 xp
+                const newXp = prev.xp + xpGain;
+                let finalGuild = { ...prev, xp: newXp, totalContribution: (prev.totalContribution || 0) + amount }; // Track total
 
-                const newXp = g.xp + xpGain;
-                if (newXp >= g.maxXp) {
-                    addLog(`Guild Leveled Up to ${g.level + 1} !`, 'achievement');
-                    return { ...g, level: g.level + 1, xp: newXp - g.maxXp, maxXp: g.maxXp * 1.5 };
+                if (newXp >= prev.maxXp) {
+                    // ... level up logic handled in tick check usually? 
+                    // Creating simplified immediate level up check for manual contribution
+                    finalGuild.level += 1;
+                    finalGuild.xp = newXp - prev.maxXp;
+                    finalGuild.maxXp = Math.floor(prev.maxXp * 1.2);
+                    finalGuild.bonusValue = (prev.bonusValue || 0.1) + 0.01;
+                    finalGuild.bonus = (prev.bonus || "").replace(/\d+%/, `${Math.round(finalGuild.bonusValue * 100)}%`);
+                    addLog(`Guild Level Up!`, 'achievement');
+                    soundManager.playLevelUp();
+                } else {
+                    addLog(`Contributed ${formatNumber(amount)} Gold to Guild.`, 'action');
                 }
-                return { ...g, xp: newXp };
+                return finalGuild;
             });
-            addLog(`Contributed ${amount} Gold to Guild`, 'info');
+        },
+
+        upgradeMonument: (monumentId: string) => {
+            if (!guild) return;
+            const monument = MONUMENT_DEFINITIONS.find(m => m.id === monumentId);
+            if (!monument) return;
+
+            const currentLevel = guild.monuments[monumentId] || 0;
+            if (currentLevel >= monument.maxLevel) return;
+            if (currentLevel >= guild.level) {
+                addLog(`Guild Level too low to upgrade ${monument.name}!`, 'error');
+                return;
+            }
+
+            const cost = getMonumentCost(monument.baseCost, currentLevel, monument.costScaling);
+            if (gold >= cost) {
+                setGold(g => g - cost);
+                setGuild(prev => ({
+                    ...prev!,
+                    monuments: {
+                        ...prev!.monuments,
+                        [monumentId]: currentLevel + 1
+                    }
+                }));
+                addLog(`Upgraded ${monument.name} to Level ${currentLevel + 1}!`, 'craft');
+                soundManager.playLevelUp();
+            } else {
+                addLog(`Not enough Gold! Need ${formatNumber(cost)}`, 'error');
+            }
         },
 
         // Phase 53: Town
@@ -1263,6 +1322,15 @@ export const useGame = () => {
                             modH.stats = { ...modH.stats, defense: modH.stats.defense * 2, speed: Math.floor(modH.stats.speed * 0.5) };
                         }
 
+                        // Apply Guild Buffs to Combat (Temporary Stat Mod)
+                        if (guild) {
+                            modH.stats.attack = Math.floor(modH.stats.attack * guildAtkMult);
+                            modH.stats.maxHp = Math.floor(modH.stats.maxHp * guildHpMult);
+                            // Note: Current HP is not scaled proportionally here to avoid "healing" effect on every tick, 
+                            // but MaxHP increase protects against one-shots.
+                            // Ideally we should scale HP too if MaxHP increases, but for passive static buff it's fine.
+                        }
+
                         // Fatigue Penalty
                         const f = h.fatigue || 0;
                         let fatigueMod = 1.0;
@@ -1326,7 +1394,8 @@ export const useGame = () => {
                 setGold(g => g + goldGain);
                 setGameStats(s => ({ ...s, totalGoldEarned: s.totalGoldEarned + goldGain }));
 
-                const xpGain = Math.max(10, Math.floor(boss.level * 10 * xpMult));
+                // XP Gain (Modified to use Guild Mult)
+                const xpGain = Math.max(10, Math.floor(boss.level * 10 * xpMult * guildXpMult));
                 // Boss Defeated Logic
                 finalHeroes = finalHeroes.map(h => {
                     if (!h.isDead && h.assignment === 'combat' && h.unlocked) {
@@ -1433,8 +1502,8 @@ export const useGame = () => {
                         (autoSellRarity === 'rare' && (loot.rarity === 'common' || loot.rarity === 'rare'));
 
                     if (isTrash || boss.level < 10) {
-                        setGold(g => g + Math.floor(loot.value / 2));
-                        addLog(`Auto - Scrapped ${loot.name} (${loot.rarity}) for ${Math.floor(loot.value / 2)} Gold`, 'info');
+                        setGold(g => g + Math.floor(loot.value * guildGoldMult / 2));
+                        addLog(`Auto - Scrapped ${loot.name} (${loot.rarity}) for ${Math.floor(loot.value * guildGoldMult / 2)} Gold`, 'info');
                     } else {
                         setItems(p => [...p, loot]);
                         addLog(`Auto - Looted: ${loot.name} `, 'info');
@@ -2000,6 +2069,34 @@ export const useGame = () => {
         setRiftTimer(0);
     };
 
+    // Update 81: Roguelike Rifts
+    const startRift = () => {
+        setRiftState({
+            active: true,
+            floor: 1,
+            blessings: [],
+            tempHeroes: [],
+            maxFloor: 999
+        });
+        setDungeonActive(false);
+        addLog('Entered the Temporal Flux...', 'action');
+    };
+
+    const selectBlessing = (blessing: RiftBlessing) => {
+        if (!riftState) return;
+
+        setRiftState(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                blessings: [...prev.blessings, blessing],
+                floor: prev.floor + 1
+            };
+        });
+        // Apply immediate effects if any? For now effects are calculated in visuals/combat
+        addLog(`Rift: Absorbed ${blessing.name}`, 'action');
+    };
+
     // Rift Timer Tick
     useEffect(() => {
         if (!activeRift) return;
@@ -2032,8 +2129,82 @@ export const useGame = () => {
         addLog(`Transmuted ${parent1.name} and ${parent2.name} into ${child.name}!`, 'achievement');
     };
 
-
     // Phase 47: Guild Wars
+    const joinGuild = (name: string) => {
+        const guildDef = GUILDS.find(g => g.name === name);
+        if (guildDef) {
+            setGuild({ ...guildDef, members: 1, monuments: {}, totalContribution: 0 }); // Init monuments
+            addLog(`Joined ${name}!`, 'achievement');
+            soundManager.playLevelUp();
+        }
+    };
+
+    const contributeGuild = (amount: number) => {
+        if (!guild || gold < amount) return;
+        setGold(g => g - amount);
+
+        setGuild(g => {
+            if (!g) return null;
+            const xpGain = Math.floor(amount / 10);
+            const newXp = g.xp + xpGain;
+            const newTotal = (g.totalContribution || 0) + amount;
+
+            if (newXp >= g.maxXp) {
+                soundManager.playLevelUp();
+                // Level Up Logic handled in effect or here? 
+                // Let's do simple immediate level up for manual contribution
+                return {
+                    ...g,
+                    level: g.level + 1,
+                    xp: newXp - g.maxXp,
+                    maxXp: Math.floor(g.maxXp * 1.2),
+                    totalContribution: newTotal,
+                    bonusValue: (g.bonusValue || 0.1) + 0.01,
+                    bonus: (g.bonus || "").replace(/\d+%/, `${Math.round(((g.bonusValue || 0.1) + 0.01) * 100)}%`)
+                };
+            }
+            return { ...g, xp: newXp, totalContribution: newTotal };
+        });
+        addLog(`Contributed ${amount} Gold to Guild!`, 'action');
+    };
+
+    const upgradeMonument = (id: string) => {
+        if (!guild) return;
+        const level = guild.monuments[id] || 0;
+        const monument = MONUMENT_DEFINITIONS.find(m => m.id === id);
+        if (!monument) return;
+
+        if (level >= monument.maxLevel) {
+            addLog("Monument is already at Max Level!", "error");
+            return;
+        }
+
+        if (level >= guild.level) {
+            addLog(`Guild Level ${guild.level + 1} required to upgrade further!`, "error");
+            return;
+        }
+
+        const cost = getMonumentCost(monument.baseCost, level, monument.costScaling);
+        if (gold < cost) {
+            addLog(`Not enough Gold! Need ${formatNumber(cost)}`, "error");
+            return;
+        }
+
+        setGold(g => g - cost);
+        setGuild(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                monuments: {
+                    ...prev.monuments,
+                    [id]: level + 1
+                }
+            };
+        });
+        addLog(`Upgraded ${monument.name} to Level ${level + 1}!`, "craft");
+        soundManager.playLevelUp();
+    };
+
     const [territories, setTerrories] = useState<Territory[]>(INITIAL_TERRITORIES);
 
     // Phase 48: Weather
@@ -2205,12 +2376,13 @@ export const useGame = () => {
         synergies: activeSynergies,
         suggestions: checkSynergies(heroes).length < 5 ? getSynergySuggestions(heroes) : [],
         formations, gardenPlots, marketStock, marketTimer, spaceship, dungeonState, riftTimer, activeRift,
-        lastDailyReset, isStarlightModalOpen,
+        lastDailyReset, isStarlightModalOpen, riftState, // Update 81: Added riftState
         monsterKills, gameStats, activeExpeditions, activePotions,
         setGardenPlots, setResources, setGold, buyMarketItem, enterRift, exitRift, breedPets,
         attackTerritory, buildings, upgradeBuilding, dailyQuests, dailyLoginClaimed, claimLoginReward,
         claimDailyQuest, checkDailies, winCardBattle, equipItem, unequipItem, upgradeSpaceship,
         moveDungeon, exitDungeon, saveFormation, loadFormation, deleteFormation, setTheme, setIsStarlightModalOpen,
+        startRift, selectBlessing, // Update 81: Exposed actions directly
 
         // Actions
         actions: {
@@ -2220,7 +2392,9 @@ export const useGame = () => {
             winCardBattle, evolveHero, equipItem, unequipItem, upgradeBuilding, buyStarlightUpgrade,
             setTheme, upgradeSpaceship, formatNumber,
             saveFormation, loadFormation, deleteFormation,
-            setGardenPlots, setResources, setGold, setIsStarlightModalOpen
+            setGardenPlots, setResources, setGold, setIsStarlightModalOpen,
+            startRift, selectBlessing, // Update 81: Added to actions
+            joinGuild, contributeGuild, upgradeMonument // Phase 3
         }
     };
 };

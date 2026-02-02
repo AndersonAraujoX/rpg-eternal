@@ -59,7 +59,8 @@ function App() {
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
     activeExpeditions, activePotions, gardenPlots, setGardenPlots, setResources, setGold,
     marketStock, marketTimer, buyMarketItem,
-    activeRift, riftTimer, enterRift, exitRift,
+    activeRift, riftTimer, exitRift,
+    startRift, selectBlessing, riftState, // Update 81
     breedPets, // Phase 46
     territories, attackTerritory, // Phase 47
     weather, weatherTimer, // Phase 48
@@ -146,6 +147,7 @@ function App() {
   }, []);
 
   const getBackgroundClass = (level: number) => {
+    if (riftState?.active) return 'bg-rift'; // Update 81
     if (dungeonActive) return 'bg-amber-500'; // Gold Vault
     if (voidActive) return 'bg-void animate-pulse'; // Void Dimension
     if (tower.active) return 'bg-slate-900'; // Tower
@@ -311,8 +313,11 @@ function App() {
       <RiftModal
         isOpen={showRiftModal}
         onClose={() => setShowRiftModal(false)}
-        partyPower={partyPower}
-        startRift={(rift) => { enterRift(rift); setShowRiftModal(false); }}
+        riftState={riftState}
+        startRift={startRift}
+        selectBlessing={selectBlessing}
+        exitRift={exitRift}
+        gameStats={gameStats}
       />
       {showBreedingModal && <BreedingModal isOpen={true} onClose={() => setShowBreedingModal(false)} pets={pets} breedPets={breedPets} gold={gold} />}
       {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} partyPower={partyPower} />}

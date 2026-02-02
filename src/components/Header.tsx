@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame } from 'lucide-react';
+import React from 'react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild } from '../engine/types';
 import type { WeatherType } from '../engine/weather'; // Phase 48
@@ -61,13 +61,13 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-    boss, souls, gold, divinity, tower, guild, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
+    boss, souls, gold, divinity, tower, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowBestiary, setShowSettings, setShowStats,
     setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowDailyRewards, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy,
     setShowLeaderboard,
     setShowFishing, setShowAlchemy, setShowExpeditions,
     setShowGarden,
-    // setShowRiftModal, // Handled via actions? Check usage. actually it is unused in the component body currently provided.
+    setShowRiftModal, // Update 81: Active
     setShowBreedingModal, // Phase 46
     setShowGuildWar, // Phase 47
     weather, weatherTimer, // Phase 48
@@ -95,7 +95,9 @@ export const Header: React.FC<HeaderProps> = ({
             <button onClick={() => setShowArena && setShowArena(true)} className="btn-retro bg-red-900 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-800" title="Arena"><Swords size={12} /> Arena</button>
             {/* GALAXY BUTTON */}
             {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /> Galaxy</button>}
+            {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /> Galaxy</button>}
             {setShowStarForge && <button onClick={() => setShowStarForge(true)} className="btn-retro bg-orange-950 text-orange-300 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-900" title="Star Forge"><Flame size={12} /> Star Forge</button>}
+            {setShowRiftModal && <button onClick={() => setShowRiftModal(true)} className="btn-retro bg-purple-900 text-purple-300 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800" title="Temporal Rifts"><Clock size={12} /> Rifts</button>}
 
             {tower.floor >= 10 && (
                 <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">
