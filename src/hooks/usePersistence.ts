@@ -143,7 +143,12 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.keys) setKeys(state.keys);
                 if (state.resources) setResources(state.resources);
                 if (state.tower) setTower(state.tower);
-                if (state.guild) setGuild(state.guild);
+                if (state.guild) {
+                    const loadedGuild = { ...state.guild };
+                    if (!loadedGuild.monuments) loadedGuild.monuments = {};
+                    if (loadedGuild.totalContribution === undefined) loadedGuild.totalContribution = 0;
+                    setGuild(loadedGuild);
+                }
                 if (state.voidMatter) setVoidMatter(state.voidMatter);
                 if (state.arenaRank) setArenaRank(state.arenaRank);
                 if (state.glory) setGlory(state.glory);

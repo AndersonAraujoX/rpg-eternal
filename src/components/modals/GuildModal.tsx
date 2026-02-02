@@ -88,7 +88,7 @@ export const GuildModal: React.FC<GuildModalProps> = ({ isOpen, onClose, guild, 
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {MONUMENT_DEFINITIONS.map(monument => {
-                                    const level = guild.monuments[monument.id] || 0;
+                                    const level = guild.monuments?.[monument.id] || 0;
                                     const cost = getMonumentCost(monument.baseCost, level, monument.costScaling);
                                     const value = getMonumentValue(monument.valuePerLevel, level);
                                     const nextValue = getMonumentValue(monument.valuePerLevel, level + 1);
