@@ -29,6 +29,7 @@ import { LogModal } from './components/modals/LogModal';
 import { GalaxyModal } from './components/modals/GalaxyModal';
 import { LeaderboardModal } from './components/modals/LeaderboardModal'; // Phase 60
 import { DungeonModal } from './components/modals/DungeonModal'; // Phase 61
+import { StarForgeModal } from './components/modals/StarForgeModal'; // Phase Star Forge
 // PHASE 41
 
 
@@ -100,6 +101,7 @@ function App() {
   const [showStarlight, setShowStarlight] = useState(false);
 
   const [showGalaxy, setShowGalaxy] = useState(false);
+  const [showStarForge, setShowStarForge] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   // PHASE 41
 
@@ -208,6 +210,7 @@ function App() {
           setShowMuseum={setShowMuseum} // Phase 49
           setShowTown={setShowTown} // Phase 53
           setShowCampfire={setShowCampfire} // Phase 80
+          setShowStarForge={setShowStarForge}
           // setShowCardBattle - Triggered from Museum
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
           setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy} setShowExpeditions={setShowExpeditions} setShowGarden={setShowGarden}
@@ -342,6 +345,13 @@ function App() {
           onUnequip={unequipItem}
         />
       )}
+      <StarForgeModal
+        isOpen={showStarForge}
+        onClose={() => setShowStarForge(false)}
+        starFragments={resources.starFragments || 0}
+        gold={gold}
+        onCraft={actions.craftStarForgedItem}
+      />
     </div>
   );
 }

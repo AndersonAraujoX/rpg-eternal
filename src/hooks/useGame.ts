@@ -69,7 +69,7 @@ export const useGame = () => {
     const [monsterKills, setMonsterKills] = useState<Record<string, number>>({});
     const [constellations, setConstellations] = useState<ConstellationNode[]>(INITIAL_CONSTELLATIONS);
     const [keys, setKeys] = useState<number>(0);
-    const [resources, setResources] = useState<Resources>({ copper: 0, iron: 0, mithril: 0, fish: 0, herbs: 0 });
+    const [resources, setResources] = useState<Resources>({ copper: 0, iron: 0, mithril: 0, fish: 0, herbs: 0, starFragments: 0 });
 
 
     // Phase 53: Town
@@ -207,7 +207,7 @@ export const useGame = () => {
     // PHASE 11
     const [runes, setRunes] = useState<Rune[]>([]);
 
-    const [eternalFragments, setEternalFragments] = useState(0);
+
     const [starlight, setStarlight] = useState(0);
 
     // Starlight Upgrades: ID -> Level
@@ -266,7 +266,7 @@ export const useGame = () => {
             // Add Starlight & Fragments on first conquer
             const starlightGain = Math.floor(sector.level * 0.5); // Example amount
             setStarlight(s => s + starlightGain);
-            setEternalFragments(f => f + 1);
+            setResources(r => ({ ...r, starFragments: (r.starFragments || 0) + 1 }));
 
             addLog(`Conquered ${sector.name}! (+${starlightGain} Starlight, +1 Fragment)`, 'achievement');
             soundManager.playLevelUp(); // Re-use fanfare
@@ -693,7 +693,7 @@ export const useGame = () => {
             setTalents(INITIAL_TALENTS);
             setArtifacts([]);
             setCards([]);
-            setResources({ copper: 0, iron: 0, mithril: 0, fish: 0, herbs: 0 });
+            setResources({ copper: 0, iron: 0, mithril: 0, fish: 0, herbs: 0, starFragments: 0 });
             setDungeonActive(false);
             setRaidActive(false);
             setVoidMatter(0);
@@ -871,6 +871,19 @@ export const useGame = () => {
             }));
             setVoidMatter(v => v - 5);
             addLog("Item Reforged with Void energy.", 'craft');
+        },
+        // Phase 1: Star Forge
+        craftStarForgedItem: (item: Item, goldCost: number, fragmentCost: number) => {
+            if (gold < goldCost || resources.starFragments < fragmentCost) {
+                addLog("Not enough resources to forge!", 'error');
+                return;
+            }
+            setGold(g => g - goldCost);
+            setResources(r => ({ ...r, starFragments: r.starFragments - fragmentCost }));
+            setItems(prev => [...prev, item]);
+
+            addLog(`Forged ${item.name}! Quality: ${item.quality}%`, 'craft');
+            soundManager.playLevelUp();
         },
         manualFish: () => {
             const caught = processFishing(1);
@@ -1743,7 +1756,7 @@ export const useGame = () => {
         tower, setTower, guild, setGuild, voidMatter, setVoidMatter,
         arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
         runes, setRunes, achievements, setAchievements,
-        eternalFragments, setEternalFragments,
+
         starlight, setStarlight,
         starlightUpgrades, setStarlightUpgrades,
         autoSellRarity, setAutoSellRarity,
@@ -2186,7 +2199,7 @@ export const useGame = () => {
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
         talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources,
         ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
-        arenaRank, glory, quests, runes, achievements, internalFragments: eternalFragments, starlight, starlightUpgrades,
+        arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades,
         autoSellRarity, arenaOpponents, voidAscensions,
         partyDps, partyPower, combatEvents, theme, galaxy, territories, weather, weatherTimer,
         synergies: activeSynergies,

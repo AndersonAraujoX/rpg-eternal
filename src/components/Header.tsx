@@ -57,6 +57,7 @@ interface HeaderProps {
     // Phase 53
     setShowTown?: (v: boolean) => void;
     setShowCampfire?: (v: boolean) => void; // Phase 80
+    setShowStarForge?: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -72,7 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
     weather, weatherTimer, // Phase 48
     setShowMuseum, // Phase 49
     setShowTown, // Phase 53
-    setShowCampfire // Phase 80
+    setShowCampfire, // Phase 80
+    setShowStarForge
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
 
@@ -93,6 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button onClick={() => setShowArena && setShowArena(true)} className="btn-retro bg-red-900 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-800" title="Arena"><Swords size={12} /> Arena</button>
             {/* GALAXY BUTTON */}
             {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /> Galaxy</button>}
+            {setShowStarForge && <button onClick={() => setShowStarForge(true)} className="btn-retro bg-orange-950 text-orange-300 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-900" title="Star Forge"><Flame size={12} /> Star Forge</button>}
 
             {tower.floor >= 10 && (
                 <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">

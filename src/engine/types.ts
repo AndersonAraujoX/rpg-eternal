@@ -263,6 +263,13 @@ export interface ItemSet {
     requiredPieces: number;
 }
 
+export interface ItemAffix {
+    type: 'stats' | 'effect';
+    name: string; // e.g., "of the Wolf"
+    value: number; // e.g., 0.05 for +5%
+    stat?: keyof Stats;
+}
+
 export interface Item {
     id: string;
     name: string;
@@ -278,6 +285,11 @@ export interface Item {
     level?: number;
     xp?: number;
     maxXp?: number;
+    // Phase 1: Star Forge
+    quality?: number; // 0-100%
+    prefix?: ItemAffix;
+    suffix?: ItemAffix;
+    craftedBy?: string;
 }
 
 export interface Rune {
@@ -314,6 +326,7 @@ export type Resources = {
     mithril: number;
     fish: number;
     herbs: number;
+    starFragments: number; // Phase 1: Star Forge
 };
 
 export interface Potion {

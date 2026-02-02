@@ -45,8 +45,6 @@ export interface PersistenceProps {
     setRunes: React.Dispatch<React.SetStateAction<Rune[]>>;
     achievements: Achievement[];
     setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>;
-    eternalFragments: number;
-    setEternalFragments: React.Dispatch<React.SetStateAction<number>>;
     starlight: number;
     setStarlight: React.Dispatch<React.SetStateAction<number>>;
     starlightUpgrades: Record<string, number>;
@@ -88,7 +86,6 @@ export const usePersistence = (props: PersistenceProps) => {
         tower, setTower, guild, setGuild, voidMatter, setVoidMatter,
         arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
         runes, setRunes, achievements, setAchievements,
-        eternalFragments, setEternalFragments,
         starlight, setStarlight,
         starlightUpgrades, setStarlightUpgrades,
         autoSellRarity, setAutoSellRarity,
@@ -153,7 +150,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.quests) setQuests(state.quests);
                 if (state.runes) setRunes(state.runes);
                 if (state.achievements) setAchievements(state.achievements);
-                if (state.eternalFragments) setEternalFragments(state.eternalFragments);
+
                 if (state.starlight) setStarlight(state.starlight);
                 if (state.starlightUpgrades) setStarlightUpgrades(state.starlightUpgrades);
                 if (state.theme) setTheme(state.theme);
@@ -223,7 +220,7 @@ export const usePersistence = (props: PersistenceProps) => {
         const saveState = () => {
             const state = {
                 heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys,
-                resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight,
+                resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, starlight,
                 starlightUpgrades, theme, galaxy, monsterKills, gameStats, autoSellRarity, arenaOpponents,
                 activeExpeditions, activePotions, buildings,
                 dailyQuests, dailyLoginClaimed, lastDailyReset,
@@ -233,5 +230,5 @@ export const usePersistence = (props: PersistenceProps) => {
         };
         const timer = setInterval(saveState, 5000); // Auto-save every 5s
         return () => clearInterval(timer);
-    }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, eternalFragments, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats, activeExpeditions, activePotions, buildings, dailyQuests, dailyLoginClaimed, lastDailyReset]);
+    }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats, activeExpeditions, activePotions, buildings, dailyQuests, dailyLoginClaimed, lastDailyReset]);
 };
