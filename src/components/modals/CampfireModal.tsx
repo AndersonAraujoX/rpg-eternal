@@ -1,5 +1,5 @@
 import React from 'react';
-import { Hero } from '../../engine/types';
+import type { Hero } from '../../engine/types';
 import { Flame, Tent, X, Coffee, ShieldAlert } from 'lucide-react';
 
 interface CampfireModalProps {

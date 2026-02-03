@@ -530,6 +530,7 @@ export interface GameActions {
     changeHeroEmoji: (heroId: string, emoji: string) => void;
     equipItem: (heroId: string, item: Item) => void;
     unequipItem: (heroId: string, slot: 'weapon' | 'armor' | 'accessory') => void;
+    updateGambits: (heroId: string, gambits: Gambit[]) => void;
 
     // Progression
     buyTalent: (id: string, amount?: number) => void;

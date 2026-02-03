@@ -76,6 +76,14 @@ export interface PersistenceProps {
     setDailyLoginClaimed: React.Dispatch<React.SetStateAction<boolean>>;
     lastDailyReset: number;
     setLastDailyReset: React.Dispatch<React.SetStateAction<number>>;
+    territories: any[];
+    setTerritories: React.Dispatch<React.SetStateAction<any[]>>;
+    spaceship: any;
+    setSpaceship: React.Dispatch<React.SetStateAction<any>>;
+    formations: any[];
+    setFormations: React.Dispatch<React.SetStateAction<any[]>>;
+    weather: any;
+    setWeather: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -100,7 +108,11 @@ export const usePersistence = (props: PersistenceProps) => {
         setRaidActive, setDungeonActive, setOfflineGains,
         dailyQuests, setDailyQuests,
         dailyLoginClaimed, setDailyLoginClaimed,
-        lastDailyReset, setLastDailyReset
+        lastDailyReset, setLastDailyReset,
+        territories, setTerritories,
+        spaceship, setSpaceship,
+        formations, setFormations,
+        weather, setWeather
     } = props;
 
 
@@ -170,6 +182,10 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.arenaOpponents) setArenaOpponents(state.arenaOpponents);
                 if (state.dailyLoginClaimed !== undefined) setDailyLoginClaimed(state.dailyLoginClaimed);
                 if (state.lastDailyReset) setLastDailyReset(state.lastDailyReset);
+                if (state.territories) setTerritories(state.territories);
+                if (state.spaceship) setSpaceship(state.spaceship);
+                if (state.formations) setFormations(state.formations);
+                if (state.weather) setWeather(state.weather);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -229,11 +245,12 @@ export const usePersistence = (props: PersistenceProps) => {
                 starlightUpgrades, theme, galaxy, monsterKills, gameStats, autoSellRarity, arenaOpponents,
                 activeExpeditions, activePotions, buildings,
                 dailyQuests, dailyLoginClaimed, lastDailyReset,
+                territories, spaceship, formations, weather,
                 lastSaveTime: Date.now()
             };
             localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
         };
         const timer = setInterval(saveState, 5000); // Auto-save every 5s
         return () => clearInterval(timer);
-    }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats, activeExpeditions, activePotions, buildings, dailyQuests, dailyLoginClaimed, lastDailyReset]);
+    }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats, activeExpeditions, activePotions, buildings, dailyQuests, dailyLoginClaimed, lastDailyReset, territories, spaceship, formations, weather]);
 };
