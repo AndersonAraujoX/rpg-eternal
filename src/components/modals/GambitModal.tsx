@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Brain, Save, Trash2, PlusCircle, Pencil } from 'lucide-react';
+import { Brain, Save, Trash2, PlusCircle, Pencil, LayoutGrid } from 'lucide-react';
 import type { Hero, GameActions, Gambit, GambitCondition, GambitAction } from '../../engine/types';
+import { GambitEditor } from './GambitEditor';
 
 interface GambitModalProps {
     isOpen: boolean;
@@ -26,7 +27,7 @@ const ACTIONS: { value: GambitAction; label: string }[] = [
     { value: 'heal', label: 'Heal (Magic)' },
     { value: 'use_potion', label: 'Use Potion' },
     { value: 'cast_fireball', label: 'Cast Fireball' },
-    { value: 'buff_attack', label: 'Buff Attack' },
+    { value: 'buff_atk', label: 'Buff Attack' },
     { value: 'revive', label: 'Revive Ally' },
     { value: 'defend', label: 'Defend' },
 ];
@@ -35,6 +36,7 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
     const [gambits, setGambits] = useState<Gambit[]>([]);
     const [isRenaming, setIsRenaming] = useState(false);
     const [newName, setNewName] = useState('');
+    const [showVisualEditor, setShowVisualEditor] = useState(false);
 
     React.useEffect(() => {
         if (hero) {
@@ -128,12 +130,28 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
                     )}
                 </div>
 
-                <div className="flex justify-end gap-2">
-                    <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-                    <button onClick={handleSave} className="px-6 py-2 bg-cyan-700 text-white rounded font-bold hover:bg-cyan-600 flex items-center gap-2">
-                        <Save size={16} /> SAVE TACTICS
+                <div className="flex justify-between items-center gap-2">
+                    <button
+                        onClick={() => setShowVisualEditor(true)}
+                        className="px-4 py-2 border border-cyan-500/30 text-cyan-400 rounded hover:bg-cyan-900/20 flex items-center gap-2 transition-colors text-xs"
+                    >
+                        <LayoutGrid size={14} /> VISUAL EDITOR
                     </button>
+                    <div className="flex gap-2">
+                        <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                        <button onClick={handleSave} className="px-6 py-2 bg-cyan-700 text-white rounded font-bold hover:bg-cyan-600 flex items-center gap-2">
+                            <Save size={16} /> SAVE TACTICS
+                        </button>
+                    </div>
                 </div>
+
+                {showVisualEditor && (
+                    <GambitEditor
+                        hero={hero}
+                        actions={actions}
+                        onClose={() => setShowVisualEditor(false)}
+                    />
+                )}
             </div>
         </div>
     );

@@ -58,6 +58,8 @@ interface HeaderProps {
     setShowTown?: (v: boolean) => void;
     setShowCampfire?: (v: boolean) => void; // Phase 80
     setShowStarForge?: (v: boolean) => void;
+    // Phase 6
+    setShowWorldBoss?: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -74,7 +76,8 @@ export const Header: React.FC<HeaderProps> = ({
     setShowMuseum, // Phase 49
     setShowTown, // Phase 53
     setShowCampfire, // Phase 80
-    setShowStarForge
+    setShowStarForge,
+    setShowWorldBoss,
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
 
@@ -98,11 +101,18 @@ export const Header: React.FC<HeaderProps> = ({
             {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /> Galaxy</button>}
             {setShowStarForge && <button onClick={() => setShowStarForge(true)} className="btn-retro bg-orange-950 text-orange-300 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-900" title="Star Forge"><Flame size={12} /> Star Forge</button>}
             {setShowRiftModal && <button onClick={() => setShowRiftModal(true)} className="btn-retro bg-purple-900 text-purple-300 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800" title="Temporal Rifts"><Clock size={12} /> Rifts</button>}
+            {setShowWorldBoss && <button onClick={() => setShowWorldBoss(true)} className="btn-retro bg-red-950 text-red-400 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-900 animate-pulse" title="World Boss Raid"><Skull size={12} /> Raid</button>}
 
             {tower.floor >= 10 && (
-                <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">
-                    <Ghost size={12} /> {voidMatter}
-                </button>
+                <>
+                    <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">
+                        <Ghost size={12} /> {voidMatter}
+                    </button>
+                    <button onClick={() => setShowCampfire && setShowCampfire(true)} className="p-2 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 transition-colors text-orange-400" title="Rest (Phase 80)">
+                        <span className="sr-only">Campfire</span>
+                        🔥
+                    </button>
+                </>
             )}
             {/* Phase 47: Guild War */}
             <button onClick={() => setShowGuildWar && setShowGuildWar(true)} className="btn-retro bg-orange-700 text-white px-2 py-1 rounded border border-orange-500 hover:bg-orange-600 flex items-center gap-1" title="Guild Wars"> ⚔️ War </button>

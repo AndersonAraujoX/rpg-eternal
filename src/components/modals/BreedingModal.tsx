@@ -14,13 +14,16 @@ interface BreedingModalProps {
 export function BreedingModal({ isOpen, onClose, pets, breedPets, gold }: BreedingModalProps) {
     const [parent1, setParent1] = useState<Pet | null>(null);
     const [parent2, setParent2] = useState<Pet | null>(null);
+    const [isHatching, setIsHatching] = useState(false);
+    const [hatchedPet, setHatchedPet] = useState<Pet | null>(null);
 
     if (!isOpen) return null;
 
     const breedingCost = 5000;
-    const canBreed = parent1 && parent2 && parent1.id !== parent2.id && gold >= breedingCost;
+    const canBreed = parent1 && parent2 && parent1.id !== parent2.id && gold >= breedingCost && !isHatching;
 
     const handleSelect = (pet: Pet) => {
+        if (isHatching) return;
         if (!parent1) setParent1(pet);
         else if (!parent2 && pet.id !== parent1.id) setParent2(pet);
         else if (pet.id === parent1.id) setParent1(null);
@@ -29,10 +32,19 @@ export function BreedingModal({ isOpen, onClose, pets, breedPets, gold }: Breedi
 
     const handleBreed = () => {
         if (canBreed) {
-            breedPets(parent1!, parent2!);
-            setParent1(null);
-            setParent2(null);
-            onClose();
+            const result = calculateBreedingResult(parent1!, parent2!);
+            setIsHatching(true);
+            setHatchedPet(result);
+
+            // Animation sequence
+            setTimeout(() => {
+                breedPets(parent1!, parent2!);
+                setIsHatching(false);
+                setHatchedPet(null);
+                setParent1(null);
+                setParent2(null);
+                onClose();
+            }, 4000); // 4 seconds total for animation
         }
     };
 
@@ -66,7 +78,9 @@ export function BreedingModal({ isOpen, onClose, pets, breedPets, gold }: Breedi
                                         className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center gap-3 group relative
                                             ${isSelected
                                                 ? 'bg-purple-900/40 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
-                                                : 'bg-gray-800 border-gray-700 hover:border-purple-500/50 hover:bg-gray-750'}
+                                                : isChimera
+                                                    ? 'bg-indigo-900/20 border-pink-500/50 animate-divine-shimmer'
+                                                    : 'bg-gray-800 border-gray-700 hover:border-purple-500/50 hover:bg-gray-750'}
                                         `}
                                     >
                                         <span className="text-3xl filter drop-shadow-lg">{pet.emoji}</span>
@@ -129,11 +143,12 @@ export function BreedingModal({ isOpen, onClose, pets, breedPets, gold }: Breedi
                                     ${parent2
                                         ? 'border-purple-500 bg-purple-900/20 shadow-[0_0_20px_rgba(168,85,247,0.3)] scale-105'
                                         : 'border-gray-800 bg-gray-900/50 border-dashed'}
+                                    ${isHatching ? 'animate-ping opacity-50' : ''}
                                 `}>
                                     {parent2 ? (
                                         <>
                                             <span className="animate-bounce-slow" style={{ animationDelay: '0.1s' }}>{parent2.emoji}</span>
-                                            <button onClick={() => setParent2(null)} className="absolute -top-1 -right-1 bg-gray-800 hover:bg-red-500 text-gray-400 hover:text-white rounded-full p-1 border border-gray-600 transition-colors"><X size={14} /></button>
+                                            {!isHatching && <button onClick={() => setParent2(null)} className="absolute -top-1 -right-1 bg-gray-800 hover:bg-red-500 text-gray-400 hover:text-white rounded-full p-1 border border-gray-600 transition-colors"><X size={14} /></button>}
                                         </>
                                     ) : <span className="opacity-20 text-4xl">?</span>}
                                 </div>
@@ -141,8 +156,42 @@ export function BreedingModal({ isOpen, onClose, pets, breedPets, gold }: Breedi
                             </div>
                         </div>
 
-                        {/* Result Preview */}
-                        {preview ? (
+                        {/* Result Preview / Hatching Animation */}
+                        {isHatching && hatchedPet ? (
+                            <div className="relative z-20 flex flex-col items-center">
+                                {/* Cosmic Energy Orbs */}
+                                <div className="absolute inset-x-0 top-0 flex justify-center -translate-y-1/2">
+                                    <div className="w-64 h-64 rounded-full bg-purple-500/30 blur-[60px] animate-pulse" />
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 border-t-2 border-pink-500 rounded-full animate-spin" />
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-r-2 border-purple-400 rounded-full animate-spin-reverse" />
+                                </div>
+
+                                <div className="relative p-10 bg-gray-900/80 border-2 border-pink-500/50 rounded-full shadow-[0_0_100px_rgba(168,85,247,0.6)] animate-hatch-shake">
+                                    <div className="text-8xl filter drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] animate-bounce-rapid">
+                                        🥚
+                                    </div>
+                                    <div className="absolute inset-0 bg-white/40 rounded-full animate-egg-burst mix-blend-overlay" />
+
+                                    {/* Emerging Pet */}
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 animate-reveal-pet">
+                                        <div className="text-8xl drop-shadow-[0_0_30px_rgba(255,255,255,1)]">
+                                            {hatchedPet.emoji}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 text-center">
+                                    <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-300 to-purple-400 animate-gradient-x mb-2 uppercase tracking-tighter">
+                                        Fusing Cosmic DNA...
+                                    </div>
+                                    <div className="flex gap-1 justify-center">
+                                        <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0s' }} />
+                                        <div className="w-2 h-2 rounded-full bg-pink-500 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                                        <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : preview ? (
                             <div className="relative z-10 -mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="bg-gray-900/90 backdrop-blur border border-purple-500 p-6 rounded-2xl shadow-2xl relative w-80 text-center group">
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[10px] uppercase font-bold px-3 py-1 rounded-full shadow-lg tracking-wider">
@@ -213,3 +262,62 @@ const StatPreview = ({ label, val, oldVal }: { label: string, val: number, oldVa
         </div>
     );
 };
+
+// --- STYLES ---
+const STYLES = `
+@keyframes hatch-shake {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    10%, 30%, 50%, 70%, 90% { transform: rotate(-5deg); }
+    20%, 40%, 60%, 80% { transform: rotate(5deg); }
+    95% { transform: scale(1.1); }
+}
+
+@keyframes bounce-rapid {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-30px); }
+}
+
+@keyframes egg-burst {
+    0% { transform: scale(1); opacity: 0; }
+    80% { transform: scale(1.5); opacity: 0.8; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes reveal-pet {
+    0%, 70% { opacity: 0; transform: scale(0.5) rotate(-45deg); }
+    85% { opacity: 1; transform: scale(1.2) rotate(10deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes spin-reverse {
+    from { transform: translate(-50%, -50%) rotate(360deg); }
+    to { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+@keyframes divine-shimmer {
+    0% { border-color: rgba(236, 72, 153, 0.5); box-shadow: 0 0 5px rgba(236, 72, 153, 0.2); }
+    50% { border-color: rgba(168, 85, 247, 0.8); box-shadow: 0 0 15px rgba(168, 85, 247, 0.5); }
+    100% { border-color: rgba(236, 72, 153, 0.5); box-shadow: 0 0 5px rgba(236, 72, 153, 0.2); }
+}
+
+.animate-divine-shimmer { animation: divine-shimmer 2s infinite ease-in-out; }
+
+.bg-size-200 { background-size: 200% auto; }
+.bg-pos-100 { background-position: 100% center; }
+.animate-gradient-x {
+    background-size: 200% 200%;
+    animation: gradient-x 3s ease infinite;
+}
+@keyframes gradient-x {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+    const styleTag = document.createElement('style');
+    styleTag.textContent = STYLES;
+    document.head.appendChild(styleTag);
+}

@@ -19,9 +19,37 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
 };
 
 export const calculateHeroPower = (hero: Hero): number => {
-    const stats = hero.stats;
+    let stats = { ...hero.stats };
+
+    if (hero.equipment) {
+        const runeMultipliers: Record<string, number> = {};
+        Object.values(hero.equipment).forEach(item => {
+            if (item) {
+                stats[item.stat] += item.value;
+                if (item.runes) {
+                    item.runes.forEach(rune => {
+                        runeMultipliers[rune.stat] = (runeMultipliers[rune.stat] || 0) + rune.value;
+                    });
+                }
+            }
+        });
+        (Object.keys(runeMultipliers) as Array<keyof typeof stats>).forEach(stat => {
+            if (stats[stat] !== undefined) {
+                stats[stat] = Math.floor(stats[stat] * (1 + runeMultipliers[stat]!));
+            }
+        });
+    }
+
     const baseScore = stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2);
-    return Math.floor(baseScore * (1 + (stats.speed * 0.05)));
+    let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)));
+
+    // Phase 80: Fatigue Penalty
+    if (hero.fatigue) {
+        if (hero.fatigue >= 80) power = Math.floor(power * 0.7);
+        else if (hero.fatigue >= 50) power = Math.floor(power * 0.9);
+    }
+
+    return power;
 };
 
 export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], _boss: Boss, cards: MonsterCard[], achievements: Achievement[] = [], pets: Pet[] = []) => {
@@ -127,9 +155,25 @@ export const processCombatTurn = (
         let stats = { ...h.stats };
 
         if (h.equipment) {
+            const runeMultipliers: Record<string, number> = {};
+
             Object.values(h.equipment).forEach(item => {
                 if (item) {
                     stats[item.stat] += item.value;
+
+                    // Apply Runes
+                    if (item.runes) {
+                        item.runes.forEach(rune => {
+                            runeMultipliers[rune.stat] = (runeMultipliers[rune.stat] || 0) + rune.value;
+                        });
+                    }
+                }
+            });
+
+            // Iterate multipliers and apply to stats
+            (Object.keys(runeMultipliers) as Array<keyof typeof stats>).forEach(stat => {
+                if (stats[stat] !== undefined) {
+                    stats[stat] = Math.floor(stats[stat] * (1 + runeMultipliers[stat]!));
                 }
             });
 

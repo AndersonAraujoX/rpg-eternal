@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Tower, RiftState, LogEntry, RiftBlessing, Formation } from '../engine/types';
+import { generateDungeon, type DungeonState } from '../engine/dungeon';
 import type { WeatherType } from '../engine/weather';
 
 import { soundManager } from '../engine/sound';
@@ -16,7 +17,7 @@ export const useWorld = (
     const [riftState, setRiftState] = useState<RiftState>(initialRiftState);
     const [riftTimer, setRiftTimer] = useState(0);
 
-    const [dungeonState, setDungeonState] = useState<any>(null);
+    const [dungeonState, setDungeonState] = useState<DungeonState | null>(null);
 
     const enterTower = () => {
         if (tower.active) return;
@@ -39,8 +40,8 @@ export const useWorld = (
     const enterDungeon = (bossLevel: number) => {
         if (dungeonActive) return;
         const level = 1 + Math.floor(bossLevel / 5);
-        // Assuming generateDungeon is imported or available
-        // For now, let's keep the logic simple or import what's needed.
+        const newState = generateDungeon(level);
+        setDungeonState(newState);
         setDungeonActive(true);
         setDungeonTimer(3600); // 1 hour
         addLog(`Entered Dungeon Level ${level}!`, 'action');
@@ -53,14 +54,72 @@ export const useWorld = (
         addLog('Left the dungeon.', 'info');
     };
 
-    const moveDungeon = (nx: number, ny: number, grid: any[][], revealed: boolean[][], width: number, height: number) => {
-        // This is a simplified version to be refined
-        setDungeonState((prev: any) => prev ? ({
-            ...prev,
-            playerPos: { x: nx, y: ny },
-            revealed,
-            grid
-        }) : null);
+    const moveDungeon = (dx: number, dy: number) => {
+        if (!dungeonState || !dungeonState.active) return;
+
+        const { grid, width, height, playerPos, revealed } = dungeonState;
+        const nx = playerPos.x + dx;
+        const ny = playerPos.y + dy;
+
+        // Bounds Check
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) return;
+
+        // Wall Check
+        const cell = grid[ny][nx];
+        if (cell === 'wall') {
+            addLog("It's a wall.", 'info');
+            return;
+        }
+
+        // Lock Check
+        if (typeof cell === 'string' && cell.startsWith('lock_')) {
+            addLog("The door is locked by elemental energy.", 'danger');
+            return;
+        }
+
+        // Move
+        const newPos = { x: nx, y: ny };
+        const newRevealed = revealed.map(row => [...row]);
+
+        // Reveal Fog (Radius 1)
+        for (let ry = -1; ry <= 1; ry++) {
+            for (let rx = -1; rx <= 1; rx++) {
+                const rny = ny + ry;
+                const rnx = nx + rx;
+                if (rny >= 0 && rny < height && rnx >= 0 && rnx < width) {
+                    newRevealed[rny][rnx] = true;
+                }
+            }
+        }
+
+        // Update State
+        setDungeonState(prev => prev ? ({ ...prev, playerPos: newPos, revealed: newRevealed }) : null);
+
+        // Event Handling
+        if (cell === 'chest') {
+            addLog("Found a Treasure Chest!", 'success');
+            const newGrid = grid.map(row => [...row]);
+            newGrid[ny][nx] = 'empty';
+            setDungeonState(prev => prev ? ({ ...prev, grid: newGrid }) : null);
+            soundManager.playLevelUp(); // Fallback for coin sound
+        } else if (cell === 'enemy') {
+            addLog("Encountered an Enemy!", 'battle');
+            const newGrid = grid.map(row => [...row]);
+            newGrid[ny][nx] = 'empty'; // Consumed
+            setDungeonState(prev => prev ? ({ ...prev, grid: newGrid }) : null);
+            soundManager.playHit();
+        } else if (cell === 'trap') {
+            addLog("Stepped on a Trap!", 'danger');
+            const newGrid = grid.map(row => [...row]);
+            newGrid[ny][nx] = 'empty';
+            setDungeonState(prev => prev ? ({ ...prev, grid: newGrid }) : null);
+            soundManager.playHit();
+        } else if (cell === 'exit') {
+            addLog("Found the Exit! Dungeon Cleared!", 'achievement');
+            setDungeonActive(false);
+            setDungeonState(null);
+            soundManager.playLevelUp();
+        }
     };
 
     const enterRift = (rift: any) => {

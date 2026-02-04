@@ -44,6 +44,7 @@ import { GuildWarModal } from './components/modals/GuildWarModal'; // Phase 47
 import { TownModal } from './components/modals/TownModal'; // Phase 53
 import { MuseumModal } from './components/modals/MuseumModal';
 import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
+import { WorldBossModal } from './components/modals/WorldBossModal'; // Phase 6
 
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
@@ -57,10 +58,12 @@ function App() {
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
+    assignHero, showCampfire, setShowCampfire,
     activeExpeditions, activePotions, gardenPlots, setGardenPlots, setResources, setGold,
     marketStock, marketTimer, buyMarketItem,
     activeRift, riftTimer, exitRift,
     startRift, selectBlessing, riftState, // Update 81
+    worldBoss, worldBossDamage, worldBossCanClaim, // Phase 6
     breedPets, // Phase 46
     territories, attackTerritory, // Phase 47
     weather, weatherTimer, // Phase 48
@@ -84,7 +87,7 @@ function App() {
   const [showRiftModal, setShowRiftModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showTavern, setShowTavern] = useState(false);
-  const [showCampfire, setShowCampfire] = useState(false); // Phase 80
+  // showCampfire managed by useGame (Phase 80)
   const [showStars, setShowStars] = useState(false);
   const [showBestiary, setShowBestiary] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -100,8 +103,8 @@ function App() {
   const [showAchievements, setShowAchievements] = useState(false);
   const [showLog, setShowLog] = useState(false);
   const [showStarlight, setShowStarlight] = useState(false);
-
-  const [showGalaxy, setShowGalaxy] = useState(false);
+  const [showGalaxy, setShowGalaxy] = useState(false); // Phase Galaxy
+  const [showWorldBoss, setShowWorldBoss] = useState(false); // Phase 6
   const [showStarForge, setShowStarForge] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   // PHASE 41
@@ -190,8 +193,6 @@ function App() {
 
       <div className="crt-overlay"></div>
 
-      <CampfireModal isOpen={showCampfire} onClose={() => setShowCampfire(false)} heroes={heroes} onAssign={(id, type) => actions.assignHero(id, type)} />
-
       {/* Game Container */}
       <div className={`w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-opacity-95 border-4 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm transition-colors duration-500 ${themeClass}`}>
 
@@ -213,9 +214,11 @@ function App() {
           setShowTown={setShowTown} // Phase 53
           setShowCampfire={setShowCampfire} // Phase 80
           setShowStarForge={setShowStarForge}
+          setShowWorldBoss={setShowWorldBoss}
           // setShowCardBattle - Triggered from Museum
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
-          setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy} setShowExpeditions={setShowExpeditions} setShowGarden={setShowGarden}
+          setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy} setShowExpeditions={setShowExpeditions}
+          setShowGarden={setShowGarden}
         />
 
         <BattleArea
@@ -264,7 +267,7 @@ function App() {
           onClaim={actions.claimQuest}
         />
       )}
-      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
+      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} craftRune={actions.craftRune} socketRune={actions.socketRune} />
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
@@ -356,6 +359,21 @@ function App() {
         starFragments={resources.starFragments || 0}
         gold={gold}
         onCraft={actions.craftStarForgedItem}
+      />
+      <WorldBossModal
+        isOpen={showWorldBoss}
+        onClose={() => setShowWorldBoss(false)}
+        worldBoss={worldBoss || null}
+        personalDamage={worldBossDamage || 0}
+        canClaim={worldBossCanClaim || false}
+        attackAction={actions.attackWorldBoss}
+        claimAction={actions.claimWorldBossReward}
+      />
+      <CampfireModal
+        isOpen={showCampfire}
+        onClose={() => setShowCampfire(false)}
+        heroes={heroes}
+        onAssign={assignHero}
       />
     </div>
   );

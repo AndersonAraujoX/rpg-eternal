@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatNumber } from '../utils';
 
-import type { Hero, Boss, LogEntry, Item, Pet, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Tower, Guild, Gambit, Quest, ArenaOpponent, Rune, Achievement, Stats, GameStats, Resources, Building, DailyQuest, Spaceship, CombatEvent, Formation, Territory, Potion, MarketItem, Rift, GardenPlot, RiftState, RiftBlessing, Expedition } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Gambit, Quest, ArenaOpponent, Rune, Achievement, GameStats, Resources, Building, DailyQuest, CombatEvent, Potion, MarketItem, GardenPlot, Expedition } from '../engine/types';
 import { POTIONS, EXPEDITIONS } from '../engine/types';
 import { STARLIGHT_UPGRADES, getStarlightUpgradeCost } from '../engine/starlight';
-import { LOGIN_REWARDS, checkDailyReset, generateDailyQuests, getLoginStreak } from '../engine/dailies';
+import { LOGIN_REWARDS, checkDailyReset, generateDailyQuests } from '../engine/dailies';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
 import { calculateDamageMultiplier, processCombatTurn, calculateHeroPower } from '../engine/combat';
-import { SYNERGY_DEFINITIONS, checkSynergies, getSynergySuggestions } from '../engine/synergies';
+import { checkSynergies, getSynergySuggestions } from '../engine/synergies';
 import { MONSTERS } from '../engine/bestiary';
 import { generateLoot } from '../engine/loot';
 import { shouldSummonTavern, getAutoTalentToBuy, shouldAutoRevive, getAutoTowerClimb, getAutoQuestClaim } from '../engine/automation';
@@ -20,25 +20,24 @@ import { startExpedition, checkExpeditionCompletion, claimExpeditionRewards } fr
 import { tickGarden, INITIAL_GARDEN } from '../engine/garden';
 import { getDailyMutator } from '../engine/mutators';
 import type { TowerMutator } from '../engine/mutators';
-import { generateDungeon, DUNGEON_WIDTH, DUNGEON_HEIGHT } from '../engine/dungeon';
-import { MONUMENT_DEFINITIONS, getMonumentCost, getMonumentValue } from '../engine/guild';
-import { calculateBreedingResult } from '../engine/breeding';
+// Dungeon and Guild engine imports removed (now managed in sub-hooks)
+// Breeding result removed here, now in Gambit logic or Pet sub-hook usage
 import { generateMarketStock } from '../engine/market';
 import type { BattleResult } from '../engine/cardBattle';
 import { PRESTIGE_CLASSES, PRESTIGE_MULTIPLIERS } from '../engine/classes';
 import { CLASS_SKILLS } from '../engine/skills';
 import { INITIAL_GALAXY, calculateGalaxyIncome, calculateGalaxyBuffs } from '../engine/galaxy';
 
-import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_STATS as INITIAL_GAME_STATS, INITIAL_TALENTS, INITIAL_CONSTELLATIONS } from '../engine/initialData';
+import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_STATS as INITIAL_GAME_STATS, INITIAL_TALENTS, INITIAL_CONSTELLATIONS, INITIAL_PETS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
-import { INITIAL_TERRITORIES, simulateSiege } from '../engine/guildWar';
+import { INITIAL_TERRITORIES } from '../engine/guildWar';
 import { getRandomWeather, WEATHER_DATA } from '../engine/weather';
-import type { WeatherType } from '../engine/weather';
 
 // New Sub-hooks
 import { useGuild } from './useGuild';
 import { usePets } from './usePets';
 import { useWorld } from './useWorld';
+import { useWorldBoss } from './useWorldBoss';
 import { useGalaxy } from './useGalaxy';
 
 export const useGame = () => {
@@ -53,7 +52,7 @@ export const useGame = () => {
     const [gold, setGold] = useState<number>(0);
     const [divinity, setDivinity] = useState<number>(0);
     const [voidMatter, setVoidMatter] = useState<number>(0);
-    const [voidAscensions, setVoidAscensions] = useState<number>(0);
+    const [voidAscensions] = useState<number>(0); // setVoidAscensions removed
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<Talent[]>(INITIAL_TALENTS);
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
@@ -81,11 +80,11 @@ export const useGame = () => {
     const [isStarlightModalOpen, setIsStarlightModalOpen] = useState(false);
     const [theme, setTheme] = useState('default');
     const [autoSellRarity, setAutoSellRarity] = useState<'none' | 'common' | 'rare'>('none');
+    const [showCampfire, setShowCampfire] = useState(false); // Phase 80
     const [combatEvents, setCombatEvents] = useState<CombatEvent[]>([]);
     const damageAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
 
-    // ACTIONS
     const addLog = (message: string, type: LogEntry['type'] = 'info') => {
         const newLog: LogEntry = { id: (Date.now() + Math.random()).toString(), message, type, timestamp: Date.now() };
         setLogs(prev => [newLog, ...prev].slice(0, 20)); // Limit to 20 logs
@@ -93,7 +92,7 @@ export const useGame = () => {
 
     // SUB-HOOKS INTEGRATION
     const guildState = useGuild(null, gold, setGold, addLog);
-    const petsState = usePets([], gold, souls, setGold, setSouls, addLog);
+    const petsState = usePets(INITIAL_PETS, gold, souls, setGold, setSouls, addLog);
     const world = useWorld({ floor: 1, active: false, maxFloor: 1 }, { active: false, floor: 1, blessings: [], tempHeroes: [], maxFloor: 1 }, addLog);
     const galaxyState = useGalaxy(INITIAL_GALAXY, INITIAL_TERRITORIES, {
         name: 'Stellar Voyager',
@@ -105,6 +104,7 @@ export const useGame = () => {
         parts: { engine: 1, scanners: 1, miningLaser: 1, shields: 1 },
         upgrades: []
     }, gold, setGold, addLog);
+
 
     // PHASES & UPDATES
     const [arenaRank, setArenaRank] = useState<number>(1000);
@@ -120,6 +120,9 @@ export const useGame = () => {
         { id: 'q3', description: 'Enter the Tower', target: 1, progress: 0, reward: { type: 'voidMatter', amount: 1 }, isCompleted: false, isClaimed: false }
     ]);
     const [runes, setRunes] = useState<Rune[]>([]);
+
+    // Phase 6: World Boss Hook
+    const worldBossState = useWorldBoss(partyPower, gameStats, addLog, setSouls, setGold);
 
     // Initializations & Migrations
     useEffect(() => {
@@ -221,15 +224,6 @@ export const useGame = () => {
         setArenaOpponents([]);
     };
 
-    const completeCardBattle = (result: BattleResult) => {
-        if (result.winner === 'player' && result.reward) {
-            if (result.reward.type === 'starlight') {
-                setStarlight(s => s + result.reward!.amount);
-                addLog(`Duel Victory! Won ${result.reward!.amount} Starlight.`, 'achievement');
-            }
-            soundManager.playLevelUp();
-        } else { addLog('Duel Lost. Try improving your deck!', 'death'); }
-    };
 
 
     const getBuildingEffect = (id: string) => {
@@ -397,19 +391,11 @@ export const useGame = () => {
                 addLog(result.error || "Failed to brew potion", 'info');
             }
         },
-        startExpedition: (heroIds: string[], name: string) => {
-            const expTemplate = EXPEDITIONS.find(e => e.name === name);
-            if (!expTemplate) return;
-            const exp: Expedition = {
-                ...expTemplate,
-                id: `exp_${Date.now()}`,
-                heroIds,
-                startTime: Date.now()
-            };
-            const result = startExpedition(exp, heroes);
+        startExpedition: (exp: Expedition, heroIds: string[]) => {
+            const result = startExpedition(exp, heroes); // Uses helper which expects exp object
             setHeroes(result);
             setActiveExpeditions((prev: Expedition[]) => [...prev, exp]);
-            addLog(`Started Expedition: ${name}`, 'action');
+            addLog(`Started Expedition: ${exp.name}`, 'action');
         },
         enterTower: world.enterTower,
         prestigeTower: world.prestigeTower,
@@ -499,6 +485,35 @@ export const useGame = () => {
                 return { ...p, xp: p.xp + 1 };
             }));
         }
+
+        // PHASE 80: Fatigue Loop (Campfire)
+        // Gain 1 fatigue every 10s in combat (tick is ~1s usually, but varies with gameSpeed)
+        // Recover 5 fatigue every 1s in Campfire
+        setHeroes(prev => prev.map(h => {
+            if (h.isDead || !h.unlocked) return h;
+
+            let newFatigue = h.fatigue || 0;
+            const maxFatigue = h.maxFatigue || 100;
+
+            if (h.assignment === 'combat') {
+                // Slow gain. 1 per 10s.
+                // We run this effect potentially faster with gameSpeed.
+                // Let's rely on probability per tick if gameSpeed impacts tick rate? 
+                // Or just hard add 0.1 * gameSpeed?
+                // Let's add small amount per tick.
+                // Assuming tick is ~1s real time but logic runs faster.
+                // Actually effectiveTick calculates delay.
+                // Let's just add 0.1 fatigue per "Turn".
+                newFatigue = Math.min(maxFatigue, newFatigue + 0.1);
+            } else if (h.assignment === 'campfire') {
+                newFatigue = Math.max(0, newFatigue - 5);
+            }
+
+            if (newFatigue !== h.fatigue) {
+                return { ...h, fatigue: newFatigue };
+            }
+            return h;
+        }));
 
         // I need to Fix the return statement to return `activeSynergies`
         // Apply Synergy Buffs
@@ -1237,6 +1252,235 @@ export const useGame = () => {
         setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     });
 
+    // --- LATE ACTIONS (UI/State Dependent) ---
+    const checkDailies = () => {
+        const now = Date.now();
+        if (checkDailyReset(lastDailyReset)) {
+            setLastDailyReset(now);
+            setDailyLoginClaimed(false);
+            setDailyQuests(generateDailyQuests());
+            addLog("New Day! Daily Quests Reset.", "info");
+        }
+    };
+
+    const claimLoginReward = () => {
+        if (dailyLoginClaimed) return;
+        const streak = gameStats.loginStreak || 1;
+        const reward = LOGIN_REWARDS.find(r => r.day === streak) || LOGIN_REWARDS[0];
+        if (reward.type === 'gold') setGold(g => g + reward.amount);
+        if (reward.type === 'souls') setSouls(s => s + reward.amount);
+        setDailyLoginClaimed(true);
+        addLog(`Claimed Daily Reward: ${reward.label}`, 'achievement');
+    };
+
+    const claimDailyQuest = (questId: string) => {
+        setDailyQuests(prev => prev.map(q => {
+            if (q.id === questId && !q.claimed && q.current >= q.target) {
+                if (q.reward.type === 'gold') setGold(g => g + q.reward.amount);
+                if (q.reward.type === 'souls') setSouls(s => s + q.reward.amount);
+                return { ...q, claimed: true };
+            }
+            return q;
+        }));
+    };
+
+    const buyMarketItem = (item: MarketItem) => {
+        if (item.currency === 'gold' && gold >= item.cost) setGold(g => g - item.cost);
+        else if (item.currency === 'divinity' && divinity >= item.cost) setDivinity(d => d - item.cost);
+        else return;
+        setMarketStock(prev => prev.filter(i => i.id !== item.id));
+        addLog(`Bought ${item.name}`, 'action');
+    };
+
+    const evolveHero = (heroId: string) => {
+        const hero = heroes.find(h => h.id === heroId);
+        if (!hero || hero.level < 50) return;
+        const newClass = PRESTIGE_CLASSES[hero.class];
+        if (!newClass) return;
+
+        setHeroes(prev => prev.map(h => {
+            if (h.id === heroId) {
+                const mult = PRESTIGE_MULTIPLIERS.statBonus;
+                return {
+                    ...h,
+                    class: newClass as any,
+                    level: 1,
+                    xp: 0,
+                    stats: {
+                        ...h.stats,
+                        hp: Math.floor(h.stats.hp * mult),
+                        maxHp: Math.floor(h.stats.maxHp * mult),
+                        mp: Math.floor(h.stats.mp * mult),
+                        maxMp: Math.floor(h.stats.maxMp * mult),
+                        attack: Math.floor(h.stats.attack * mult),
+                        defense: Math.floor(h.stats.defense * mult),
+                        magic: Math.floor(h.stats.magic * mult),
+                        speed: Math.floor(h.stats.speed * mult)
+                    },
+                    emoji: '🌟' + h.emoji
+                } as Hero;
+            }
+            return h;
+        }) as Hero[]);
+        addLog(`${hero.name} evolved into ${newClass}!`, 'achievement');
+        soundManager.playLevelUp();
+    };
+
+    const renameHero = (heroId: string, newName: string) => {
+        setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, name: newName } : h));
+    };
+
+    const equipItem = (heroId: string, item: Item) => {
+        setHeroes(prev => prev.map(h => {
+            if (h.id === heroId) {
+                const slot = item.slot || (item.type === 'weapon' ? 'weapon' : item.type === 'armor' ? 'armor' : 'accessory');
+                const typedSlot = slot as 'weapon' | 'armor' | 'accessory';
+                const oldItem = h.equipment[typedSlot];
+                if (oldItem) setItems(i => [...i, oldItem]);
+                setItems(i => i.filter(invItem => invItem.id !== item.id));
+                return { ...h, equipment: { ...h.equipment, [typedSlot]: item } };
+            }
+            return h;
+        }));
+        soundManager.playLevelUp();
+    };
+
+    const unequipItem = (heroId: string, slot: 'weapon' | 'armor' | 'accessory') => {
+        setHeroes(prev => prev.map(h => {
+            if (h.id === heroId && h.equipment[slot]) {
+                const item = h.equipment[slot];
+                setItems(i => [...i, item!]);
+                return { ...h, equipment: { ...h.equipment, [slot]: undefined } };
+            }
+            return h;
+        }));
+        soundManager.playLevelUp();
+    };
+
+    const updateGambits = (heroId: string, gambits: Gambit[]) => {
+        setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, gambits } : h) as Hero[]);
+    };
+
+    const moveGambit = (heroId: string, gambitId: string, x: number, y: number) => {
+        setHeroes(prev => prev.map(h => {
+            if (h.id === heroId) {
+                return {
+                    ...h,
+                    gambits: h.gambits.map(g => g.id === gambitId ? { ...g, position: { x, y } } : g)
+                };
+            }
+            return h;
+        }) as Hero[]);
+    };
+
+    const renameGambit = (heroId: string, gambitId: string, customName: string) => {
+        setHeroes(prev => prev.map(h => {
+            if (h.id === heroId) {
+                return {
+                    ...h,
+                    gambits: h.gambits.map(g => g.id === gambitId ? { ...g, customName } : g)
+                };
+            }
+            return h;
+        }) as Hero[]);
+    };
+
+    const assignHero = (heroId: string, type: any) => {
+        setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, assignment: type } : h));
+    };
+
+    const buyStarlightUpgrade = (id: string) => {
+        addLog(`Purchased ${id} (Stub)`, "info");
+    };
+
+    const winCardBattle = (opponentId: string, difficulty: number) => {
+        addLog(`Won against ${opponentId} (Stub)`, "achievement");
+    };
+
+    const craftRune = () => {
+        const COST_MITHRIL = 10;
+        const COST_SOULS = 50;
+
+        if (resources.mithril < COST_MITHRIL || souls < COST_SOULS) {
+            addLog("Not enough resources to craft Rune!", "error");
+            return;
+        }
+
+        setResources(prev => ({ ...prev, mithril: prev.mithril - COST_MITHRIL }));
+        setSouls(prev => prev - COST_SOULS);
+
+        const roll = Math.random();
+        const rarity = roll < 0.05 ? 'legendary' : roll < 0.2 ? 'epic' : roll < 0.5 ? 'rare' : 'common';
+        const stats: Rune['stat'][] = ['attack', 'defense', 'hp', 'magic', 'gold', 'xp'];
+        const stat = stats[Math.floor(Math.random() * stats.length)];
+
+        const baseValues = { common: 0.05, rare: 0.10, epic: 0.15, legendary: 0.25 };
+        const value = baseValues[rarity];
+
+        const newRune: Rune = {
+            id: `rune-${Date.now()}`,
+            name: `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Rune of ${stat.charAt(0).toUpperCase() + stat.slice(1)}`,
+            rarity,
+            stat,
+            value,
+            bonus: `+${(value * 100).toFixed(0)}% ${stat.toUpperCase()}`
+        };
+
+        setRunes(prev => [...prev, newRune]);
+        addLog(`Crafted ${newRune.name}!`, "craft");
+        soundManager.playLevelUp();
+    };
+
+    const socketRune = (itemId: string, runeId: string) => {
+        const rune = runes.find(r => r.id === runeId);
+        if (!rune) return;
+
+        setItems(prev => prev.map(item => {
+            if (item.id === itemId) {
+                if (item.runes.length >= item.sockets) {
+                    addLog("No empty sockets available!", "error");
+                    return item;
+                }
+                const newRunes = [...item.runes, rune];
+                // Apply usage effect? For now, we just attach it.
+                // Note: Stats calculation needs to account for these runes elsewhere (likely calculateHeroPower)
+                return { ...item, runes: newRunes };
+            }
+            return item;
+        }));
+
+        setRunes(prev => prev.filter(r => r.id !== runeId));
+        addLog(`Socketed ${rune.name} into item.`, "success");
+        soundManager.playLevelUp();
+    };
+    const ascendToVoid = () => {
+        setVoidActive(true);
+        addLog("Ascended to Void!", "achievement");
+        // Logic to reset game state for prestige would go here
+    };
+
+    const craftStarForgedItem = (item: Item, goldCost: number, fragmentCost: number) => {
+        if (gold < goldCost) {
+            addLog("Not enough Gold!", "error");
+            return;
+        }
+        if ((resources.starFragments || 0) < fragmentCost) {
+            addLog("Not enough Star Fragments!", "error");
+            return;
+        }
+
+        setGold(g => g - goldCost);
+        setResources(prev => ({
+            ...prev,
+            starFragments: (prev.starFragments || 0) - fragmentCost
+        }));
+        setItems(prev => [...prev, item]);
+
+        addLog(`Forged legendary item: ${item.name}!`, "achievement");
+        soundManager.playLevelUp(); // Use level up sound as success effect for now
+    };
+
+
     return {
         // State
         heroes, boss, logs, items, gameSpeed, isSoundOn, souls, gold, divinity,
@@ -1318,6 +1562,28 @@ export const useGame = () => {
             updateGambits: (heroId: string, gambits: Gambit[]) => {
                 setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, gambits } : h) as Hero[]);
             },
+            moveGambit: (heroId: string, gambitId: string, x: number, y: number) => {
+                setHeroes(prev => prev.map(h => {
+                    if (h.id === heroId) {
+                        return {
+                            ...h,
+                            gambits: h.gambits.map(g => g.id === gambitId ? { ...g, position: { x, y } } : g)
+                        };
+                    }
+                    return h;
+                }) as Hero[]);
+            },
+            renameGambit: (heroId: string, gambitId: string, customName: string) => {
+                setHeroes(prev => prev.map(h => {
+                    if (h.id === heroId) {
+                        return {
+                            ...h,
+                            gambits: h.gambits.map(g => g.id === gambitId ? { ...g, customName } : g)
+                        };
+                    }
+                    return h;
+                }) as Hero[]);
+            },
             checkDailies: () => {
                 const now = Date.now();
                 if (checkDailyReset(lastDailyReset)) {
@@ -1387,7 +1653,45 @@ export const useGame = () => {
                 addLog(`${hero.name} evolved into ${newClass}!`, 'achievement');
                 soundManager.playLevelUp();
             },
-            formatNumber
-        }
+            formatNumber,
+
+            // Phase 6: World Boss
+            attackWorldBoss: worldBossState.attackWorldBoss,
+            claimWorldBossReward: worldBossState.claimReward,
+
+            craftRune,
+            socketRune,
+            ascendToVoid,
+            craftStarForgedItem
+        },
+        worldBoss: worldBossState.worldBoss,
+        worldBossDamage: worldBossState.personalDamage,
+        worldBossCanClaim: worldBossState.canClaim,
+
+        // Expose actions at root for backward compatibility
+        setGardenPlots, setResources, setGold: setGold,
+        showCampfire, setShowCampfire,
+        buyMarketItem,
+        exitRift: world.exitRift,
+        startRift: world.startRift,
+        selectBlessing: world.selectBlessing,
+        breedPets: petsState.breedPets,
+        attackTerritory: galaxyState.attackTerritory,
+        upgradeBuilding: ACTIONS.upgradeBuilding,
+        claimLoginReward,
+        claimDailyQuest,
+        checkDailies,
+        winCardBattle,
+        equipItem,
+        unequipItem,
+        upgradeSpaceship: galaxyState.upgradeSpaceship,
+        moveDungeon: world.moveDungeon,
+        exitDungeon: world.exitDungeon,
+        saveFormation: world.saveFormation,
+        loadFormation: world.loadFormation,
+        deleteFormation: world.deleteFormation,
+        assignHero,
+        summonTavernLine: ACTIONS.summonTavernLine,
+        craftRune, socketRune, ascendToVoid, craftStarForgedItem
     };
 };

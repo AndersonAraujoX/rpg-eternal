@@ -385,13 +385,16 @@ export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'mp<50' | 'ally_hp<
     'enemy_fire' | 'enemy_water' | 'enemy_nature' | 'enemy_dark' | 'enemy_light' |
     'weather_rain' | 'weather_blizzard' | 'weather_sandstorm' | 'weather_eclipse' | 'weather_aurora' |
     'party_full' | 'party_low_hp';
-export type GambitAction = 'attack' | 'heal' | 'strong_attack' | 'aoe_attack' | 'use_potion' | 'revive' | 'buff_atk' | 'buff_def';
+export type GambitAction = 'attack' | 'heal' | 'strong_attack' | 'aoe_attack' | 'use_potion' | 'revive' | 'buff_atk' | 'buff_def' | 'defend' | 'cast_fireball';
 
 export interface Gambit {
     id: string;
     condition: GambitCondition;
     action: GambitAction;
     target?: string; // 'self', 'weakest_ally', 'boss'
+    // Visual Editor Data (Phase 5)
+    position?: { x: number; y: number };
+    customName?: string;
 }
 
 export interface Building {
@@ -612,6 +615,23 @@ export interface GameActions {
 
     // Phase 3
     upgradeMonument: (id: string) => void;
+
+    // Phase 5: Gambit Editor
+    moveGambit: (heroId: string, gambitId: string, x: number, y: number) => void;
+    renameGambit: (heroId: string, gambitId: string, name: string) => void;
+
+    // Phase 6: World Boss
+    attackWorldBoss: () => void;
+    claimWorldBossReward: () => void;
+    craftStarForgedItem: (item: Item, goldCost: number, fragmentCost: number) => void;
+}
+
+export interface WorldBoss extends Boss {
+    globalHp: number;
+    maxGlobalHp: number;
+    tier: number;
+    participants: number;
+    endTime: number;
 }
 
 export interface CombatEvent {
