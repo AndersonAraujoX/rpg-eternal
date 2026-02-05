@@ -28,6 +28,8 @@ export const calculateHeroPower = (hero: Hero, divinity: number = 0): number => 
 
     if (hero.equipment) {
         const runeMultipliers: Record<string, number> = {};
+        const setCounts: Record<string, number> = {};
+
         Object.values(hero.equipment).forEach(item => {
             if (item) {
                 stats[item.stat] += item.value;
@@ -36,8 +38,22 @@ export const calculateHeroPower = (hero: Hero, divinity: number = 0): number => 
                         runeMultipliers[rune.stat] = (runeMultipliers[rune.stat] || 0) + rune.value;
                     });
                 }
+                if (item.setId) {
+                    setCounts[item.setId] = (setCounts[item.setId] || 0) + 1;
+                }
             }
         });
+
+        // Apply Set Bonuses
+        Object.entries(setCounts).forEach(([setId, count]) => {
+            const set = ITEM_SETS.find(s => s.id === setId);
+            if (set && count >= set.requiredPieces) {
+                // Apply bonus (additive to rune multipliers for simplicity, or separate?)
+                // Let's add to runeMultipliers to reuse the multiplier logic
+                runeMultipliers[set.bonusStat] = (runeMultipliers[set.bonusStat] || 0) + set.bonusValue;
+            }
+        });
+
         (Object.keys(runeMultipliers) as Array<keyof typeof stats>).forEach(stat => {
             if (stats[stat] !== undefined) {
                 stats[stat] = Math.floor(stats[stat] * (1 + runeMultipliers[stat]!));
@@ -117,7 +133,7 @@ export const processCombatTurn = (
     const freezeEffect = activeSynergies.find(s => s.type === 'freeze');
 
     // Apply Attack Speed as extra damage multiplier for now (simulating more hits)
-    const effectiveDamageMult = damageMult * (1 + attackSpeedBonus);
+    let effectiveDamageMult = damageMult * (1 + attackSpeedBonus);
 
     // Burn Damage (DoT)
     if (burnEffect && !boss.isDead) {
@@ -211,14 +227,44 @@ export const processCombatTurn = (
             // Logic for MaxHP change handling if needed
         }
 
-        if (h.corruption) {
-            stats.attack *= 2;
-            stats.maxHp = Math.floor(h.stats.maxHp * 0.5);
-            hp = Math.min(hp, stats.maxHp);
-            stats.defense = Math.floor(h.stats.defense * 0.5);
+        // Phase 91: Insanity System
+        // 1. Gain Insanity if holding Void item
+        const hasVoidItem = h.equipment && Object.values(h.equipment).some(item => item?.suffix?.name === 'of the Void');
+        let insanityGain = hasVoidItem ? 1 : 0;
+
+        // Cap at 100
+        let newInsanity = Math.min(100, (h.insanity || 0) + insanityGain);
+
+        // 2. Apply Negative Effects
+        let skipTurn = false;
+        let attackAlly = false;
+
+        if (newInsanity >= 75) {
+            // 20% chance to be stunned by madness
+            if (Math.random() < 0.2) {
+                skipTurn = true;
+                events.push({ id: `madness-${h.id}-${Date.now()}`, type: 'status', text: 'MADNESS', element: 'dark', x: 50, y: 50, value: 0 });
+            }
+        }
+
+        if (!skipTurn && newInsanity >= 50) {
+            // 10% chance to attack ally
+            if (Math.random() < 0.1) {
+                attackAlly = true;
+                events.push({ id: `betrayal-${h.id}-${Date.now()}`, type: 'damage', text: 'BETRAYAL!', element: 'dark', x: 50, y: 50, value: 0 });
+            }
+        }
+
+        // 3. Modify Stats for "Broken" state (100 Insanity)
+        if (newInsanity >= 100) {
+            effectiveDamageMult *= 0.5; // -50% Damage
         }
 
         let baseDmg = stats.attack * effectiveDamageMult * getElementalMult(h.element, boss.element);
+
+        if (skipTurn || attackAlly) {
+            baseDmg = 0;
+        }
 
         // Active Skills Logic
         if (h.skills) {
@@ -383,7 +429,7 @@ export const processCombatTurn = (
             hp = Math.min(stats.maxHp, hp + (heroDamageDealt * lifeSteal));
         }
 
-        return { ...h, stats: { ...h.stats, hp }, skills: h.skills };
+        return { ...h, insanity: newInsanity, stats: { ...h.stats, hp }, skills: h.skills };
     });
 
     if (pets && pets.length > 0) {

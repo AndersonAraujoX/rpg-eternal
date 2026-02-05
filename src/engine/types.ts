@@ -187,7 +187,8 @@ export interface Hero extends Entity {
     element: ElementType;
     assignment: 'combat' | 'mine' | 'expedition' | 'campfire' | 'none';
     gambits: Gambit[];
-    corruption: boolean;
+    // Phase 91: Corruption System
+    insanity: number; // 0-100
     level: number;
     xp: number;
     maxXp: number;
@@ -258,6 +259,30 @@ export interface ItemAffix {
     stat?: keyof Stats;
 }
 
+// Phase 92: Town Events
+export type TownEventType = 'merchant' | 'raid' | 'festival' | 'crisis';
+
+export interface TownEvent {
+    id: string;
+    type: TownEventType;
+    name: string;
+    description: string;
+    duration: number; // Seconds remaining
+    startTime: number;
+    rarity: 'common' | 'rare' | 'legendary';
+
+    // Merchant Data
+    items?: Item[];
+
+    // Raid/Crisis Data
+    enemyPower?: number;
+    defenseProgress?: number; // 0-100
+
+    // Festival Data
+    buffType?: 'gold' | 'xp' | 'damage';
+    buffValue?: number;
+}
+
 export interface Item {
     id: string;
     name: string;
@@ -273,6 +298,9 @@ export interface Item {
     level?: number;
     xp?: number;
     maxXp?: number;
+    evolutionId?: string; // ID of the next stage item
+    // Phase 90: Sets
+    // setId already declared above
     // Phase 1: Star Forge
     quality?: number; // 0-100%
     prefix?: ItemAffix;
@@ -539,7 +567,8 @@ export interface GameActions {
     recruitHero: (heroId: string) => void;
     evolveHero: (heroId: string) => void;
     toggleAssignment: (heroId: string) => void;
-    toggleCorruption: (heroId: string) => void;
+    // Phase 91: Corruption
+    purifyHero: (heroId: string) => void;
     renameHero: (heroId: string, name: string) => void;
     changeHeroEmoji: (heroId: string, emoji: string) => void;
     equipItem: (heroId: string, item: Item) => void;
@@ -638,6 +667,9 @@ export interface GameActions {
     // Phase 9: Void
     challengeVoidCore: () => void;
     setVictory: (val: boolean) => void;
+    // Phase 92: Town Events
+    interactWithEvent: (eventId: string, action: 'buy' | 'defend' | 'join', data?: any) => void;
+    dismissEvent: () => void;
 }
 
 export interface WorldBoss extends Boss {

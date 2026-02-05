@@ -104,6 +104,26 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onD
                                     content = <Lock size={20} className={color} />;
                                     bgClass = 'bg-slate-800 border-2 border-slate-600'; // Make it look sturdy
                                 }
+
+                                if (typeof cell === 'string' && cell.startsWith('hazard_')) {
+                                    const el = cell.split('_')[1];
+                                    if (el === 'fire') {
+                                        bgClass = 'bg-red-900/40 border border-red-500/30';
+                                        content = <span className="text-red-500 text-xs font-bold animate-pulse">🔥</span>;
+                                    }
+                                    if (el === 'ice') {
+                                        bgClass = 'bg-cyan-900/40 border border-cyan-500/30';
+                                        content = <span className="text-cyan-300 text-xs font-bold">❄️</span>;
+                                    }
+                                    if (el === 'nature') {
+                                        bgClass = 'bg-green-900/40 border border-green-500/30';
+                                        content = <span className="text-green-500 text-xs font-bold">🌿</span>;
+                                    }
+                                    if (el === 'dark') {
+                                        bgClass = 'bg-purple-900/40 border border-purple-500/30';
+                                        content = <span className="text-purple-500 text-xs font-bold">👁️</span>;
+                                    }
+                                }
                             }
 
                             if (isPlayer) {

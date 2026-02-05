@@ -47,6 +47,7 @@ import { TownModal } from './components/modals/TownModal'; // Phase 53
 import { MuseumModal } from './components/modals/MuseumModal';
 import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
 import { WorldBossModal } from './components/modals/WorldBossModal'; // Phase 6
+import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
 
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
@@ -80,7 +81,8 @@ function App() {
     dungeonState, moveDungeon, exitDungeon, handleDungeonEvent, descendDungeon, // Phase 61 & 83
     synergies, // Fixed: Destructured from useGame
     voidAscensions,
-    formations, saveFormation, loadFormation, deleteFormation // Update 74
+    formations, saveFormation, loadFormation, deleteFormation, // Update 74
+    activeEvent
   } = useGame();
 
 
@@ -356,6 +358,14 @@ function App() {
         tokens={resources.dungeonTokens || 0}
         buyUpgrade={buyMasteryUpgrade}
       />
+
+      {activeEvent && (
+        <TownEventWidget
+          event={activeEvent}
+          actions={actions}
+          onDismiss={() => actions.dismissEvent()}
+        />
+      )}
 
       {showDailyRewards && (
         <DailyRewardsModal

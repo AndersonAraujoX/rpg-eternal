@@ -1,6 +1,8 @@
 
 
-export type DungeonCellType = 'empty' | 'wall' | 'chest' | 'enemy' | 'boss' | 'trap' | 'start' | 'exit' | string; // string for locks like lock_fire
+export type DungeonCellType = 'empty' | 'wall' | 'chest' | 'enemy' | 'boss' | 'trap' | 'start' | 'exit' | string; // string for locks like lock_fire or hazards
+
+export type BiomeType = 'neutral' | 'fire' | 'ice' | 'nature' | 'dark';
 
 export interface DungeonMob {
     name: string;
@@ -10,11 +12,13 @@ export interface DungeonMob {
     damage: number;
     type: 'mob' | 'boss';
     xp: number;
+    element?: BiomeType;
 }
 
 export interface DungeonState {
     active: boolean;
     level: number;
+    biome: BiomeType;
     width: number;
     height: number;
     grid: DungeonCellType[][];
@@ -24,7 +28,7 @@ export interface DungeonState {
 }
 
 export interface DungeonInteraction {
-    type: 'chest' | 'enemy' | 'trap' | 'lock' | 'exit' | 'boss';
+    type: 'chest' | 'enemy' | 'trap' | 'lock' | 'exit' | 'boss' | 'hazard';
     level: number;
     subtype?: string; // for lock type or enemy name
     mob?: DungeonMob;
@@ -38,6 +42,11 @@ export const generateDungeon = (level: number): DungeonState => {
     const width = DUNGEON_WIDTH;
     const height = DUNGEON_HEIGHT;
 
+    // Pick random biome based on level or pure random
+    const biomes: BiomeType[] = ['neutral', 'fire', 'ice', 'nature', 'dark'];
+    // Higher probability of elemental biomes at deeper levels
+    const biome = level > 5 ? biomes[Math.floor(Math.random() * biomes.length)] : 'neutral';
+
     // 1. Initialize empty grid
     let grid: DungeonCellType[][] = Array(height).fill(null).map(() => Array(width).fill('empty'));
 
@@ -49,6 +58,30 @@ export const generateDungeon = (level: number): DungeonState => {
             }
         }
     }
+
+    // 2.5 Add Hazards based on Biome
+    if (biome !== 'neutral') {
+        const hazardType = `hazard_${biome}`;
+        const hazardCount = 5 + Math.floor(level / 3);
+        const findEmpty = (): { x: number, y: number } => {
+            let x, y;
+            let tries = 0;
+            do {
+                x = Math.floor(Math.random() * width);
+                y = Math.floor(Math.random() * height);
+                tries++;
+            } while (grid[y][x] !== 'empty' && tries < 50);
+            return { x, y };
+        };
+
+        for (let i = 0; i < hazardCount; i++) {
+            const pos = findEmpty();
+            if (grid[pos.y][pos.x] === 'empty') {
+                grid[pos.y][pos.x] = hazardType;
+            }
+        }
+    }
+
 
     // 3. Helper to find empty spot
     const findEmpty = (): { x: number, y: number } => {
@@ -125,14 +158,14 @@ export const generateDungeon = (level: number): DungeonState => {
     }
 
     // 8. Place Elemental Locks (Puzzle Dungeons)
-    const lockCount = 2 + Math.floor(level / 8);
-    const elements = ['fire', 'water', 'nature', 'earth', 'air', 'light', 'dark'];
+    const lockCount = 1 + Math.floor(level / 10); // Reduced slightly as they block path
+    // Locks match current biome or secondary
+    const possibleLocks = biome === 'neutral' ? ['fire', 'water', 'nature', 'dark'] : [biome];
 
     for (let i = 0; i < lockCount; i++) {
-        // Try to place locks near interesting things (chests/exit) to actually be obstacles
-        // Or specific random locations
         const pos = findEmpty();
-        const element = elements[Math.floor(Math.random() * elements.length)];
+        const element = possibleLocks[Math.floor(Math.random() * possibleLocks.length)];
+        // Only place locks if not blocking critical path (hard to solve simply, so just careful placement or low count)
         grid[pos.y][pos.x] = `lock_${element}` as DungeonCellType;
     }
 
@@ -148,6 +181,7 @@ export const generateDungeon = (level: number): DungeonState => {
     return {
         active: true,
         level,
+        biome,
         width,
         height,
         grid,

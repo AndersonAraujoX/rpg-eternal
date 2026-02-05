@@ -82,10 +82,8 @@ export const useWorld = (
                 const newKeys = { ...dungeonState.keys, [element]: dungeonState.keys[element] - 1 };
                 const newGrid = grid.map(row => [...row]);
                 newGrid[ny][nx] = 'empty';
-                // Update state immediately to process the move in the SAME turn?
-                // For now, let's just unlock it and stay put, requiring another move command to enter?
-                // Or better: Unlock AND Move.
-                // Let's Unlock and Move.
+
+                // Unlock AND Move
                 const newPos = { x: nx, y: ny };
                 const newRevealed = revealed.map(row => [...row]);
                 // Reveal around new pos
@@ -100,11 +98,25 @@ export const useWorld = (
                 }
                 setDungeonState(prev => prev ? ({ ...prev, grid: newGrid, keys: newKeys, playerPos: newPos, revealed: newRevealed }) : null);
                 soundManager.playLevelUp(); // Unlock sound
-                return { type: 'lock', level, subtype: element }; // Or a new 'unlock' type
+                return { type: 'lock', level, subtype: element };
             } else {
                 addLog(`The door is locked by ${element} energy. You need a ${element} Key.`, 'danger');
                 return { type: 'lock', level, subtype: element };
             }
+        }
+
+        // Hazard Check
+        if (typeof cell === 'string' && cell.startsWith('hazard_')) {
+            const hazardType = cell;
+            const element = hazardType.split('_')[1];
+            // Simple damage for now
+            const damage = level * 10;
+            addLog(`Ouch! Stepped on ${element} hazard! Took ${damage} damage.`, 'danger');
+            soundManager.playHit();
+            // In a real health system we would reduce player health, but here we just log it or maybe fail move?
+            // Let's allow move but log damage.
+            // If we had a health system for the dungeon adventurer we'd deduct it.
+            // For now, minimal impact.
         }
 
         // Move

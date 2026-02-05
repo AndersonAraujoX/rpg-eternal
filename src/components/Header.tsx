@@ -60,6 +60,7 @@ interface HeaderProps {
     setShowStarForge?: (v: boolean) => void;
     // Phase 6
     setShowWorldBoss?: (v: boolean) => void;
+    activeEvent?: import('../engine/townEvents').TownEvent | null; // Phase 92
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -78,6 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
     setShowCampfire, // Phase 80
     setShowStarForge,
     setShowWorldBoss,
+    activeEvent,
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
 
@@ -87,7 +89,12 @@ export const Header: React.FC<HeaderProps> = ({
             <button onClick={() => setShowForge(true)} className="btn-retro bg-orange-900 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-800" title="The Forge"><Hammer size={12} /> Forge</button>
             <button onClick={() => setShowInventory(true)} className="btn-retro bg-slate-700 text-slate-200 px-2 py-1 rounded border border-slate-500 flex items-center gap-1 hover:bg-slate-600" title="Inventory"><Briefcase size={12} /> Bag</button>
             <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guild"><Building size={12} /> Guild</button>
-            {setShowTown && <button onClick={() => setShowTown(true)} className="btn-retro bg-stone-700 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-600" title="Town"><Home size={12} /> Town</button>}
+            {setShowTown && (
+                <button onClick={() => setShowTown(true)} className="btn-retro bg-stone-700 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-600 relative" title="Town">
+                    <Home size={12} /> Town
+                    {activeEvent && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-white" />}
+                </button>
+            )}
             {setShowCampfire && <button onClick={() => setShowCampfire(true)} className="btn-retro bg-orange-800 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-700" title="Campfire"><Flame size={12} /> Rest</button>}
         </>
     );

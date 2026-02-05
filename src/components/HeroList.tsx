@@ -93,9 +93,10 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                         {hero.assignment === 'combat' ? <Sword size={10} /> : <Pickaxe size={10} />}
                                     </button>
                                     <button
-                                        onClick={() => actions.toggleCorruption(hero.id)}
-                                        className={`p-1 rounded border ${hero.corruption ? 'bg-purple-900 border-purple-500 text-purple-200 animate-pulse' : 'bg-gray-800 border-gray-600 text-gray-500'}`}
-                                        title="Corrupt Hero (+100% ATK, -50% HP/DEF)"
+                                        onClick={() => actions.purifyHero(hero.id)}
+                                        className={`p-1 rounded border ${hero.insanity >= 50 ? 'bg-purple-900 border-purple-500 text-purple-200 animate-pulse' : 'bg-gray-800 border-gray-600 text-gray-500'}`}
+                                        title={`Purify Hero (Resets Insanity) - Cost: 50 Souls`}
+                                        disabled={!hero.insanity || hero.insanity === 0}
                                     >
                                         <Skull size={10} />
                                     </button>

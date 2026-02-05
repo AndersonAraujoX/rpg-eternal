@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Hero, GameActions, Stats } from '../../engine/types';
+import { ITEM_SETS } from '../../engine/sets';
 import { X, Sword, Shield, Zap, Heart, Wind, Flame, Droplets, Leaf } from 'lucide-react';
 
 interface HeroDetailModalProps {
@@ -91,18 +92,53 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                     </div>
                 </div>
 
-                {/* XP Bar */}
-                <div className="mb-6">
-                    <div className="flex justify-between text-xs text-gray-300 mb-1">
-                        <span>XP Progress</span>
-                        <span>{hero.xp || 0} / {hero.maxXp || 100}</span>
+                {/* XP Bars */}
+                <div className="mb-6 space-y-4">
+                    <div>
+                        <div className="flex justify-between text-xs text-gray-300 mb-1">
+                            <span>Hero XP</span>
+                            <span>{hero.xp || 0} / {hero.maxXp || 100}</span>
+                        </div>
+                        <div className="w-full h-4 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+                            <div
+                                className="h-full bg-gradient-to-r from-blue-600 to-purple-500 transition-all duration-300"
+                                style={{ width: `${Math.min(100, ((hero.xp || 0) / (hero.maxXp || 100)) * 100)}%` }}
+                            ></div>
+                        </div>
                     </div>
-                    <div className="w-full h-4 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
-                        <div
-                            className="h-full bg-gradient-to-r from-blue-600 to-purple-500 transition-all duration-300"
-                            style={{ width: `${Math.min(100, ((hero.xp || 0) / (hero.maxXp || 100)) * 100)}%` }}
-                        ></div>
+
+                    {/* Insanity Bar */}
+                    <div>
+                        <div className="flex justify-between text-xs text-gray-300 mb-1">
+                            <span className="text-purple-400">Insanity</span>
+                            <span>{hero.insanity || 0} / 100</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+                            <div
+                                className="h-full bg-purple-600 transition-all duration-300 relative"
+                                style={{ width: `${(hero.insanity || 0)}%` }}
+                            ></div>
+                        </div>
+                        <div className="text-[10px] text-gray-500 mt-1 h-3">
+                            {(hero.insanity || 0) >= 75 ? '⚠️ Risk of Madness' : (hero.insanity || 0) >= 50 ? '⚠️ Risk of Betrayal' : ''}
+                        </div>
                     </div>
+
+                    {/* Weapon XP (If Evolving) */}
+                    {hero.equipment?.weapon?.evolutionId && (
+                        <div>
+                            <div className="flex justify-between text-xs text-yellow-300 mb-1">
+                                <span>Weapon XP ({hero.equipment.weapon.name})</span>
+                                <span>{hero.equipment.weapon.xp || 0} / {hero.equipment.weapon.maxXp || 100}</span>
+                            </div>
+                            <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden border border-yellow-700/50">
+                                <div
+                                    className="h-full bg-gradient-to-r from-yellow-600 to-red-500 transition-all duration-300"
+                                    style={{ width: `${Math.min(100, ((hero.equipment.weapon.xp || 0) / (hero.equipment.weapon.maxXp || 100)) * 100)}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -149,6 +185,23 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                             ) : (
                                 <div className="text-center text-gray-500 text-sm py-2">No active skills unlocked.</div>
                             )}
+                        </div>
+
+                        {/* Set Bonuses */}
+                        <div>
+                            <h3 className="text-xl font-bold text-white mb-2">Set Bonuses</h3>
+                            <div className="bg-gray-900 border border-gray-700 rounded p-2">
+                                {ITEM_SETS.map(set => {
+                                    const equippedCount = Object.values(hero.equipment || {}).filter(i => i && i.setId === set.id).length;
+                                    const isActive = equippedCount >= set.requiredPieces;
+                                    return (
+                                        <div key={set.id} className={`flex justify-between text-xs ${isActive ? "text-green-400 font-bold" : "text-gray-500"}`}>
+                                            <span>{set.name} ({equippedCount}/{set.requiredPieces})</span>
+                                            <span>+{Math.round(set.bonusValue * 100)}% {set.bonusStat.toUpperCase()}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         <div>

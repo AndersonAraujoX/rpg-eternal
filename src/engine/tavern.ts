@@ -159,7 +159,7 @@ export const simulateTavernSummon = (
                     element: 'neutral',
                     assignment: 'mine',
                     gambits: [],
-                    corruption: false,
+                    insanity: 0,
                     type: 'hero',
                     isDead: false,
                     fatigue: 0,
