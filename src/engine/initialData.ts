@@ -1,4 +1,4 @@
-import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameStats, Achievement, Building, CardOpponent, LeaderboardEntry } from './types';
+import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameStats, Achievement, Building, CardOpponent, LeaderboardEntry, Spaceship } from './types';
 
 
 export const INITIAL_ACHIEVEMENTS: Achievement[] = [
@@ -73,7 +73,7 @@ export const INITIAL_TALENTS: Talent[] = [
     { id: 't4', name: 'Precision', level: 0, maxLevel: 25, cost: 25, costScaling: 1.8, description: '+1% Crit Chance', stat: 'crit', valuePerLevel: 0.01 }
 ];
 
-export const INITIAL_STATS: GameStats = {
+export const INITIAL_GAME_STATS: GameStats = {
     totalGoldEarned: 0,
     totalKills: 0,
     bossKills: 0,
@@ -147,3 +147,18 @@ export const NPC_DUELISTS: CardOpponent[] = [
     { id: 'npc2', name: 'Card Shark', difficulty: 3, avatar: '🦈', deck: ['wolf', 'snake', 'goblin'] },
     { id: 'npc3', name: 'Grandmaster', difficulty: 10, avatar: '🧙‍♂️', deck: ['dragon', 'demon', 'golem'] }
 ];
+export const INITIAL_SPACESHIP: Spaceship = {
+    name: 'Explorer I',
+    level: 1,
+    fuel: 100,
+    maxFuel: 100,
+    hull: 100,
+    maxHull: 100,
+    parts: {
+        engine: 1,
+        scanners: 1,
+        miningLaser: 1,
+        shields: 1
+    },
+    upgrades: []
+};

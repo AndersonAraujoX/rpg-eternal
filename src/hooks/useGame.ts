@@ -23,8 +23,10 @@ import { startExpedition } from '../engine/expeditions';
 import { generateTownEvent } from '../engine/townEvents';
 import { PRESTIGE_CLASSES } from '../engine/classes';
 
-import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_STATS as INITIAL_GAME_STATS } from '../engine/initialData';
+import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
+import { INITIAL_GALAXY } from '../engine/galaxy';
+import { INITIAL_TERRITORIES } from '../engine/guildWar';
 
 export const useGame = () => {
     // CORE STATE
@@ -85,7 +87,7 @@ export const useGame = () => {
     const guildState = useGuild(null, gold, setGold, addLog);
     const petsState = usePets([], gold, souls, setGold, setSouls, addLog);
     const world = useWorld({ floor: 1, active: false, maxFloor: 1 }, { active: false, floor: 1, blessings: [], tempHeroes: [], maxFloor: 1 }, addLog);
-    const galaxyState = useGalaxy(null as any, [], null as any, gold, setGold, addLog);
+    const galaxyState = useGalaxy(INITIAL_GALAXY, INITIAL_TERRITORIES, INITIAL_SPACESHIP, gold, setGold, addLog);
 
     const [glory, setGlory] = useState<number>(0);
     const [partyDps, setPartyDps] = useState(0);

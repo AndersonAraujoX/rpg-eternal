@@ -125,11 +125,11 @@ export const usePersistence = (props: PersistenceProps) => {
                 // Merge loaded heroes with new props (element, assignment)
                 const loadedHeroes = state.heroes || INITIAL_HEROES;
                 const updatedHeroes = loadedHeroes.map((h: Hero, i: number) => ({
-                    ...INITIAL_HEROES[i], // Defaults
+                    ...(INITIAL_HEROES[i] || {}), // Defaults
                     ...h, // Loaded
-                    element: h.element || INITIAL_HEROES[i].element, // Backfill
+                    element: h.element || (INITIAL_HEROES[i]?.element || 'neutral'), // Backfill
                     assignment: h.assignment || 'combat',
-                    gambits: h.gambits || INITIAL_HEROES[i].gambits,
+                    gambits: h.gambits || (INITIAL_HEROES[i]?.gambits || []),
                     insanity: (h as any).corruption ? 50 : (h.insanity || 0), // Migration: if corruption true -> 50 insanity
                     equipment: h.equipment || {}
                 }));
