@@ -556,6 +556,7 @@ export interface LeaderboardEntry {
 
 
 import type { DungeonInteraction } from './dungeon';
+export type { DungeonInteraction };
 
 export interface GameActions {
     // Basic
@@ -667,9 +668,19 @@ export interface GameActions {
     // Phase 9: Void
     challengeVoidCore: () => void;
     setVictory: (val: boolean) => void;
+
+    // Mastery
+    buyMasteryUpgrade: (type: keyof DungeonMastery) => void;
+    assignHero: (id: string) => void;
+
     // Phase 92: Town Events
     interactWithEvent: (eventId: string, action: 'buy' | 'defend' | 'join', data?: any) => void;
     dismissEvent: () => void;
+
+    // Formations
+    saveFormation: (name: string) => void;
+    loadFormation: (formation: any) => void;
+    deleteFormation: (id: string) => void;
 }
 
 export interface WorldBoss extends Boss {
