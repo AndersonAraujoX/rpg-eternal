@@ -8,6 +8,7 @@ const mockHero = (element: Hero['element']): Hero => ({
     element, assignment: 'combat', gambits: [], corruption: false,
     emoji: '🦸', type: 'hero', unlocked: true, isDead: false,
     level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [],
+    fatigue: 0, maxFatigue: 100,
     equipment: {}
 });
 

@@ -1,5 +1,16 @@
 
-export type DungeonCellType = 'empty' | 'wall' | 'start' | 'exit' | 'chest' | 'enemy' | 'trap' | 'lock_fire' | 'lock_water' | 'lock_nature' | 'lock_earth' | 'lock_air' | 'lock_light' | 'lock_dark';
+
+export type DungeonCellType = 'empty' | 'wall' | 'chest' | 'enemy' | 'boss' | 'trap' | 'start' | 'exit' | string; // string for locks like lock_fire
+
+export interface DungeonMob {
+    name: string;
+    level: number;
+    hp: number;
+    maxHp: number;
+    damage: number;
+    type: 'mob' | 'boss';
+    xp: number;
+}
 
 export interface DungeonState {
     active: boolean;
@@ -9,6 +20,14 @@ export interface DungeonState {
     grid: DungeonCellType[][];
     playerPos: { x: number; y: number };
     revealed: boolean[][];
+    keys: { [key: string]: number }; // e.g. { fire: 1, water: 0 }
+}
+
+export interface DungeonInteraction {
+    type: 'chest' | 'enemy' | 'trap' | 'lock' | 'exit' | 'boss';
+    level: number;
+    subtype?: string; // for lock type or enemy name
+    mob?: DungeonMob;
 }
 
 export const DUNGEON_WIDTH = 15;
@@ -60,6 +79,33 @@ export const generateDungeon = (level: number): DungeonState => {
     } while ((Math.abs(exit.x - start.x) + Math.abs(exit.y - start.y) < 8) && attempts < 100);
     grid[exit.y][exit.x] = 'exit';
 
+    // 5b. Place Boss (Guaranteed)
+    let bossPlaced = false;
+    // Try adjacent to exit
+    const adj = [
+        { x: exit.x + 1, y: exit.y }, { x: exit.x - 1, y: exit.y },
+        { x: exit.x, y: exit.y + 1 }, { x: exit.x, y: exit.y - 1 }
+    ].filter(p => p.x >= 0 && p.x < width && p.y >= 0 && p.y < height && grid[p.y][p.x] === 'empty');
+
+    if (adj.length > 0) {
+        const bp = adj[Math.floor(Math.random() * adj.length)];
+        grid[bp.y][bp.x] = 'boss';
+        bossPlaced = true;
+    } else {
+        // Fallback: Find any empty spot far from start
+        for (let fy = 0; fy < height; fy++) {
+            for (let fx = 0; fx < width; fx++) {
+                const dist = Math.abs(fx - start.x) + Math.abs(fy - start.y);
+                if (grid[fy][fx] === 'empty' && dist > 5) {
+                    grid[fy][fx] = 'boss';
+                    bossPlaced = true;
+                    break;
+                }
+            }
+            if (bossPlaced) break;
+        }
+    }
+
     // 6. Place Entities (Scale with level?)
     const chestCount = 3 + Math.floor(level / 10);
     const enemyCount = 5 + Math.floor(level / 5);
@@ -106,6 +152,7 @@ export const generateDungeon = (level: number): DungeonState => {
         height,
         grid,
         playerPos: start,
-        revealed
+        revealed,
+        keys: { fire: 0, water: 0, nature: 0, earth: 0, air: 0, light: 0, dark: 0 }
     };
 };

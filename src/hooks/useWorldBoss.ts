@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { WorldBoss, GameStats, LogEntry } from '../engine/types';
 import { generateWorldBoss, simulateGlobalDamage, calculateWorldBossRewards } from '../engine/worldBoss';
 

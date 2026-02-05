@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Tower, RiftState, LogEntry, RiftBlessing, Formation } from '../engine/types';
 import { generateDungeon, type DungeonState } from '../engine/dungeon';
 import type { WeatherType } from '../engine/weather';
@@ -8,7 +8,8 @@ import { soundManager } from '../engine/sound';
 export const useWorld = (
     initialTower: Tower,
     initialRiftState: RiftState,
-    addLog: (message: string, type?: LogEntry['type']) => void
+    addLog: (message: string, type?: LogEntry['type']) => void,
+    dungeonMastery?: import('../engine/types').DungeonMastery
 ) => {
     const [tower, setTower] = useState<Tower>(initialTower);
     const [dungeonActive, setDungeonActive] = useState(false);
@@ -18,33 +19,26 @@ export const useWorld = (
     const [riftTimer, setRiftTimer] = useState(0);
 
     const [dungeonState, setDungeonState] = useState<DungeonState | null>(null);
+    const [maxDungeonDepth, setMaxDungeonDepth] = useState(1);
 
-    const enterTower = () => {
-        if (tower.active) return;
-        setTower(prev => ({ ...prev, active: true }));
-        addLog('Entering the Infinite Tower...', 'info');
-    };
-
-    const prestigeTower = () => {
-        if (tower.floor < 10) return;
-        setTower(prev => ({
-            ...prev,
-            floor: 1,
-            maxFloor: Math.max(prev.maxFloor, prev.floor),
-            active: false
-        }));
-        addLog('Tower Prestiged! Received Tower Souls.', 'achievement');
-        soundManager.playLevelUp();
-    };
-
-    const enterDungeon = (bossLevel: number) => {
+    const enterDungeon = (_bossLevel: number) => {
         if (dungeonActive) return;
-        const level = 1 + Math.floor(bossLevel / 5);
+        const level = 1; // Always start at 1 for now, or use maxDungeonDepth to resume? Let's start at 1.
         const newState = generateDungeon(level);
         setDungeonState(newState);
         setDungeonActive(true);
         setDungeonTimer(3600); // 1 hour
         addLog(`Entered Dungeon Level ${level}!`, 'action');
+    };
+
+    const descendDungeon = () => {
+        if (!dungeonState) return;
+        const nextLevel = dungeonState.level + 1;
+        const newState = generateDungeon(nextLevel);
+        setDungeonState(newState);
+        if (nextLevel > maxDungeonDepth) setMaxDungeonDepth(nextLevel);
+        addLog(`Descended to Dungeon Level ${nextLevel}!`, 'action');
+        soundManager.playLevelUp(); // Re-use sound
     };
 
     const exitDungeon = () => {
@@ -54,36 +48,73 @@ export const useWorld = (
         addLog('Left the dungeon.', 'info');
     };
 
-    const moveDungeon = (dx: number, dy: number) => {
-        if (!dungeonState || !dungeonState.active) return;
+    const addDungeonKey = (element: string) => {
+        if (!dungeonState) return;
+        setDungeonState(prev => prev ? ({
+            ...prev,
+            keys: { ...prev.keys, [element]: (prev.keys[element] || 0) + 1 }
+        }) : null);
+        addLog(`Found a ${element} Key!`, 'loot');
+    };
 
-        const { grid, width, height, playerPos, revealed } = dungeonState;
+    const moveDungeon = (dx: number, dy: number): import('../engine/dungeon').DungeonInteraction | null => {
+        if (!dungeonState || !dungeonState.active) return null;
+
+        const { grid, width, height, playerPos, revealed, level } = dungeonState;
         const nx = playerPos.x + dx;
         const ny = playerPos.y + dy;
 
         // Bounds Check
-        if (nx < 0 || nx >= width || ny < 0 || ny >= height) return;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) return null;
 
         // Wall Check
         const cell = grid[ny][nx];
         if (cell === 'wall') {
             addLog("It's a wall.", 'info');
-            return;
+            return null;
         }
 
         // Lock Check
         if (typeof cell === 'string' && cell.startsWith('lock_')) {
-            addLog("The door is locked by elemental energy.", 'danger');
-            return;
+            const element = cell.split('_')[1];
+            if ((dungeonState.keys[element] || 0) > 0) {
+                addLog(`Unlocked ${element} Door!`, 'success');
+                const newKeys = { ...dungeonState.keys, [element]: dungeonState.keys[element] - 1 };
+                const newGrid = grid.map(row => [...row]);
+                newGrid[ny][nx] = 'empty';
+                // Update state immediately to process the move in the SAME turn?
+                // For now, let's just unlock it and stay put, requiring another move command to enter?
+                // Or better: Unlock AND Move.
+                // Let's Unlock and Move.
+                const newPos = { x: nx, y: ny };
+                const newRevealed = revealed.map(row => [...row]);
+                // Reveal around new pos
+                for (let ry = -1; ry <= 1; ry++) {
+                    for (let rx = -1; rx <= 1; rx++) {
+                        const rny = ny + ry;
+                        const rnx = nx + rx;
+                        if (rny >= 0 && rny < height && rnx >= 0 && rnx < width) {
+                            newRevealed[rny][rnx] = true;
+                        }
+                    }
+                }
+                setDungeonState(prev => prev ? ({ ...prev, grid: newGrid, keys: newKeys, playerPos: newPos, revealed: newRevealed }) : null);
+                soundManager.playLevelUp(); // Unlock sound
+                return { type: 'lock', level, subtype: element }; // Or a new 'unlock' type
+            } else {
+                addLog(`The door is locked by ${element} energy. You need a ${element} Key.`, 'danger');
+                return { type: 'lock', level, subtype: element };
+            }
         }
 
         // Move
         const newPos = { x: nx, y: ny };
         const newRevealed = revealed.map(row => [...row]);
 
-        // Reveal Fog (Radius 1)
-        for (let ry = -1; ry <= 1; ry++) {
-            for (let rx = -1; rx <= 1; rx++) {
+        // Reveal Fog (Radius 1 + Explorer Level)
+        const radius = 1 + (dungeonMastery?.explorerLevel || 0);
+        for (let ry = -radius; ry <= radius; ry++) {
+            for (let rx = -radius; rx <= radius; rx++) {
                 const rny = ny + ry;
                 const rnx = nx + rx;
                 if (rny >= 0 && rny < height && rnx >= 0 && rnx < width) {
@@ -102,24 +133,72 @@ export const useWorld = (
             newGrid[ny][nx] = 'empty';
             setDungeonState(prev => prev ? ({ ...prev, grid: newGrid }) : null);
             soundManager.playLevelUp(); // Fallback for coin sound
+            return { type: 'chest', level };
         } else if (cell === 'enemy') {
-            addLog("Encountered an Enemy!", 'battle');
+            const mobs = ['Goblin', 'Skeleton', 'Orc', 'Slime', 'Bat', 'Spider'];
+            const name = mobs[Math.floor(Math.random() * mobs.length)];
+            addLog(`Encountered a ${name}!`, 'battle');
             const newGrid = grid.map(row => [...row]);
             newGrid[ny][nx] = 'empty'; // Consumed
             setDungeonState(prev => prev ? ({ ...prev, grid: newGrid }) : null);
             soundManager.playHit();
-        } else if (cell === 'trap') {
-            addLog("Stepped on a Trap!", 'danger');
+
+            const mob: import('../engine/dungeon').DungeonMob = {
+                name,
+                level,
+                hp: level * 20,
+                maxHp: level * 20,
+                damage: level * 5,
+                type: 'mob',
+                xp: level * 10
+            };
+            return { type: 'enemy', level, mob };
+        } else if (cell === 'boss') {
+            addLog("⚠️ BOSS ENCOUNTER! ⚠️", 'danger');
+            // Boss doesn't disappear immediately? For now let's consume it.
             const newGrid = grid.map(row => [...row]);
             newGrid[ny][nx] = 'empty';
             setDungeonState(prev => prev ? ({ ...prev, grid: newGrid }) : null);
-            soundManager.playHit();
+            soundManager.playHit(); // Epic sound later
+
+            // Create Mob Data
+            const bossMob: import('../engine/dungeon').DungeonMob = {
+                name: "Dungeon Boss",
+                level: level + 2,
+                hp: level * 1000,
+                maxHp: level * 1000,
+                damage: level * 50,
+                type: 'boss',
+                xp: level * 500
+            };
+
+            return { type: 'boss', level, mob: bossMob };
+        } else if (cell === 'trap') {
+            // Trap Sense: Avoid chance (10% per level)
+            const avoidChance = (dungeonMastery?.trapSenseLevel || 0) * 0.1;
+            if (Math.random() < avoidChance) {
+                addLog('Spotted and disarmed a trap!', 'success');
+                const newGrid = grid.map(row => [...row]);
+                newGrid[ny][nx] = 'empty';
+                setDungeonState(prev => prev ? ({ ...prev, grid: newGrid, playerPos: newPos, revealed: newRevealed }) : null);
+                soundManager.playHit();
+                return null;
+            }
+
+            addLog("Stepped on a TRAP!", 'danger');
+            const newGrid = grid.map(row => [...row]);
+            newGrid[ny][nx] = 'empty';
+            setDungeonState(prev => prev ? ({ ...prev, grid: newGrid }) : null);
+            soundManager.playHit(); // Damage sound
+            return { type: 'trap', level };
         } else if (cell === 'exit') {
             addLog("Found the Exit! Dungeon Cleared!", 'achievement');
             setDungeonActive(false);
             setDungeonState(null);
             soundManager.playLevelUp();
+            return { type: 'exit', level };
         }
+        return null;
     };
 
     const enterRift = (rift: any) => {
@@ -176,11 +255,11 @@ export const useWorld = (
         riftState, setRiftState,
         riftTimer, setRiftTimer,
         dungeonState, setDungeonState,
+        maxDungeonDepth, setMaxDungeonDepth,
         weather, setWeather,
         weatherTimer, setWeatherTimer,
         formations, setFormations,
-        enterTower, prestigeTower,
-        enterDungeon, exitDungeon, moveDungeon,
+        enterDungeon, exitDungeon, moveDungeon, descendDungeon, addDungeonKey,
         enterRift, exitRift, startRift, selectBlessing,
         saveFormation, loadFormation, deleteFormation
     };

@@ -14,28 +14,39 @@ export const useGalaxy = (
     const [territories, setTerritories] = useState<Territory[]>(initialTerritories);
     const [spaceship, setSpaceship] = useState<Spaceship>(initialSpaceship);
 
-    const conquerSector = (sectorId: string) => {
+    const attackSector = (sectorId: string) => {
         const sector = galaxy.find(s => s.id === sectorId);
         if (!sector || sector.isOwned) return;
 
-        const cost = sector.level * 1000;
-        if (gold >= cost) {
-            setGold(g => g - cost);
+        const fuelCost = 10;
+        if (spaceship.fuel < fuelCost) {
+            addLog("Not enough Fuel to jump!", 'error');
+            return;
+        }
+
+        // Combat Logic
+        const winChance = Math.min(0.95, 0.5 + ((spaceship.level - sector.level) * 0.1));
+        const roll = Math.random();
+
+        setSpaceship(prev => ({ ...prev, fuel: prev.fuel - fuelCost }));
+
+        if (roll < winChance) {
             setGalaxy(prev => prev.map(s => s.id === sectorId ? { ...s, isOwned: true } : s));
-            addLog(`Conquered ${sector.name}!`, 'achievement');
+            addLog(`Victory! ${sector.name} conquered!`, 'achievement');
             soundManager.playLevelUp();
+            // Reward Loot
+            const loot = sector.level * 1000;
+            setGold(g => g + loot);
         } else {
-            addLog(`Not enough gold! Need ${cost}`, 'error');
+            const hullDmg = 10 * sector.level;
+            setSpaceship(prev => ({ ...prev, hull: Math.max(0, prev.hull - hullDmg) }));
+            addLog(`Defeat! Retreating from ${sector.name}. Hull -${hullDmg}`, 'danger');
+            soundManager.playHit();
         }
     };
 
     const attackTerritory = (id: string) => {
-        const territory = territories.find(t => t.id === id);
-        if (!territory) return;
-
-        // Simple attack logic
-        addLog(`Attacking territory ${territory.name}...`, 'info');
-        // Logic for success/failure usually deferred to combat engine or separate process
+        addLog(`Attacking territory ${id} (WIP)`, 'info');
     };
 
     const upgradeSpaceship = (part: keyof Spaceship['parts']) => {
@@ -57,10 +68,18 @@ export const useGalaxy = (
         }
     };
 
+    const galaxyRewards = galaxy.filter(s => s.isOwned).reduce((acc, s) => {
+        if (s.type === 'star') acc.gold += (s.level * 10);
+        return acc;
+    }, { gold: 0 });
+
     return {
         galaxy, setGalaxy,
         territories, setTerritories,
         spaceship, setSpaceship,
-        conquerSector, attackTerritory, upgradeSpaceship
+        attackSector,
+        attackTerritory,
+        upgradeSpaceship,
+        galaxyRewards
     };
 };

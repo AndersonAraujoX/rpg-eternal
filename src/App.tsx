@@ -16,6 +16,7 @@ import { HelpModal } from './components/modals/HelpModal';
 import { OfflineModal } from './components/modals/OfflineModal';
 import { DailyRewardsModal } from './components/modals/DailyRewardsModal'; // Phase 56
 import { HeroGearModal } from './components/modals/HeroGearModal'; // Phase 57
+import { VictoryModal } from './components/modals/VictoryModal'; // Phase 9 Victory
 
 import { TowerModal } from './components/modals/TowerModal';
 import { GuildModal } from './components/modals/GuildModal';
@@ -37,6 +38,7 @@ import { FishingModal } from './components/modals/FishingModal';
 import { AlchemyModal } from './components/modals/AlchemyModal';
 import { ExpeditionsModal } from './components/modals/ExpeditionsModal';
 import { GardenModal } from './components/modals/GardenModal';
+import { DungeonMasteryModal } from './components/modals/DungeonMasteryModal';
 import { MarketModal } from './components/modals/MarketModal';
 import { RiftModal } from './components/modals/RiftModal';
 import { BreedingModal } from './components/modals/BreedingModal'; // Phase 46
@@ -57,10 +59,13 @@ function App() {
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
+    victory,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
     assignHero, showCampfire, setShowCampfire,
     activeExpeditions, activePotions, gardenPlots, setGardenPlots, setResources, setGold,
     marketStock, marketTimer, buyMarketItem,
+    dungeonMastery,
+    buyMasteryUpgrade,
     activeRift, riftTimer, exitRift,
     startRift, selectBlessing, riftState, // Update 81
     worldBoss, worldBossDamage, worldBossCanClaim, // Phase 6
@@ -72,7 +77,7 @@ function App() {
     winCardBattle, // Phase 55
     equipItem, unequipItem, // Phase 57
     spaceship, upgradeSpaceship, // Phase 59
-    dungeonState, moveDungeon, exitDungeon, // Phase 61
+    dungeonState, moveDungeon, exitDungeon, handleDungeonEvent, descendDungeon, // Phase 61 & 83
     synergies, // Fixed: Destructured from useGame
     voidAscensions,
     formations, saveFormation, loadFormation, deleteFormation // Update 74
@@ -84,6 +89,7 @@ function App() {
   const [showCardBattle, setShowCardBattle] = useState(false); // Phase 55
   const [showDailyRewards, setShowDailyRewards] = useState(false); // Phase 56
   const [showMarket, setShowMarket] = useState(false);
+  const [showMastery, setShowMastery] = useState(false);
   const [showRiftModal, setShowRiftModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showTavern, setShowTavern] = useState(false);
@@ -246,6 +252,7 @@ function App() {
       </div>
 
       {/* MODALS RENDER */}
+      <VictoryModal isOpen={victory} playTime={gameStats.playTime} ascensions={voidAscensions} onContinue={() => actions.setVictory(false)} />
       <LogModal isOpen={showLog} onClose={() => setShowLog(false)} logs={logs} />
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
       <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />
@@ -253,12 +260,12 @@ function App() {
       <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} theme={theme} />
       {showShop && <ShopModal isOpen={true} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />}
-      {showTavern && <TavernModal heroes={heroes} gold={gold} summonTavern={actions.summonTavern} onClose={() => setShowTavern(false)} setGold={setGold} />}
+      {showTavern && <TavernModal heroes={heroes} gold={gold} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} />}
       {showForge && <ForgeModal resources={resources} forgeUpgrade={actions.forgeUpgrade} onClose={() => setShowForge(false)} setResources={setResources} />}
       {showInventory && <InventoryModal isOpen={true} items={items} onClose={() => setShowInventory(false)} />}
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
-      <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} />
+      <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} voidAscensions={voidAscensions} />
       <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} opponents={arenaOpponents} onFight={actions.fightArena} />
       {showQuests && (
         <QuestModal
@@ -267,7 +274,7 @@ function App() {
           onClaim={actions.claimQuest}
         />
       )}
-      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} craftRune={actions.craftRune} socketRune={actions.socketRune} />
+      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
@@ -275,7 +282,7 @@ function App() {
         isOpen={showGalaxy}
         onClose={() => setShowGalaxy(false)}
         galaxy={galaxy}
-        onConquer={actions.conquerSector}
+        onConquer={actions.attackSector}
         partyPower={partyPower}
         starlightUpgrades={starlightUpgrades}
         spaceship={spaceship}
@@ -329,7 +336,26 @@ function App() {
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
 
       <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={FAKE_LEADERBOARD} currentPower={partyPower} />
-      {dungeonActive && <DungeonModal dungeon={dungeonState} onMove={moveDungeon} onExit={exitDungeon} />}
+      {dungeonActive && (
+        <DungeonModal
+          dungeon={dungeonState}
+          onMove={(dx, dy) => {
+            const event = moveDungeon(dx, dy);
+            if (event) handleDungeonEvent(event);
+          }}
+          onDescend={descendDungeon}
+          onExit={exitDungeon}
+          onOpenMastery={() => setShowMastery(true)}
+        />
+      )}
+
+      <DungeonMasteryModal
+        isOpen={showMastery}
+        onClose={() => setShowMastery(false)}
+        mastery={dungeonMastery}
+        tokens={resources.dungeonTokens || 0}
+        buyUpgrade={buyMasteryUpgrade}
+      />
 
       {showDailyRewards && (
         <DailyRewardsModal

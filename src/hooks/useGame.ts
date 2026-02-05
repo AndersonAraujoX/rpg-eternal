@@ -2,11 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { formatNumber } from '../utils';
 
 import type { Hero, Boss, LogEntry, Item, Talent, Artifact, ConstellationNode, MonsterCard, ElementType, Gambit, Quest, ArenaOpponent, Rune, Achievement, GameStats, Resources, Building, DailyQuest, CombatEvent, Potion, MarketItem, GardenPlot, Expedition } from '../engine/types';
-import { POTIONS, EXPEDITIONS } from '../engine/types';
+import { POTIONS } from '../engine/types';
 import { STARLIGHT_UPGRADES, getStarlightUpgradeCost } from '../engine/starlight';
 import { LOGIN_REWARDS, checkDailyReset, generateDailyQuests } from '../engine/dailies';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
+import { useWorldBoss } from './useWorldBoss'; // Phase 6
+import { usePets } from './usePets'; // Phase 5
+import { useGuild } from './useGuild'; // Phase 6
+import { useGalaxy } from './useGalaxy'; // Phase 9
+// import { useAscension } from './useAscension'; // Phase 9.2 - implementing inline
+import { useWorld } from './useWorld';
 import { calculateDamageMultiplier, processCombatTurn, calculateHeroPower } from '../engine/combat';
 import { checkSynergies, getSynergySuggestions } from '../engine/synergies';
 import { MONSTERS } from '../engine/bestiary';
@@ -33,13 +39,6 @@ import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_TERRITORIES } from '../engine/guildWar';
 import { getRandomWeather, WEATHER_DATA } from '../engine/weather';
 
-// New Sub-hooks
-import { useGuild } from './useGuild';
-import { usePets } from './usePets';
-import { useWorld } from './useWorld';
-import { useWorldBoss } from './useWorldBoss';
-import { useGalaxy } from './useGalaxy';
-
 export const useGame = () => {
     // CORE STATE
     const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
@@ -52,7 +51,8 @@ export const useGame = () => {
     const [gold, setGold] = useState<number>(0);
     const [divinity, setDivinity] = useState<number>(0);
     const [voidMatter, setVoidMatter] = useState<number>(0);
-    const [voidAscensions] = useState<number>(0); // setVoidAscensions removed
+    const [voidAscensions, setVoidAscensions] = useState<number>(0);
+    const [victory, setVictory] = useState(false);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<Talent[]>(INITIAL_TALENTS);
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
@@ -81,6 +81,28 @@ export const useGame = () => {
     const [theme, setTheme] = useState('default');
     const [autoSellRarity, setAutoSellRarity] = useState<'none' | 'common' | 'rare'>('none');
     const [showCampfire, setShowCampfire] = useState(false); // Phase 80
+    const [dungeonMastery, setDungeonMastery] = useState<import('../engine/types').DungeonMastery>({
+        explorerLevel: 0,
+        slayerLevel: 0,
+        looterLevel: 0,
+        trapSenseLevel: 0
+    });
+
+    // ACTION: Buy Mastery
+    const buyMasteryUpgrade = (type: keyof import('../engine/types').DungeonMastery) => {
+        const currentLevel = dungeonMastery[type];
+        const cost = Math.floor(10 * Math.pow(1.5, currentLevel));
+
+        if ((resources.dungeonTokens || 0) >= cost) {
+            setResources(prev => ({ ...prev, dungeonTokens: (prev.dungeonTokens || 0) - cost }));
+            setDungeonMastery(prev => ({ ...prev, [type]: prev[type] + 1 }));
+            addLog(`Upgraded ${type} to Level ${currentLevel + 1}!`, 'action');
+            soundManager.playLevelUp();
+        } else {
+            addLog(`Not enough Dungeon Tokens! Need ${cost}.`, 'error');
+        }
+    };
+
     const [combatEvents, setCombatEvents] = useState<CombatEvent[]>([]);
     const damageAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
@@ -123,6 +145,16 @@ export const useGame = () => {
 
     // Phase 6: World Boss Hook
     const worldBossState = useWorldBoss(partyPower, gameStats, addLog, setSouls, setGold);
+
+    // Phase 9: Passive Galaxy Rewards
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (galaxyState.galaxyRewards && galaxyState.galaxyRewards.gold > 0) {
+                setGold(g => g + galaxyState.galaxyRewards.gold);
+            }
+        }, 10000); // Every 10 seconds
+        return () => clearInterval(timer);
+    }, [galaxyState.galaxyRewards]);
 
     // Initializations & Migrations
     useEffect(() => {
@@ -251,6 +283,106 @@ export const useGame = () => {
             soundManager.playLevelUp();
         },
         fightArena,
+        socketRune: (itemId: string, runeId: string) => {
+            const item = items.find(i => i.id === itemId);
+            const rune = runes.find(r => r.id === runeId);
+            if (!item || !rune) return;
+            if ((item.runes?.length || 0) >= item.sockets) return;
+
+            setRunes(prev => prev.filter(r => r.id !== runeId));
+            addLog(`Socketed ${rune.name} into ${item.name}`, 'craft');
+            soundManager.playLevelUp();
+        },
+
+        // Phase 83: Dungeon Logic
+        handleDungeonEvent: (event: import('../engine/dungeon').DungeonInteraction) => {
+            if (event.type === 'chest') {
+                const goldInfo = Math.floor(100 * event.level * (1 + (guildState.guild?.bonusValue || 0)));
+
+                setGold(g => g + goldInfo);
+                addLog(`Chest contained ${goldInfo} Gold!`, 'success');
+
+                // Chance for Item
+                if (Math.random() < 0.4) {
+                    const loot = generateLoot(event.level);
+                    setItems(prev => [...prev, loot]);
+                    addLog(`Found item: ${loot.name}`, 'loot');
+                }
+
+                // Chance for Key (15% + Looter Bonus)
+                const keyChance = 0.15 + (dungeonMastery.looterLevel * 0.05);
+                if (Math.random() < keyChance) {
+                    const elements = ['fire', 'water', 'nature', 'earth', 'air', 'light', 'dark'];
+                    const element = elements[Math.floor(Math.random() * elements.length)];
+                    world.addDungeonKey(element);
+                }
+            } else if (event.type === 'enemy') {
+                const mobName = event.mob?.name || 'Enemy';
+                // Simplified Combat: Deal damage to random hero
+                const combatHeroes = heroes.filter(h => h.assignment === 'combat' && !h.isDead);
+                if (combatHeroes.length > 0) {
+                    const target = combatHeroes[Math.floor(Math.random() * combatHeroes.length)];
+                    const mobDmg = event.mob ? event.mob.damage : Math.floor(target.stats.maxHp * 0.2);
+
+                    const dmg = Math.floor(Math.max(1, mobDmg - (target.stats.defense * 0.2)));
+
+                    setHeroes(prev => prev.map(h => h.id === target.id ? { ...h, stats: { ...h.stats, hp: Math.max(0, h.stats.hp - dmg) } } : h));
+
+                    // Slayer Bonus: Retaliation or Reduced Dmg? Let's do Bonus XP for now or imply hero hits harder?
+                    // Actually, let's just reduce damage taken slightly for 'Slayer' roughly? 
+                    // Or increasing drop rates elsewhere? 
+                    // Let's implement Slayer as Damage Output Multiplier if we had player attack phase.
+                    // Since combat is simplified "Mob hits you", maybe Slayer = "Reflect Damage"?
+
+                    // Let's stick to Looter for now.
+
+                    addLog(`${target.name} took ${dmg} damage from ${mobName}!`, 'battle');
+
+                    // Award XP
+                    const xpGain = (event.mob ? event.mob.xp : event.level * 20) * (1 + (dungeonMastery.slayerLevel * 0.1));
+                    setHeroes(prev => prev.map(h => {
+                        if (h.assignment === 'combat' && !h.isDead) return { ...h, xp: h.xp + xpGain };
+                        return h;
+                    }));
+                }
+            } else if (event.type === 'boss') {
+                // Award Dungeon Tokens on Boss
+                const tokens = 5 + (event.level * 2);
+                setResources(prev => ({ ...prev, dungeonTokens: (prev.dungeonTokens || 0) + tokens }));
+                addLog(`Boss Defeated! Earned ${tokens} Dungeon Tokens.`, 'achievement');
+
+                addLog(`⚔️ Fighting Dungeon Boss: ${event.mob?.name || 'Unknown Horror'}!`, 'battle');
+                const combatHeroes = heroes.filter(h => h.assignment === 'combat' && !h.isDead);
+
+                if (combatHeroes.length > 0) {
+                    // Boss deals heavy damage to ALL combat heroes
+                    const bossDmg = event.mob?.damage || (event.level * 50);
+                    combatHeroes.forEach(h => {
+                        const dmg = Math.floor(Math.max(1, bossDmg - (h.stats.defense * 0.5)));
+                        setHeroes(prev => prev.map(ph => ph.id === h.id ? { ...ph, stats: { ...ph.stats, hp: Math.max(0, ph.stats.hp - dmg) } } : ph));
+                    });
+                    addLog(`Party took massive damage from Boss!`, 'danger');
+
+                    // Victory Rewards
+                    const xpGain = (event.mob?.xp || event.level * 500);
+                    setHeroes(prev => prev.map(h => {
+                        if (h.assignment === 'combat' && !h.isDead) return { ...h, xp: h.xp + xpGain };
+                        return h;
+                    }));
+
+                    // Guaranteed Legendary/Epic Loot
+                    const loot = generateLoot(event.level + 5);
+                    setItems(prev => [...prev, loot]);
+                    addLog(`Boss Defeated! Found ${loot.name}`, 'loot');
+
+                    // Bonus Gold
+                    setGold(g => g + (event.level * 1000));
+                } else {
+                    addLog("No heroes to fight the Boss! Fleed in terror.", 'danger');
+                }
+            }
+        },
+
         completeCardBattle: (result: BattleResult) => {
             if (result.winner === 'player' && result.reward) {
                 if (result.reward.type === 'starlight') {
@@ -391,14 +523,14 @@ export const useGame = () => {
                 addLog(result.error || "Failed to brew potion", 'info');
             }
         },
-        startExpedition: (exp: Expedition, heroIds: string[]) => {
+        startExpedition: (exp: Expedition) => {
             const result = startExpedition(exp, heroes); // Uses helper which expects exp object
             setHeroes(result);
             setActiveExpeditions((prev: Expedition[]) => [...prev, exp]);
             addLog(`Started Expedition: ${exp.name}`, 'action');
         },
-        enterTower: world.enterTower,
-        prestigeTower: world.prestigeTower,
+        // enterTower: world.enterTower, // Deprecated/Moved?
+        // prestigeTower: world.prestigeTower,
         claimQuest: (questId: string) => {
             setQuests(prev => prev.map(q => {
                 if (q.id === questId && q.progress >= q.target && !q.isClaimed) {
@@ -1049,8 +1181,11 @@ export const useGame = () => {
                 if (world.tower.active) {
                     addLog(`Floor ${world.tower.floor} Cleared!`, 'death');
                     world.setTower((t: any) => ({ ...t, floor: t.floor + 1, maxFloor: Math.max(t.maxFloor, t.floor + 1) }));
-                    // Next floor immediately
-                    setTimeout(() => ACTIONS.enterTower(), 1000);
+                }
+
+                if (boss.id === 'void_core') {
+                    setVictory(true);
+                    addLog("VOID CORE DESTROYED! THE UNIVERSE IS SAVED!", "achievement");
                 }
 
             } else {
@@ -1197,7 +1332,7 @@ export const useGame = () => {
             });
 
             // Calc Power
-            const currentPwr = finalHeroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + calculateHeroPower(h), 0);
+            const currentPwr = finalHeroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) => acc + calculateHeroPower(h, divinity), 0);
             setPartyPower(currentPwr);
 
             setHeroes(finalHeroes);
@@ -1389,14 +1524,6 @@ export const useGame = () => {
         setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, assignment: type } : h));
     };
 
-    const buyStarlightUpgrade = (id: string) => {
-        addLog(`Purchased ${id} (Stub)`, "info");
-    };
-
-    const winCardBattle = (opponentId: string, difficulty: number) => {
-        addLog(`Won against ${opponentId} (Stub)`, "achievement");
-    };
-
     const craftRune = () => {
         const COST_MITHRIL = 10;
         const COST_SOULS = 50;
@@ -1514,11 +1641,12 @@ export const useGame = () => {
         // Actions
         actions: {
             ...ACTIONS,
-            conquerSector: galaxyState.conquerSector,
+            attackSector: galaxyState.attackSector,
             breedPets: petsState.breedPets,
             attackTerritory: galaxyState.attackTerritory,
             enterDungeon: world.enterDungeon,
             moveDungeon: world.moveDungeon,
+            descendDungeon: world.descendDungeon,
             exitDungeon: world.exitDungeon,
             enterRift: world.enterRift,
             exitRift: world.exitRift,
@@ -1582,8 +1710,128 @@ export const useGame = () => {
                         };
                     }
                     return h;
-                }) as Hero[]);
+                }));
             },
+            changeHeroEmoji: (heroId: string, emoji: string) => {
+                setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, emoji } : h));
+            },
+            buyConstellation: (id: string) => {
+                setConstellations(prev => prev.map(c => {
+                    if (c.id === id && divinity >= c.cost) {
+                        setDivinity(d => d - c.cost);
+                        return { ...c, level: c.level + 1 };
+                    }
+                    return c;
+                }));
+            },
+            toggleRaid: () => {
+                setRaidActive(prev => !prev);
+            },
+            upgradeSpaceship: galaxyState.upgradeSpaceship,
+            summonTavernLine: (_amount: number = 1) => {
+                // Placeholder logic for tavern summon
+                addLog("Tavern summon placeholder", "info");
+            },
+            enterVoid: () => setVoidActive(true),
+            challengeVoidCore: () => {
+                if (voidAscensions < 5) {
+                    addLog("You are not powerful enough. Ascend 5 times.", "error");
+                    return;
+                }
+                setBoss({
+                    id: 'void_core',
+                    name: 'Void Core',
+                    level: 9999,
+                    emoji: '🌌',
+                    stats: {
+                        hp: 1000000000, // 1 Billion
+                        maxHp: 1000000000,
+                        mp: 0, maxMp: 0,
+                        attack: 50000,
+                        defense: 5000,
+                        magic: 10000,
+                        speed: 500
+                    },
+                    element: 'dark',
+                    type: 'boss',
+                    isDead: false,
+                    abilities: ['void_crush', 'cosmic_ray']
+                });
+                addLog("THE VOID CORE AWAKENS!", "danger");
+                soundManager.playLevelUp(); // Placeholder for Boss Spawn sound
+            },
+            triggerAscension: () => addLog("Ascension coming soon!", "info"),
+            buyDarkGift: (_cost: number, _effect: string) => addLog("Dark Gifts coming soon!", "info"),
+            reforgeItem: (_itemId: string) => addLog("Reforging coming soon!", "info"),
+            ascendToVoid: () => {
+                if (world.tower.floor < 100) { addLog("Reach Floor 100 to Ascend!", "error"); return; }
+                const gain = Math.floor((gameStats.totalGoldEarned / 1000000) + (souls / 1000) + (world.tower.floor / 10));
+
+                setDivinity(d => d + gain);
+                setVoidAscensions(a => a + 1);
+
+                // Reset
+                setGold(0);
+                setSouls(0);
+                setHeroes(INITIAL_HEROES);
+                setItems([]);
+                world.setTower({ floor: 1, maxFloor: 1, active: false });
+
+                addLog(`ASCENDED! +${gain} Divinity!`, 'achievement');
+                soundManager.playLevelUp();
+            },
+            recruitHero: (heroId: string) => {
+                const hero = heroes.find(h => h.id === heroId);
+                const cost = (hero?.id === 'h2' ? 100 : hero?.id === 'h3' ? 500 : 1000); // Approximate costs
+                if (hero && !hero.unlocked && gold >= cost) {
+                    setGold(g => g - cost);
+                    setHeroes(prev => prev.map(h => h.id === heroId ? { ...h, unlocked: true } : h));
+                    addLog(`Recruited ${hero.name}!`, 'achievement');
+                    soundManager.playLevelUp();
+                }
+            },
+            spendStatPoint: (heroId: string, stat: import('../engine/types').Stats | any) => {
+                // Cast or validate. 'keyof Stats' is the interface.
+                // We only support specific stats for leveling
+                const allowed = ['attack', 'defense', 'hp', 'magic', 'speed'];
+                if (!allowed.includes(stat)) return;
+                const validStat = stat as 'attack' | 'defense' | 'hp' | 'magic' | 'speed';
+                setHeroes(prev => prev.map(h => {
+                    if (h.id === heroId && h.statPoints > 0) {
+                        return {
+                            ...h,
+                            statPoints: h.statPoints - 1,
+                            stats: {
+                                ...h.stats,
+                                [validStat]: h.stats[validStat] + 1
+                            }
+                        };
+                    }
+                    return h;
+                }));
+            },
+            toggleAssignment: (heroId: string) => {
+                setHeroes(prev => prev.map(h => {
+                    if (h.id === heroId) {
+                        const next: 'none' | 'combat' | 'mine' | 'expedition' | 'campfire' =
+                            h.assignment === 'none' ? 'combat' :
+                                h.assignment === 'combat' ? 'mine' : 'none';
+                        return { ...h, assignment: next };
+                    }
+                    return h;
+                }));
+            },
+            toggleCorruption: (heroId: string) => {
+                if ((voidMatter || 0) < 10) return;
+                setHeroes(prev => prev.map(h => {
+                    if (h.id === heroId) {
+                        setVoidMatter(v => v - 10);
+                        return { ...h, corruption: !h.corruption };
+                    }
+                    return h;
+                }));
+            },
+
             checkDailies: () => {
                 const now = Date.now();
                 if (checkDailyReset(lastDailyReset)) {
@@ -1661,23 +1909,37 @@ export const useGame = () => {
 
             craftRune,
             socketRune,
-            ascendToVoid,
-            craftStarForgedItem
+            craftStarForgedItem,
+
+            setVictory // Expose setter via actions for convenience
         },
+        victory,
         worldBoss: worldBossState.worldBoss,
         worldBossDamage: worldBossState.personalDamage,
         worldBossCanClaim: worldBossState.canClaim,
 
         // Expose actions at root for backward compatibility
+        enterDungeon: world.enterDungeon,
+        descendDungeon: world.descendDungeon,
         setGardenPlots, setResources, setGold: setGold,
         showCampfire, setShowCampfire,
         buyMarketItem,
+        dungeonMastery,
+        buyMasteryUpgrade,
         exitRift: world.exitRift,
         startRift: world.startRift,
         selectBlessing: world.selectBlessing,
         breedPets: petsState.breedPets,
         attackTerritory: galaxyState.attackTerritory,
         upgradeBuilding: ACTIONS.upgradeBuilding,
+        handleDungeonEvent: ACTIONS.handleDungeonEvent, // Phase 83
+
+        evolveHero,
+        renameHero,
+        updateGambits,
+        moveGambit,
+        renameGambit,
+
         claimLoginReward,
         claimDailyQuest,
         checkDailies,

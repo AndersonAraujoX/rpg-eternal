@@ -1,15 +1,17 @@
 import React, { useEffect } from 'react';
-import { Shield, Key, Grid, Footprints, Skull, Archive, AlertTriangle, DoorOpen, Lock } from 'lucide-react';
+import { Shield, Grid, Footprints, Skull, Archive, AlertTriangle, DoorOpen, Lock, Key } from 'lucide-react';
 import type { DungeonState } from '../../engine/dungeon';
 
 
 interface DungeonModalProps {
     dungeon: DungeonState | null;
     onMove: (dx: number, dy: number) => void;
+    onDescend: () => void;
     onExit: () => void;
+    onOpenMastery: () => void;
 }
 
-export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onExit }) => {
+export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onDescend, onExit, onOpenMastery }) => {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!dungeon) return;
@@ -36,7 +38,26 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onE
                         <Grid /> Dungeon Level {dungeon.level}
                     </h2>
                     <div className="text-sm text-slate-400">Use Arrows to Move | ESC to Exit</div>
-                    <button onClick={onExit} className="bg-red-900 px-3 py-1 rounded text-white text-sm hover:bg-red-800">Forfeit</button>
+                    {/* Key Display */}
+                    <div className="flex gap-2 bg-slate-800 px-3 py-1 rounded border border-slate-700">
+                        {Object.entries(dungeon.keys || {}).map(([element, count]) => (
+                            count > 0 && (
+                                <span key={element} className="text-xs flex items-center gap-1 font-mono" style={{ color: element === 'fire' ? '#f87171' : element === 'water' ? '#60a5fa' : '#a3e635' }}>
+                                    <Key size={14} /> {count}
+                                </span>
+                            )
+                        ))}
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={onOpenMastery} className="bg-yellow-600 px-3 py-1 rounded text-white text-sm hover:bg-yellow-500 flex items-center gap-1">
+                            <Grid size={16} /> Mastery
+                        </button>
+                        {/* Always show Descend for testing, later condition on Boss kill */}
+                        <button onClick={onDescend} className="bg-purple-700 px-3 py-1 rounded text-white text-sm hover:bg-purple-600 flex items-center gap-1">
+                            <Footprints size={16} /> Descend
+                        </button>
+                        <button onClick={onExit} className="bg-red-900 px-3 py-1 rounded text-white text-sm hover:bg-red-800">Forfeit</button>
+                    </div>
                 </div>
 
                 {/* Grid */}
@@ -67,6 +88,7 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onE
 
                                 if (cell === 'chest') content = <Archive size={20} className="text-yellow-400" />;
                                 if (cell === 'enemy') content = <Skull size={20} className="text-red-500" />;
+                                if (cell === 'boss') content = <div className="text-purple-500 animate-pulse"><Skull size={28} /></div>;
                                 if (cell === 'trap') content = <AlertTriangle size={20} className="text-orange-500 opacity-50" />;
                                 if (cell === 'exit') content = <DoorOpen size={24} className="text-yellow-200" />;
                                 if (typeof cell === 'string' && cell.startsWith('lock_')) {

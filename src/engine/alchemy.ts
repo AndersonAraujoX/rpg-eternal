@@ -4,7 +4,7 @@ import type { Resources, Potion } from './types';
 export const brewPotion = (p: Potion, resources: Resources): { success: boolean, cost: Partial<Resources>, error?: string } => {
     // Check costs
     for (const c of p.cost) {
-        if (resources[c.type] < c.amount) {
+        if ((resources[c.type] || 0) < c.amount) {
             return { success: false, cost: {}, error: `Not enough ${c.type}` };
         }
     }

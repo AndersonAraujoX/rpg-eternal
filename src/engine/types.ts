@@ -305,6 +305,7 @@ export interface Boss extends Entity {
     level: number;
     element: ElementType;
     emoji: string;
+    abilities?: string[];
 }
 
 
@@ -314,8 +315,16 @@ export type Resources = {
     mithril: number;
     fish: number;
     herbs: number;
-    starFragments: number; // Phase 1: Star Forge
+    starFragments: number; // Phase 1
+    dungeonTokens?: number; // Phase 87
 };
+
+export interface DungeonMastery {
+    explorerLevel: number; // Reveal radius
+    slayerLevel: number;   // Damage bonus
+    looterLevel: number;   // Drop chance
+    trapSenseLevel: number; // Trap mitigation
+}
 
 export interface Potion {
     id: string;
@@ -518,6 +527,8 @@ export interface LeaderboardEntry {
 
 
 
+import type { DungeonInteraction } from './dungeon';
+
 export interface GameActions {
     // Basic
     toggleSound: () => void;
@@ -541,16 +552,18 @@ export interface GameActions {
     buyStarlightUpgrade: (id: string) => void;
 
     // Exploration & Combat
-    enterTower: () => void;
-    prestigeTower: () => void;
-    enterDungeon: () => void;
+    // enterTower: () => void; // Deprecated
+    // prestigeTower: () => void; // Deprecated
+    enterDungeon: (bossLevel: number) => void;
+    descendDungeon: () => void;
     exitDungeon: () => void;
-    moveDungeon: (dx: number, dy: number) => void;
+    moveDungeon: (dx: number, dy: number) => DungeonInteraction | null;
+    handleDungeonEvent: (event: DungeonInteraction) => void;
     toggleRaid: () => void;
     fightArena: (opponent: ArenaOpponent) => void;
 
     // Galaxy & Territories
-    conquerSector: (id: string) => void;
+    attackSector: (id: string) => void;
     attackTerritory: (id: string) => void;
 
     // Minigames/Features
@@ -558,10 +571,12 @@ export interface GameActions {
     feedPet: (foodType: 'gold' | 'souls', petId?: string) => void;
     winCardBattle: (opponentId: string, difficulty: number) => void;
     forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => void;
+    craftStarForgedItem: (item: Item, goldCost: number, fragmentCost: number) => void;
 
     // Social/Guild
     joinGuild: (guildName: string) => void;
     contributeGuild: (amount: number) => void;
+    summonTavernLine: () => void;
 
     // Town
     upgradeBuilding: (id: string) => void;
@@ -587,6 +602,7 @@ export interface GameActions {
     reforgeItem: (itemId: string) => void;
     manualFish: () => void;
     brewPotion: (potionId: string) => void;
+    startExpedition: (exp: Expedition) => void;
 
     // Settings & State
     setTheme: (theme: string) => void;
@@ -599,17 +615,12 @@ export interface GameActions {
     // Quests
     claimQuest: (id: string) => void;
 
-    // Expeditions
-    startExpedition: (exp: Expedition, heroIds: string[]) => void;
-
     // Market
     buyMarketItem: (item: MarketItem) => void;
 
     // Rifts
     enterRift: (rift: Rift) => void;
     exitRift: (success: boolean) => void;
-
-    // Update 81
     startRift: () => void;
     selectBlessing: (blessing: RiftBlessing) => void;
 
@@ -623,7 +634,10 @@ export interface GameActions {
     // Phase 6: World Boss
     attackWorldBoss: () => void;
     claimWorldBossReward: () => void;
-    craftStarForgedItem: (item: Item, goldCost: number, fragmentCost: number) => void;
+
+    // Phase 9: Void
+    challengeVoidCore: () => void;
+    setVictory: (val: boolean) => void;
 }
 
 export interface WorldBoss extends Boss {

@@ -18,8 +18,13 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
     return 1;
 };
 
-export const calculateHeroPower = (hero: Hero): number => {
+export const calculateHeroPower = (hero: Hero, divinity: number = 0): number => {
     let stats = { ...hero.stats };
+    // Apply Divinity multiplier to base stats before equipment? Or after?
+    // Implementation Plan said "Global Multiplier". So after everything.
+    // Apply Divinity multiplier to base stats before equipment? Or after?
+    // Implementation Plan said "Global Multiplier". So after everything.
+    // const divMult = 1 + (divinity * 0.1); 
 
     if (hero.equipment) {
         const runeMultipliers: Record<string, number> = {};
@@ -41,7 +46,7 @@ export const calculateHeroPower = (hero: Hero): number => {
     }
 
     const baseScore = stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2);
-    let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)));
+    let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)) * (1 + (divinity * 0.1)));
 
     // Phase 80: Fatigue Penalty
     if (hero.fatigue) {
@@ -93,7 +98,8 @@ export const processCombatTurn = (
     activeSynergies: Synergy[] = [],
     riftRestriction?: 'no_heal' | 'phys_immune' | 'magic_immune' | 'no_ult' | 'time_crunch',
     mutator?: TowerMutator,
-    weather?: WeatherType
+    weather?: WeatherType,
+    divinity: number = 0
 ) => {
     let totalDmg = 0;
     let crits = 0;
@@ -153,6 +159,16 @@ export const processCombatTurn = (
         if (h.assignment !== 'combat' || h.isDead || !h.unlocked) return h;
 
         let stats = { ...h.stats };
+        // Apply Divinity
+        if (divinity > 0) {
+            const multilplier = 1 + (divinity * 0.1);
+            stats.attack = Math.floor(stats.attack * multilplier);
+            stats.defense = Math.floor(stats.defense * multilplier);
+            stats.hp = Math.floor(stats.hp * multilplier);
+            stats.maxHp = Math.floor(stats.maxHp * multilplier);
+            stats.magic = Math.floor(stats.magic * multilplier);
+            stats.speed = Math.floor(stats.speed * multilplier);
+        }
 
         if (h.equipment) {
             const runeMultipliers: Record<string, number> = {};
