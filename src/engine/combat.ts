@@ -171,7 +171,9 @@ export const processCombatTurn = (
         }
     }
 
-    const updatedHeroes = heroes.map(h => {
+    const heroHeals: Record<string, number> = {};
+
+    let updatedHeroes = heroes.map(h => {
         if (h.assignment !== 'combat' || h.isDead || !h.unlocked) return h;
 
         let stats = { ...h.stats };
@@ -222,25 +224,17 @@ export const processCombatTurn = (
             });
         }
 
-        let hp = h.stats.hp; // Start with current HP
-        if (stats.maxHp > h.stats.maxHp) {
-            // Logic for MaxHP change handling if needed
-        }
+        let hp = h.stats.hp;
 
         // Phase 91: Insanity System
-        // 1. Gain Insanity if holding Void item
         const hasVoidItem = h.equipment && Object.values(h.equipment).some(item => item?.suffix?.name === 'of the Void');
         let insanityGain = hasVoidItem ? 1 : 0;
-
-        // Cap at 100
         let newInsanity = Math.min(100, (h.insanity || 0) + insanityGain);
 
-        // 2. Apply Negative Effects
         let skipTurn = false;
         let attackAlly = false;
 
         if (newInsanity >= 75) {
-            // 20% chance to be stunned by madness
             if (Math.random() < 0.2) {
                 skipTurn = true;
                 events.push({ id: `madness-${h.id}-${Date.now()}`, type: 'status', text: 'MADNESS', element: 'dark', x: 50, y: 50, value: 0 });
@@ -248,16 +242,14 @@ export const processCombatTurn = (
         }
 
         if (!skipTurn && newInsanity >= 50) {
-            // 10% chance to attack ally
             if (Math.random() < 0.1) {
                 attackAlly = true;
                 events.push({ id: `betrayal-${h.id}-${Date.now()}`, type: 'damage', text: 'BETRAYAL!', element: 'dark', x: 50, y: 50, value: 0 });
             }
         }
 
-        // 3. Modify Stats for "Broken" state (100 Insanity)
         if (newInsanity >= 100) {
-            effectiveDamageMult *= 0.5; // -50% Damage
+            effectiveDamageMult *= 0.5;
         }
 
         let baseDmg = stats.attack * effectiveDamageMult * getElementalMult(h.element, boss.element);
@@ -274,23 +266,16 @@ export const processCombatTurn = (
 
                     if (s.currentCooldown > 0) {
                         if (mutator?.id === 'elemental_chaos' && h.element !== 'neutral') {
-                            baseDmg *= 2; // Passive boost while skill on CD? Or always? Assuming always.
-                            // Logic drift: Previous code applied this inside `if > 0`. 
-                            // If we want it always, it should be outside stats calc. 
-                            // But here we are just fixing scope. I will start with simpler logic.
+                            baseDmg *= 2;
                         }
-
-                        // Apply CD Reduction
                         const reductionMult = 1 + cdReduction;
                         s.currentCooldown = Math.max(0, s.currentCooldown - ((tickDuration / 1000) * reductionMult));
                     }
 
                     if (s.currentCooldown <= 0) {
-                        // Cast Logic
                         let canCast = true;
                         if (isUltimate && riftRestriction === 'no_ult') canCast = false;
 
-                        // Mutator: Bloodthirst
                         let processedSkill = { ...s };
                         let isHealConverted = false;
                         if (processedSkill.effectType === 'heal' && mutator?.id === 'bloodthirst') {
@@ -302,40 +287,35 @@ export const processCombatTurn = (
                         if (processedSkill.effectType === 'heal' && riftRestriction === 'no_heal') canCast = false;
 
                         if (canCast) {
-                            // Execute Skill
                             if (processedSkill.effectType === 'damage') {
-                                let rawSkillDmg = 0;
-                                // How to calculate? Need 'baseDmg'? No, usually skill has value * stats?
-                                // Original code: `skillDmg` was not clearly calculated in view, but generic `baseDmg * s.value`?
-                                // Wait, I missed the calculation line in previous view? 
-                                // Line 161: `baseDmg` is hero attack.
-                                // Let's assume skill damage is `baseDmg * s.value`.
-                                // Looking at lines 122 in original: `skillDmg = baseDmg * s.value`.
-                                // I need to use `baseDmg`.
-
-                                rawSkillDmg = (stats.attack * effectiveDamageMult) * processedSkill.value; // Approximate
+                                let rawSkillDmg = (stats.attack * effectiveDamageMult) * processedSkill.value;
 
                                 if (processedSkill.element) {
                                     rawSkillDmg *= getElementalMult(processedSkill.element, boss.element);
                                 }
 
-                                // Restrictions
                                 if (riftRestriction === 'phys_immune' && ['Warrior', 'Rogue', 'Berserker'].includes(h.class)) rawSkillDmg = 0;
                                 if (riftRestriction === 'magic_immune' && ['Mage', 'Warlock', 'Sorcerer'].includes(h.class)) rawSkillDmg = 0;
 
                                 if (isHealConverted && Math.random() < 0.2) events.push({ id: `blood-${h.id}-${Date.now()}`, type: 'status', text: 'Bloodthirst!', value: 0 });
 
                                 skillDmg = rawSkillDmg;
-                            } else if (processedSkill.effectType === 'heal' || processedSkill.effectType === 'buff') {
-                                const healAmount = stats.maxHp * processedSkill.value;
-                                hp = Math.min(stats.maxHp, hp + healAmount);
-                                baseDmg = 0; // Sacrifices attack
-                            }
+                            } else if (processedSkill.effectType === 'heal') {
+                                // HEAL LOGIC
+                                let targetHero = h;
+                                if (processedSkill.target === 'lowest_hp') {
+                                    const allies = heroes.filter(a => !a.isDead && a.unlocked);
+                                    targetHero = allies.sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0] || h;
+                                }
 
+                                const healAmount = stats.maxHp * processedSkill.value;
+                                heroHeals[targetHero.id] = (heroHeals[targetHero.id] || 0) + healAmount;
+                                events.push({ id: `heal-${h.id}-${Date.now()}`, type: 'status', text: 'HEAL', value: healAmount, x: 50, y: 50 });
+                                baseDmg = 0;
+                            }
                             s.currentCooldown = s.cooldown;
                         }
                     }
-
                     totalDmg += Math.floor(skillDmg);
                 }
             });
@@ -354,29 +334,19 @@ export const processCombatTurn = (
 
         if (gambitAction === 'heal') {
             baseDmg = 0;
-            const target = heroes.find(a => !a.isDead && a.stats.hp < a.stats.maxHp);
+            const target = heroes.filter(a => !a.isDead && a.unlocked).sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0];
             if (target) {
-                const healAmt = h.stats.magic * 2;
-                if (target.id === h.id) {
-                    hp = Math.min(stats.maxHp, hp + healAmt);
-                } else {
-                    hp = Math.min(stats.maxHp, hp + healAmt); // Self heal fallback
-                }
+                const healAmt = stats.magic * 2;
+                heroHeals[target.id] = (heroHeals[target.id] || 0) + healAmt;
             }
         } else if (gambitAction === 'strong_attack') {
-            if (h.stats.mp >= 10) {
-                baseDmg *= 1.5;
-            }
-        } else if (gambitAction === 'buff_def') {
-            baseDmg *= 0.5; // Represents reduced attack power while defending
+            if (h.stats.mp >= 10) { baseDmg *= 1.5; }
         } else if (gambitAction === 'aoe_attack') {
-            baseDmg += h.stats.magic * 3;
+            baseDmg += stats.magic * 3;
         }
 
         const critRoll = Math.random();
-        // Base crit chance + Bonus
         if (critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0)) {
-            // Shadow Strike Synergy: +50% Crit Damage (Base 2x -> 2.5x)
             const critMult = 2 + critDmgBonus;
             baseDmg *= critMult;
             crits++;
@@ -385,42 +355,15 @@ export const processCombatTurn = (
         if (isUltimate) {
             const activeCombos = checkActiveCombos(heroes);
             if (activeCombos.length > 0) {
-                // Sort by multiplier descending to pick the strongest match
                 const bestCombo = activeCombos.sort((a: ComboDefinition, b: ComboDefinition) => b.multiplier - a.multiplier)[0];
                 baseDmg *= bestCombo.multiplier;
-
-                // We only want to push the event once per turn, but this loop runs per hero.
-                // Ideally this should be handled outside the map, but we want the effects applied.
-                // Hack: Identify this specific hero as the 'trigger' or just rely on the component event generation
-                // For now, damage is boosted. We will rely on random chance to show the text to avoid spamming 5 "INFERNO!" texts.
-                if (Math.random() < 0.2) { // 20% chance per hero to shout it out
-                    events.push({
-                        id: `combo-${Date.now()}-${Math.random()}`,
-                        type: 'damage', // Using damage style but with text
-                        text: `COMBO: ${bestCombo.name}!`,
-                        value: 0,
-                        x: 50,
-                        y: 20
-                    });
-                }
-
-                // Apply specific effects
-                if (bestCombo.effect === 'crit') {
-                    // Force crit
-                    if (!critRoll) { // checking if not already critted (though critRoll is local const, we can't overrule it easily without refactor)
-                        // Actually crits++ is already done if RNG passed.
-                        // Let's force bonus damage.
-                        baseDmg *= 1.5;
-                        events.push({ id: `crit-force-${h.id}`, type: 'damage', text: 'LETHAL!', value: 0, x: h.stats.hp, y: h.stats.mp }); // Dummy vars
-                    }
+                if (Math.random() < 0.2) {
+                    events.push({ id: `combo-${Date.now()}-${Math.random()}`, type: 'damage', text: `COMBO: ${bestCombo.name}!`, value: 0, x: 50, y: 20 });
                 }
             } else {
-                baseDmg *= 5; // Default Ultimate Multiplier
+                baseDmg *= 5;
             }
         }
-
-        // Freeze Synergy: Boss takes more damage? (Optional interpretation)
-        // Or we implement it in boss attack logic later.
 
         const heroDamageDealt = Math.floor(baseDmg);
         totalDmg += heroDamageDealt;
@@ -429,7 +372,30 @@ export const processCombatTurn = (
             hp = Math.min(stats.maxHp, hp + (heroDamageDealt * lifeSteal));
         }
 
-        return { ...h, insanity: newInsanity, stats: { ...h.stats, hp }, skills: h.skills };
+        // BOSS ATTACK LOGIC (New)
+        // Scale probability by tick duration (standard 1s = 30% chance)
+        const attackChance = 0.3 * (tickDuration / 1000);
+
+        if (!boss.isDead && Math.random() < attackChance) { // chance for boss to strike this hero
+            const bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
+            hp = Math.max(0, hp - bossDmg);
+            if (hp <= 0) {
+                events.push({ id: `death-${h.id}-${Date.now()}`, type: 'status', text: 'FALLEN', x: 50, y: 50 });
+            } else {
+                events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `-${Math.floor(bossDmg)}`, x: 50, y: 50 });
+            }
+        }
+
+        return { ...h, insanity: newInsanity, stats: { ...h.stats, hp }, skills: h.skills, isDead: hp <= 0 };
+    });
+
+    // Final pass to apply heals
+    updatedHeroes = updatedHeroes.map(h => {
+        const heal = heroHeals[h.id];
+        if (heal) {
+            return { ...h, stats: { ...h.stats, hp: Math.min(h.stats.maxHp, h.stats.hp + heal) } };
+        }
+        return h;
     });
 
     if (pets && pets.length > 0) {

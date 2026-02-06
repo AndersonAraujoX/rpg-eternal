@@ -170,7 +170,8 @@ export const useGame = () => {
                 if (h && h.level >= 50) setHeroes(p => p.map(curr => curr.id === id ? { ...curr, class: (PRESTIGE_CLASSES as any)[h.class] || h.class, level: 1 } : curr));
             },
             toggleAssignment: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h)),
-            purifyHero: (id: string) => { if (gold >= 1000) { setGold(g => g - 1000); setHeroes(p => p.map(h => h.id === id ? { ...h, insanity: 0 } : h)); } },
+            purifyHero: (id: string) => { if (gold >= 1000) { setGold(g => g - 1000); setHeroes(p => p.map(h => h.id === id ? { ...h, insanity: 0 } : h)); addLog("Hero purified!", "success"); } },
+            reviveHero: (id: string) => { if (gold >= 5000) { setGold(g => g - 5000); setHeroes(p => p.map(h => h.id === id ? { ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp * 0.5 } } : h)); addLog("Hero revived!", "success"); } },
             renameHero: (id: string, name: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, name } : h)),
             changeHeroEmoji: (id: string, e: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, emoji: e } : h)),
             equipItem: (id: string, item: Item) => setHeroes(p => p.map(h => {
@@ -217,9 +218,24 @@ export const useGame = () => {
             },
             joinGuild: (name: string) => guildState.joinGuild(name),
             contributeGuild: (amt: number) => guildState.contributeGuild(amt),
-            summonTavernLine: () => {
-                const res = simulateTavernSummon(1, gold, gameStats.tavernPurchases || 0, heroes, artifacts, petsState.pets, 1);
-                if (res.success) { setGold(g => g - res.cost); setHeroes(p => [...p.map(h => res.unlockedHeroIds.includes(h.id) ? { ...h, unlocked: true } : h), ...res.newHeroes]); }
+            summonTavernLine: (amount: number) => {
+                const res = simulateTavernSummon(amount, gold, gameStats.tavernPurchases || 0, heroes, artifacts, petsState.pets, 1, gameStats.heroPity || 0, gameStats.petPity || 0);
+                if (res.success) {
+                    setGold(g => g - res.cost);
+                    setGameStats(s => ({
+                        ...s,
+                        tavernPurchases: (s.tavernPurchases || 0) + amount,
+                        heroPity: res.nextHeroPity,
+                        petPity: res.nextPetPity
+                    }));
+                    setHeroes(p => [...p.map(h => res.unlockedHeroIds.includes(h.id) ? { ...h, unlocked: true } : h), ...res.newHeroes]);
+                    if (res.pendingPets.length > 0) {
+                        petsState.setPets(prev => [...prev, ...res.pendingPets]);
+                    }
+                    res.logs.forEach(l => addLog(l, 'info'));
+                } else {
+                    addLog(res.logs[0], 'error');
+                }
             },
             upgradeBuilding: (id: string) => {
                 const b = buildings.find(x => x.id === id); if (!b || gold < b.cost) return;
@@ -289,18 +305,82 @@ export const useGame = () => {
         if (activeHeroes.length === 0 && !world.tower.active) return;
         const tick = Math.max(40, (1000 / gameSpeed) * (1 - activeSynergies.filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
         const timer = setTimeout(() => {
-            if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine();
+            if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);
             const res = processCombatTurn(activeHeroes, boss, calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, petsState.pets), 0.1, ultimateCharge >= 100, petsState.pets, tick, 1, activeSynergies);
             damageAccumulator.current += res.totalDmg;
             if (ultimateCharge >= 100) setUltimateCharge(0); else setUltimateCharge(p => Math.min(100, p + 5));
-            if (res.totalDmg >= boss.stats.hp) {
-                setGold(g => g + Math.floor(boss.level * 50 * guildGoldMult));
+            let currentBoss = { ...boss };
+            let bossDefeated = false;
+
+            if (res.totalDmg >= currentBoss.stats.hp) {
+                bossDefeated = true;
+                const xpGain = Math.floor(currentBoss.level * 10 * guildXpMult);
+                setGold(g => g + Math.floor(currentBoss.level * 50 * guildGoldMult));
                 setBoss(p => ({ ...p, level: p.level + 1, stats: { ...p.stats, maxHp: Math.floor(p.stats.maxHp * 1.2), hp: Math.floor(p.stats.maxHp * 1.2) } }));
-            } else setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
+                addLog(`Boss Defeated! Active heroes gained ${xpGain} XP.`, 'success');
+
+                // Prepare next boss state for local logic if needed, but we set state above.
+                // We use the boolean flag for the hero update logic.
+            } else {
+                setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
+            }
+
             const miners = heroes.filter(h => h.assignment === 'mine');
             const mYield = processMining(miners);
             if (mYield) setResources(r => ({ ...r, copper: r.copper + (mYield.copper || 0), iron: r.iron + (mYield.iron || 0), mithril: r.mithril + (mYield.mithril || 0) }));
-            setHeroes(res.updatedHeroes.map(h => ({ ...h, fatigue: h.assignment === 'combat' ? Math.min(100, (h.fatigue || 0) + 0.1) : Math.max(0, (h.fatigue || 0) - 5) })));
+
+            setHeroes(prev => prev.map(oldHero => {
+                // 1. Get Combat Update (HP, Skills, etc.) from processCombatTurn result
+                // Note: res.updatedHeroes only contains ACTIVE heroes.
+                const combatHero = res.updatedHeroes.find(h => h.id === oldHero.id);
+
+                // Base to start: combat hero (new HP/skills) or old hero
+                let h = combatHero ? { ...combatHero } : { ...oldHero };
+
+                // 2. Apply XP / Level Up if Boss Died AND Hero was active (combatHero exists)
+                if (bossDefeated && combatHero && !h.isDead) { // Only active survivors gain XP
+                    const xpGain = Math.floor(boss.level * 10 * guildXpMult); // Recalc here or use scoped var
+                    let newXp = (h.xp || 0) + xpGain;
+                    let newLevel = h.level || 1;
+                    let newMaxXp = h.maxXp || 100;
+                    let newStats = { ...h.stats }; // Use current stats (which includes combat changes like HP loss? No, stats structure usually holds MaxHP etc. Current HP is h.stats.hp)
+                    let newStatPoints = h.statPoints || 0;
+
+                    // Preserve current HP ratio or absolute value? 
+                    // Level up usually heals or boosts MaxHP.
+                    // Let's boost MaxHP and add the specific gain to current HP as well to be nice.
+
+                    while (newXp >= newMaxXp) {
+                        newLevel++;
+                        newXp -= newMaxXp;
+                        newMaxXp = Math.floor(newMaxXp * 1.5);
+                        newStatPoints += 5;
+
+                        // Auto-growth
+                        let hpGain = 0;
+                        if (h.class === 'Warrior') { hpGain = 20; newStats.maxHp += 20; newStats.attack += 2; newStats.defense += 2; }
+                        else if (h.class === 'Mage') { newStats.mp += 15; newStats.maxMp += 15; newStats.magic += 4; }
+                        else if (h.class === 'Healer') { hpGain = 10; newStats.maxHp += 10; newStats.mp += 10; newStats.maxMp += 10; newStats.magic += 3; }
+                        else { hpGain = 15; newStats.maxHp += 15; newStats.attack += 2; newStats.magic += 1; }
+
+                        newStats.hp = Math.min(newStats.maxHp, newStats.hp + hpGain);
+                    }
+                    h = { ...h, xp: newXp, level: newLevel, maxXp: newMaxXp, stats: newStats, statPoints: newStatPoints };
+                }
+
+                // 3. Apply Fatigue / Mining Fatigue
+                // Only if assigned
+                if (h.assignment === 'combat') {
+                    h.fatigue = Math.min(100, (h.fatigue || 0) + 0.1);
+                } else if (h.assignment === 'mine') {
+                    // logic for mining fatigue if exists, otherwise recovery
+                    h.fatigue = Math.max(0, (h.fatigue || 0) - 1);
+                } else {
+                    h.fatigue = Math.max(0, (h.fatigue || 0) - 1);
+                }
+
+                return h;
+            }));
         }, tick);
         return () => clearTimeout(timer);
     }, [heroes, boss, gameSpeed, souls, divinity, starlightUpgrades, activeHeroes, galaxyState.galaxy, activeSynergies, guildGoldMult, talents, constellations, artifacts, cards, achievements, petsState.pets, ultimateCharge, world.tower.active, gold, ACTIONS]);

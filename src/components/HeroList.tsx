@@ -68,9 +68,14 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                             <div className="flex items-center gap-1">
                                 <span className="text-xl" role="img" aria-label={hero.name}>{hero.emoji}</span>
                                 <div className="flex flex-col">
-                                    <span className={`text-xs font-bold ${hero.isDead ? 'text-red-500' : 'text-white'}`}>{hero.name}</span>
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-gray-400">{hero.class}</span>
+                                        <span className={`text-xs font-bold ${hero.isDead ? 'text-red-500' : 'text-white'}`}>{hero.name}</span>
+                                        {hero.statPoints > 0 && (
+                                            <span className="bg-yellow-500 text-black text-[8px] px-1 rounded-full animate-bounce font-black">UP!</span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] text-gray-400">{hero.class} (Lv {hero.level})</span>
                                         {((hero.fatigue || 0) >= 50) && (
                                             <ShieldAlert size={10} className={(hero.fatigue || 0) >= 80 ? 'text-red-500 animate-pulse' : 'text-yellow-500'} />
                                         )}
@@ -95,11 +100,20 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                     <button
                                         onClick={() => actions.purifyHero(hero.id)}
                                         className={`p-1 rounded border ${hero.insanity >= 50 ? 'bg-purple-900 border-purple-500 text-purple-200 animate-pulse' : 'bg-gray-800 border-gray-600 text-gray-500'}`}
-                                        title={`Purify Hero (Resets Insanity) - Cost: 50 Souls`}
+                                        title={`Purify Hero (Resets Insanity) - Cost: 1000 Gold`}
                                         disabled={!hero.insanity || hero.insanity === 0}
                                     >
                                         <Skull size={10} />
                                     </button>
+                                    {hero.isDead && (
+                                        <button
+                                            onClick={() => actions.reviveHero(hero.id)}
+                                            className="p-1 rounded border bg-red-600 border-red-400 text-red-100 animate-pulse"
+                                            title="Revive Hero - Cost: 5000 Gold"
+                                        >
+                                            <Heart size={10} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => onOpenGear(hero)}
                                         className="p-1 rounded bg-yellow-900 border border-yellow-500 text-yellow-200"

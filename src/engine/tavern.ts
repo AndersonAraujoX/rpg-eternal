@@ -13,7 +13,19 @@ export interface TavernResult {
     logs: string[];
     success: boolean;
     errorReason?: string;
+    nextHeroPity?: number;
+    nextPetPity?: number;
 }
+
+export const calculateTavernCost = (amount: number, currentPurchases: number) => {
+    const baseCost = 500;
+    const costIncrease = 50;
+    let totalCost = 0;
+    for (let i = 0; i < amount; i++) {
+        totalCost += baseCost + ((currentPurchases + i) * costIncrease);
+    }
+    return totalCost;
+};
 
 export const simulateTavernSummon = (
     amount: number,
@@ -22,15 +34,11 @@ export const simulateTavernSummon = (
     heroes: Hero[],
     artifacts: Artifact[],
     pets: Pet[],
-    buildingLevel: number = 1 // Default to 1
+    buildingLevel: number = 1,
+    heroPity: number = 0,
+    petPity: number = 0
 ): TavernResult => {
-    const baseCost = 500;
-    const costIncrease = 50;
-    let totalCost = 0;
-
-    for (let i = 0; i < amount; i++) {
-        totalCost += baseCost + ((tavernPurchases + i) * costIncrease);
-    }
+    const totalCost = calculateTavernCost(amount, tavernPurchases);
 
     if (gold < totalCost) {
         return {
@@ -44,7 +52,9 @@ export const simulateTavernSummon = (
             petXpBoosts: {},
             logs: [`Need ${Math.floor(totalCost)} Gold for x${amount} summons!`],
             success: false,
-            errorReason: 'insufficient_gold'
+            errorReason: 'insufficient_gold',
+            nextHeroPity: heroPity,
+            nextPetPity: petPity
         };
     }
 
@@ -67,29 +77,49 @@ export const simulateTavernSummon = (
 
     const luckBonus = (buildingLevel - 1) * 0.005; // +0.5% per level
 
+    // Iterate
+    let currentHeroPity = heroPity;
+    let currentPetPity = petPity;
+
     for (let i = 0; i < amount; i++) {
         const roll = Math.random();
 
-        // Hero Chance: 30% + Luck
-        if (roll < 0.3 + luckBonus) {
+        // Dynamic Chances
+        const heroChance = 0.30 + luckBonus + (currentHeroPity * 0.02); // +2% per fail
+        const artifactChance = 0.05;
+        const petChance = 0.15 + (currentPetPity * 0.02); // +2% per fail
+
+        const tHero = heroChance;
+        const tArtifact = tHero + artifactChance;
+        const tPet = tArtifact + petChance;
+
+        if (roll < tHero) {
             const locked = heroes.filter(h => !h.unlocked && !newlyUnlockedIds.has(h.id) && h.class !== 'Miner');
             if (locked.length > 0) {
                 const h = locked[Math.floor(Math.random() * locked.length)];
                 newlyUnlockedIds.add(h.id);
-                logs.push(`Recruited ${h.name}`);
+                logs.push(`Recruited ${h.name} (Chance: ${(heroChance * 100).toFixed(0)}%)`);
+                currentHeroPity = 0;
             } else {
                 statBoosts++;
+                // Keeping pity high for stats might be OP, let's reset it to treating Stat Boost as a "Win"
+                currentHeroPity = 0;
             }
         }
-        else if (roll < 0.35 + luckBonus) {
+        else if (roll < tArtifact) {
+            currentHeroPity++;
             const newArt = RARE_ARTIFACTS[Math.floor(Math.random() * RARE_ARTIFACTS.length)];
             const has = artifacts.some(a => a.id === newArt.id) || pendingArtifacts.some(a => a.id === newArt.id);
             if (!has) {
                 pendingArtifacts.push(newArt);
                 logs.push(`Found Artifact: ${newArt.name}`);
             }
+            currentPetPity++;
         }
-        else if (roll < 0.50 + luckBonus) {
+        else if (roll < tPet) {
+            currentHeroPity++;
+            currentPetPity = 0;
+
             const PETS: Pet[] = [
                 { id: 'p1', name: 'Wolf Pup', type: 'pet', emoji: '🐺', rarity: 'common', level: 1, xp: 0, maxXp: 100, bonus: '+5% Attack', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 5, defense: 0, magic: 0, speed: 1 }, isDead: false },
                 { id: 'p2', name: 'Cat Spirit', type: 'pet', emoji: '🐱', rarity: 'common', level: 1, xp: 0, maxXp: 100, bonus: '+5% Speed', stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 2, defense: 0, magic: 2, speed: 5 }, isDead: false },
@@ -136,10 +166,14 @@ export const simulateTavernSummon = (
                 };
                 pendingPets.push(newPet);
                 batchPetMap.set(finalName, pendingPets.length - 1);
-                logs.push(isShiny ? `SHINY PET: ${finalName}` : `Pet: ${finalName}`);
+                logs.push(isShiny ? `SHINY PET: ${finalName} (Chance: ${(petChance * 100).toFixed(0)}%)` : `Recruited Pet: ${finalName}`);
             }
         }
-        else if (roll < 0.60) {
+        else {
+            // Nothing (Miner)
+            currentHeroPity++;
+            currentPetPity++;
+
             if (currentMinerCount > 0 || addedMinerInBatch) {
                 minerBoosts++;
             } else {
@@ -182,6 +216,8 @@ export const simulateTavernSummon = (
         minerBoosts,
         petXpBoosts,
         logs,
-        success: true
+        success: true,
+        nextHeroPity: currentHeroPity,
+        nextPetPity: currentPetPity
     };
 };

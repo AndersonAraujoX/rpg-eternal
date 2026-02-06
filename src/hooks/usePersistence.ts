@@ -123,16 +123,30 @@ export const usePersistence = (props: PersistenceProps) => {
             try {
                 const state = JSON.parse(saved);
                 // Merge loaded heroes with new props (element, assignment)
-                const loadedHeroes = state.heroes || INITIAL_HEROES;
-                const updatedHeroes = loadedHeroes.map((h: Hero, i: number) => ({
-                    ...(INITIAL_HEROES[i] || {}), // Defaults
-                    ...h, // Loaded
-                    element: h.element || (INITIAL_HEROES[i]?.element || 'neutral'), // Backfill
-                    assignment: h.assignment || 'combat',
-                    gambits: h.gambits || (INITIAL_HEROES[i]?.gambits || []),
-                    insanity: (h as any).corruption ? 50 : (h.insanity || 0), // Migration: if corruption true -> 50 insanity
-                    equipment: h.equipment || {}
-                }));
+                const savedHeroes = state.heroes || [];
+
+                // 1. Merge Static Heroes (preserve unlocked status, level, etc. from save, but ensure all INITIAL_HEROES exist)
+                const staticHeroes = INITIAL_HEROES.map((initH) => {
+                    const savedH = savedHeroes.find((h: Hero) => h.id === initH.id);
+                    if (savedH) {
+                        return {
+                            ...initH, // Get latest static data (stats, skills)
+                            ...savedH, // Overwrite with saved progress (level, unlocked, equipment)
+                            // Deep merge specific objects if needed, but usually spread is enough.
+                            // Ensure element/assignment are backfilled if missing in save
+                            element: savedH.element || initH.element,
+                            assignment: savedH.assignment || 'combat',
+                            gambits: savedH.gambits || initH.gambits,
+                            insanity: (savedH as any).corruption ? 50 : (savedH.insanity || 0),
+                        };
+                    }
+                    return initH; // New hero added to game, not in save
+                });
+
+                // 2. Preserve Dynamic Heroes (Miners) - those not in INITIAL_HEROES
+                const dynamicHeroes = savedHeroes.filter((h: Hero) => !INITIAL_HEROES.some(initH => initH.id === h.id));
+
+                const updatedHeroes = [...staticHeroes, ...dynamicHeroes];
 
                 setHeroes(updatedHeroes);
                 setBoss({ ...state.boss, element: state.boss?.element || 'neutral' });

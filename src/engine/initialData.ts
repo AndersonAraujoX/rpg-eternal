@@ -13,9 +13,21 @@ export const INITIAL_ACHIEVEMENTS: Achievement[] = [
 ];
 
 export const INITIAL_HEROES: Hero[] = [
-    { id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 }, equipment: {} },
-    { id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 }, equipment: {} },
-    { id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 }, equipment: {} },
+    {
+        id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
+            { id: 's1', name: 'Shield Bash', description: 'Deals 200% Attack damage.', unlockLevel: 1, cooldown: 5, currentCooldown: 0, type: 'active', effectType: 'damage', target: 'enemy', value: 2.0 }
+        ], stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 }, equipment: {}
+    },
+    {
+        id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
+            { id: 's2', name: 'Fireball', description: 'Deals 300% Magic damage.', unlockLevel: 1, cooldown: 8, currentCooldown: 0, type: 'active', effectType: 'damage', target: 'enemy', element: 'fire', value: 3.0 }
+        ], stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 }, equipment: {}
+    },
+    {
+        id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
+            { id: 's3', name: 'Lesser Heal', description: 'Restores 20% Max HP.', unlockLevel: 1, cooldown: 6, currentCooldown: 0, type: 'active', effectType: 'heal', target: 'lowest_hp', value: 0.2 }
+        ], stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 }, equipment: {}
+    },
     { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 }, equipment: {} },
     { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 }, equipment: {} },
     { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 }, equipment: {} },
@@ -86,7 +98,9 @@ export const INITIAL_GAME_STATS: GameStats = {
     itemsForged: 0,
     oreMined: 0,
     fishCaught: 0,
-    voidAscensions: 0
+    voidAscensions: 0,
+    heroPity: 0,
+    petPity: 0
 };
 
 export const INITIAL_BUILDINGS: Building[] = [

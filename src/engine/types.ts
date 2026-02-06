@@ -143,6 +143,8 @@ export interface GameStats {
     cardBattlesWon?: number; // Phase 55
     lastLogin?: number;      // Phase 56
     loginStreak?: number;    // Phase 56
+    heroPity?: number;       // Bad Luck Protection for Heroes
+    petPity?: number;        // Bad Luck Protection for Pets
     voidAscensions: number;
     highestRiftFloor?: number; // Update 81
 }
@@ -606,7 +608,7 @@ export interface GameActions {
     // Social/Guild
     joinGuild: (guildName: string) => void;
     contributeGuild: (amount: number) => void;
-    summonTavernLine: () => void;
+    summonTavernLine: (amount: number) => void;
 
     // Town
     upgradeBuilding: (id: string) => void;

@@ -57,11 +57,15 @@ export const useWorldBoss = (
                 const updatedBoss = simulateGlobalDamage(prev);
 
                 // Check if boss died from global damage
-                if (updatedBoss.globalHp <= 0 && !prev.isDead) {
-                    addLog(`WORLD BOSS DEFEATED! The ${prev.name} has fallen!`, 'achievement');
-                    setCanClaim(true);
+                if (updatedBoss.globalHp <= 0) {
+                    if (!prev.isDead) {
+                        addLog(`WORLD BOSS DEFEATED! The ${prev.name} has fallen!`, 'achievement');
+                        setCanClaim(true);
+                    }
                     return { ...updatedBoss, isDead: true, globalHp: 0 };
                 }
+
+                if (prev.isDead) return prev;
 
                 return updatedBoss;
             });

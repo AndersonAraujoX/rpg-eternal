@@ -262,7 +262,7 @@ function App() {
       <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} theme={theme} />
       {showShop && <ShopModal isOpen={true} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />}
-      {showTavern && <TavernModal heroes={heroes} gold={gold} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} />}
+      {showTavern && <TavernModal heroes={heroes} gold={gold} tavernPurchases={gameStats.tavernPurchases || 0} heroPity={gameStats.heroPity || 0} petPity={gameStats.petPity || 0} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} />}
       {showForge && <ForgeModal resources={resources} forgeUpgrade={actions.forgeUpgrade} onClose={() => setShowForge(false)} setResources={setResources} />}
       {showInventory && <InventoryModal isOpen={true} items={items} onClose={() => setShowInventory(false)} />}
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
