@@ -82,11 +82,11 @@ export const calculateDamageMultiplier = (souls: number, divinity: number, talen
     const hasVoidStone = artifacts.some(a => a.id === 'a2');
     if (hasVoidStone) mult *= 1.5;
 
-    const attackCards = cards.filter(c => c.stat === 'attack');
+    const attackCards = (cards || []).filter(c => c.stat === 'attack');
     const cardBonus = attackCards.reduce((acc, c) => acc + (c.count * c.value), 0);
     mult *= (1 + cardBonus);
 
-    const achievementBonus = achievements.filter(a => a.isUnlocked).length * 0.01;
+    const achievementBonus = (achievements || []).filter(a => a.isUnlocked).length * 0.01;
     mult *= (1 + achievementBonus);
 
     const petDamageBonus = pets.reduce((acc, p) => {

@@ -148,7 +148,7 @@ export const useGame = () => {
         }
     }, [activeEvent, boss.level, addLog]);
 
-    const activeHeroes = useMemo(() => heroes.filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked), [heroes]);
+    const activeHeroes = useMemo(() => (heroes || []).filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked), [heroes]);
 
     const guildAtkMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['altar_war'] || 0) * 0.02) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'damage') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
     const guildHpMult = useMemo(() => guildState.guild ? 1 + ((guildState.guild.monuments?.['fountain_life'] || 0) * 0.02) : 1, [guildState.guild]);
@@ -303,7 +303,7 @@ export const useGame = () => {
     // CORE LOOP
     useEffect(() => {
         if (activeHeroes.length === 0 && !world.tower.active) return;
-        const tick = Math.max(40, (1000 / gameSpeed) * (1 - activeSynergies.filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
+        const tick = Math.max(40, (1000 / gameSpeed) * (1 - (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
         const timer = setTimeout(() => {
             if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);
             const res = processCombatTurn(activeHeroes, boss, calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, petsState.pets), 0.1, ultimateCharge >= 100, petsState.pets, tick, 1, activeSynergies);
@@ -325,7 +325,7 @@ export const useGame = () => {
                 setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
             }
 
-            const miners = heroes.filter(h => h.assignment === 'mine');
+            const miners = (heroes || []).filter(h => h.assignment === 'mine');
             const mYield = processMining(miners);
             if (mYield) setResources(r => ({ ...r, copper: r.copper + (mYield.copper || 0), iron: r.iron + (mYield.iron || 0), mithril: r.mithril + (mYield.mithril || 0) }));
 

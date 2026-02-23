@@ -79,7 +79,7 @@ export const getAutoSell = (upgrades: Record<string, number>, inventory: Item[],
     const Rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic', 'Eternal'];
     const threshold = Rarities.indexOf(autoSellRarity);
 
-    return inventory.filter(item => {
+    return (inventory || []).filter(item => {
         const itemRarity = Rarities.indexOf(item.rarity);
         return itemRarity <= threshold;
     });
