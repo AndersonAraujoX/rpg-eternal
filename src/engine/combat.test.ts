@@ -53,3 +53,71 @@ describe('Elemental Synergy', () => {
         expect(totalDmg).toBe(10);
     });
 });
+
+import { calculateDamageMultiplier } from './combat';
+
+describe('calculateDamageMultiplier', () => {
+    it('scales linearly with souls and divinity', () => {
+        // Base is 1. Souls * 0.05 + Div * 1.0
+        const mult = calculateDamageMultiplier(100, 2, [], [], [], mockBoss('neutral'), [], [], []);
+        // 1 + (100 * 0.05) + (2 * 1.0) = 1 + 5 + 2 = 8
+        expect(mult).toBe(8);
+    });
+
+    it('applies Void Stone artifact multiplier', () => {
+        const artifacts = [{ id: 'a2', name: 'Void Stone', description: '', isEquipped: false }];
+        const mult = calculateDamageMultiplier(0, 0, [], [], artifacts as any, mockBoss('neutral'), [], [], []);
+        expect(mult).toBe(1.5);
+    });
+
+    it('applies Monster Card bonuses', () => {
+        const cards = [{ id: 'c1', name: 'Goblin', stat: 'attack', value: 0.1, count: 5, rarity: 'common', maxCount: 10, dropRate: 0.1, location: '' }];
+        const mult = calculateDamageMultiplier(0, 0, [], [], [], mockBoss('neutral'), cards as any, [], []);
+        // Card bonus: 5 * 0.1 = 0.5. Total: 1 * (1 + 0.5) = 1.5
+        expect(mult).toBe(1.5);
+    });
+});
+
+describe('Skill Execution & Mutators', () => {
+    it('executes damage skills correctly', () => {
+        const hero = mockHero('neutral');
+        hero.skills = [{
+            id: 's1', name: 'Slash', type: 'active', effectType: 'damage',
+            value: 2.0, cooldown: 0, currentCooldown: 0, requiredLevel: 1, element: 'neutral'
+        }] as any;
+        const { totalDmg } = processCombatTurn([hero], mockBoss('neutral'), 1, 0, false, []);
+        // Base atk 10 + Skill 10 * 2.0 = 30
+        expect(totalDmg).toBe(30);
+    });
+
+    it('executes healing skills correctly', () => {
+        const hero = mockHero('neutral');
+        hero.stats.hp = 10;
+        hero.skills = [{
+            id: 's2', name: 'Heal', type: 'active', effectType: 'heal',
+            value: 100, cooldown: 0, currentCooldown: 0, requiredLevel: 1, element: 'light'
+        }];
+        const { updatedHeroes, totalDmg } = processCombatTurn([hero], mockBoss('neutral'), 1, 0, false, []);
+        // Base atk 10. Healing is separate.
+        expect(totalDmg).toBe(10);
+        expect(updatedHeroes[0].stats.hp).toBe(100); // Max HP is 100
+    });
+
+    it('mutator: bloodthirst converts heal to damage', () => {
+        const hero = mockHero('neutral');
+        hero.skills = [{
+            id: 's2', name: 'Heal', type: 'active', effectType: 'heal',
+            value: 100, cooldown: 0, currentCooldown: 0, requiredLevel: 1, element: 'light'
+        }] as any;
+        const bloodthirst = { id: 'bloodthirst', name: 'Bloodthirst', description: '', type: 'logic' };
+
+        const { totalDmg } = processCombatTurn([hero], mockBoss('dark'), 1, 0, false, [], 1000, 1, [], undefined, bloodthirst as any);
+
+        // Base atk: 10. (Neutral vs Dark = 10)
+        // Skill value: 100. Converted to dmg: 100 * 1.5 = 150.
+        // Skill element (light) vs Boss (dark) multiplier = 1.5. 
+        // Skill Base Dmg: 10 * 150 * 1.5 = 2250.
+        // Total = 10 + 2250 = 2260.
+        expect(totalDmg).toBe(2260);
+    });
+});
