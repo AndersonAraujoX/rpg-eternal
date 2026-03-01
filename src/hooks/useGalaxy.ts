@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { GalaxySector, Territory, Spaceship, LogEntry } from '../engine/types';
 import { soundManager } from '../engine/sound';
+import { INITIAL_GALAXY, calculateGalaxyIncome, calculateGalaxyBuffs } from '../engine/galaxy';
 
 export const useGalaxy = (
     initialGalaxy: GalaxySector[],
@@ -10,7 +11,7 @@ export const useGalaxy = (
     setGold: React.Dispatch<React.SetStateAction<number>>,
     addLog: (message: string, type?: LogEntry['type']) => void
 ) => {
-    const [galaxy, setGalaxy] = useState<GalaxySector[]>(initialGalaxy);
+    const [galaxy, setGalaxy] = useState<GalaxySector[]>(initialGalaxy || INITIAL_GALAXY);
     const [territories, setTerritories] = useState<Territory[]>(initialTerritories);
     const [spaceship, setSpaceship] = useState<Spaceship>(initialSpaceship);
 
@@ -57,7 +58,8 @@ export const useGalaxy = (
                 ...prev,
                 parts: {
                     ...prev.parts,
-                    [part]: prev.parts[part] + 1
+                    ...spaceship.parts,
+                    [part]: spaceship.parts[part] + 1
                 },
                 level: prev.level + 1
             }));
@@ -68,10 +70,8 @@ export const useGalaxy = (
         }
     };
 
-    const galaxyRewards = galaxy.filter(s => s.isOwned).reduce((acc, s) => {
-        if (s.type === 'star') acc.gold += (s.level * 10);
-        return acc;
-    }, { gold: 0 });
+    const galaxyRewards = calculateGalaxyIncome(galaxy);
+    const galaxyBuffs = calculateGalaxyBuffs(galaxy);
 
     return {
         galaxy, setGalaxy,
@@ -80,6 +80,7 @@ export const useGalaxy = (
         attackSector,
         attackTerritory,
         upgradeSpaceship,
-        galaxyRewards
+        galaxyRewards,
+        galaxyBuffs
     };
 };

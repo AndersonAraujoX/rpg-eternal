@@ -598,6 +598,12 @@ export interface GameActions {
     attackSector: (id: string) => void;
     attackTerritory: (id: string) => void;
     unlockOuterSpace: () => void;
+    triggerRebirth: () => void;
+    confirmRebirth: () => void;
+    buyPrestigeNode: (nodeId: string) => void;
+    visitTown: () => void;
+    triggerAscension: () => void;
+    ascendToVoid: () => void;
 
     // Minigames/Features
     breedPets: (parent1: Pet, parent2: Pet) => void;
@@ -621,13 +627,6 @@ export interface GameActions {
     claimLoginReward: () => void;
     claimDailyQuest: (questId: string) => void;
     checkDailies: () => void;
-
-    // Void & Rebirth
-    enterVoid: () => void;
-    triggerRebirth: () => void;
-    triggerAscension: () => void;
-    buyDarkGift: (cost: number, effect: string) => void;
-    ascendToVoid: () => void;
 
     // Crafting & Items
     craftRune: () => void;

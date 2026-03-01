@@ -18,7 +18,7 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
     return 1;
 };
 
-export const calculateHeroPower = (hero: Hero, divinity: number = 0): number => {
+export const calculateHeroPower = (hero: Hero): number => {
     let stats = { ...hero.stats };
     // Apply Divinity multiplier to base stats before equipment? Or after?
     // Implementation Plan said "Global Multiplier". So after everything.
@@ -62,7 +62,7 @@ export const calculateHeroPower = (hero: Hero, divinity: number = 0): number => 
     }
 
     const baseScore = stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2);
-    let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)) * (1 + (divinity * 0.1)));
+    let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)));
 
     // Phase 80: Fatigue Penalty
     if (hero.fatigue) {
@@ -73,11 +73,11 @@ export const calculateHeroPower = (hero: Hero, divinity: number = 0): number => 
     return power;
 };
 
-export const calculateDamageMultiplier = (souls: number, divinity: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], _boss: Boss, cards: MonsterCard[], achievements: Achievement[] = [], pets: Pet[] = []) => {
+export const calculateDamageMultiplier = (souls: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], _boss: Boss, cards: MonsterCard[], achievements: Achievement[] = [], pets: Pet[] = [], galaxyDamageMult: number = 0) => {
     const dmgTalent = talents.find(t => t.stat === 'attack');
     const cScale = constellations.find(c => c.bonusType === 'bossDamage');
     const starMult = cScale ? (1 + cScale.level * cScale.valuePerLevel) : 1;
-    let mult = (1 + (souls * 0.05) + (divinity * 1.0) + (dmgTalent ? (dmgTalent.level * dmgTalent.valuePerLevel) : 0)) * starMult;
+    let mult = (1 + (souls * 0.05) + (dmgTalent ? (dmgTalent.level * dmgTalent.valuePerLevel) : 0)) * starMult;
 
     const hasVoidStone = artifacts.some(a => a.id === 'a2');
     if (hasVoidStone) mult *= 1.5;
@@ -98,6 +98,9 @@ export const calculateDamageMultiplier = (souls: number, divinity: number, talen
         return acc;
     }, 0);
     mult *= (1 + petDamageBonus);
+
+    // Apply Galaxy Buff
+    mult *= (1 + galaxyDamageMult);
 
     return mult;
 };
@@ -179,13 +182,13 @@ export const processCombatTurn = (
         let stats = { ...h.stats };
         // Apply Divinity
         if (divinity > 0) {
-            const multilplier = 1 + (divinity * 0.1);
-            stats.attack = Math.floor(stats.attack * multilplier);
-            stats.defense = Math.floor(stats.defense * multilplier);
-            stats.hp = Math.floor(stats.hp * multilplier);
-            stats.maxHp = Math.floor(stats.maxHp * multilplier);
-            stats.magic = Math.floor(stats.magic * multilplier);
-            stats.speed = Math.floor(stats.speed * multilplier);
+            const multiplier = 1 + (divinity * 0.1);
+            stats.attack = Math.floor(stats.attack * multiplier);
+            stats.defense = Math.floor(stats.defense * multiplier);
+            stats.hp = Math.floor(stats.hp * multiplier);
+            stats.maxHp = Math.floor(stats.maxHp * multiplier);
+            stats.magic = Math.floor(stats.magic * multiplier);
+            stats.speed = Math.floor(stats.speed * multiplier);
         }
 
         if (h.equipment) {

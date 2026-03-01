@@ -51,13 +51,21 @@ export const useWorldBoss = (
         if (!worldBoss || worldBoss.isDead) return;
 
         const interval = setInterval(() => {
+            // Passive contribution (Phase Core Fix)
+            const passiveDamage = Math.floor(partyPower * 0.01); // 1% power per second passively
+
             setWorldBoss(prev => {
                 if (!prev || prev.isDead) return prev;
 
                 const updatedBoss = simulateGlobalDamage(prev);
+                const finalHp = Math.max(0, updatedBoss.globalHp - passiveDamage);
 
-                // Check if boss died from global damage
-                if (updatedBoss.globalHp <= 0) {
+                if (passiveDamage > 0) {
+                    setPersonalDamage(p => p + passiveDamage);
+                }
+
+                // Check if boss died
+                if (finalHp <= 0) {
                     if (!prev.isDead) {
                         addLog(`WORLD BOSS DEFEATED! The ${prev.name} has fallen!`, 'achievement');
                         setCanClaim(true);
@@ -65,14 +73,12 @@ export const useWorldBoss = (
                     return { ...updatedBoss, isDead: true, globalHp: 0 };
                 }
 
-                if (prev.isDead) return prev;
-
-                return updatedBoss;
+                return { ...updatedBoss, globalHp: finalHp };
             });
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [worldBoss?.id, worldBoss?.isDead]); // Depend on ID to reset on new boss
+    }, [worldBoss?.id, worldBoss?.isDead, partyPower]); // Depend on ID to reset on new boss
 
     // Claim Rewards
     const claimReward = () => {

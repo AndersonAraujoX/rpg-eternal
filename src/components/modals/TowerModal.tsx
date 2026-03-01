@@ -55,7 +55,7 @@ export const TowerModal: React.FC<TowerModalProps> = ({ isOpen, onClose, tower, 
                     <button
                         onClick={() => { actions.prestigeTower(); onClose(); }}
                         className="w-full bg-cyan-900 hover:bg-cyan-700 text-cyan-100 border border-cyan-500 py-3 rounded font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={tower.floor < 20}
+                        disabled={tower.maxFloor < 20}
                     >
                         🌌 ASCENDER (Req: Andar 20)
                     </button>

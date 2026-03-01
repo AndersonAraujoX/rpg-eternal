@@ -52,6 +52,8 @@ import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
 import { DevToolsModal } from './components/modals/DevToolsModal'; // Dev Tools
+import { PortalResetModal } from './components/modals/PortalResetModal';
+import { PrestigeTreeModal } from './components/modals/PrestigeTreeModal';
 
 import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
 
@@ -86,7 +88,8 @@ function App() {
     voidAscensions,
     formations, saveFormation, loadFormation, deleteFormation, // Update 74
     activeEvent,
-    setSouls, setDivinity, setStarlight, setHeroes, setGameSpeed
+    prestigeNodes, townVisited, triggerRebirth,
+    setSouls, setDivinity, setStarlight, setHeroes, setGameSpeed, portalConfig, setPortalConfig
   } = useGame();
 
 
@@ -98,6 +101,7 @@ function App() {
   const [showMastery, setShowMastery] = useState(false);
   const [showRiftModal, setShowRiftModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showPrestigeTree, setShowPrestigeTree] = useState(false);
   const [showTavern, setShowTavern] = useState(false);
   // showCampfire managed by useGame (Phase 80)
   const [showStars, setShowStars] = useState(false);
@@ -208,32 +212,36 @@ function App() {
 
       {/* Game Container */}
       <div className={`w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-opacity-95 border-4 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm transition-colors duration-500 ${themeClass}`}>
+        {/* TOWN EVENT WIDGET */}
+        {activeEvent && <TownEventWidget event={activeEvent} actions={actions} onDismiss={actions.dismissEvent} />}
 
         <Header
-          boss={boss} souls={souls} gold={gold} divinity={divinity} resources={resources} keys={keys}
-          dungeonActive={dungeonActive} raidActive={raidActive} raidTimer={raidTimer} isSoundOn={isSoundOn} gameSpeed={gameSpeed} actions={actions}
-          tower={tower} guild={guild} voidMatter={voidMatter} voidActive={voidActive} voidTimer={voidTimer}
-          setShowShop={setShowShop} setShowTavern={setShowTavern} setShowStars={setShowStars} setShowForge={setShowForge}
-          setShowInventory={setShowInventory} setShowBestiary={setShowBestiary} setShowSettings={setShowSettings} setShowStats={setShowStats}
-          setShowTower={setShowTower} setShowGuild={setShowGuild} setShowVoid={setShowVoid}
-          setShowArena={setShowArena} setShowQuests={setShowQuests} setShowDailyRewards={setShowDailyRewards} setShowGalaxy={setShowGalaxy}
-          setShowLeaderboard={setShowLeaderboard}
-          setShowRiftModal={setShowRiftModal}
-
-          setShowBreedingModal={setShowBreedingModal} // Phase 46
-          setShowGuildWar={setShowGuildWar} // Phase 47
-          weather={weather} weatherTimer={weatherTimer} // Phase 48
-          setShowMuseum={setShowMuseum} // Phase 49
-          setShowTown={setShowTown} // Phase 53
-          setShowCampfire={setShowCampfire} // Phase 80
-          setShowStarForge={setShowStarForge}
+          boss={boss} souls={souls} gold={gold} divinity={divinity} resources={resources}
+          tower={tower} guild={guild} keys={keys} voidMatter={voidMatter}
+          dungeonActive={dungeonActive} raidActive={raidActive} raidTimer={raidTimer}
+          voidActive={voidActive} voidTimer={voidTimer}
+          isSoundOn={isSoundOn} gameSpeed={gameSpeed} actions={{ ...actions, triggerRebirth, visitTown: () => { actions.visitTown(); setShowTown(true); } }}
+          setShowShop={setShowShop} setShowTavern={setShowTavern} setShowStars={setShowStars}
+          setShowForge={setShowForge} setShowInventory={setShowInventory} setShowBestiary={setShowBestiary}
+          setShowStats={setShowStats} setShowTower={setShowTower} setShowGuild={setShowGuild}
+          setShowSettings={setShowSettings} setShowVoid={setShowVoid} setShowArena={setShowArena}
+          setShowQuests={setShowQuests} setShowDailyRewards={setShowDailyRewards}
+          setShowRunes={setShowRunes} setShowAchievements={setShowAchievements}
+          setShowStarlight={setShowStarlight} setShowGalaxy={setShowGalaxy}
+          setShowLeaderboard={setShowLeaderboard} setShowHelp={setShowHelp}
+          setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy}
+          setShowExpeditions={setShowExpeditions} setShowGarden={setShowGarden}
+          setShowRiftModal={setShowRiftModal} setShowBreedingModal={setShowBreedingModal}
+          setShowGuildWar={setShowGuildWar} weather={weather} weatherTimer={weatherTimer}
+          setShowMuseum={setShowMuseum} setShowTown={(v) => { if (v) actions.visitTown(); setShowTown(v); }}
+          setShowCampfire={setShowCampfire} setShowStarForge={setShowStarForge}
           setShowWorldBoss={setShowWorldBoss}
-          outerSpaceUnlocked={outerSpaceUnlocked}
-          // setShowCardBattle - Triggered from Museum
-          setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
-          setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy} setShowExpeditions={setShowExpeditions}
-          setShowGarden={setShowGarden}
           setShowDevTools={setShowDevTools}
+          outerSpaceUnlocked={outerSpaceUnlocked}
+          setShowPrestigeTree={setShowPrestigeTree}
+          townVisited={townVisited}
+          voidAscensions={voidAscensions}
+          buildings={buildings}
         />
 
         <BattleArea
@@ -339,7 +347,7 @@ function App() {
         gameStats={gameStats}
       />
       {showBreedingModal && <BreedingModal isOpen={true} onClose={() => setShowBreedingModal(false)} pets={pets} breedPets={breedPets} gold={gold} />}
-      {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} partyPower={partyPower} />}
+      {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} partyPower={partyPower} guild={guild} />}
       <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
@@ -385,7 +393,6 @@ function App() {
         />
       )}
 
-      {/* PHASE 57: Hero Gear */}
       {selectedHeroId && (
         <HeroGearModal
           isOpen={!!selectedHeroId}
@@ -435,6 +442,26 @@ function App() {
           setOuterSpaceUnlocked={setOuterSpaceUnlocked}
         />
       )}
+
+      {/* PROGRESSION MODALS */}
+      <PortalResetModal
+        isOpen={!!portalConfig}
+        title={portalConfig?.title}
+        message={portalConfig?.message}
+        warning={portalConfig?.warning}
+        soulsGained={portalConfig?.soulsGained}
+        rewardText={portalConfig?.rewardText}
+        onConfirm={portalConfig?.onConfirm || (() => { })}
+        onCancel={() => setPortalConfig(null)}
+      />
+
+      <PrestigeTreeModal
+        isOpen={showPrestigeTree}
+        onClose={() => setShowPrestigeTree(false)}
+        souls={souls}
+        prestigeNodes={prestigeNodes}
+        onBuyNode={actions.buyPrestigeNode}
+      />
     </div>
   );
 }

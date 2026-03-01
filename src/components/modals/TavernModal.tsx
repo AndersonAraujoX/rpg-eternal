@@ -54,9 +54,18 @@ export function TavernModal({ heroes, gold, tavernPurchases, summonTavern, onClo
                             <button
                                 onClick={() => summonTavern(1)}
                                 disabled={gold < cost1}
-                                className={`flex-1 btn-retro py-2 rounded text-white ${gold < cost1 ? 'bg-gray-600 cursor-not-allowed' : 'bg-amber-700 hover:bg-amber-600'}`}
+                                className={`flex-1 btn-retro py-2 rounded text-white font-bold relative ${cost1 === 0
+                                        ? 'bg-green-700 hover:bg-green-600 border-2 border-green-400 animate-pulse'
+                                        : gold < cost1 ? 'bg-gray-600 cursor-not-allowed' : 'bg-amber-700 hover:bg-amber-600'
+                                    }`}
                             >
-                                Convocar 1 ({cost1}o)
+                                {cost1 === 0 ? (
+                                    <span className="flex items-center justify-center gap-1">
+                                        ✨ Convocar 1 <span className="bg-green-400 text-black text-xs px-1 rounded font-black">GRÁTIS!</span>
+                                    </span>
+                                ) : (
+                                    `Convocar 1 (${cost1}o)`
+                                )}
                             </button>
                             <button
                                 onClick={() => summonTavern(10)}

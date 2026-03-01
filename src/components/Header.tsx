@@ -1,7 +1,7 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock, ShieldAlert } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building as BuildingIcon, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock, ShieldAlert, Lock } from 'lucide-react';
 import { formatNumber } from '../utils';
-import type { Boss, Resources, Tower, Guild } from '../engine/types';
+import type { Boss, Resources, Tower, Guild, Building } from '../engine/types';
 import type { WeatherType } from '../engine/weather'; // Phase 48
 import { WEATHER_DATA } from '../engine/weather'; // Phase 48
 
@@ -63,6 +63,10 @@ interface HeaderProps {
     activeEvent?: import('../engine/townEvents').TownEvent | null; // Phase 92
     setShowDevTools?: (v: boolean) => void;
     outerSpaceUnlocked?: boolean;
+    setShowPrestigeTree?: (v: boolean) => void;
+    townVisited?: boolean;
+    voidAscensions?: number;
+    buildings?: Building[];
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -84,19 +88,35 @@ export const Header: React.FC<HeaderProps> = ({
     setShowDevTools,
     activeEvent,
     outerSpaceUnlocked,
+    setShowPrestigeTree,
+    townVisited,
+    voidAscensions = 0,
+    buildings = []
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
 
     // Button Groups
     const renderMainButtons = () => (
         <>
-            <button onClick={() => setShowForge(true)} className="btn-retro bg-orange-900 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-800" title="A Forja"><Hammer size={12} /> Forja</button>
             <button onClick={() => setShowInventory(true)} className="btn-retro bg-slate-700 text-slate-200 px-2 py-1 rounded border border-slate-500 flex items-center gap-1 hover:bg-slate-600" title="Inventário"><Briefcase size={12} /> Mochila</button>
-            <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guilda"><Building size={12} /> Guilda</button>
+            <button
+                onClick={() => setShowGuild(true)}
+                disabled={!buildings.find(b => b.id === 'guild_hall' && b.level > 0)}
+                className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${buildings.find(b => b.id === 'guild_hall' && b.level > 0) ? 'bg-green-900 text-green-200 border-green-500 hover:bg-green-800' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                title={buildings.find(b => b.id === 'guild_hall' && b.level > 0) ? "Guilda" : "Bloqueado: Requer Sede da Guilda na Vila"}
+            >
+                <BuildingIcon size={12} /> {buildings.find(b => b.id === 'guild_hall' && b.level > 0) ? "Guilda" : "???"}
+                {!buildings.find(b => b.id === 'guild_hall' && b.level > 0) && <Lock size={8} />}
+            </button>
             {setShowTown && (
-                <button onClick={() => setShowTown(true)} className="btn-retro bg-stone-700 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-600 relative" title="Vila">
+                <button onClick={() => { if (setShowTown) setShowTown(true); }} className="btn-retro bg-stone-700 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-600 relative" title="Vila">
                     <Home size={12} /> Vila
                     {activeEvent && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-white" />}
+                </button>
+            )}
+            {setShowPrestigeTree && voidAscensions > 0 && (
+                <button onClick={() => setShowPrestigeTree(true)} className="btn-retro bg-purple-900 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800" title="Árvore de Almas">
+                    <Zap size={12} className="text-yellow-400" /> Árvore
                 </button>
             )}
             {setShowCampfire && <button onClick={() => setShowCampfire(true)} className="btn-retro bg-orange-800 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-700" title="Fogueira"><Flame size={12} /> Descansar</button>}
@@ -145,18 +165,99 @@ export const Header: React.FC<HeaderProps> = ({
         </>
     );
 
-    const renderSkillsButtons = () => (
-        <>
-            {/* Phase 46: Breeding Button */}
-            <button onClick={() => setShowBreedingModal && setShowBreedingModal(true)} className="btn-retro bg-pink-700 text-white px-2 py-1 rounded border border-pink-500 hover:bg-pink-600 flex items-center gap-1" title="Criação de Pets"> 🧬 Criar </button>
-            {/* PHASE 41 */}
-            {setShowFishing && <button onClick={() => setShowFishing(true)} className="btn-retro bg-cyan-800 text-cyan-200 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-700" title="Pesca"><Anchor size={12} /> Pescar</button>}
-            {setShowAlchemy && <button onClick={() => setShowAlchemy(true)} className="btn-retro bg-purple-800 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-700" title="Alquimia"><FlaskConical size={12} /> Poções</button>}
-            {setShowExpeditions && <button onClick={() => setShowExpeditions(true)} className="btn-retro bg-amber-800 text-amber-200 px-2 py-1 rounded border border-amber-500 flex items-center gap-1 hover:bg-amber-700" title="Expedições"><Map size={12} /> Explorar</button>}
-            {setShowGarden && <button onClick={() => setShowGarden(true)} className="btn-retro bg-green-800 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-700" title="O Grande Jardim"><Leaf size={12} /> Jardim</button>}
-            <button onClick={() => setShowRunes && setShowRunes(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Forja de Runas"><Gem size={12} /> Runas</button>
-        </>
-    );
+    const renderSkillsButtons = () => {
+        const hasForge = buildings.find(b => b.id === 'forge_workshop' && b.level > 0);
+        const hasBreeding = buildings.find(b => b.id === 'breeding_center' && b.level > 0);
+        const hasFishing = buildings.find(b => b.id === 'fishing_dock' && b.level > 0);
+        const hasAlchemy = buildings.find(b => b.id === 'alchemy_lab' && b.level > 0);
+        const hasExpeditions = buildings.find(b => b.id === 'expedition_post' && b.level > 0);
+        const hasGarden = buildings.find(b => b.id === 'mystic_garden' && b.level > 0);
+        const hasRunes = buildings.find(b => b.id === 'rune_sanctuary' && b.level > 0);
+
+        return (
+            <>
+                <button
+                    onClick={() => setShowForge(true)}
+                    disabled={!hasForge}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasForge ? 'bg-orange-900 text-orange-200 border-orange-500 hover:bg-orange-800' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={hasForge ? "A Forja" : "Bloqueado: Requer Oficina de Forja na Vila"}
+                >
+                    <Hammer size={12} /> {hasForge ? "Forja" : "???"}
+                    {!hasForge && <Lock size={8} />}
+                </button>
+
+                {setShowBreedingModal && (
+                    <button
+                        onClick={() => setShowBreedingModal(true)}
+                        disabled={!hasBreeding}
+                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasBreeding ? 'bg-pink-700 text-white border-pink-500 hover:bg-pink-600' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                        title={hasBreeding ? "Criação de Pets" : "Bloqueado: Requer Centro de Criação na Vila"}
+                    >
+                        <Zap size={12} /> {hasBreeding ? "Criar" : "???"}
+                        {!hasBreeding && <Lock size={8} />}
+                    </button>
+                )}
+
+                {setShowFishing && (
+                    <button
+                        onClick={() => setShowFishing(true)}
+                        disabled={!hasFishing}
+                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasFishing ? 'bg-cyan-800 text-cyan-200 border-cyan-500 hover:bg-cyan-700' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                        title={hasFishing ? "Pesca" : "Bloqueado: Requer Doca de Pesca na Vila"}
+                    >
+                        <Anchor size={12} /> {hasFishing ? "Pescar" : "???"}
+                        {!hasFishing && <Lock size={8} />}
+                    </button>
+                )}
+
+                {setShowAlchemy && (
+                    <button
+                        onClick={() => setShowAlchemy(true)}
+                        disabled={!hasAlchemy}
+                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasAlchemy ? 'bg-purple-800 text-purple-200 border-purple-500 hover:bg-purple-700' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                        title={hasAlchemy ? "Alquimia" : "Bloqueado: Requer Laboratório de Alquimia na Vila"}
+                    >
+                        <FlaskConical size={12} /> {hasAlchemy ? "Poções" : "???"}
+                        {!hasAlchemy && <Lock size={8} />}
+                    </button>
+                )}
+
+                {setShowExpeditions && (
+                    <button
+                        onClick={() => setShowExpeditions(true)}
+                        disabled={!hasExpeditions}
+                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasExpeditions ? 'bg-amber-800 text-amber-200 border-amber-500 hover:bg-amber-700' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                        title={hasExpeditions ? "Expedições" : "Bloqueado: Requer Posto de Expedição na Vila"}
+                    >
+                        <Map size={12} /> {hasExpeditions ? "Explorar" : "???"}
+                        {!hasExpeditions && <Lock size={8} />}
+                    </button>
+                )}
+
+                {setShowGarden && (
+                    <button
+                        onClick={() => setShowGarden(true)}
+                        disabled={!hasGarden}
+                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasGarden ? 'bg-green-800 text-green-200 border-green-500 hover:bg-green-700' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                        title={hasGarden ? "O Grande Jardim" : "Bloqueado: Requer Jardim Místico na Vila"}
+                    >
+                        <Leaf size={12} /> {hasGarden ? "Jardim" : "???"}
+                        {!hasGarden && <Lock size={8} />}
+                    </button>
+                )}
+
+                <button
+                    onClick={() => setShowRunes && setShowRunes(true)}
+                    disabled={!hasRunes}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasRunes ? 'bg-indigo-900 text-indigo-200 border-indigo-500 hover:bg-indigo-800' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={hasRunes ? "Forja de Runas" : "Bloqueado: Requer Santuário de Runas na Vila"}
+                >
+                    <Gem size={12} /> {hasRunes ? "Runas" : "???"}
+                    {!hasRunes && <Lock size={8} />}
+                </button>
+            </>
+        );
+    };
 
     const renderSystemButtons = () => (
         <>
@@ -179,6 +280,15 @@ export const Header: React.FC<HeaderProps> = ({
                     <Zap size={12} /> Liberar Espaço Externo
                 </button>
             )}
+            {/* Renascer button with Portal Animation */}
+            <button
+                onClick={actions.triggerRebirth}
+                className="bg-purple-700 hover:bg-purple-600 px-3 py-1 rounded text-white flex items-center gap-1 text-xs font-bold transition-all group"
+                title="Renascer (Reinicia ganhando Almas)"
+            >
+                <Ghost size={12} className="group-hover:animate-bounce" />
+                Renascer
+            </button>
             {setShowDevTools && <button onClick={() => setShowDevTools(true)} className="btn-retro bg-red-900/50 text-red-400 p-2 rounded border border-red-900 hover:bg-red-800 hover:text-white transition-all" title="Ferramentas de Desenvolvedor"><ShieldAlert size={12} /></button>}
             <button onClick={actions.enterDungeon} className="btn-retro bg-stone-800 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-700" title="Entrar na Masmorra"><Castle size={12} /> Masmorra</button>
         </>
@@ -225,29 +335,32 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
             </div>
 
-            {/* Row 2: Tabs */}
-            <div className="flex gap-1 bg-gray-800 nav-tabs p-1 rounded">
+            {/* Tab Navigation */}
+            <div className="flex gap-1 border-b border-gray-700 pb-2">
                 <button
                     onClick={() => setActiveTab('main')}
-                    className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-all ${activeTab === 'main' ? 'bg-amber-600 text-white shadow' : 'bg-transparent text-gray-400 hover:text-white'}`}
+                    className={`px-3 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${activeTab === 'main' ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                 >
-                    <Home size={12} /> Principal
+                    <Home size={12} /> Geral
                 </button>
                 <button
                     onClick={() => setActiveTab('combat')}
-                    className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-all ${activeTab === 'combat' ? 'bg-red-700 text-white shadow' : 'bg-transparent text-gray-400 hover:text-white'}`}
+                    className={`px-3 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${activeTab === 'combat' ? 'bg-red-600 text-white shadow-lg scale-105' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                 >
                     <Swords size={12} /> Combate
                 </button>
                 <button
+                    disabled={boss.level < 10 || !townVisited}
                     onClick={() => setActiveTab('skills')}
-                    className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-all ${activeTab === 'skills' ? 'bg-green-700 text-white shadow' : 'bg-transparent text-gray-400 hover:text-white'}`}
+                    className={`px-3 py-1 rounded text-xs font-bold transition-all relative flex items-center gap-1 ${activeTab === 'skills' ? 'bg-orange-600 text-white shadow-lg scale-105' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'} ${(boss.level < 10 || !townVisited) ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                    title={boss.level < 10 || !townVisited ? "Desbloqueia no Nível 10 após visitar a Vila" : "Habilidades e Ofícios"}
                 >
                     <Leaf size={12} /> Habilidades
+                    {(boss.level < 10 || !townVisited) && <Lock size={8} className="absolute -top-1 -right-1 text-gray-500" />}
                 </button>
                 <button
                     onClick={() => setActiveTab('system')}
-                    className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-all ${activeTab === 'system' ? 'bg-blue-700 text-white shadow' : 'bg-transparent text-gray-400 hover:text-white'}`}
+                    className={`px-3 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${activeTab === 'system' ? 'bg-purple-600 text-white shadow-lg scale-105' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                 >
                     <Settings size={12} /> Sistema
                 </button>

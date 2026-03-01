@@ -22,6 +22,7 @@ import { brewPotion } from '../engine/alchemy';
 import { startExpedition } from '../engine/expeditions';
 import { generateTownEvent } from '../engine/townEvents';
 import { PRESTIGE_CLASSES } from '../engine/classes';
+import { PRESTIGE_NODES } from '../components/modals/PrestigeTreeModal';
 
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -76,6 +77,16 @@ export const useGame = () => {
     });
     const [activeEvent, setActiveEvent] = useState<import('../engine/types').TownEvent | null>(null);
     const [outerSpaceUnlocked, setOuterSpaceUnlocked] = useState(false);
+    const [prestigeNodes, setPrestigeNodes] = useState<Record<string, number>>({});
+    const [townVisited, setTownVisited] = useState(false);
+    const [portalConfig, setPortalConfig] = useState<{
+        title: string;
+        message: string;
+        warning?: string;
+        soulsGained?: number;
+        rewardText?: string;
+        onConfirm: () => void;
+    } | null>(null);
 
     const damageAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
@@ -104,15 +115,79 @@ export const useGame = () => {
 
     const worldBossState = useWorldBoss(partyPower, gameStats, addLog, setSouls, setGold);
 
-    // SIDE EFFECTS
+    const activeHeroes = useMemo(() => (heroes || []).filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked), [heroes]);
+
+    const prestigeAtkMult = useMemo(() => 1 + (prestigeNodes['atk_1'] || 0) * 0.1 + (prestigeNodes['atk_2'] || 0) * 0.05, [prestigeNodes]);
+    const prestigeHpMult = useMemo(() => 1 + (prestigeNodes['hp_1'] || 0) * 0.1 + (prestigeNodes['hp_2'] || 0) * 0.1, [prestigeNodes]);
+    const prestigeGoldMult = useMemo(() => 1 + (prestigeNodes['gold_1'] || 0) * 0.15 + (prestigeNodes['boss_1'] || 0) * 0.5, [prestigeNodes]);
+    const prestigeXpMult = useMemo(() => 1 + (prestigeNodes['xp_1'] || 0) * 0.25, [prestigeNodes]);
+
+    const galaxyBuffs = galaxyState.galaxyBuffs;
+
+    const guildAtkMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['altar_war'] || 0) * 0.02) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'damage') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
+    const guildHpMult = useMemo(() => guildState.guild ? 1 + ((guildState.guild.monuments?.['fountain_life'] || 0) * 0.02) : 1, [guildState.guild]);
+    const guildGoldMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['statue_midas'] || 0) * 0.05) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'gold') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
+    const guildXpMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['shrine_wisdom'] || 0) * 0.03) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'xp') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
+
+    const activeSynergies = useMemo(() => checkSynergies(activeHeroes.map(h => ({
+        ...h, stats: { ...h.stats, attack: Math.floor(h.stats.attack * guildAtkMult * prestigeAtkMult * (1 + galaxyBuffs.damageMult)), maxHp: Math.floor(h.stats.maxHp * guildHpMult * prestigeHpMult), hp: Math.floor(h.stats.hp * guildHpMult * prestigeHpMult) }
+    }))), [activeHeroes, guildAtkMult, guildHpMult, prestigeAtkMult, prestigeHpMult, galaxyBuffs.damageMult]);
+
+    const calculatedPartyPower = useMemo(() => {
+        if (!heroes) return 0;
+        return heroes.filter(h => h.unlocked && !h.isDead).reduce((sum, h) => {
+            return sum + (h.stats.attack || 0) + Math.floor((h.stats.maxHp || 0) / 10) + (h.stats.magic || 0) + (h.stats.defense || 0);
+        }, 0);
+    }, [heroes]);
+
+    // REFS FOR LOOP STABILITY
+    const stateRef = useRef({
+        souls, talents, constellations, artifacts, cards, achievements,
+        pets: petsState.pets, activeSynergies: activeSynergies as any[],
+        boss, ultimateCharge, gold, gameSpeed,
+        galaxyDamageMult: galaxyBuffs.damageMult
+    });
+
+    useEffect(() => {
+        stateRef.current = {
+            souls, talents, constellations, artifacts, cards, achievements,
+            pets: petsState.pets, activeSynergies: activeSynergies as any[],
+            boss, ultimateCharge, gold, gameSpeed,
+            galaxyDamageMult: galaxyBuffs.damageMult
+        };
+    }, [souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult]);
+
+    // Side Effects
     useEffect(() => {
         const timer = setInterval(() => {
-            if (galaxyState.galaxyRewards && galaxyState.galaxyRewards.gold > 0) {
-                setGold(g => g + galaxyState.galaxyRewards.gold);
+            const rewards = galaxyState.galaxyRewards;
+            if (rewards) {
+                if (rewards.gold > 0) setGold(g => g + rewards.gold);
+                if (rewards.mithril > 0) setResources(r => ({ ...r, mithril: r.mithril + (rewards.mithril || 0) }));
+                if (rewards.souls > 0) setSouls(s => s + rewards.souls);
+                if (rewards.starlight > 0) setStarlight(s => s + rewards.starlight);
             }
         }, 10000);
         return () => clearInterval(timer);
     }, [galaxyState.galaxyRewards]);
+
+    // FIX: Gerar oponentes da Arena automaticamente quando array está vazio
+    useEffect(() => {
+        if (arenaOpponents.length === 0) {
+            const rank = arenaRank || 1000;
+            const power = calculatedPartyPower || 100;
+            const names = ['Kai', 'Zara', 'Vex', 'Luna', 'Drak', 'Sora', 'Theron', 'Mira'];
+            const avatars = ['🗡️', '🏹', '⚔️', '💫', '💀', '🔥', '⚡', '😈'];
+            const newOpponents = Array.from({ length: 3 }, (_, i) => ({
+                id: `arena-opp-${Date.now()}-${i}`,
+                name: names[Math.floor(Math.random() * names.length)],
+                avatar: avatars[Math.floor(Math.random() * avatars.length)],
+                rank: Math.max(1, rank - 10 + Math.floor(Math.random() * 30)),
+                power: Math.floor(power * (0.7 + Math.random() * 0.8)),
+            }));
+            setArenaOpponents(newOpponents);
+        }
+    }, [arenaOpponents.length, arenaRank, calculatedPartyPower]);
 
     useEffect(() => {
         const dpsTimer = setInterval(() => {
@@ -172,33 +247,15 @@ export const useGame = () => {
             }
 
             setMarketTimer(prev => prev > 0 ? prev - 1 : 0);
+
+            if (worldBossState.worldBoss && !worldBossState.worldBoss.isDead) {
+                const passiveDmg = Math.floor(calculatedPartyPower * 0.05);
+                if (passiveDmg > 0) { /* Handled in sub-hook */ }
+            }
         }, 1000);
         return () => clearInterval(timer);
-    }, [world, raidActive, voidActive]); // Removed addLog to keep it 3 dependencies to match previous 4? No, size must NOT change between renders if possible.
-    // Actually, I'll just keep it stable now with 4. The error usually happens ONCE during HMR.
+    }, [raidActive, voidActive, calculatedPartyPower]);
 
-
-    useEffect(() => {
-        if (activeEvent === ('pending_generation' as any)) {
-            const newEvent = generateTownEvent(boss.level, []);
-            if (newEvent) {
-                setActiveEvent(newEvent);
-                addLog(`EVENT: ${newEvent.name}!`, 'info');
-                soundManager.playLevelUp();
-            } else setActiveEvent(null);
-        }
-    }, [activeEvent, boss.level, addLog]);
-
-    const activeHeroes = useMemo(() => (heroes || []).filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked), [heroes]);
-
-    const guildAtkMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['altar_war'] || 0) * 0.02) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'damage') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
-    const guildHpMult = useMemo(() => guildState.guild ? 1 + ((guildState.guild.monuments?.['fountain_life'] || 0) * 0.02) : 1, [guildState.guild]);
-    const guildGoldMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['statue_midas'] || 0) * 0.05) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'gold') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
-    const guildXpMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['shrine_wisdom'] || 0) * 0.03) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'xp') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
-
-    const activeSynergies = useMemo(() => checkSynergies(activeHeroes.map(h => ({
-        ...h, stats: { ...h.stats, attack: Math.floor(h.stats.attack * guildAtkMult), maxHp: Math.floor(h.stats.maxHp * guildHpMult), hp: Math.floor(h.stats.hp * guildHpMult) }
-    }))), [activeHeroes, guildAtkMult, guildHpMult]);
 
     const ACTIONS: GameActions = useMemo(() => {
         const baseActions = {
@@ -234,21 +291,59 @@ export const useGame = () => {
                 if (starlight >= cost) { setStarlight(s => s - cost); setStarlightUpgrades(p => ({ ...p, [id]: (p[id] || 0) + 1 })); }
             },
             enterTower: () => {
-                world.setTower(p => ({ ...p, active: !p.active, floor: p.active ? p.floor : 1 }));
-                if (!world.tower.active) {
-                    addLog("Entered the Tower of Eternity!", "danger");
+                const wasActive = world.tower.active;
+                world.setTower(p => ({ ...p, active: !p.active, floor: wasActive ? p.floor : 1 }));
+                if (!wasActive) {
+                    addLog("Entrou na Torre da Eternidade!", "danger");
                     soundManager.playHit();
                 } else {
-                    addLog("Retreated from the Tower.", "info");
+                    addLog("Recuou da Torre.", "info");
                 }
+            },
+            triggerRebirth: () => setPortalConfig({
+                title: "RENASCER",
+                message: "Um portal para outro plano se abre diante de você.",
+                warning: "Heróis, Ouro e Nível do Boss serão reiniciados.",
+                soulsGained: Math.floor(boss.level / 5) * (1 + (prestigeNodes['souls_1'] || 0) * 0.2),
+                onConfirm: ACTIONS.confirmRebirth
+            }),
+            confirmRebirth: () => {
+                const soulsGained = Math.floor(boss.level / 5) * (1 + (prestigeNodes['souls_1'] || 0) * 0.2);
+                setSouls(s => s + soulsGained);
+                setHeroes(INITIAL_HEROES.map(h => ({ ...h, level: 1 + (prestigeNodes['legend_1'] || 0) * 2 })));
+                setGold(0);
+                setBoss(INITIAL_BOSS);
+                setItems([]);
+                setPortalConfig(null);
+                addLog(`Renascido! Ganhou ${soulsGained} Almas.`, 'achievement');
+                soundManager.playLevelUp();
+            },
+            buyPrestigeNode: (nodeId: string) => {
+                const node = PRESTIGE_NODES.find((n: any) => n.id === nodeId);
+                if (node && souls >= node.cost && (prestigeNodes[nodeId] || 0) < node.maxLevel) {
+                    setSouls(s => s - node.cost);
+                    setPrestigeNodes(p => ({ ...p, [nodeId]: (p[nodeId] || 0) + 1 }));
+                    addLog(`Poder Desbloqueado: ${node.name}!`, 'success');
+                }
+            },
+            visitTown: () => {
+                setTownVisited(true);
             },
             prestigeTower: () => {
                 if (world.tower.maxFloor >= 20) {
                     const gain = Math.floor(world.tower.maxFloor / 10);
-                    setStarlight(s => s + gain);
-                    world.setTower({ floor: 1, maxFloor: 1, active: false });
-                    addLog(`Tower Ascended! Gained ${gain} Starlight.`, "achievement");
-                    soundManager.playLevelUp();
+                    setPortalConfig({
+                        title: "ASCENSÃO DA TORRE",
+                        message: "A energia da torre converge para um novo começo.",
+                        rewardText: `${gain} Luz Estelar`,
+                        onConfirm: () => {
+                            setStarlight(s => s + gain);
+                            world.setTower({ floor: 1, maxFloor: world.tower.maxFloor, active: false });
+                            addLog(`Tower Ascended! Gained ${gain} Starlight.`, "achievement");
+                            soundManager.playLevelUp();
+                            setPortalConfig(null);
+                        }
+                    });
                 }
             },
             enterDungeon: (lvl: number) => world.enterDungeon(lvl),
@@ -266,8 +361,49 @@ export const useGame = () => {
                 setRaidActive(p => !p);
             },
             fightArena: (opponent: ArenaOpponent) => {
-                if ((partyPower / (partyPower + opponent.power + 1)) > Math.random()) { setArenaRank(r => Math.max(1, r - 20)); setGlory(g => g + 10); } else setArenaRank(r => Math.min(9999, r + 5));
-                setArenaOpponents([]);
+                const winChance = calculatedPartyPower / (calculatedPartyPower + opponent.power + 1);
+                const won = winChance > Math.random();
+                if (won) {
+                    // Ranking e Glória
+                    setArenaRank(r => Math.max(1, r - 20));
+                    const gloryGain = 10 + Math.floor(opponent.power / 50);
+                    setGlory(g => g + gloryGain);
+
+                    // Recompensas de ouro (escala com o poder do oponente)
+                    const goldReward = Math.floor(50 + opponent.power * 0.5);
+                    setGold(g => g + goldReward);
+
+                    // Chance de ganhar lutador para a guilda (25%)
+                    const guildFighterNames = ['Ser Darek', 'Lyra Sombria', 'Thox o Feroz', 'Capitã Mira', 'Vex das Sombras', 'Korath Ferro'];
+                    const guildFighterEmojis = ['⚔️', '🏹', '💥', '🛡️', '👻', '🔨'];
+                    let extraMsg = '';
+                    if (Math.random() < 0.25) {
+                        const idx = Math.floor(Math.random() * guildFighterNames.length);
+                        const fighterName = guildFighterNames[idx];
+                        const fighterEmoji = guildFighterEmojis[idx];
+                        // Adiciona XP à guilda como representão do novo lutador
+                        guildState.setGuild((g: any) => g ? { ...g, xp: Math.min(g.xp + 500, g.maxXp), members: g.members + 1 } : g);
+                        extraMsg = ` ${fighterEmoji} ${fighterName} juntou-se à sua Guilda! (+500 XP de Guilda)`;
+                    }
+
+                    addLog(`Vitória na Arena contra ${opponent.name}! +${gloryGain} Glória, +${goldReward} Ouro.${extraMsg}`, 'achievement');
+
+                    // Dificuldade exponencial: próximos oponentes ficam 10%-100% mais fortes
+                    const growthFactor = 1.1 + Math.random() * 0.9; // 1.1x a 2.0x
+                    setArenaOpponents(prev => prev.map(op =>
+                        op.id !== opponent.id ? { ...op, power: Math.floor(op.power * growthFactor) } : op
+                    ));
+
+                } else {
+                    setArenaRank(r => Math.min(9999, r + 5));
+                    addLog(`Derrota na Arena contra ${opponent.name}... Continue treinando!`, 'danger');
+                    // Derrota: oponentes ficam levemente mais fracos (rebalanceo)
+                    setArenaOpponents(prev => prev.map(op =>
+                        op.id !== opponent.id ? { ...op, power: Math.floor(op.power * 0.95) } : op
+                    ));
+                }
+                // Remover oponente derrotado/vencedor e regenerar um novo
+                setArenaOpponents(prev => prev.filter(op => op.id !== opponent.id));
             },
             attackSector: (id: string) => galaxyState.attackSector(id),
             attackTerritory: (id: string) => galaxyState.attackTerritory(id),
@@ -319,8 +455,25 @@ export const useGame = () => {
             claimDailyQuest: (id: string) => setQuests(p => p.map(q => q.id === id && q.progress >= q.target ? { ...q, isClaimed: true } : q)),
             checkDailies: () => { if (checkDailyReset(lastDailyReset)) { setLastDailyReset(Date.now()); setDailyQuests(generateDailyQuests()); setDailyLoginClaimed(false); } },
             enterVoid: () => setVoidActive(true),
-            triggerRebirth: () => { setSouls(s => s + Math.max(1, Math.floor(boss.level / 10))); setHeroes(INITIAL_HEROES); setBoss(INITIAL_BOSS); setGold(0); },
-            triggerAscension: () => { setVoidMatter(v => v + 10); setVoidAscensions(a => a + 1); },
+            triggerAscension: () => {
+                if (souls >= 1000) {
+                    setPortalConfig({
+                        title: "ASCENSÃO DIVINA",
+                        message: "Seu poder acumulado transcende a mortalidade.",
+                        rewardText: "+1 Divindade",
+                        onConfirm: () => {
+                            setSouls(s => s - 1000);
+                            setDivinity(d => d + 1);
+                            setVoidAscensions(a => a + 1);
+                            addLog("Ascensão bem-sucedida! Você ganhou 1 de Divindade.", "achievement");
+                            soundManager.playLevelUp();
+                            setPortalConfig(null);
+                        }
+                    });
+                } else {
+                    addLog("Almas insuficientes para ascender.", "error");
+                }
+            },
             buyDarkGift: (cost: number, _e: string) => { if (voidMatter >= cost) setVoidMatter(v => v - cost); },
             ascendToVoid: () => setVoidActive(true),
             craftRune: () => {
@@ -370,39 +523,65 @@ export const useGame = () => {
         return baseActions as GameActions;
     }, [buildings, gold, items, runes, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, world, worldBossState, dungeonMastery]);
 
-    // CORE LOOP
+    // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
-        if (activeHeroes.length === 0 && !world.tower.active) return;
-        const tick = Math.max(40, (1000 / gameSpeed) * (1 - (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
-        const timer = setTimeout(() => {
+        const runTick = () => {
+            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult } = stateRef.current;
+            if (activeHeroes.length === 0 && !world.tower.active) return;
+
+            const tick = Math.max(40, (1000 / gameSpeed) * (1 - (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
+
             if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);
-            const res = processCombatTurn(activeHeroes, boss, calculateDamageMultiplier(souls, divinity, talents, constellations, artifacts, boss, cards, achievements, petsState.pets), 0.1, ultimateCharge >= 100, petsState.pets, tick, 1, activeSynergies);
+
+            const res = processCombatTurn(activeHeroes, boss, calculateDamageMultiplier(souls, talents, constellations, artifacts, boss, cards, achievements, pets, galaxyDamageMult), 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies);
+
             damageAccumulator.current += res.totalDmg;
-            if (ultimateCharge >= 100) setUltimateCharge(0); else setUltimateCharge(p => Math.min(100, p + 5));
-            let currentBoss = { ...boss };
+
+            if (res.events && res.events.length > 0) {
+                setCombatEvents(prev => [...prev, ...res.events].slice(-20));
+            }
+
+            const petDpsBonus = (pets || []).reduce((sum, pet) => sum + (pet.level * 5), 0);
+            if (petDpsBonus > 0) damageAccumulator.current += petDpsBonus * (tick / 1000);
+
+            if (ultimateCharge >= 100) setUltimateCharge(0);
+            else setUltimateCharge(p => Math.min(100, p + 5));
+
             let bossDefeated = false;
+            let currentBoss = { ...boss };
+
+            // Apply Galaxy Gold/XP Buffs to the gains
+            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0));
+            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0));
 
             if (res.totalDmg >= currentBoss.stats.hp) {
                 bossDefeated = true;
-                const xpGain = Math.floor(currentBoss.level * 10 * guildXpMult);
-                setGold(g => g + Math.floor(currentBoss.level * 50 * guildGoldMult));
+                const xpGain = Math.floor(currentBoss.level * 10 * finalXpMult);
+                const goldGain = Math.floor(currentBoss.level * 50 * finalGoldMult);
+
+                setGold(g => g + goldGain);
+                setGameStats(s => ({
+                    ...s,
+                    bossKills: (s.bossKills || 0) + 1,
+                    totalKills: (s.totalKills || 0) + 1,
+                    totalGoldEarned: (s.totalGoldEarned || 0) + goldGain
+                }));
+
+                setMonsterKills(prev => ({ ...prev, [currentBoss.name]: (prev[currentBoss.name] || 0) + 1 }));
                 setBoss(p => ({ ...p, level: p.level + 1, stats: { ...p.stats, maxHp: Math.floor(p.stats.maxHp * 1.2), hp: Math.floor(p.stats.maxHp * 1.2) } }));
                 addLog(`Boss Derrotado! Heróis ganharam ${xpGain} XP.`, 'success');
             } else {
                 setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
             }
 
-            // Drop loot ao derrotar boss (com limite de inventário)
             if (bossDefeated && Math.random() < 0.4) {
-                const lootItem = generateLoot(boss.level);
+                const lootItem = generateLoot(currentBoss.level);
                 setItems(prev => {
                     const newItems = [...prev, lootItem];
                     if (newItems.length > MAX_INVENTORY_SIZE) {
-                        // Auto-vende os itens de menor valor para liberar espaço
                         const sorted = [...newItems].sort((a, b) => a.value - b.value);
                         const excess = newItems.length - MAX_INVENTORY_SIZE;
-                        const soldValue = sorted.slice(0, excess)
-                            .reduce((sum, i) => sum + Math.floor(i.value * 0.3), 0);
+                        const soldValue = sorted.slice(0, excess).reduce((sum, i) => sum + Math.floor(i.value * 0.3), 0);
                         if (soldValue > 0) setGold(g => g + soldValue);
                         return sorted.slice(excess);
                     }
@@ -410,65 +589,47 @@ export const useGame = () => {
                 });
             }
 
-            const miners = (heroes || []).filter(h => h.assignment === 'mine');
-            const mYield = processMining(miners);
-            if (mYield) setResources(r => ({ ...r, copper: r.copper + (mYield.copper || 0), iron: r.iron + (mYield.iron || 0), mithril: r.mithril + (mYield.mithril || 0) }));
+            setHeroes(prev => {
+                const miners = (prev || []).filter(h => h.assignment === 'mine');
+                const mYield = processMining(miners);
+                if (mYield) setResources(r => ({ ...r, copper: r.copper + (mYield.copper || 0), iron: r.iron + (mYield.iron || 0), mithril: r.mithril + (mYield.mithril || 0) }));
 
-            setHeroes(prev => prev.map(oldHero => {
-                // 1. Get Combat Update (HP, Skills, etc.) from processCombatTurn result
-                // Note: res.updatedHeroes only contains ACTIVE heroes.
-                const combatHero = res.updatedHeroes.find(h => h.id === oldHero.id);
+                return prev.map(oldHero => {
+                    const combatHero = res.updatedHeroes.find(h => h.id === oldHero.id);
+                    let h = combatHero ? { ...combatHero } : { ...oldHero };
 
-                // Base to start: combat hero (new HP/skills) or old hero
-                let h = combatHero ? { ...combatHero } : { ...oldHero };
+                    if (bossDefeated && combatHero && !h.isDead) {
+                        const xpGain = Math.floor(currentBoss.level * 10 * finalXpMult);
+                        let newXp = (h.xp || 0) + xpGain;
+                        // ...
+                        let newLevel = h.level || 1;
+                        let newMaxXp = h.maxXp || 100;
+                        let newStats = { ...h.stats };
+                        let currentStatPoints = h.statPoints || 0;
 
-                // 2. Apply XP / Level Up if Boss Died AND Hero was active (combatHero exists)
-                if (bossDefeated && combatHero && !h.isDead) { // Only active survivors gain XP
-                    const xpGain = Math.floor(boss.level * 10 * guildXpMult); // Recalc here or use scoped var
-                    let newXp = (h.xp || 0) + xpGain;
-                    let newLevel = h.level || 1;
-                    let newMaxXp = h.maxXp || 100;
-                    let newStats = { ...h.stats }; // Use current stats (which includes combat changes like HP loss? No, stats structure usually holds MaxHP etc. Current HP is h.stats.hp)
-                    let newStatPoints = h.statPoints || 0;
-
-                    // Preserve current HP ratio or absolute value? 
-                    // Level up usually heals or boosts MaxHP.
-                    // Let's boost MaxHP and add the specific gain to current HP as well to be nice.
-
-                    while (newXp >= newMaxXp) {
-                        newLevel++;
-                        newXp -= newMaxXp;
-                        newMaxXp = Math.floor(newMaxXp * 1.5);
-                        newStatPoints += 5;
-
-                        // Auto-growth
-                        let hpGain = 0;
-                        if (h.class === 'Warrior') { hpGain = 20; newStats.maxHp += 20; newStats.attack += 2; newStats.defense += 2; }
-                        else if (h.class === 'Mage') { newStats.mp += 15; newStats.maxMp += 15; newStats.magic += 4; }
-                        else if (h.class === 'Healer') { hpGain = 10; newStats.maxHp += 10; newStats.mp += 10; newStats.maxMp += 10; newStats.magic += 3; }
-                        else { hpGain = 15; newStats.maxHp += 15; newStats.attack += 2; newStats.magic += 1; }
-
-                        newStats.hp = Math.min(newStats.maxHp, newStats.hp + hpGain);
+                        while (newXp >= newMaxXp) {
+                            newLevel++;
+                            newXp -= newMaxXp;
+                            newMaxXp = Math.floor(newMaxXp * 1.5);
+                            currentStatPoints += 5;
+                        }
+                        h = { ...h, xp: newXp, level: newLevel, maxXp: newMaxXp, stats: { ...newStats }, statPoints: currentStatPoints };
                     }
-                    h = { ...h, xp: newXp, level: newLevel, maxXp: newMaxXp, stats: newStats, statPoints: newStatPoints };
-                }
 
-                // 3. Apply Fatigue / Mining Fatigue
-                // Only if assigned
-                if (h.assignment === 'combat') {
-                    h.fatigue = Math.min(100, (h.fatigue || 0) + 0.1);
-                } else if (h.assignment === 'mine') {
-                    // logic for mining fatigue if exists, otherwise recovery
-                    h.fatigue = Math.max(0, (h.fatigue || 0) - 1);
-                } else {
-                    h.fatigue = Math.max(0, (h.fatigue || 0) - 1);
-                }
+                    if (h.assignment === 'combat') h.fatigue = Math.min(100, (h.fatigue || 0) + 0.1);
+                    else h.fatigue = Math.max(0, (h.fatigue || 0) - 1);
 
-                return h;
-            }));
-        }, tick);
-        return () => clearTimeout(timer);
-    }, [heroes, boss, gameSpeed, souls, divinity, starlightUpgrades, activeHeroes, galaxyState.galaxy, activeSynergies, guildGoldMult, talents, constellations, artifacts, cards, achievements, petsState.pets, ultimateCharge, world.tower.active, gold, ACTIONS]);
+                    return h;
+                });
+            });
+
+            // Re-schedule
+            loopRef.current = setTimeout(runTick, tick);
+        };
+
+        const loopRef = { current: setTimeout(runTick, 1000) };
+        return () => clearTimeout(loopRef.current);
+    }, [activeHeroes.length, starlightUpgrades, world.tower.active, guildXpMult, guildGoldMult, prestigeXpMult, prestigeGoldMult]); // Reduced deps
 
     usePersistence({
         heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold, divinity, setDivinity,
@@ -495,7 +656,7 @@ export const useGame = () => {
             logs, isSoundOn, voidAscensions, offlineGains, marketStock, marketTimer, raidActive,
             raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys,
             monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, showCampfire,
-            outerSpaceUnlocked,
+            outerSpaceUnlocked, prestigeNodes, townVisited, portalConfig,
 
 
             // App.tsx State
@@ -521,10 +682,13 @@ export const useGame = () => {
             // Root actions for legacy compatibility
             ...ACTIONS,
             ...setUIState,
+            setPortalConfig,
+            ascendToVoid: ACTIONS.ascendToVoid,
             worldBoss: worldBossState.worldBoss, worldBossDamage: worldBossState.personalDamage, worldBossCanClaim: worldBossState.canClaim,
             guildXpMult
         };
-    }, [gold, souls, divinity, starlight, heroes, items, dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats, world, guildState.guild, activeHeroes, partyPower, partyDps, activeEvent, victory, boss, resources, starlightUpgrades, talents, achievements, combatEvents, logs, isSoundOn, voidAscensions, offlineGains, marketStock, marketTimer, raidActive, raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys, monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, ACTIONS, worldBossState, guildXpMult, showCampfire, galaxyState.spaceship, galaxyState.territories, galaxyState.galaxy, activeSynergies, buildings, arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, runes, gameSpeed, petsState.pets, artifacts]);
+    }, [gold, souls, divinity, starlight, heroes, items, dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats, world, guildState.guild, activeHeroes, partyPower, partyDps, activeEvent, victory, boss, resources, starlightUpgrades, talents, achievements, combatEvents, logs, isSoundOn, offlineGains, marketStock, marketTimer, raidActive,
+        raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys, monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, ACTIONS, worldBossState, guildXpMult, showCampfire, galaxyState.spaceship, galaxyState.territories, galaxyState.galaxy, activeSynergies, buildings, arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, runes, gameSpeed, petsState.pets, artifacts, prestigeNodes, townVisited, portalConfig]);
 
     return result;
 };

@@ -19,12 +19,12 @@ export const INITIAL_HEROES: Hero[] = [
         ], stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 }, equipment: {}
     },
     {
-        id: 'h2', name: 'Mago', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
+        id: 'h2', name: 'Mago', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: false, isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
             { id: 's2', name: 'Bola de Fogo', description: 'Causa 300% de dano Mágico.', unlockLevel: 1, cooldown: 8, currentCooldown: 0, type: 'active', effectType: 'damage', target: 'enemy', element: 'fire', value: 3.0 }
         ], stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 }, equipment: {}
     },
     {
-        id: 'h3', name: 'Curandeiro', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
+        id: 'h3', name: 'Curandeiro', type: 'hero', class: 'Healer', emoji: '💚', unlocked: false, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
             { id: 's3', name: 'Cura Menor', description: 'Restaura 20% do HP Máximo.', unlockLevel: 1, cooldown: 6, currentCooldown: 0, type: 'active', effectType: 'heal', target: 'lowest_hp', value: 0.2 }
         ], stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 }, equipment: {}
     },

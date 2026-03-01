@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA } from '../engine/initialData';
+import { INITIAL_BUILDINGS } from '../data/buildings';
 
 export interface PersistenceProps {
     heroes: Hero[];
@@ -88,31 +89,31 @@ export interface PersistenceProps {
 
 export const usePersistence = (props: PersistenceProps) => {
     const {
-        heroes, setHeroes, boss, setBoss, items, setItems, souls, setSouls, gold, setGold,
-        divinity, setDivinity, pets, setPets, talents, setTalents, artifacts, setArtifacts,
-        cards, setCards, constellations, setConstellations, keys, setKeys, resources, setResources,
-        tower, setTower, guild, setGuild, voidMatter, setVoidMatter,
-        arenaRank, setArenaRank, glory, setGlory, quests, setQuests,
-        runes, setRunes, achievements, setAchievements,
-        starlight, setStarlight,
-        starlightUpgrades, setStarlightUpgrades,
-        autoSellRarity, setAutoSellRarity,
-        arenaOpponents: _arenaOpponents, setArenaOpponents,
-        theme, setTheme,
-        galaxy, setGalaxy,
-        monsterKills, setMonsterKills,
-        gameStats, setGameStats,
-        activeExpeditions, setActiveExpeditions,
-        activePotions, setActivePotions,
-        buildings, setBuildings,
+        setHeroes, setBoss, setItems, setSouls, setGold,
+        setDivinity, setPets, setTalents, setArtifacts,
+        setCards, setConstellations, setKeys, setResources,
+        setTower, setGuild, setVoidMatter,
+        setArenaRank, setGlory, setQuests,
+        setRunes, setAchievements,
+        setStarlight,
+        setStarlightUpgrades,
+        setAutoSellRarity,
+        setArenaOpponents,
+        setTheme,
+        setGalaxy,
+        setMonsterKills,
+        setGameStats,
+        setActiveExpeditions,
+        setActivePotions,
+        setBuildings,
         setRaidActive, setDungeonActive, setOfflineGains,
-        dailyQuests, setDailyQuests,
-        dailyLoginClaimed, setDailyLoginClaimed,
-        lastDailyReset, setLastDailyReset,
-        territories, setTerritories,
-        spaceship, setSpaceship,
-        formations, setFormations,
-        weather, setWeather
+        setDailyQuests,
+        setDailyLoginClaimed,
+        setLastDailyReset,
+        setTerritories,
+        setSpaceship,
+        setFormations,
+        setWeather
     } = props;
 
 
@@ -190,7 +191,30 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.gameStats) setGameStats(state.gameStats);
                 if (state.activeExpeditions) setActiveExpeditions(state.activeExpeditions);
                 if (state.activePotions) setActivePotions(state.activePotions);
-                if (state.buildings) setBuildings(state.buildings);
+                if (state.buildings) {
+                    const savedBuildings = state.buildings || [];
+                    const mergedBuildings = INITIAL_BUILDINGS.map(initB => {
+                        const savedB = savedBuildings.find((b: Building) => b.id === initB.id);
+                        if (savedB) {
+                            return {
+                                ...initB,
+                                ...savedB,
+                                // Ensure constant data like emoji/description/scaling is from code, 
+                                // while dynamic data like level is from save
+                                emoji: initB.emoji,
+                                description: initB.description,
+                                costScaling: initB.costScaling,
+                                bonus: initB.bonus,
+                                effectValue: initB.effectValue,
+                                currency: initB.currency
+                            };
+                        }
+                        return initB;
+                    });
+                    setBuildings(mergedBuildings);
+                } else {
+                    setBuildings(INITIAL_BUILDINGS);
+                }
                 if (state.dailyQuests) setDailyQuests(state.dailyQuests);
                 if (state.autoSellRarity) setAutoSellRarity(state.autoSellRarity);
                 if (state.arenaOpponents) setArenaOpponents(state.arenaOpponents);
@@ -250,51 +274,64 @@ export const usePersistence = (props: PersistenceProps) => {
         }
     }, []);
 
-    // SAVE (a cada 30s em vez de 5s para reduzir pressão de memória/CPU)
+    // STABILIZED SAVE (Phase Memory Fix)
+    const saveRef = useRef(props);
+    useEffect(() => {
+        saveRef.current = props;
+    }, [props]);
+
     useEffect(() => {
         const saveState = () => {
-            // Compactar heróis: salvar apenas campos de progresso, não dados base estáticos
-            const compactHeroes = heroes.map(h => ({
+            const p = saveRef.current;
+            // Compactar heróis: salvar apenas o estritamente necessário
+            const compactHeroes = (p.heroes || []).map((h: Hero) => ({
                 id: h.id,
-                name: h.name,
-                emoji: h.emoji,
                 level: h.level,
                 xp: h.xp,
-                maxXp: h.maxXp,
                 unlocked: h.unlocked,
                 isDead: h.isDead,
-                class: h.class,
                 assignment: h.assignment,
-                stats: h.stats,
+                stats: { hp: h.stats.hp, maxHp: h.stats.maxHp, attack: h.stats.attack, defense: h.stats.defense, magic: h.stats.magic, speed: h.stats.speed, mp: h.stats.mp, maxMp: h.stats.maxMp },
                 statPoints: h.statPoints,
                 equipment: h.equipment,
                 gambits: h.gambits,
                 element: h.element,
                 insanity: h.insanity,
                 fatigue: h.fatigue,
-                maxFatigue: h.maxFatigue,
             }));
 
-            // Compactar itens: salvar apenas os 100 melhores (por valor) para limitar o tamañho
-            const compactItems = [...items]
+            // Compactar itens: salvar apenas os 50 melhores
+            const compactItems = [...(p.items || [])]
                 .sort((a, b) => b.value - a.value)
-                .slice(0, 100);
+                .slice(0, 50);
+
+            // Filtrar monsterKills para economizar espaço
+            const filteredKills: Record<string, number> = {};
+            Object.entries(p.monsterKills || {}).forEach(([id, count]: [string, any]) => {
+                if (typeof count === 'number' && count > 0) filteredKills[id] = count;
+            });
 
             const state = {
                 heroes: compactHeroes,
-                boss, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys,
-                resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, starlight,
-                starlightUpgrades, theme, galaxy, monsterKills, gameStats, autoSellRarity,
-                activeExpeditions, activePotions, buildings,
-                dailyQuests, dailyLoginClaimed, lastDailyReset,
-                territories, spaceship, formations, weather,
-                items: compactItems, // itens compactados
-                // Não salvar: arenaOpponents (regenerado), marketStock (regenerado)
+                boss: p.boss, souls: p.souls, gold: p.gold, divinity: p.divinity, pets: p.pets, talents: p.talents, artifacts: p.artifacts, cards: p.cards, constellations: p.constellations, keys: p.keys,
+                resources: p.resources, tower: p.tower, guild: p.guild, voidMatter: p.voidMatter, arenaRank: p.arenaRank, glory: p.glory, quests: p.quests, runes: p.runes, achievements: p.achievements, starlight: p.starlight,
+                starlightUpgrades: p.starlightUpgrades, theme: p.theme, galaxy: p.galaxy, monsterKills: filteredKills, gameStats: p.gameStats, autoSellRarity: p.autoSellRarity,
+                activeExpeditions: p.activeExpeditions, activePotions: p.activePotions, buildings: p.buildings,
+                dailyQuests: p.dailyQuests, dailyLoginClaimed: p.dailyLoginClaimed, lastDailyReset: p.lastDailyReset,
+                territories: p.territories, spaceship: p.spaceship, formations: p.formations, weather: p.weather,
+                items: compactItems,
                 lastSaveTime: Date.now()
             };
-            localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
+
+            try {
+                const json = JSON.stringify(state);
+                localStorage.setItem('rpg_eternal_save_v6', json);
+                if (json.length > 500000) console.warn("Save size is large:", (json.length / 1024).toFixed(2), "KB");
+            } catch (e) {
+                console.error("Critical Save Error", e);
+            }
         };
-        const timer = setInterval(saveState, 30000); // 30s em vez de 5s
+        const timer = setInterval(saveState, 60000);
         return () => clearInterval(timer);
-    }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats, activeExpeditions, activePotions, buildings, dailyQuests, dailyLoginClaimed, lastDailyReset, territories, spaceship, formations, weather]);
+    }, []); // RUN ONCE NEVER RESTART
 };
