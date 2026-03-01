@@ -95,8 +95,8 @@ describe('Skill Execution & Mutators', () => {
         hero.stats.hp = 10;
         hero.skills = [{
             id: 's2', name: 'Heal', type: 'active', effectType: 'heal',
-            value: 100, cooldown: 0, currentCooldown: 0, requiredLevel: 1, element: 'light'
-        }];
+            value: 100, cooldown: 0, currentCooldown: 0, element: 'light'
+        }] as any;
         const { updatedHeroes, totalDmg } = processCombatTurn([hero], mockBoss('neutral'), 1, 0, false, []);
         // Base atk 10. Healing is separate.
         expect(totalDmg).toBe(10);
@@ -107,7 +107,7 @@ describe('Skill Execution & Mutators', () => {
         const hero = mockHero('neutral');
         hero.skills = [{
             id: 's2', name: 'Heal', type: 'active', effectType: 'heal',
-            value: 100, cooldown: 0, currentCooldown: 0, requiredLevel: 1, element: 'light'
+            value: 100, cooldown: 0, currentCooldown: 0, element: 'light'
         }] as any;
         const bloodthirst = { id: 'bloodthirst', name: 'Bloodthirst', description: '', type: 'logic' };
 

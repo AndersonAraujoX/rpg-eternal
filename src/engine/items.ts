@@ -6,27 +6,27 @@ export type Affix = {
 };
 
 export const PREFIXES: Affix[] = [
-    { id: 'p_heavy', name: 'Heavy', stat: 'defense', multiplier: 1.3 },
-    { id: 'p_sharp', name: 'Sharp', stat: 'attack', multiplier: 1.3 },
-    { id: 'p_swift', name: 'Swift', stat: 'speed', multiplier: 1.2 },
-    { id: 'p_arcane', name: 'Arcane', stat: 'magic', multiplier: 1.3 },
+    { id: 'p_heavy', name: 'Pesado', stat: 'defense', multiplier: 1.3 },
+    { id: 'p_sharp', name: 'Afiado', stat: 'attack', multiplier: 1.3 },
+    { id: 'p_swift', name: 'Veloz', stat: 'speed', multiplier: 1.2 },
+    { id: 'p_arcane', name: 'Arcano', stat: 'magic', multiplier: 1.3 },
     { id: 'p_vital', name: 'Vital', stat: 'hp', multiplier: 1.2 },
-    { id: 'p_ancient', name: 'Ancient', stat: 'attack', multiplier: 1.5 }, // Rare
-    { id: 'p_divine', name: 'Divine', stat: 'attack', multiplier: 2.0 }, // Legendary
+    { id: 'p_ancient', name: 'Ancestral', stat: 'attack', multiplier: 1.5 }, // Rare
+    { id: 'p_divine', name: 'Divino', stat: 'attack', multiplier: 2.0 }, // Legendary
 ];
 
 export const SUFFIXES: Affix[] = [
-    { id: 's_bear', name: 'of the Bear', stat: 'hp', multiplier: 1.3 },
-    { id: 's_wolf', name: 'of the Wolf', stat: 'attack', multiplier: 1.2 },
-    { id: 's_eagle', name: 'of the Eagle', stat: 'speed', multiplier: 1.2 },
-    { id: 's_void', name: 'of the Void', stat: 'magic', multiplier: 1.3 },
-    { id: 's_titan', name: 'of the Titan', stat: 'defense', multiplier: 1.3 },
+    { id: 's_bear', name: 'do Urso', stat: 'hp', multiplier: 1.3 },
+    { id: 's_wolf', name: 'do Lobo', stat: 'attack', multiplier: 1.2 },
+    { id: 's_eagle', name: 'da Águia', stat: 'speed', multiplier: 1.2 },
+    { id: 's_void', name: 'do Vazio', stat: 'magic', multiplier: 1.3 },
+    { id: 's_titan', name: 'do Titã', stat: 'defense', multiplier: 1.3 },
 ];
 
 export const EVOLVING_ITEMS: Record<string, import('./types').Item> = {
     'rusty_blade': {
         id: 'rusty_blade',
-        name: 'Rusty Blade',
+        name: 'Lâmina Enferrujada',
         type: 'weapon',
         rarity: 'common',
         stat: 'attack',
@@ -40,7 +40,7 @@ export const EVOLVING_ITEMS: Record<string, import('./types').Item> = {
     },
     'blade_king': {
         id: 'blade_king',
-        name: 'Blade of the King',
+        name: 'Lâmina do Rei',
         type: 'weapon',
         rarity: 'epic',
         stat: 'attack',
@@ -54,7 +54,7 @@ export const EVOLVING_ITEMS: Record<string, import('./types').Item> = {
     },
     'godslayer': {
         id: 'godslayer',
-        name: 'Godslayer',
+        name: 'Matador de Deuses',
         type: 'weapon',
         rarity: 'legendary',
         stat: 'attack',
@@ -91,7 +91,7 @@ export const gainWeaponXp = (item: import('./types').Item, xpAmount: number): { 
                 suffix: item.suffix,
                 quality: item.quality
             };
-            return { item: newItem, evolved: true, log: `${item.name} evolved into ${newItem.name}!` };
+            return { item: newItem, evolved: true, log: `${item.name} evoluiu para ${newItem.name}!` };
         }
     }
 

@@ -75,7 +75,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                         )}
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-gray-400">{hero.class} (Lv {hero.level})</span>
+                                        <span className="text-[10px] text-gray-400">{hero.class} (Nvl {hero.level})</span>
                                         {((hero.fatigue || 0) >= 50) && (
                                             <ShieldAlert size={10} className={(hero.fatigue || 0) >= 80 ? 'text-red-500 animate-pulse' : 'text-yellow-500'} />
                                         )}
@@ -87,7 +87,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                     <button
                                         onClick={() => setSelectedHero(hero)}
                                         className="p-1 rounded bg-slate-800 text-cyan-400 hover:text-cyan-200 border border-slate-600"
-                                        title="Edit AI Tactics"
+                                        title="Editar Táticas de IA"
                                     >
                                         <Brain size={10} />
                                     </button>
@@ -99,8 +99,8 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                     </button>
                                     <button
                                         onClick={() => actions.purifyHero(hero.id)}
-                                        className={`p-1 rounded border ${hero.insanity >= 50 ? 'bg-purple-900 border-purple-500 text-purple-200 animate-pulse' : 'bg-gray-800 border-gray-600 text-gray-500'}`}
-                                        title={`Purify Hero (Resets Insanity) - Cost: 1000 Gold`}
+                                        className={`p-1 rounded border ${hero.insanity >= 50 ? 'bg-purple-900 border-purple-500 text-purple-200 animate-pulse' : 'bg-gray-800 border-gray-600 text-gray-400'}`}
+                                        title={`Purificar Herói (Reseta Insanidade) - Custo: 1000 de Ouro`}
                                         disabled={!hero.insanity || hero.insanity === 0}
                                     >
                                         <Skull size={10} />
@@ -109,7 +109,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                         <button
                                             onClick={() => actions.reviveHero(hero.id)}
                                             className="p-1 rounded border bg-red-600 border-red-400 text-red-100 animate-pulse"
-                                            title="Revive Hero - Cost: 5000 Gold"
+                                            title="Reviver Herói - Custo: 5000 de Ouro"
                                         >
                                             <Heart size={10} />
                                         </button>
@@ -117,14 +117,14 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                     <button
                                         onClick={() => onOpenGear(hero)}
                                         className="p-1 rounded bg-yellow-900 border border-yellow-500 text-yellow-200"
-                                        title="Manage Equipment"
+                                        title="Gerenciar Equipamentos"
                                     >
                                         <Shield size={10} />
                                     </button>
                                     <button
                                         onClick={() => setViewingHero(hero)}
                                         className="p-1 rounded bg-green-900 border border-green-500 text-green-200"
-                                        title="View Stats & Skills"
+                                        title="Ver Status e Habilidades"
                                     >
                                         <Info size={10} />
                                     </button>
@@ -133,7 +133,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                         <button
                                             onClick={() => actions.evolveHero(hero.id)}
                                             className="p-1 rounded bg-gradient-to-tr from-yellow-600 to-yellow-300 border border-yellow-100 text-yellow-900 animate-pulse shadow-[0_0_10px_rgba(234,179,8,0.5)]"
-                                            title="Evolve Hero (Reset Lv to 1, Massive Stats!)"
+                                            title="Evoluir Herói (Reseta Nvl para 1, Status Massivos!)"
                                         >
                                             <Crown size={10} />
                                         </button>
@@ -160,7 +160,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                 {contributions.length > 0 && hero.assignment === 'combat' && (
                                     <div className="flex gap-1 mt-1 border-t border-gray-700 pt-1 justify-end">
                                         {contributions.map(s => (
-                                            <div key={s.id} title={`Contributes to: ${s.name}`} className="bg-black bg-opacity-50 rounded p-0.5 border border-gray-700">
+                                            <div key={s.id} title={`Contribui para: ${s.name}`} className="bg-black bg-opacity-50 rounded p-0.5 border border-gray-700">
                                                 {getSynergyIcon(s.type)}
                                             </div>
                                         ))}

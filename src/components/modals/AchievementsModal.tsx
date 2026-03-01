@@ -46,7 +46,7 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({ isOpen, on
                 <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-white font-bold">X</button>
 
                 <h2 className="text-yellow-400 text-3xl font-bold mb-6 flex items-center justify-center gap-2 border-b border-yellow-500/30 pb-4">
-                    <Trophy size={32} /> HALL OF LEGENDS
+                    <Trophy size={32} /> SALÃO DAS LENDAS
                 </h2>
 
                 <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
@@ -66,7 +66,7 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({ isOpen, on
                                                 <div className="text-gray-400 text-sm">{ach.description}</div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xs text-slate-500 uppercase mb-1">Reward</div>
+                                                <div className="text-xs text-slate-500 uppercase mb-1">Recompensa</div>
                                                 <div className={`font-bold px-2 py-1 rounded inline-block ${ach.isUnlocked ? 'text-green-400 bg-green-900/30' : 'text-gray-500 bg-gray-800'}`}>
                                                     {ach.rewardText}
                                                 </div>
@@ -75,14 +75,14 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({ isOpen, on
                                     </div>
                                 </div>
 
-                                {/* Progress Bar */}
+                                {/* Barra de Progresso */}
                                 <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden relative">
                                     <div
                                         className={`h-full transition-all duration-500 ${ach.isUnlocked ? 'bg-yellow-500' : 'bg-blue-600'}`}
                                         style={{ width: `${progress}%` }}
                                     ></div>
                                     <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white shadow-black drop-shadow-md">
-                                        {ach.isUnlocked ? 'COMPLETED' : `${getCurrentValue(ach)} / ${formatNumber(ach.condition.value)}`}
+                                        {ach.isUnlocked ? 'CONCLUÍDO' : `${getCurrentValue(ach)} / ${formatNumber(ach.condition.value)}`}
                                     </div>
                                 </div>
                             </div>

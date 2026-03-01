@@ -27,18 +27,18 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onD
 
     if (!dungeon || !dungeon.active) return null;
 
-    const cellSize = 40; // Pixel size for cells
+    const cellSize = 40;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95">
             <div className="bg-slate-900 border-2 border-slate-600 rounded-lg p-4 shadow-2xl relative max-w-full max-h-full overflow-auto">
-                {/* Header */}
+                {/* Cabeçalho */}
                 <div className="flex justify-between items-center mb-4 text-slate-200">
                     <h2 className="text-xl font-bold flex items-center gap-2">
-                        <Grid /> Dungeon Level {dungeon.level}
+                        <Grid /> Masmorra Nível {dungeon.level}
                     </h2>
-                    <div className="text-sm text-slate-400">Use Arrows to Move | ESC to Exit</div>
-                    {/* Key Display */}
+                    <div className="text-sm text-slate-400">Use as Setas para Mover | ESC para Sair</div>
+                    {/* Exibição de Chaves */}
                     <div className="flex gap-2 bg-slate-800 px-3 py-1 rounded border border-slate-700">
                         {Object.entries(dungeon.keys || {}).map(([element, count]) => (
                             count > 0 && (
@@ -50,17 +50,16 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onD
                     </div>
                     <div className="flex gap-2">
                         <button onClick={onOpenMastery} className="bg-yellow-600 px-3 py-1 rounded text-white text-sm hover:bg-yellow-500 flex items-center gap-1">
-                            <Grid size={16} /> Mastery
+                            <Grid size={16} /> Maestria
                         </button>
-                        {/* Always show Descend for testing, later condition on Boss kill */}
                         <button onClick={onDescend} className="bg-purple-700 px-3 py-1 rounded text-white text-sm hover:bg-purple-600 flex items-center gap-1">
-                            <Footprints size={16} /> Descend
+                            <Footprints size={16} /> Descer
                         </button>
-                        <button onClick={onExit} className="bg-red-900 px-3 py-1 rounded text-white text-sm hover:bg-red-800">Forfeit</button>
+                        <button onClick={onExit} className="bg-red-900 px-3 py-1 rounded text-white text-sm hover:bg-red-800">Abandonar</button>
                     </div>
                 </div>
 
-                {/* Grid */}
+                {/* Grade */}
                 <div
                     className="grid gap-[1px] bg-slate-800 border border-slate-700"
                     style={{
@@ -74,12 +73,11 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onD
                             const isPlayer = dungeon.playerPos.x === x && dungeon.playerPos.y === y;
                             const isRevealed = dungeon.revealed[y][x];
 
-                            // Render Content
                             let content = null;
                             let bgClass = 'bg-slate-900';
 
                             if (!isRevealed) {
-                                bgClass = 'bg-black'; // Fog
+                                bgClass = 'bg-black';
                             } else {
                                 if (cell === 'wall') bgClass = 'bg-slate-600';
                                 else if (cell === 'empty') bgClass = 'bg-slate-800';
@@ -102,7 +100,7 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onD
                                     if (el === 'light') color = 'text-yellow-200';
                                     if (el === 'dark') color = 'text-purple-900';
                                     content = <Lock size={20} className={color} />;
-                                    bgClass = 'bg-slate-800 border-2 border-slate-600'; // Make it look sturdy
+                                    bgClass = 'bg-slate-800 border-2 border-slate-600';
                                 }
 
                                 if (typeof cell === 'string' && cell.startsWith('hazard_')) {
@@ -127,7 +125,7 @@ export const DungeonModal: React.FC<DungeonModalProps> = ({ dungeon, onMove, onD
                             }
 
                             if (isPlayer) {
-                                content = <div className="text-cyan-400 animate-pulse"><Shield size={24} /></div>; // Player Icon
+                                content = <div className="text-cyan-400 animate-pulse"><Shield size={24} /></div>;
                             }
 
                             return (

@@ -5,7 +5,7 @@ interface VictoryModalProps {
     isOpen: boolean;
     playTime: number;
     ascensions: number;
-    onContinue: () => void; // Continue playing (Endless Mode)
+    onContinue: () => void; // Continuar jogando (Modo Sem Fim)
 }
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({ isOpen, playTime, ascensions, onContinue }) => {
@@ -25,30 +25,30 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({ isOpen, playTime, as
                 </div>
 
                 <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-500 mt-12 mb-4 drop-shadow-lg">
-                    VICTORY!
+                    VITÓRIA!
                 </h1>
 
                 <p className="text-2xl text-indigo-200 mb-8 font-light">
-                    You have defeated the <span className="text-purple-400 font-bold">Void Core</span> and saved the multiverse.
+                    Você derrotou o <span className="text-purple-400 font-bold">Núcleo do Vazio</span> e salvou o multiverso.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4 mb-8">
                     <div className="bg-black/40 p-4 rounded-lg border border-indigo-500/30">
-                        <div className="text-indigo-400 text-sm uppercase tracking-wider mb-1">Total Playtime</div>
+                        <div className="text-indigo-400 text-sm uppercase tracking-wider mb-1">Tempo de Jogo</div>
                         <div className="text-3xl font-mono font-bold text-white">{hours}h {minutes}m</div>
                     </div>
                     <div className="bg-black/40 p-4 rounded-lg border border-indigo-500/30">
-                        <div className="text-indigo-400 text-sm uppercase tracking-wider mb-1">Ascensions</div>
+                        <div className="text-indigo-400 text-sm uppercase tracking-wider mb-1">Ascensões</div>
                         <div className="text-3xl font-mono font-bold text-white">{ascensions}</div>
                     </div>
                 </div>
 
                 <div className="bg-yellow-900/20 border border-yellow-500/30 p-6 rounded-xl mb-8">
                     <h3 className="text-yellow-400 font-bold text-lg mb-2 flex items-center justify-center gap-2">
-                        <Star size={20} /> ENDLESS MODE UNLOCKED <Star size={20} />
+                        <Star size={20} /> MODO SEM FIM DESBLOQUEADO <Star size={20} />
                     </h3>
                     <p className="text-yellow-200/80 text-sm">
-                        You can continue playing to reach higher floors, conquer more galaxies, and achieve infinite power.
+                        Você pode continuar jogando para alcançar andares mais altos, conquistar mais galáxias e atingir poder infinito.
                     </p>
                 </div>
 
@@ -57,7 +57,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({ isOpen, playTime, as
                     className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-3"
                 >
                     <RefreshCw size={24} />
-                    CONTINUE ENDLESS JOURNEY
+                    CONTINUAR JORNADA INFINITA
                 </button>
 
             </div>

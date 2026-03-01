@@ -29,7 +29,7 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
 
                 {/* Header */}
                 <h2 className="text-amber-500 text-3xl font-bold mb-8 flex items-center justify-center gap-3 border-b border-amber-900/50 pb-4">
-                    <Home size={32} /> TOWN CENTER
+                    <Home size={32} /> CENTRO DA CIDADE
                 </h2>
 
                 {/* Buildings Grid */}
@@ -64,13 +64,13 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
                                 {/* Stats */}
                                 <div className="bg-black/30 p-3 rounded-lg mb-4 text-sm text-stone-300 border border-stone-800/50">
                                     <div className="flex justify-between mb-1">
-                                        <span>Current Bonus:</span>
+                                        <span>Bônus Atual:</span>
                                         <span className="text-green-400 font-bold">
-                                            {building.bonus.replace('/ Lvl', '')} (x{building.level - 1})
+                                            {building.bonus.replace('/ Nvl', '')} (x{building.level - 1})
                                         </span>
                                     </div>
                                     <div className="text-xs text-stone-500 italic mt-1">
-                                        {building.bonus} per level
+                                        {building.bonus} por nível
                                     </div>
                                 </div>
 
@@ -87,11 +87,11 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
                                         }`}
                                 >
                                     {isMax ? (
-                                        <>Match <Hammer size={18} /> MAX LEVEL</>
+                                        <>✅ <Hammer size={18} /> NÍVEL MÁX</>
                                     ) : (
                                         <>
                                             <ArrowUpCircle size={18} />
-                                            Upgrade ({formatNumber(building.cost)} Gold)
+                                            Melhorar ({formatNumber(building.cost)} Ouro)
                                         </>
                                     )}
                                 </button>
@@ -102,7 +102,7 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
 
                 {/* Footer Info */}
                 <div className="mt-6 text-center text-stone-500 text-sm">
-                    Invest in your town to unlock permanent bonuses for your guild.
+                    Invista em sua cidade para desbloquear bônus permanentes para sua guilda.
                 </div>
             </div>
         </div>

@@ -51,6 +51,7 @@ import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
 
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
+import { DevToolsModal } from './components/modals/DevToolsModal'; // Dev Tools
 
 import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
 
@@ -62,9 +63,11 @@ function App() {
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
     victory,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
-    assignHero, showCampfire, setShowCampfire,
+    outerSpaceUnlocked,
+    assignHero, showCampfire, setShowCampfire, setOuterSpaceUnlocked,
     activeExpeditions, activePotions, gardenPlots, setGardenPlots, setResources, setGold,
     marketStock, marketTimer, buyMarketItem,
+    setItems, setAchievements, setBuildings,
     dungeonMastery,
     buyMasteryUpgrade,
     activeRift, riftTimer, exitRift,
@@ -82,7 +85,8 @@ function App() {
     synergies, // Fixed: Destructured from useGame
     voidAscensions,
     formations, saveFormation, loadFormation, deleteFormation, // Update 74
-    activeEvent
+    activeEvent,
+    setSouls, setDivinity, setStarlight, setHeroes, setGameSpeed
   } = useGame();
 
 
@@ -98,6 +102,7 @@ function App() {
   // showCampfire managed by useGame (Phase 80)
   const [showStars, setShowStars] = useState(false);
   const [showBestiary, setShowBestiary] = useState(false);
+  const [showDevTools, setShowDevTools] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showForge, setShowForge] = useState(false);
@@ -223,10 +228,12 @@ function App() {
           setShowCampfire={setShowCampfire} // Phase 80
           setShowStarForge={setShowStarForge}
           setShowWorldBoss={setShowWorldBoss}
+          outerSpaceUnlocked={outerSpaceUnlocked}
           // setShowCardBattle - Triggered from Museum
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements} setShowStarlight={setShowStarlight} setShowHelp={setShowHelp}
           setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy} setShowExpeditions={setShowExpeditions}
           setShowGarden={setShowGarden}
+          setShowDevTools={setShowDevTools}
         />
 
         <BattleArea
@@ -411,6 +418,23 @@ function App() {
         heroes={heroes}
         onAssign={assignHero}
       />
+      {showDevTools && (
+        <DevToolsModal
+          isOpen={showDevTools}
+          onClose={() => setShowDevTools(false)}
+          setGold={setGold}
+          setSouls={setSouls}
+          setDivinity={setDivinity}
+          setStarlight={setStarlight}
+          setHeroes={setHeroes}
+          setItems={setItems}
+          setAchievements={setAchievements}
+          setBuildings={setBuildings}
+          setGameSpeed={setGameSpeed}
+          gameSpeed={gameSpeed}
+          setOuterSpaceUnlocked={setOuterSpaceUnlocked}
+        />
+      )}
     </div>
   );
 }

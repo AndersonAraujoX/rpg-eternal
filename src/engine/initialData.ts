@@ -2,56 +2,56 @@ import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameS
 
 
 export const INITIAL_ACHIEVEMENTS: Achievement[] = [
-    { id: 'k1', name: 'Slayer I', description: 'Kill 100 Monsters', isUnlocked: false, condition: { type: 'kills', value: 100 }, rewardType: 'damage', rewardValue: 0.05, rewardText: '+5% Attack' },
-    { id: 'g1', name: 'Midas I', description: 'Earn 1000 Gold', isUnlocked: false, condition: { type: 'gold', value: 1000 }, rewardType: 'gold', rewardValue: 0.05, rewardText: '+5% Gold' },
-    { id: 'c1', name: 'Clicker I', description: 'Click 500 Times', isUnlocked: false, condition: { type: 'clicks', value: 500 }, rewardType: 'damage', rewardValue: 0.05, rewardText: '+5% Click Dmg' },
-    { id: 'b1', name: 'Boss Hunter I', description: 'Kill 10 Bosses', isUnlocked: false, condition: { type: 'bossKills', value: 10 }, rewardType: 'bossDamage', rewardValue: 0.1, rewardText: '+10% Boss Dmg' },
+    { id: 'k1', name: 'Caçador I', description: 'Mate 100 Monstros', isUnlocked: false, condition: { type: 'kills', value: 100 }, rewardType: 'damage', rewardValue: 0.05, rewardText: '+5% de Ataque' },
+    { id: 'g1', name: 'Midas I', description: 'Ganhe 1000 de Ouro', isUnlocked: false, condition: { type: 'gold', value: 1000 }, rewardType: 'gold', rewardValue: 0.05, rewardText: '+5% de Ouro' },
+    { id: 'c1', name: 'Clicador I', description: 'Clique 500 Vezes', isUnlocked: false, condition: { type: 'clicks', value: 500 }, rewardType: 'damage', rewardValue: 0.05, rewardText: '+5% Dano de Clique' },
+    { id: 'b1', name: 'Caçador de Chefes I', description: 'Mate 10 Chefes', isUnlocked: false, condition: { type: 'bossKills', value: 10 }, rewardType: 'bossDamage', rewardValue: 0.1, rewardText: '+10% Dano contra Chefes' },
     // Phase 52: New Achievements
-    { id: 'm1', name: 'Iron Heart', description: 'Mine 100 Resources', isUnlocked: false, condition: { type: 'oreMined', value: 100 }, rewardType: 'mining', rewardValue: 0.1, rewardText: '+10% Mining Yield' },
-    { id: 'f1', name: 'Master Smith', description: 'Forge 25 Items', isUnlocked: false, condition: { type: 'itemsForged', value: 25 }, rewardType: 'crafting', rewardValue: 0.1, rewardText: '+10% Craft Speed' },
-    { id: 'fi1', name: 'Angler', description: 'Catch 50 Fish', isUnlocked: false, condition: { type: 'fishCaught', value: 50 }, rewardType: 'fishing', rewardValue: 0.1, rewardText: '+10% Fishing Luck' },
+    { id: 'm1', name: 'Coração de Ferro', description: 'Minere 100 Recursos', isUnlocked: false, condition: { type: 'oreMined', value: 100 }, rewardType: 'mining', rewardValue: 0.1, rewardText: '+10% de Rendimento de Mineração' },
+    { id: 'f1', name: 'Mestre Ferreiro', description: 'Forje 25 Itens', isUnlocked: false, condition: { type: 'itemsForged', value: 25 }, rewardType: 'crafting', rewardValue: 0.1, rewardText: '+10% de Velocidade de Forja' },
+    { id: 'fi1', name: 'Pescador', description: 'Pesque 50 Peixes', isUnlocked: false, condition: { type: 'fishCaught', value: 50 }, rewardType: 'fishing', rewardValue: 0.1, rewardText: '+10% de Sorte na Pesca' },
 ];
 
 export const INITIAL_HEROES: Hero[] = [
     {
-        id: 'h1', name: 'Warrior', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
-            { id: 's1', name: 'Shield Bash', description: 'Deals 200% Attack damage.', unlockLevel: 1, cooldown: 5, currentCooldown: 0, type: 'active', effectType: 'damage', target: 'enemy', value: 2.0 }
+        id: 'h1', name: 'Guerreiro', type: 'hero', class: 'Warrior', emoji: '🛡️', unlocked: true, isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
+            { id: 's1', name: 'Pancada com Escudo', description: 'Causa 200% de dano de Ataque.', unlockLevel: 1, cooldown: 5, currentCooldown: 0, type: 'active', effectType: 'damage', target: 'enemy', value: 2.0 }
         ], stats: { hp: 100, maxHp: 100, mp: 30, maxMp: 30, attack: 15, magic: 5, defense: 10, speed: 10 }, equipment: {}
     },
     {
-        id: 'h2', name: 'Mage', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
-            { id: 's2', name: 'Fireball', description: 'Deals 300% Magic damage.', unlockLevel: 1, cooldown: 8, currentCooldown: 0, type: 'active', effectType: 'damage', target: 'enemy', element: 'fire', value: 3.0 }
+        id: 'h2', name: 'Mago', type: 'hero', class: 'Mage', emoji: '🔮', unlocked: true, isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
+            { id: 's2', name: 'Bola de Fogo', description: 'Causa 300% de dano Mágico.', unlockLevel: 1, cooldown: 8, currentCooldown: 0, type: 'active', effectType: 'damage', target: 'enemy', element: 'fire', value: 3.0 }
         ], stats: { hp: 70, maxHp: 70, mp: 100, maxMp: 100, attack: 5, magic: 25, defense: 3, speed: 12 }, equipment: {}
     },
     {
-        id: 'h3', name: 'Healer', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
-            { id: 's3', name: 'Lesser Heal', description: 'Restores 20% Max HP.', unlockLevel: 1, cooldown: 6, currentCooldown: 0, type: 'active', effectType: 'heal', target: 'lowest_hp', value: 0.2 }
+        id: 'h3', name: 'Curandeiro', type: 'hero', class: 'Healer', emoji: '💚', unlocked: true, isDead: false, element: 'water', assignment: 'combat', gambits: [{ id: 'g1', condition: 'ally_hp<50', action: 'heal', target: 'weakest_ally' }], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [
+            { id: 's3', name: 'Cura Menor', description: 'Restaura 20% do HP Máximo.', unlockLevel: 1, cooldown: 6, currentCooldown: 0, type: 'active', effectType: 'heal', target: 'lowest_hp', value: 0.2 }
         ], stats: { hp: 80, maxHp: 80, mp: 80, maxMp: 80, attack: 8, magic: 20, defense: 5, speed: 11 }, equipment: {}
     },
-    { id: 'h4', name: 'Rogue', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 }, equipment: {} },
-    { id: 'h5', name: 'Paladin', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 }, equipment: {} },
-    { id: 'h6', name: 'Warlock', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 }, equipment: {} },
+    { id: 'h4', name: 'Ladino', type: 'hero', class: 'Rogue', unlocked: false, emoji: '🗡️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 85, maxHp: 85, mp: 50, maxMp: 50, attack: 25, magic: 5, defense: 5, speed: 15 }, equipment: {} },
+    { id: 'h5', name: 'Paladino', type: 'hero', class: 'Paladin', unlocked: false, emoji: '✝️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 150, maxHp: 150, mp: 40, maxMp: 40, attack: 10, magic: 15, defense: 15, speed: 8 }, equipment: {} },
+    { id: 'h6', name: 'Bruxo', type: 'hero', class: 'Warlock', unlocked: false, emoji: '☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 60, maxHp: 60, mp: 120, maxMp: 120, attack: 5, magic: 35, defense: 2, speed: 9 }, equipment: {} },
     { id: 'h7', name: 'Dragoon', type: 'hero', class: 'Dragoon', unlocked: false, emoji: '🐉', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 130, maxHp: 130, mp: 50, maxMp: 50, attack: 35, magic: 10, defense: 8, speed: 14 }, equipment: {} },
-    { id: 'h8', name: 'Sage', type: 'hero', class: 'Sage', unlocked: false, emoji: '📜', isDead: false, element: 'light', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 75, maxHp: 75, mp: 150, maxMp: 150, attack: 5, magic: 40, defense: 4, speed: 10 }, equipment: {} },
-    { id: 'h9', name: 'Necromancer', type: 'hero', class: 'Necromancer', unlocked: false, emoji: '🦴', isDead: false, element: 'dark', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 90, maxHp: 90, mp: 100, maxMp: 100, attack: 10, magic: 30, defense: 6, speed: 8 }, equipment: {} },
-    { id: 'h10', name: 'Bard', type: 'hero', class: 'Bard', unlocked: false, emoji: '🎻', isDead: false, element: 'neutral', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 80, maxHp: 80, mp: 100, maxMp: 100, attack: 10, magic: 20, defense: 5, speed: 12 }, equipment: {} },
-    { id: 'h11', name: 'Monk', type: 'hero', class: 'Monk', unlocked: false, emoji: '🧘', isDead: false, element: 'neutral', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 110, maxHp: 110, mp: 30, maxMp: 30, attack: 18, magic: 5, defense: 10, speed: 14 }, equipment: {} },
-    { id: 'h12', name: 'Ranger', type: 'hero', class: 'Ranger', unlocked: false, emoji: '🏹', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 90, maxHp: 90, mp: 40, maxMp: 40, attack: 22, magic: 5, defense: 5, speed: 15 }, equipment: {} },
-    { id: 'h13', name: 'Druid', type: 'hero', class: 'Druid', unlocked: false, emoji: '🌿', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 100, maxHp: 100, mp: 80, maxMp: 80, attack: 10, magic: 15, defense: 8, speed: 10 }, equipment: {} },
+    { id: 'h8', name: 'Sábio', type: 'hero', class: 'Sage', unlocked: false, emoji: '📜', isDead: false, element: 'light', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 75, maxHp: 75, mp: 150, maxMp: 150, attack: 5, magic: 40, defense: 4, speed: 10 }, equipment: {} },
+    { id: 'h9', name: 'Necromante', type: 'hero', class: 'Necromancer', unlocked: false, emoji: '🦴', isDead: false, element: 'dark', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 90, maxHp: 90, mp: 100, maxMp: 100, attack: 10, magic: 30, defense: 6, speed: 8 }, equipment: {} },
+    { id: 'h10', name: 'Bardo', type: 'hero', class: 'Bard', unlocked: false, emoji: '🎻', isDead: false, element: 'neutral', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 80, maxHp: 80, mp: 100, maxMp: 100, attack: 10, magic: 20, defense: 5, speed: 12 }, equipment: {} },
+    { id: 'h11', name: 'Monge', type: 'hero', class: 'Monk', unlocked: false, emoji: '🧘', isDead: false, element: 'neutral', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 110, maxHp: 110, mp: 30, maxMp: 30, attack: 18, magic: 5, defense: 10, speed: 14 }, equipment: {} },
+    { id: 'h12', name: 'Patrulheiro', type: 'hero', class: 'Ranger', unlocked: false, emoji: '🏹', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 90, maxHp: 90, mp: 40, maxMp: 40, attack: 22, magic: 5, defense: 5, speed: 15 }, equipment: {} },
+    { id: 'h13', name: 'Druida', type: 'hero', class: 'Druid', unlocked: false, emoji: '🌿', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 100, maxHp: 100, mp: 80, maxMp: 80, attack: 10, magic: 15, defense: 8, speed: 10 }, equipment: {} },
     { id: 'h14', name: 'Berserker', type: 'hero', class: 'Berserker', unlocked: false, emoji: '🪓', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 140, maxHp: 140, mp: 20, maxMp: 20, attack: 30, magic: 0, defense: 0, speed: 12 }, equipment: {} },
-    { id: 'h15', name: 'Sorcerer', type: 'hero', class: 'Sorcerer', unlocked: false, emoji: '⚡', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 60, maxHp: 60, mp: 150, maxMp: 150, attack: 5, magic: 35, defense: 2, speed: 10 }, equipment: {} },
-    { id: 'h16', name: 'Templar', type: 'hero', class: 'Templar', unlocked: false, emoji: '🛡️✨', isDead: false, element: 'light', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 160, maxHp: 160, mp: 50, maxMp: 50, attack: 15, magic: 10, defense: 25, speed: 8 }, equipment: {} },
-    { id: 'h17', name: 'Assassin', type: 'hero', class: 'Assassin', unlocked: false, emoji: '🗡️🌑', isDead: false, element: 'dark', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 80, maxHp: 80, mp: 40, maxMp: 40, attack: 35, magic: 5, defense: 3, speed: 18 }, equipment: {} },
-    { id: 'h18', name: 'Engineer', type: 'hero', class: 'Engineer', unlocked: false, emoji: '🔧', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 100, maxHp: 100, mp: 60, maxMp: 60, attack: 15, magic: 15, defense: 12, speed: 10 }, equipment: {} },
-    { id: 'h19', name: 'Alchemist', type: 'hero', class: 'Alchemist', unlocked: false, emoji: '⚗️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 90, maxHp: 90, mp: 80, maxMp: 80, attack: 10, magic: 25, defense: 5, speed: 11 }, equipment: {} },
-    { id: 'h20', name: 'Illusionist', type: 'hero', class: 'Illusionist', unlocked: false, emoji: '🎭', isDead: false, element: 'dark', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 70, maxHp: 70, mp: 120, maxMp: 120, attack: 5, magic: 30, defense: 5, speed: 15 }, equipment: {} },
+    { id: 'h15', name: 'Feiticeiro', type: 'hero', class: 'Sorcerer', unlocked: false, emoji: '⚡', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 60, maxHp: 60, mp: 150, maxMp: 150, attack: 5, magic: 35, defense: 2, speed: 10 }, equipment: {} },
+    { id: 'h16', name: 'Templário', type: 'hero', class: 'Templar', unlocked: false, emoji: '🛡️✨', isDead: false, element: 'light', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 160, maxHp: 160, mp: 50, maxMp: 50, attack: 15, magic: 10, defense: 25, speed: 8 }, equipment: {} },
+    { id: 'h17', name: 'Assassino', type: 'hero', class: 'Assassin', unlocked: false, emoji: '🗡️🌑', isDead: false, element: 'dark', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 80, maxHp: 80, mp: 40, maxMp: 40, attack: 35, magic: 5, defense: 3, speed: 18 }, equipment: {} },
+    { id: 'h18', name: 'Engenheiro', type: 'hero', class: 'Engineer', unlocked: false, emoji: '🔧', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 100, maxHp: 100, mp: 60, maxMp: 60, attack: 15, magic: 15, defense: 12, speed: 10 }, equipment: {} },
+    { id: 'h19', name: 'Alquimista', type: 'hero', class: 'Alchemist', unlocked: false, emoji: '⚗️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 90, maxHp: 90, mp: 80, maxMp: 80, attack: 10, magic: 25, defense: 5, speed: 11 }, equipment: {} },
+    { id: 'h20', name: 'Ilusionista', type: 'hero', class: 'Illusionist', unlocked: false, emoji: '🎭', isDead: false, element: 'dark', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 70, maxHp: 70, mp: 120, maxMp: 120, attack: 5, magic: 30, defense: 5, speed: 15 }, equipment: {} },
     { id: 'h21', name: 'Samurai', type: 'hero', class: 'Samurai', unlocked: false, emoji: '🏯', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 100, maxHp: 100, mp: 40, maxMp: 40, attack: 28, magic: 5, defense: 8, speed: 14 }, equipment: {} },
     { id: 'h22', name: 'Viking', type: 'hero', class: 'Viking', unlocked: false, emoji: '🛶', isDead: false, element: 'water', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 150, maxHp: 150, mp: 20, maxMp: 20, attack: 25, magic: 0, defense: 10, speed: 9 }, equipment: {} },
     { id: 'h23', name: 'Ninja', type: 'hero', class: 'Ninja', unlocked: false, emoji: '🥷', isDead: false, element: 'dark', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 80, maxHp: 80, mp: 50, maxMp: 50, attack: 20, magic: 10, defense: 5, speed: 20 }, equipment: {} },
-    { id: 'h24', name: 'Pirate', type: 'hero', class: 'Pirate', unlocked: false, emoji: '🏴‍☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 110, maxHp: 110, mp: 30, maxMp: 30, attack: 22, magic: 5, defense: 8, speed: 12 }, equipment: {} },
-    { id: 'h25', name: 'Fisherman', type: 'hero', class: 'Fisherman', unlocked: false, emoji: '🎣', isDead: false, element: 'water', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 95, maxHp: 95, mp: 40, maxMp: 40, attack: 12, magic: 10, defense: 10, speed: 10 }, equipment: {} },
-    { id: 'h26', name: 'Blacksmith', type: 'hero', class: 'Blacksmith', unlocked: false, emoji: '⚒️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 120, maxHp: 120, mp: 30, maxMp: 30, attack: 20, magic: 5, defense: 15, speed: 9 }, equipment: {} },
-    { id: 'h27', name: 'Miner', type: 'hero', class: 'Miner', unlocked: false, emoji: '⛏️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 110, maxHp: 110, mp: 20, maxMp: 20, attack: 15, magic: 5, defense: 12, speed: 8 }, equipment: {} },
+    { id: 'h24', name: 'Pirata', type: 'hero', class: 'Pirate', unlocked: false, emoji: '🏴‍☠️', isDead: false, element: 'water', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 110, maxHp: 110, mp: 30, maxMp: 30, attack: 22, magic: 5, defense: 8, speed: 12 }, equipment: {} },
+    { id: 'h25', name: 'Pescador', type: 'hero', class: 'Fisherman', unlocked: false, emoji: '🎣', isDead: false, element: 'water', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 95, maxHp: 95, mp: 40, maxMp: 40, attack: 12, magic: 10, defense: 10, speed: 10 }, equipment: {} },
+    { id: 'h26', name: 'Ferreiro', type: 'hero', class: 'Blacksmith', unlocked: false, emoji: '⚒️', isDead: false, element: 'fire', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 120, maxHp: 120, mp: 30, maxMp: 30, attack: 20, magic: 5, defense: 15, speed: 9 }, equipment: {} },
+    { id: 'h27', name: 'Minerador', type: 'hero', class: 'Miner', unlocked: false, emoji: '⛏️', isDead: false, element: 'nature', assignment: 'combat', gambits: [], insanity: 0, level: 1, xp: 0, maxXp: 100, fatigue: 0, maxFatigue: 100, statPoints: 0, skills: [], stats: { hp: 110, maxHp: 110, mp: 20, maxMp: 20, attack: 15, magic: 5, defense: 12, speed: 8 }, equipment: {} },
 ];
 
 export const INITIAL_BOSS: Boss = {
@@ -61,7 +61,7 @@ export const INITIAL_BOSS: Boss = {
 
 export const INITIAL_PET_DATA: Pet = {
     id: 'pet_default',
-    name: 'Unknown Pet',
+    name: 'Pet Desconhecido',
     type: 'pet',
     bonus: '+0%',
     emoji: '🥚',
@@ -74,15 +74,15 @@ export const INITIAL_PET_DATA: Pet = {
 };
 
 export const INITIAL_PETS: Pet[] = [
-    { id: 'pet-eye', name: 'Floating Eye', type: 'pet', bonus: '+Crit Dmg', emoji: '👁️', isDead: false, level: 1, xp: 0, maxXp: 100, rarity: 'common', stats: { attack: 2, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 } },
-    { id: 'pet-slime', name: 'Golden Slime', type: 'pet', bonus: '+Gold', emoji: '🦠', isDead: false, level: 1, xp: 0, maxXp: 100, rarity: 'rare', stats: { attack: 1, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 } }
+    { id: 'pet-eye', name: 'Olho Flutuante', type: 'pet', bonus: '+Dano Crítico', emoji: '👁️', isDead: false, level: 1, xp: 0, maxXp: 100, rarity: 'common', stats: { attack: 2, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 } },
+    { id: 'pet-slime', name: 'Slime Dourado', type: 'pet', bonus: '+Ouro', emoji: '🦠', isDead: false, level: 1, xp: 0, maxXp: 100, rarity: 'rare', stats: { attack: 1, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 } }
 ];
 
 export const INITIAL_TALENTS: Talent[] = [
-    { id: 't1', name: 'Sharpness', level: 0, maxLevel: 50, cost: 10, costScaling: 1.5, description: '+5% Damage', stat: 'attack', valuePerLevel: 0.05 },
-    { id: 't2', name: 'Haste', level: 0, maxLevel: 20, cost: 50, costScaling: 2, description: '-2% Combat Delay', stat: 'speed', valuePerLevel: 0.02 },
-    { id: 't3', name: 'Greed', level: 0, maxLevel: 10, cost: 100, costScaling: 3, description: '+10% Value', stat: 'gold', valuePerLevel: 0.1 },
-    { id: 't4', name: 'Precision', level: 0, maxLevel: 25, cost: 25, costScaling: 1.8, description: '+1% Crit Chance', stat: 'crit', valuePerLevel: 0.01 }
+    { id: 't1', name: 'Afiação', level: 0, maxLevel: 50, cost: 10, costScaling: 1.5, description: '+5% de Dano', stat: 'attack', valuePerLevel: 0.05 },
+    { id: 't2', name: 'Pressa', level: 0, maxLevel: 20, cost: 50, costScaling: 2, description: '-2% de Atraso de Combate', stat: 'speed', valuePerLevel: 0.02 },
+    { id: 't3', name: 'Ganância', level: 0, maxLevel: 10, cost: 100, costScaling: 3, description: '+10% de Valor', stat: 'gold', valuePerLevel: 0.1 },
+    { id: 't4', name: 'Precisão', level: 0, maxLevel: 25, cost: 25, costScaling: 1.8, description: '+1% de Chance Crítica', stat: 'crit', valuePerLevel: 0.01 }
 ];
 
 export const INITIAL_GAME_STATS: GameStats = {
@@ -104,17 +104,17 @@ export const INITIAL_GAME_STATS: GameStats = {
 };
 
 export const INITIAL_BUILDINGS: Building[] = [
-    { id: 'b_tavern', name: 'The Rusty Tankard', description: 'Attracts better heroes and lowers recruitment costs.', level: 1, maxLevel: 10, cost: 1000, costScaling: 2.5, bonus: '-5% Recruit Cost / Lvl', effectValue: 0.05, currency: 'gold', emoji: '🍺' },
-    { id: 'b_forge', name: 'Eternal Forge', description: 'Improves crafting efficiency and discounts.', level: 1, maxLevel: 10, cost: 2000, costScaling: 3, bonus: '-5% Upgrade Cost / Lvl', effectValue: 0.05, currency: 'gold', emoji: '⚒️' },
-    { id: 'b_temple', name: 'Temple of Light', description: 'A place of worship that gathers more Souls.', level: 1, maxLevel: 10, cost: 5000, costScaling: 4, bonus: '+10% Soul Gain / Lvl', effectValue: 0.1, currency: 'gold', emoji: '🏛️' },
-    { id: 'b_guild', name: 'Heroes Guild', description: 'Central hub for guild operations.', level: 1, maxLevel: 5, cost: 10000, costScaling: 5, bonus: '+20% Guild XP / Lvl', effectValue: 0.2, currency: 'gold', emoji: '🏰' }
+    { id: 'b_tavern', name: 'Caneca Enferrujada', description: 'Atrai heróis melhores e reduz custos de recrutamento.', level: 1, maxLevel: 10, cost: 1000, costScaling: 2.5, bonus: '-5% Custo de Recruta / Nível', effectValue: 0.05, currency: 'gold', emoji: '🍺' },
+    { id: 'b_forge', name: 'Forja Eterna', description: 'Melhora a eficiência e descontos de forja.', level: 1, maxLevel: 10, cost: 2000, costScaling: 3, bonus: '-5% Custo de Melhoria / Nível', effectValue: 0.05, currency: 'gold', emoji: '⚒️' },
+    { id: 'b_temple', name: 'Templo da Luz', description: 'Um lugar de adoração que coleta mais Almas.', level: 1, maxLevel: 10, cost: 5000, costScaling: 4, bonus: '+10% Ganho de Almas / Nível', effectValue: 0.1, currency: 'gold', emoji: '🏛️' },
+    { id: 'b_guild', name: 'Guilda dos Heróis', description: 'Hub central para operações da guilda.', level: 1, maxLevel: 5, cost: 10000, costScaling: 5, bonus: '+20% XP de Guilda / Nível', effectValue: 0.2, currency: 'gold', emoji: '🏰' }
 ];
 
 export const INITIAL_CONSTELLATIONS: ConstellationNode[] = [
-    { id: 'c1', name: 'Orion', description: '+Boss Damage', level: 0, maxLevel: 10, cost: 1, costScaling: 2, bonusType: 'bossDamage', valuePerLevel: 0.10, x: 20, y: 50 },
-    { id: 'c2', name: 'Lyra', description: '+Gold Drops', level: 0, maxLevel: 10, cost: 1, costScaling: 2, bonusType: 'goldDrop', valuePerLevel: 0.20, x: 50, y: 20 },
-    { id: 'c3', name: 'Phoenix', description: '+Soul Drops', level: 0, maxLevel: 10, cost: 2, costScaling: 3, bonusType: 'soulDrop', valuePerLevel: 0.10, x: 80, y: 50 },
-    { id: 'c4', name: 'Draco', description: 'Revive Speed', level: 0, maxLevel: 5, cost: 5, costScaling: 4, bonusType: 'autoReviveSpeed', valuePerLevel: 0.50, x: 50, y: 80 }
+    { id: 'c1', name: 'Órion', description: '+Dano de Chefe', level: 0, maxLevel: 10, cost: 1, costScaling: 2, bonusType: 'bossDamage', valuePerLevel: 0.10, x: 20, y: 50 },
+    { id: 'c2', name: 'Lyra', description: '+Drops de Ouro', level: 0, maxLevel: 10, cost: 1, costScaling: 2, bonusType: 'goldDrop', valuePerLevel: 0.20, x: 50, y: 20 },
+    { id: 'c3', name: 'Fênix', description: '+Drops de Almas', level: 0, maxLevel: 10, cost: 2, costScaling: 3, bonusType: 'soulDrop', valuePerLevel: 0.10, x: 80, y: 50 },
+    { id: 'c4', name: 'Draco', description: 'Velocidade de Ressurreição', level: 0, maxLevel: 5, cost: 5, costScaling: 4, bonusType: 'autoReviveSpeed', valuePerLevel: 0.50, x: 50, y: 80 }
 ];
 
 
@@ -145,24 +145,24 @@ export const FAKE_LEADERBOARD: LeaderboardEntry[] = [
 
 
 export const RARE_ARTIFACTS: Artifact[] = [
-    { id: 'a1', name: 'Crown of Kings', description: 'Start at Lvl 5', emoji: '👑', bonus: 'lvl+5', unlocked: false },
-    { id: 'a2', name: 'Void Stone', description: '+50% All Stats', emoji: '🌑', bonus: 'stats+50', unlocked: false },
-    { id: 'a3', name: 'Phoenix Feather', description: 'Auto-Revive (10s)', emoji: '🪶', bonus: 'revive', unlocked: false }
+    { id: 'a1', name: 'Coroa dos Reis', description: 'Comece no Nível 5', emoji: '👑', bonus: 'nível+5', unlocked: false },
+    { id: 'a2', name: 'Pedra do Vazio', description: '+50% em Todos os Status', emoji: '🌑', bonus: 'stats+50', unlocked: false },
+    { id: 'a3', name: 'Pena de Fênix', description: 'Ressurreição Automática (10s)', emoji: '🪶', bonus: 'ressurreição', unlocked: false }
 ];
 
 export const GUILDS: Guild[] = [
-    { id: 'g1', name: 'Xang', description: '+10% Physical Damage', bonusType: 'physical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Physical Damage', members: 0, monuments: {}, totalContribution: 0 },
-    { id: 'g2', name: 'Zhauw', description: '+10% Magical Damage', bonusType: 'magical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Magical Damage', members: 0, monuments: {}, totalContribution: 0 },
-    { id: 'g3', name: 'Yang', description: '+10% Critical Damage', bonusType: 'crit', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% Critical Damage', members: 0, monuments: {}, totalContribution: 0 }
+    { id: 'g1', name: 'Xang', description: '+10% de Dano Físico', bonusType: 'physical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% de Dano Físico', members: 0, monuments: {}, totalContribution: 0 },
+    { id: 'g2', name: 'Zhauw', description: '+10% de Dano Mágico', bonusType: 'magical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% de Dano Mágico', members: 0, monuments: {}, totalContribution: 0 },
+    { id: 'g3', name: 'Yang', description: '+10% de Dano Crítico', bonusType: 'crit', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% de Dano Crítico', members: 0, monuments: {}, totalContribution: 0 }
 ];
 
 export const NPC_DUELISTS: CardOpponent[] = [
-    { id: 'npc1', name: 'Novice Trainer', difficulty: 1, avatar: '🧢', deck: ['slime', 'bat', 'rat'] },
-    { id: 'npc2', name: 'Card Shark', difficulty: 3, avatar: '🦈', deck: ['wolf', 'snake', 'goblin'] },
-    { id: 'npc3', name: 'Grandmaster', difficulty: 10, avatar: '🧙‍♂️', deck: ['dragon', 'demon', 'golem'] }
+    { id: 'npc1', name: 'Treinador Novato', difficulty: 1, avatar: '🧢', deck: ['slime', 'bat', 'rat'] },
+    { id: 'npc2', name: 'Tubarão das Cartas', difficulty: 3, avatar: '🦈', deck: ['wolf', 'snake', 'goblin'] },
+    { id: 'npc3', name: 'Grão-mestre', difficulty: 10, avatar: '🧙‍♂️', deck: ['dragon', 'demon', 'golem'] }
 ];
 export const INITIAL_SPACESHIP: Spaceship = {
-    name: 'Explorer I',
+    name: 'Explorador I',
     level: 1,
     fuel: 100,
     maxFuel: 100,

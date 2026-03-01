@@ -22,7 +22,7 @@ export const LogModal: React.FC<LogModalProps> = ({ isOpen, onClose, logs }) => 
             <div className="bg-gray-900 border-4 border-gray-600 w-full max-w-lg h-[80vh] p-4 rounded-lg flex flex-col relative">
                 <button onClick={onClose} className="absolute top-2 right-2 text-white font-bold hover:text-red-500">X</button>
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Scroll size={20} /> COMBAT LOG HISTORY
+                    <Scroll size={20} /> HISTÓRICO DE COMBATE
                 </h2>
 
                 <div className="flex-1 overflow-y-auto font-mono text-xs space-y-1 p-2 bg-black rounded border border-gray-700">

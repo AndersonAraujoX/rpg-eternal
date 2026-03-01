@@ -27,16 +27,16 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({ isOpen, onClos
                 </button>
 
                 <h2 className="text-3xl font-bold text-indigo-400 mb-6 flex items-center gap-3">
-                    <BarChart2 size={32} /> Lifetime Statistics
+                    <BarChart2 size={32} /> Estatísticas da Vida
                 </h2>
 
                 <div className="grid grid-cols-1 gap-4">
-                    <StatRow icon={<Coins size={20} className="text-yellow-400" />} label="Total Gold Earned" value={formatNumber(stats.totalGoldEarned)} />
-                    <StatRow icon={<Skull size={20} className="text-red-400" />} label="Total Kills" value={formatNumber(stats.totalKills)} />
-                    <StatRow icon={<Skull size={20} className="text-purple-400" />} label="Boss Kills" value={formatNumber(stats.bossKills)} />
-                    <StatRow icon={<MousePointer size={20} className="text-blue-400" />} label="Total Clicks" value={formatNumber(stats.clicks)} />
-                    <StatRow icon={<Swords size={20} className="text-orange-400" />} label="Total Damage Dealt" value={formatNumber(stats.totalDamageDealt)} />
-                    <StatRow icon={<Clock size={20} className="text-green-400" />} label="Play Time" value={formatTime(stats.playTime)} />
+                    <StatRow icon={<Coins size={20} className="text-yellow-400" />} label="Ouro Total Ganho" value={formatNumber(stats.totalGoldEarned)} />
+                    <StatRow icon={<Skull size={20} className="text-red-400" />} label="Mortes Totais" value={formatNumber(stats.totalKills)} />
+                    <StatRow icon={<Skull size={20} className="text-purple-400" />} label="Chefes Derrotados" value={formatNumber(stats.bossKills)} />
+                    <StatRow icon={<MousePointer size={20} className="text-blue-400" />} label="Cliques Totais" value={formatNumber(stats.clicks)} />
+                    <StatRow icon={<Swords size={20} className="text-orange-400" />} label="Dano Total Causado" value={formatNumber(stats.totalDamageDealt)} />
+                    <StatRow icon={<Clock size={20} className="text-green-400" />} label="Tempo de Jogo" value={formatTime(stats.playTime)} />
                 </div>
             </div>
         </div>

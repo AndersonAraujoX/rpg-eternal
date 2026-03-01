@@ -19,15 +19,10 @@ export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fis
         setAnimate(true);
         setTimeout(() => setAnimate(false), 500);
 
-        const caught = processFishing(1); // 1 cast
-        // processFishing has 25% chance
-        // Let's boost it for manual play?
-        // Or keep it as is.
-
+        const caught = processFishing(1);
         if (caught > 0) {
             setFish(fishCount + caught);
-            // soundManager.playSplash(); // Need to add splash sound
-            soundManager.playLevelUp(); // Placeholder
+            soundManager.playLevelUp();
         }
     };
 
@@ -49,9 +44,9 @@ export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fis
                         )}
                     </div>
                     <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
-                        The Fishing Dock
+                        O Cais de Pesca
                     </h2>
-                    <p className="text-gray-400 text-sm">Relax and cast a line.</p>
+                    <p className="text-gray-400 text-sm">Relaxe e jogue sua linha.</p>
                 </div>
 
                 <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700 text-center mb-6">
@@ -59,18 +54,18 @@ export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fis
                         <Fish className="w-8 h-8 text-cyan-400" />
                         <span className="font-mono text-cyan-100">{fishCount}</span>
                     </div>
-                    <p className="text-xs text-gray-500 uppercase tracking-widest">Fish Caught</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-widest">Peixes Capturados</p>
                 </div>
 
                 <button
                     onClick={handleCast}
                     className="w-full py-4 bg-gradient-to-r from-cyan-700 to-blue-700 hover:from-cyan-600 hover:to-blue-600 rounded-xl font-bold text-white shadow-lg transform hover:scale-[1.02] active:scale-95 transition-all"
                 >
-                    CAST LINE
+                    LANÇAR LINHA
                 </button>
 
                 <p className="text-center text-xs text-gray-500 mt-4">
-                    Passive: 5% chance to catch fish every tick.
+                    Passivo: 5% de chance de pescar a cada tick.
                 </p>
             </div>
         </div>

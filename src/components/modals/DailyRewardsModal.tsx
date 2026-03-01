@@ -24,7 +24,7 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
     const [activeTab, setActiveTab] = useState<'login' | 'quests'>('login');
     const streak = gameStats.loginStreak || 1;
 
-    // Auto-switch to quests if login claimed
+    // Mudar automaticamente para missões se o login foi reivindicado
     useEffect(() => {
         if (dailyLoginClaimed) {
             const timer = setTimeout(() => setActiveTab('quests'), 0);
@@ -35,58 +35,49 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-800 border border-slate-600 rounded-lg max-w-2xl w-full flex flex-col max-h-[80vh] shadow-2xl">
-                {/* Header */}
+                {/* Cabeçalho */}
                 <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-900/50 rounded-t-lg">
                     <h2 className="text-xl font-bold flex items-center gap-2 text-amber-400">
                         <Calendar className="w-6 h-6" />
-                        Daily Rewards
+                        Recompensas Diárias
                     </h2>
                     <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                {/* Tabs */}
+                {/* Abas */}
                 <div className="flex border-b border-slate-700">
                     <button
                         onClick={() => setActiveTab('login')}
                         className={`flex-1 p-3 font-medium transition-colors ${activeTab === 'login' ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-400'
                             }`}
                     >
-                        Login Bonus
+                        Bônus de Login
                     </button>
                     <button
                         onClick={() => setActiveTab('quests')}
                         className={`flex-1 p-3 font-medium transition-colors ${activeTab === 'quests' ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-400'
                             }`}
                     >
-                        Daily Quests
+                        Missões Diárias
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* Conteúdo */}
                 <div className="p-6 overflow-y-auto flex-1">
                     {activeTab === 'login' && (
                         <div className="space-y-6">
                             <div className="text-center">
-                                <p className="text-slate-400 mb-2">Current Streak</p>
-                                <div className="text-4xl font-bold text-amber-400">{streak} Days</div>
+                                <p className="text-slate-400 mb-2">Sequência Atual</p>
+                                <div className="text-4xl font-bold text-amber-400">{streak} Dias</div>
                             </div>
 
                             <div className="grid grid-cols-4 gap-4">
                                 {LOGIN_REWARDS.map((reward) => {
-                                    const isUnlocked = streak >= reward.day; // Past or current days in streak
+                                    const isUnlocked = streak >= reward.day;
                                     const isToday = streak === reward.day;
                                     const isClaimed = reward.day < streak || (isToday && dailyLoginClaimed);
-
-                                    // Visual Logic:
-                                    // If Streak is 3. Days 1, 2 are claimed. Day 3 is Today. Day 4+ are locked.
-                                    // If we miss a day, streak resets to 1.
-                                    // Actually, logic in dailies.ts handles streak reset.
-                                    // Here we just visualize.
-
-                                    // Wait, if streak is 3, we should show 1,2 checked, 3 active (or checked if claimed).
-                                    // isUnlocked logic above checks if reward.day <= streak.
 
                                     return (
                                         <div
@@ -98,7 +89,7 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
                                                     : 'border-slate-700 bg-slate-800 opacity-50'
                                                 } ${reward.day === 7 ? 'col-span-4 aspect-video flex-row justify-center gap-8' : 'aspect-square'}`}
                                         >
-                                            <div className="text-xs font-mono uppercase tracking-wider mb-1">Day {reward.day}</div>
+                                            <div className="text-xs font-mono uppercase tracking-wider mb-1">Dia {reward.day}</div>
 
                                             {reward.day === 7 ? (
                                                 <>
@@ -114,7 +105,7 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
 
                                             {isToday && !dailyLoginClaimed && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-lg">
-                                                    <span className="text-xs font-bold text-amber-400 animate-pulse">CLAIM NOW</span>
+                                                    <span className="text-xs font-bold text-amber-400 animate-pulse">RESGATAR</span>
                                                 </div>
                                             )}
                                             {isClaimed && (
@@ -135,7 +126,7 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
                                     : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white shadow-lg hover:shadow-amber-500/25'
                                     }`}
                             >
-                                {dailyLoginClaimed ? 'Reward Claimed' : 'Claim Daily Reward'}
+                                {dailyLoginClaimed ? 'Recompensa Resgatada' : 'Resgatar Recompensa Diária'}
                             </button>
                         </div>
                     )}
@@ -144,8 +135,7 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
                         <div className="space-y-4">
                             {dailyQuests.length === 0 ? (
                                 <div className="text-center text-slate-400 py-10">
-                                    <p>No quests available? Check back tomorrow!</p>
-                                    <p className="text-xs opacity-50 mt-2">(Dev Note: Try triggering reset)</p>
+                                    <p>Nenhuma missão disponível? Volte amanhã!</p>
                                 </div>
                             ) : (
                                 dailyQuests.map(quest => (
@@ -155,7 +145,7 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
                                                 <span className="font-bold text-slate-200">{quest.description}</span>
                                                 <span className={`text-xs px-2 py-0.5 rounded-full ${quest.claimed ? 'bg-green-500/20 text-green-300' : 'bg-blue-500/20 text-blue-300'
                                                     }`}>
-                                                    {quest.claimed ? 'COMPLETED' : 'ACTIVE'}
+                                                    {quest.claimed ? 'CONCLUÍDA' : 'ATIVA'}
                                                 </span>
                                             </div>
                                             <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -166,7 +156,7 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
                                             </div>
                                             <div className="flex justify-between text-xs text-slate-400 mt-1">
                                                 <span>{formatNumber(quest.current)} / {formatNumber(quest.target)}</span>
-                                                <span className="text-amber-400">Reward: {formatNumber(quest.reward.amount)} {quest.reward.type.toUpperCase()}</span>
+                                                <span className="text-amber-400">Recompensa: {formatNumber(quest.reward.amount)} {quest.reward.type.toUpperCase()}</span>
                                             </div>
                                         </div>
 
@@ -180,7 +170,7 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
                                                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                                                 }`}
                                         >
-                                            {quest.claimed ? <Check className="w-5 h-5" /> : 'Claim'}
+                                            {quest.claimed ? <Check className="w-5 h-5" /> : 'Resgatar'}
                                         </button>
                                     </div>
                                 ))

@@ -118,7 +118,7 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
                 {/* Header */}
                 <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gradient-to-r from-slate-900 to-orange-950/30">
                     <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-600 flex items-center gap-3">
-                        <Flame className="text-orange-500 animate-pulse" /> Star Forge
+                        <Flame className="text-orange-500 animate-pulse" /> Forja Estelar
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                         <X size={24} />
@@ -129,25 +129,25 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
 
                     {view === 'select' && (
                         <div className="w-full animate-in fade-in zoom-in duration-300">
-                            <h3 className="text-xl text-gray-300 mb-8">Select Equipment Type to Forge</h3>
+                            <h3 className="text-xl text-gray-300 mb-8">Selecione o Tipo de Equipamento para Forjar</h3>
 
                             <div className="grid grid-cols-2 gap-4 mb-8">
                                 <button onClick={() => setSelectedType('weapon')} className={`p-6 border rounded-xl flex flex-col items-center gap-2 transition-all ${selectedType === 'weapon' ? 'bg-orange-600/20 border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)]' : 'bg-gray-800 border-gray-700 hover:bg-gray-700'}`}>
                                     <span className="text-4xl">⚔️</span>
-                                    <span className="font-bold">Weapon</span>
+                                    <span className="font-bold">Arma</span>
                                 </button>
                                 <button onClick={() => setSelectedType('armor')} className={`p-6 border rounded-xl flex flex-col items-center gap-2 transition-all ${selectedType === 'armor' ? 'bg-orange-600/20 border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)]' : 'bg-gray-800 border-gray-700 hover:bg-gray-700'}`}>
                                     <span className="text-4xl">🛡️</span>
-                                    <span className="font-bold">Armor</span>
+                                    <span className="font-bold">Armadura</span>
                                 </button>
                             </div>
 
                             <div className="flex justify-center gap-8 mb-8 text-sm font-mono">
                                 <div className={`flex items-center gap-2 ${starFragments >= STAR_COST ? 'text-green-400' : 'text-red-400'}`}>
-                                    <Star size={16} /> {starFragments} / {STAR_COST} Fragments
+                                    <Star size={16} /> {starFragments} / {STAR_COST} Fragmentos
                                 </div>
                                 <div className={`flex items-center gap-2 ${gold >= FORGE_COST ? 'text-green-400' : 'text-red-400'}`}>
-                                    <span className="text-yellow-400">💰</span> {gold.toLocaleString()} / {FORGE_COST.toLocaleString()} Gold
+                                    <span className="text-yellow-400">💰</span> {gold.toLocaleString()} / {FORGE_COST.toLocaleString()} Ouro
                                 </div>
                             </div>
 
@@ -159,7 +159,7 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
                                     : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                                     }`}
                             >
-                                IGNITE FORGE
+                                ACENDER A FORJA
                             </button>
                         </div>
                     )}
@@ -198,7 +198,7 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
                     {view === 'result' && resultItem && (
                         <div className="w-full animate-in zoom-in duration-500 flex flex-col items-center">
                             <div className="text-center mb-6">
-                                <h3 className="text-gray-400 uppercase tracking-widest text-sm mb-2">Forge Successful</h3>
+                                <h3 className="text-gray-400 uppercase tracking-widest text-sm mb-2">Forjado com Sucesso</h3>
                                 <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-200">
                                     {resultItem.name}
                                 </h2>
@@ -210,7 +210,7 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
                                     <div className="text-6xl mb-4 text-center">{selectedType === 'weapon' ? '⚔️' : '🛡️'}</div>
                                     <div className="space-y-2 text-left">
                                         <div className="flex justify-between items-center pb-2 border-b border-gray-800">
-                                            <span className="text-gray-400">Quality</span>
+                                            <span className="text-gray-400">Qualidade</span>
                                             <span className={`${resultItem.quality! > 90 ? 'text-yellow-400' : 'text-blue-400'} font-bold`}>{resultItem.quality}%</span>
                                         </div>
                                         <div className="flex justify-between items-center text-lg font-bold">
@@ -238,13 +238,13 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
                                     onClick={() => setView('select')}
                                     className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-bold"
                                 >
-                                    Forge Another
+                                    Forjar Novamente
                                 </button>
                                 <button
                                     onClick={onClose}
                                     className="px-8 py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg"
                                 >
-                                    Claim & Close
+                                    Resgatar e Fechar
                                 </button>
                             </div>
                         </div>

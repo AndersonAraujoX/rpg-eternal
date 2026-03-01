@@ -25,23 +25,12 @@ export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onCl
     if (!isOpen) return null;
 
     const handleStart = (exp: Expedition) => {
-        // Simple logic: Send up to 3 strongest IDLE heroes
         const idleHeroes = heroes
-            .filter(h => h.assignment !== 'expedition' && h.assignment !== 'mine' && !h.assignment.includes('combat')) // Assuming 'combat' is default assignment string checking
-            // Wait, assignment is 'combat' | 'mine' | 'expedition'.
-            // Heroes in 'combat' are "busy" fighting?
-            // Usually idle games treat 'current party' as busy.
-            // If I take them out of combat, DPS drops.
-            // Users should remove from party first? Or I auto-remove?
-            // Let's filter for heroes that are NOT in the "active party slots" if I had slots.
-            // But currently all unlocked heroes fight?
-            // "Active heroes" line 110: heroes.filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked);
-            // So if I set assignment to 'expedition', they stop fighting.
-            // That's fine.
+            .filter(h => h.assignment !== 'expedition' && h.assignment !== 'mine' && !h.assignment.includes('combat'))
             .sort((a, b) => b.stats.attack - a.stats.attack);
 
         if (idleHeroes.length === 0) {
-            alert("No heroes available! Unassign miners or recruit more heroes.");
+            alert("Sem heróis disponíveis! Designe mineradores ou recrute mais heróis.");
             return;
         }
 
@@ -65,9 +54,9 @@ export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onCl
                     </div>
                     <div>
                         <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-yellow-600">
-                            Expeditions
+                            Expedições
                         </h2>
-                        <p className="text-gray-400 text-sm">Send heroes on dangerous missions for loot.</p>
+                        <p className="text-gray-400 text-sm">Envie heróis em missões perigosas por saques.</p>
                     </div>
                 </div>
 
@@ -94,7 +83,7 @@ export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onCl
                                 </div>
 
                                 <div className="space-y-4">
-                                    {/* Rewards */}
+                                    {/* Recompensas */}
                                     <div className="flex flex-wrap gap-2">
                                         {exp.rewards.map((r, i) => (
                                             <span key={i} className="text-xs px-2 py-1 bg-gray-900 rounded text-gray-300 border border-gray-700">
@@ -103,12 +92,12 @@ export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onCl
                                         ))}
                                     </div>
 
-                                    {/* Action / Progress */}
+                                    {/* Ação / Progresso */}
                                     {active ? (
                                         <div className="space-y-2">
                                             <div className="flex justify-between text-xs text-amber-500">
-                                                <span>In Progress...</span>
-                                                <span>{Math.ceil(timeLeft / 1000)}s remaining</span>
+                                                <span>Em Progresso...</span>
+                                                <span>{Math.ceil(timeLeft / 1000)}s restantes</span>
                                             </div>
                                             <div className="h-2 bg-gray-900 rounded-full overflow-hidden">
                                                 <div
@@ -123,7 +112,7 @@ export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onCl
                                             className="w-full py-2 bg-amber-700 hover:bg-amber-600 rounded-lg text-white font-medium transition-colors text-sm flex items-center justify-center gap-2"
                                         >
                                             <Trophy className="w-4 h-4" />
-                                            Dispatch Heroes
+                                            Enviar Heróis
                                         </button>
                                     )}
                                 </div>

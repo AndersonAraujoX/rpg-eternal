@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock, ShieldAlert } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild } from '../engine/types';
 import type { WeatherType } from '../engine/weather'; // Phase 48
@@ -61,6 +61,8 @@ interface HeaderProps {
     // Phase 6
     setShowWorldBoss?: (v: boolean) => void;
     activeEvent?: import('../engine/townEvents').TownEvent | null; // Phase 92
+    setShowDevTools?: (v: boolean) => void;
+    outerSpaceUnlocked?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -79,79 +81,106 @@ export const Header: React.FC<HeaderProps> = ({
     setShowCampfire, // Phase 80
     setShowStarForge,
     setShowWorldBoss,
+    setShowDevTools,
     activeEvent,
+    outerSpaceUnlocked,
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
 
     // Button Groups
     const renderMainButtons = () => (
         <>
-            <button onClick={() => setShowForge(true)} className="btn-retro bg-orange-900 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-800" title="The Forge"><Hammer size={12} /> Forge</button>
-            <button onClick={() => setShowInventory(true)} className="btn-retro bg-slate-700 text-slate-200 px-2 py-1 rounded border border-slate-500 flex items-center gap-1 hover:bg-slate-600" title="Inventory"><Briefcase size={12} /> Bag</button>
-            <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guild"><Building size={12} /> Guild</button>
+            <button onClick={() => setShowForge(true)} className="btn-retro bg-orange-900 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-800" title="A Forja"><Hammer size={12} /> Forja</button>
+            <button onClick={() => setShowInventory(true)} className="btn-retro bg-slate-700 text-slate-200 px-2 py-1 rounded border border-slate-500 flex items-center gap-1 hover:bg-slate-600" title="Inventário"><Briefcase size={12} /> Mochila</button>
+            <button onClick={() => setShowGuild(true)} className="btn-retro bg-green-900 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-800" title="Guilda"><Building size={12} /> Guilda</button>
             {setShowTown && (
-                <button onClick={() => setShowTown(true)} className="btn-retro bg-stone-700 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-600 relative" title="Town">
-                    <Home size={12} /> Town
+                <button onClick={() => setShowTown(true)} className="btn-retro bg-stone-700 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-600 relative" title="Vila">
+                    <Home size={12} /> Vila
                     {activeEvent && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-white" />}
                 </button>
             )}
-            {setShowCampfire && <button onClick={() => setShowCampfire(true)} className="btn-retro bg-orange-800 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-700" title="Campfire"><Flame size={12} /> Rest</button>}
+            {setShowCampfire && <button onClick={() => setShowCampfire(true)} className="btn-retro bg-orange-800 text-orange-200 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-700" title="Fogueira"><Flame size={12} /> Descansar</button>}
         </>
     );
 
     const renderCombatButtons = () => (
         <>
-            <button onClick={() => setShowTower(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Tower"><Castle size={12} /> {tower.floor}</button>
+            <button onClick={() => setShowTower(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Torre"><Castle size={12} /> {tower.floor}</button>
             <button onClick={() => setShowArena && setShowArena(true)} className="btn-retro bg-red-900 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-800" title="Arena"><Swords size={12} /> Arena</button>
             {/* GALAXY BUTTON */}
-            {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /> Galaxy</button>}
-            {setShowGalaxy && <button onClick={() => setShowGalaxy(true)} className="btn-retro bg-indigo-950 text-indigo-300 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-900" title="Galaxy Conquest"><Crown size={12} className="rotate-180" /> Galaxy</button>}
-            {setShowStarForge && <button onClick={() => setShowStarForge(true)} className="btn-retro bg-orange-950 text-orange-300 px-2 py-1 rounded border border-orange-500 flex items-center gap-1 hover:bg-orange-900" title="Star Forge"><Flame size={12} /> Star Forge</button>}
-            {setShowRiftModal && <button onClick={() => setShowRiftModal(true)} className="btn-retro bg-purple-900 text-purple-300 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800" title="Temporal Rifts"><Clock size={12} /> Rifts</button>}
-            {setShowWorldBoss && <button onClick={() => setShowWorldBoss(true)} className="btn-retro bg-red-950 text-red-400 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-900 animate-pulse" title="World Boss Raid"><Skull size={12} /> Raid</button>}
+            {setShowGalaxy && (
+                <button
+                    onClick={() => outerSpaceUnlocked && setShowGalaxy(true)}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${outerSpaceUnlocked ? 'bg-indigo-950 text-indigo-300 border-indigo-500 hover:bg-indigo-900' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={outerSpaceUnlocked ? "Conquista Galáctica" : "Bloqueado: Requer Espaço Externo"}
+                >
+                    <Crown size={12} className="rotate-180" /> {outerSpaceUnlocked ? "Galáxia" : "???"}
+                </button>
+            )}
+            {setShowStarForge && (
+                <button
+                    onClick={() => outerSpaceUnlocked && setShowStarForge(true)}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${outerSpaceUnlocked ? 'bg-orange-950 text-orange-300 border-orange-500 hover:bg-orange-900' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={outerSpaceUnlocked ? "Forja Estelar" : "Bloqueado: Requer Espaço Externo"}
+                >
+                    <Flame size={12} /> {outerSpaceUnlocked ? "Forja Estelar" : "???"}
+                </button>
+            )}
+            {setShowRiftModal && <button onClick={() => setShowRiftModal(true)} className="btn-retro bg-purple-900 text-purple-300 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800" title="Fendas Temporais"><Clock size={12} /> Fendas</button>}
+            {setShowWorldBoss && <button onClick={() => setShowWorldBoss(true)} className="btn-retro bg-red-950 text-red-400 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-900 animate-pulse" title="Reide de Chefe Mundial"><Skull size={12} /> Reide</button>}
 
             {tower.floor >= 10 && (
                 <>
-                    <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="The Void">
+                    <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="O Vazio">
                         <Ghost size={12} /> {voidMatter}
                     </button>
-                    <button onClick={() => setShowCampfire && setShowCampfire(true)} className="p-2 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 transition-colors text-orange-400" title="Rest (Phase 80)">
-                        <span className="sr-only">Campfire</span>
+                    <button onClick={() => setShowCampfire && setShowCampfire(true)} className="p-2 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 transition-colors text-orange-400" title="Descansar">
+                        <span className="sr-only">Fogueira</span>
                         🔥
                     </button>
                 </>
             )}
             {/* Phase 47: Guild War */}
-            <button onClick={() => setShowGuildWar && setShowGuildWar(true)} className="btn-retro bg-orange-700 text-white px-2 py-1 rounded border border-orange-500 hover:bg-orange-600 flex items-center gap-1" title="Guild Wars"> ⚔️ War </button>
+            <button onClick={() => setShowGuildWar && setShowGuildWar(true)} className="btn-retro bg-orange-700 text-white px-2 py-1 rounded border border-orange-500 hover:bg-orange-600 flex items-center gap-1" title="Guerras de Guilda"> ⚔️ Guerra </button>
         </>
     );
 
     const renderSkillsButtons = () => (
         <>
             {/* Phase 46: Breeding Button */}
-            <button onClick={() => setShowBreedingModal && setShowBreedingModal(true)} className="btn-retro bg-pink-700 text-white px-2 py-1 rounded border border-pink-500 hover:bg-pink-600 flex items-center gap-1" title="Pet Breeding"> 🧬 Breed </button>
+            <button onClick={() => setShowBreedingModal && setShowBreedingModal(true)} className="btn-retro bg-pink-700 text-white px-2 py-1 rounded border border-pink-500 hover:bg-pink-600 flex items-center gap-1" title="Criação de Pets"> 🧬 Criar </button>
             {/* PHASE 41 */}
-            {setShowFishing && <button onClick={() => setShowFishing(true)} className="btn-retro bg-cyan-800 text-cyan-200 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-700" title="Fishing"><Anchor size={12} /> Fish</button>}
-            {setShowAlchemy && <button onClick={() => setShowAlchemy(true)} className="btn-retro bg-purple-800 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-700" title="Alchemy"><FlaskConical size={12} /> Brew</button>}
-            {setShowExpeditions && <button onClick={() => setShowExpeditions(true)} className="btn-retro bg-amber-800 text-amber-200 px-2 py-1 rounded border border-amber-500 flex items-center gap-1 hover:bg-amber-700" title="Expeditions"><Map size={12} /> Explore</button>}
-            {setShowGarden && <button onClick={() => setShowGarden(true)} className="btn-retro bg-green-800 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-700" title="The Great Garden"><Leaf size={12} /> Garden</button>}
-            <button onClick={() => setShowRunes && setShowRunes(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Rune Forge"><Gem size={12} /> Runes</button>
+            {setShowFishing && <button onClick={() => setShowFishing(true)} className="btn-retro bg-cyan-800 text-cyan-200 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-700" title="Pesca"><Anchor size={12} /> Pescar</button>}
+            {setShowAlchemy && <button onClick={() => setShowAlchemy(true)} className="btn-retro bg-purple-800 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-700" title="Alquimia"><FlaskConical size={12} /> Poções</button>}
+            {setShowExpeditions && <button onClick={() => setShowExpeditions(true)} className="btn-retro bg-amber-800 text-amber-200 px-2 py-1 rounded border border-amber-500 flex items-center gap-1 hover:bg-amber-700" title="Expedições"><Map size={12} /> Explorar</button>}
+            {setShowGarden && <button onClick={() => setShowGarden(true)} className="btn-retro bg-green-800 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1 hover:bg-green-700" title="O Grande Jardim"><Leaf size={12} /> Jardim</button>}
+            <button onClick={() => setShowRunes && setShowRunes(true)} className="btn-retro bg-indigo-900 text-indigo-200 px-2 py-1 rounded border border-indigo-500 flex items-center gap-1 hover:bg-indigo-800" title="Forja de Runas"><Gem size={12} /> Runas</button>
         </>
     );
 
     const renderSystemButtons = () => (
         <>
-            <button onClick={() => setShowQuests && setShowQuests(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Quests"><Scroll size={12} /> Quests</button>
-            {setShowDailyRewards && <button onClick={() => setShowDailyRewards(true)} className="btn-retro bg-pink-900 text-pink-200 px-2 py-1 rounded border border-pink-500 flex items-center gap-1 hover:bg-pink-800" title="Daily Rewards"><Calendar size={12} /> Dailies</button>}
-            <button onClick={() => setShowAchievements && setShowAchievements(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Achievements"><Trophy size={12} /> Trophies</button>
-            {setShowLeaderboard && <button onClick={() => setShowLeaderboard(true)} className="btn-retro bg-yellow-600 text-white px-2 py-1 rounded border border-yellow-400 flex items-center gap-1 hover:bg-yellow-500" title="Leaderboards"><Crown size={12} /> Rank</button>}
-            {setShowMuseum && <button onClick={() => setShowMuseum(true)} className="btn-retro bg-emerald-900 text-emerald-200 px-2 py-1 rounded border border-emerald-500 flex items-center gap-1 hover:bg-emerald-800" title="The Museum"><BookOpen size={12} /> Museum</button>}
-            <button onClick={() => setShowStats(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Stats"><BarChart2 size={12} /> Stats</button>
-            <button onClick={() => setShowBestiary(true)} className="btn-retro bg-amber-900 text-amber-200 px-2 py-1 rounded border border-amber-600 flex items-center hover:bg-amber-800 text-[10px]" title="Bestiary (Monster Log)"><BookOpen size={12} /> Bestiary</button>
-            {setShowStarlight && <button onClick={() => setShowStarlight(true)} className="btn-retro bg-cyan-950 text-cyan-400 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-900 animate-pulse" title="Automation Constellations"><Settings size={12} /> Auto</button>}
+            <button onClick={() => setShowQuests && setShowQuests(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Missões"><Scroll size={12} /> Missões</button>
+            {setShowDailyRewards && <button onClick={() => setShowDailyRewards(true)} className="btn-retro bg-pink-900 text-pink-200 px-2 py-1 rounded border border-pink-500 flex items-center gap-1 hover:bg-pink-800" title="Recompensas Diárias"><Calendar size={12} /> Diárias</button>}
+            <button onClick={() => setShowAchievements && setShowAchievements(true)} className="btn-retro bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-500 flex items-center gap-1 hover:bg-yellow-800" title="Conquistas"><Trophy size={12} /> Troféus</button>
+            {setShowLeaderboard && <button onClick={() => setShowLeaderboard(true)} className="btn-retro bg-yellow-600 text-white px-2 py-1 rounded border border-yellow-400 flex items-center gap-1 hover:bg-yellow-500" title="Rankings"><Crown size={12} /> Rank</button>}
+            {setShowMuseum && <button onClick={() => setShowMuseum(true)} className="btn-retro bg-emerald-900 text-emerald-200 px-2 py-1 rounded border border-emerald-500 flex items-center gap-1 hover:bg-emerald-800" title="O Museu"><BookOpen size={12} /> Museu</button>}
+            <button onClick={() => setShowStats(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Status"><BarChart2 size={12} /> Status</button>
+            <button onClick={() => setShowBestiary(true)} className="btn-retro bg-amber-900 text-amber-200 px-2 py-1 rounded border border-amber-600 flex items-center hover:bg-amber-800 text-[10px]" title="Bestiário (Registro de Monstros)"><BookOpen size={12} /> Bestiário</button>
+            {setShowStarlight && <button onClick={() => setShowStarlight(true)} className="btn-retro bg-cyan-950 text-cyan-400 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-900 animate-pulse" title="Constelações de Automação"><Settings size={12} /> Auto</button>}
             <button onClick={() => setShowSettings(true)} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600"><Settings size={12} /></button>
-            <button onClick={() => setShowHelp(true)} className="btn-retro bg-gray-600 text-gray-200 px-2 py-1 rounded border border-gray-400 flex items-center gap-1 hover:bg-gray-500" title="Help"><HelpCircle size={12} /></button>
-            <button onClick={actions.enterDungeon} className="btn-retro bg-stone-800 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-700" title="Enter the Vault (Dungeon)"><Castle size={12} /> Vault</button>
+            <button onClick={() => setShowHelp(true)} className="btn-retro bg-gray-600 text-gray-200 px-2 py-1 rounded border border-gray-400 flex items-center gap-1 hover:bg-gray-500" title="Ajuda"><HelpCircle size={12} /></button>
+            {!outerSpaceUnlocked && boss.level >= 50 && (
+                <button
+                    onClick={actions.unlockOuterSpace}
+                    className="btn-retro bg-indigo-600 text-white px-2 py-1 rounded border border-indigo-400 hover:bg-indigo-500 animate-pulse flex items-center gap-1"
+                    title="Desbloquear Galáxia e Forja Estelar"
+                >
+                    <Zap size={12} /> Liberar Espaço Externo
+                </button>
+            )}
+            {setShowDevTools && <button onClick={() => setShowDevTools(true)} className="btn-retro bg-red-900/50 text-red-400 p-2 rounded border border-red-900 hover:bg-red-800 hover:text-white transition-all" title="Ferramentas de Desenvolvedor"><ShieldAlert size={12} /></button>}
+            <button onClick={actions.enterDungeon} className="btn-retro bg-stone-800 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-700" title="Entrar na Masmorra"><Castle size={12} /> Masmorra</button>
         </>
     );
 
@@ -160,7 +189,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Row 1: Stats & Resources */}
             <div className="flex flex-wrap justify-between items-center text-xs text-yellow-400 gap-2">
                 <div className="flex items-center gap-2">
-                    <div className="bg-gray-800 px-2 py-1 rounded border border-gray-600 text-white font-bold">LVL {boss.level}</div>
+                    <div className="bg-gray-800 px-2 py-1 rounded border border-gray-600 text-white font-bold">NVL {boss.level}</div>
                     <button onClick={() => setShowShop(true)} className="btn-retro bg-purple-900 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800 min-w-[60px] justify-center"> <Ghost size={12} /> {formatNumber(souls)} </button>
                     <button onClick={() => setShowTavern(true)} className="btn-retro bg-amber-700 text-amber-100 px-2 py-1 rounded border border-amber-500 flex items-center gap-1 hover:bg-amber-600 min-w-[60px] justify-center"> <Coins size={12} /> {formatNumber(gold)} </button>
                     {divinity > 0 && <button onClick={() => setShowStars(true)} className="btn-retro bg-cyan-900 text-cyan-200 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-800"><Crown size={12} /> {formatNumber(divinity)}</button>}
@@ -168,11 +197,11 @@ export const Header: React.FC<HeaderProps> = ({
                     {/* Keys & Raid Status (Compact) */}
                     {keys > 0 && <span className="text-amber-500 flex items-center gap-1 bg-gray-800 px-2 py-1 rounded"><Key size={10} /> {keys}</span>}
                     {keys > 0 && !dungeonActive && (
-                        <button onClick={actions.enterDungeon} className="btn-retro bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-500 text-[10px] animate-pulse border border-yellow-300">VAULT</button>
+                        <button onClick={actions.enterDungeon} className="btn-retro bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-500 text-[10px] animate-pulse border border-yellow-300">COFRE</button>
                     )}
-                    {voidActive && <div className="text-purple-400 font-bold animate-pulse text-xs">VOID: {Math.floor(voidTimer)}s</div>}
+                    {voidActive && <div className="text-purple-400 font-bold animate-pulse text-xs">VAZIO: {Math.floor(voidTimer)}s</div>}
                     {boss.level >= 20 && !dungeonActive && !voidActive && (
-                        <button onClick={actions.toggleRaid} className={`btn-retro px-2 py-1 rounded text-[10px] flex items-center gap-1 ${raidActive ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-red-900'}`}> <Skull size={12} /> {raidActive ? `${Math.floor(raidTimer)}s` : 'RAID'} </button>
+                        <button onClick={actions.toggleRaid} className={`btn-retro px-2 py-1 rounded text-[10px] flex items-center gap-1 ${raidActive ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-red-900'}`}> <Skull size={12} /> {raidActive ? `${Math.floor(raidTimer)}s` : 'REIDE'} </button>
                     )}
                 </div>
 
@@ -186,7 +215,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                             <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900 border border-gray-600 p-2 rounded shadow-xl hidden group-hover:block z-50">
                                 <div className="font-bold text-white mb-1">{WEATHER_DATA[weather].name}</div>
-                                <div className="text-[10px] text-green-400">Bonus: +{Math.abs(WEATHER_DATA[weather].bonus.value * 100)}% {WEATHER_DATA[weather].bonus.stat.toUpperCase()}</div>
+                                <div className="text-[10px] text-green-400">Bônus: +{Math.abs(WEATHER_DATA[weather].bonus.value * 100)}% {WEATHER_DATA[weather].bonus.stat.toUpperCase()}</div>
                             </div>
                         </div>
                     )}
@@ -202,25 +231,25 @@ export const Header: React.FC<HeaderProps> = ({
                     onClick={() => setActiveTab('main')}
                     className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-all ${activeTab === 'main' ? 'bg-amber-600 text-white shadow' : 'bg-transparent text-gray-400 hover:text-white'}`}
                 >
-                    <Home size={12} /> Main
+                    <Home size={12} /> Principal
                 </button>
                 <button
                     onClick={() => setActiveTab('combat')}
                     className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-all ${activeTab === 'combat' ? 'bg-red-700 text-white shadow' : 'bg-transparent text-gray-400 hover:text-white'}`}
                 >
-                    <Swords size={12} /> Combat
+                    <Swords size={12} /> Combate
                 </button>
                 <button
                     onClick={() => setActiveTab('skills')}
                     className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-all ${activeTab === 'skills' ? 'bg-green-700 text-white shadow' : 'bg-transparent text-gray-400 hover:text-white'}`}
                 >
-                    <Leaf size={12} /> Skills
+                    <Leaf size={12} /> Habilidades
                 </button>
                 <button
                     onClick={() => setActiveTab('system')}
                     className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-all ${activeTab === 'system' ? 'bg-blue-700 text-white shadow' : 'bg-transparent text-gray-400 hover:text-white'}`}
                 >
-                    <Settings size={12} /> System
+                    <Settings size={12} /> Sistema
                 </button>
             </div>
 

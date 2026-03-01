@@ -35,12 +35,12 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
     }[hero.element || 'neutral'];
 
     const statsConfig: { key: keyof Stats; label: string; icon: React.ReactNode; color: string }[] = [
-        { key: 'hp', label: 'Max Health', icon: <Heart size={14} />, color: 'text-green-400' },
-        { key: 'mp', label: 'Max Mana', icon: <Zap size={14} />, color: 'text-blue-400' },
-        { key: 'attack', label: 'Attack', icon: <Sword size={14} />, color: 'text-red-400' },
-        { key: 'defense', label: 'Defense', icon: <Shield size={14} />, color: 'text-yellow-400' },
-        { key: 'magic', label: 'Magic', icon: <Zap size={14} />, color: 'text-purple-400' },
-        { key: 'speed', label: 'Speed', icon: <Wind size={14} />, color: 'text-cyan-400' },
+        { key: 'hp', label: 'Vida Máxima', icon: <Heart size={14} />, color: 'text-green-400' },
+        { key: 'mp', label: 'Mana Máxima', icon: <Zap size={14} />, color: 'text-blue-400' },
+        { key: 'attack', label: 'Ataque', icon: <Sword size={14} />, color: 'text-red-400' },
+        { key: 'defense', label: 'Defesa', icon: <Shield size={14} />, color: 'text-yellow-400' },
+        { key: 'magic', label: 'Magia', icon: <Zap size={14} />, color: 'text-purple-400' },
+        { key: 'speed', label: 'Velocidade', icon: <Wind size={14} />, color: 'text-cyan-400' },
     ];
 
     return (
@@ -88,7 +88,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                                 {hero.name} {ElementIcon}
                             </h2>
                         )}
-                        <div className="text-gray-400 text-sm">{hero.class} - Level {hero.level || 1}</div>
+                        <div className="text-gray-400 text-sm">{hero.class} - Nível {hero.level || 1}</div>
                     </div>
                 </div>
 
@@ -96,7 +96,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                 <div className="mb-6 space-y-4">
                     <div>
                         <div className="flex justify-between text-xs text-gray-300 mb-1">
-                            <span>Hero XP</span>
+                            <span>XP do Herói</span>
                             <span>{hero.xp || 0} / {hero.maxXp || 100}</span>
                         </div>
                         <div className="w-full h-4 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
@@ -110,7 +110,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                     {/* Insanity Bar */}
                     <div>
                         <div className="flex justify-between text-xs text-gray-300 mb-1">
-                            <span className="text-purple-400">Insanity</span>
+                            <span className="text-purple-400">Insanidade</span>
                             <span>{hero.insanity || 0} / 100</span>
                         </div>
                         <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
@@ -120,7 +120,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                             ></div>
                         </div>
                         <div className="text-[10px] text-gray-500 mt-1 h-3">
-                            {(hero.insanity || 0) >= 75 ? '⚠️ Risk of Madness' : (hero.insanity || 0) >= 50 ? '⚠️ Risk of Betrayal' : ''}
+                            {(hero.insanity || 0) >= 75 ? '⚠️ Risco de Loucura' : (hero.insanity || 0) >= 50 ? '⚠️ Risco de Traição' : ''}
                         </div>
                     </div>
 
@@ -128,7 +128,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                     {hero.equipment?.weapon?.evolutionId && (
                         <div>
                             <div className="flex justify-between text-xs text-yellow-300 mb-1">
-                                <span>Weapon XP ({hero.equipment.weapon.name})</span>
+                                <span>XP da Arma ({hero.equipment.weapon.name})</span>
                                 <span>{hero.equipment.weapon.xp || 0} / {hero.equipment.weapon.maxXp || 100}</span>
                             </div>
                             <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden border border-yellow-700/50">
@@ -145,8 +145,8 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                     {/* Stats Section */}
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-white">Attributes</h3>
-                            <span className="text-xs text-gray-500 italic">Stats increase automatically on Level Up based on Class.</span>
+                            <h3 className="text-xl font-bold text-white">Atributos</h3>
+                            <span className="text-xs text-gray-500 italic">Os status aumentam automaticamente ao subir de nível com base na Classe.</span>
                         </div>
 
                         <div className="space-y-3">
@@ -166,7 +166,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                     {/* Skills Section */}
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col gap-4">
                         <div>
-                            <h3 className="text-xl font-bold text-white mb-2">Active Skills</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">Habilidades Ativas</h3>
                             {hero.skills && hero.skills.filter(s => s.type === 'active').length > 0 ? (
                                 <div className="space-y-2">
                                     {hero.skills.filter(s => s.type === 'active').map(skill => (
@@ -177,19 +177,19 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                                             </div>
                                             <div className="text-right">
                                                 <span className="text-xs text-gray-500 block">CD: {skill.cooldown}s</span>
-                                                <span className="text-xs text-blue-400 block">Lvl {skill.unlockLevel}</span>
+                                                <span className="text-xs text-blue-400 block">Nvl {skill.unlockLevel}</span>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center text-gray-500 text-sm py-2">No active skills unlocked.</div>
+                                <div className="text-center text-gray-500 text-sm py-2">Nenhuma habilabilidade ativa desbloqueada.</div>
                             )}
                         </div>
 
                         {/* Set Bonuses */}
                         <div>
-                            <h3 className="text-xl font-bold text-white mb-2">Set Bonuses</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">Bônus de Conjunto</h3>
                             <div className="bg-gray-900 border border-gray-700 rounded p-2">
                                 {ITEM_SETS.map(set => {
                                     const equippedCount = Object.values(hero.equipment || {}).filter(i => i && i.setId === set.id).length;
@@ -205,7 +205,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                         </div>
 
                         <div>
-                            <h3 className="text-xl font-bold text-white mb-2">Passive Skills</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">Habilidades Passivas</h3>
                             {hero.skills && hero.skills.filter(s => s.type === 'passive').length > 0 ? (
                                 <div className="space-y-2">
                                     {hero.skills.filter(s => s.type === 'passive').map(skill => (
@@ -216,7 +216,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center text-gray-500 text-sm py-2">No passive skills unlocked.</div>
+                                <div className="text-center text-gray-500 text-sm py-2">Nenhuma habilidade passiva desbloqueada.</div>
                             )}
                         </div>
                     </div>

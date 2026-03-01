@@ -12,17 +12,17 @@ export function DiceGame({ gold, onWin, onLose }: DiceGameProps) {
     const [bet, setBet] = useState(10);
     const [dice, setDice] = useState([1, 1]);
     const [rolling, setRolling] = useState(false);
-    const [message, setMessage] = useState("Roll > 7 to Win (2x)!");
+    const [message, setMessage] = useState("Role > 7 para Vencer (2x)!");
 
     const rollDice = () => {
         if (gold < bet) {
-            setMessage("Not enough gold!");
+            setMessage("Ouro insuficiente!");
             return;
         }
         if (rolling) return;
 
         setRolling(true);
-        setMessage("Rolling...");
+        setMessage("Rolando...");
 
         // Visual effect
         let rolls = 0;
@@ -44,20 +44,20 @@ export function DiceGame({ gold, onWin, onLose }: DiceGameProps) {
 
         const sum = d1 + d2;
         if (sum > 7) {
-            setMessage(`You rolled ${sum}! You Win! (+${bet})`);
+            setMessage(`Você tirou ${sum}! Você Vencer! (+${bet})`);
             onWin(bet);
         } else if (sum === 7) {
-            setMessage(`You rolled 7! Push. (Gold returned)`);
+            setMessage(`Você tirou 7! Empate (Ouro devolvido)`);
             // No win, no lose
         } else {
-            setMessage(`You rolled ${sum}. You Lose. (-${bet})`);
+            setMessage(`Você tirou ${sum}. Você Perdeu. (-${bet})`);
             onLose(bet);
         }
     };
 
     return (
         <div className="bg-black/40 p-4 rounded border border-amber-900/50 flex flex-col items-center gap-3">
-            <h3 className="text-amber-500 font-bold flex items-center gap-2"><Dices size={16} /> High Roller Dice</h3>
+            <h3 className="text-amber-500 font-bold flex items-center gap-2"><Dices size={16} /> Dados de Alto Risco</h3>
 
             <div className="flex gap-4 my-2">
                 <div className={`w-12 h-12 bg-white rounded flex items-center justify-center text-2xl text-black font-bold shadow-lg ${rolling ? 'animate-bounce' : ''}`}>{dice[0]}</div>
@@ -67,7 +67,7 @@ export function DiceGame({ gold, onWin, onLose }: DiceGameProps) {
             <div className="text-sm font-mono h-6 text-yellow-300">{message}</div>
 
             <div className="flex gap-2 items-center">
-                <span className="text-xs text-gray-400">Bet:</span>
+                <span className="text-xs text-gray-400">Aposta:</span>
                 <input
                     type="number"
                     value={bet}
@@ -81,7 +81,7 @@ export function DiceGame({ gold, onWin, onLose }: DiceGameProps) {
                     disabled={rolling || gold < bet}
                     className="btn-retro bg-amber-600 text-white px-4 py-1 rounded disabled:opacity-50 hover:bg-amber-500"
                 >
-                    ROLL
+                    ROLAR
                 </button>
             </div>
         </div>

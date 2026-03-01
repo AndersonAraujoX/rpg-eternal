@@ -9,22 +9,22 @@ interface GambitEditorProps {
 }
 
 const CONDITIONS: { value: GambitCondition; label: string }[] = [
-    { value: 'always', label: 'Always' },
-    { value: 'hp<50', label: 'Self HP < 50%' },
-    { value: 'hp<30', label: 'Self HP < 30%' },
-    { value: 'mp<50', label: 'Self MP < 50%' },
-    { value: 'ally_hp<50', label: 'Ally HP < 50%' },
-    { value: 'ally_dead', label: 'Ally is Dead' },
-    { value: 'enemy_boss', label: 'Enemy is Boss' },
-    { value: 'enemy_count>2', label: 'Enemy Count > 2' },
+    { value: 'always', label: 'Sempre' },
+    { value: 'hp<50', label: 'HP Próprio < 50%' },
+    { value: 'hp<30', label: 'HP Próprio < 30%' },
+    { value: 'mp<50', label: 'MP Próprio < 50%' },
+    { value: 'ally_hp<50', label: 'HP do Aliado < 50%' },
+    { value: 'ally_dead', label: 'Aliado está Morto' },
+    { value: 'enemy_boss', label: 'Inimigo é Chefe' },
+    { value: 'enemy_count>2', label: 'Qtd. Inimigos > 2' },
 ];
 
 const ACTIONS: { value: GambitAction; label: string }[] = [
-    { value: 'attack', label: 'Attack' },
-    { value: 'strong_attack', label: 'Strong Attack' },
-    { value: 'heal', label: 'Heal (Magic)' },
-    { value: 'use_potion', label: 'Use Potion' },
-    { value: 'revive', label: 'Revive Ally' },
+    { value: 'attack', label: 'Atacar' },
+    { value: 'strong_attack', label: 'Ataque Forte' },
+    { value: 'heal', label: 'Curar (Magia)' },
+    { value: 'use_potion', label: 'Usar Poção' },
+    { value: 'revive', label: 'Reviver Aliado' },
 ];
 
 export const GambitEditor: React.FC<GambitEditorProps> = ({ hero, actions, onClose }) => {
@@ -76,8 +76,8 @@ export const GambitEditor: React.FC<GambitEditorProps> = ({ hero, actions, onClo
                         {hero.emoji}
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-cyan-400 leading-tight">Tactical Logic Editor</h2>
-                        <p className="text-xs text-cyan-700 font-mono">Hero: {hero.name}</p>
+                        <h2 className="text-xl font-bold text-cyan-400 leading-tight">Editor de Lógica Tática</h2>
+                        <p className="text-xs text-cyan-700 font-mono">Herói: {hero.name}</p>
                     </div>
                 </div>
 
@@ -86,7 +86,7 @@ export const GambitEditor: React.FC<GambitEditorProps> = ({ hero, actions, onClo
                         onClick={addGambitNode}
                         className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95"
                     >
-                        <Plus size={18} /> New Logic Node
+                        <Plus size={18} /> Novo Nó de Lógica
                     </button>
                     <button onClick={onClose} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
                         <X size={24} />
@@ -135,9 +135,9 @@ export const GambitEditor: React.FC<GambitEditorProps> = ({ hero, actions, onClo
 
                 {/* Legend */}
                 <div className="absolute top-4 left-4 bg-slate-900/80 p-3 rounded-lg border border-slate-800 text-[10px] text-slate-500 pointer-events-none space-y-1">
-                    <p>● Drag headers to move nodes</p>
-                    <p>● Logic flows from top node to bottom</p>
-                    <p>● Max 6 logic nodes allowed</p>
+                    <p>● Arraste os cabeçalhos para mover os nós</p>
+                    <p>● A lógica flui do nó superior para o inferior</p>
+                    <p>● Máximo de 6 nós de lógica permitidos</p>
                 </div>
 
                 {/* Nodes */}
@@ -158,7 +158,7 @@ export const GambitEditor: React.FC<GambitEditorProps> = ({ hero, actions, onClo
                             >
                                 <Move size={12} className="text-slate-500 group-hover:text-cyan-400 transition-colors" />
                                 <span className="ml-2 text-[10px] uppercase font-black tracking-widest text-slate-500 group-hover:text-slate-300">
-                                    Priority {index + 1}
+                                    Prioridade {index + 1}
                                 </span>
                                 <button
                                     onClick={() => removeGambit(g.id)}
@@ -171,7 +171,7 @@ export const GambitEditor: React.FC<GambitEditorProps> = ({ hero, actions, onClo
                             {/* Node Content */}
                             <div className="p-4 space-y-3">
                                 <div>
-                                    <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Condition</label>
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Condição</label>
                                     <select
                                         value={g.condition}
                                         onChange={(e) => updateNode(g.id, { condition: e.target.value as GambitCondition })}
@@ -186,7 +186,7 @@ export const GambitEditor: React.FC<GambitEditorProps> = ({ hero, actions, onClo
                                 </div>
 
                                 <div>
-                                    <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Action</label>
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Ação</label>
                                     <select
                                         value={g.action}
                                         onChange={(e) => updateNode(g.id, { action: e.target.value as GambitAction })}
@@ -206,7 +206,7 @@ export const GambitEditor: React.FC<GambitEditorProps> = ({ hero, actions, onClo
 
             {/* Footer */}
             <div className="h-12 bg-slate-900 border-t border-cyan-900/30 flex items-center justify-center text-[10px] font-mono text-cyan-900 uppercase tracking-[0.2em]">
-                Neural Tactics Interface // V5.0
+                Interface de Tática Neural // V5.0
             </div>
         </div>
     );

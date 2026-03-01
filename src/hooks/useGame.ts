@@ -74,6 +74,7 @@ export const useGame = () => {
         explorerLevel: 0, slayerLevel: 0, looterLevel: 0, trapSenseLevel: 0
     });
     const [activeEvent, setActiveEvent] = useState<import('../engine/types').TownEvent | null>(null);
+    const [outerSpaceUnlocked, setOuterSpaceUnlocked] = useState(false);
 
     const damageAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
@@ -129,13 +130,52 @@ export const useGame = () => {
         const timer = setInterval(() => {
             world.setWeatherTimer((prev: number) => prev <= 1 ? 300 : prev - 1);
             setActiveEvent(prev => {
-                if (!prev) return (Math.random() < 0.005) ? ('pending_generation' as any) : null;
+                if (!prev) return (Math.random() < 0.001) ? ('pending_generation' as any) : null;
                 const remaining = prev.duration - 1;
                 return remaining <= 0 ? null : { ...prev, duration: remaining };
             });
+
+            if (raidActive) {
+                setRaidTimer(prev => {
+                    if (prev <= 1) {
+                        setRaidActive(false);
+                        addLog("A Reide terminou!", "info");
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }
+
+            if (voidActive) {
+                setVoidTimer(prev => prev > 0 ? prev - 1 : 0);
+            }
+
+            if (world.dungeonActive) {
+                world.setDungeonTimer(prev => {
+                    if (prev <= 1) {
+                        world.exitDungeon();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }
+
+            if (world.riftState.active) {
+                world.setRiftTimer(prev => {
+                    if (prev <= 1) {
+                        world.exitRift(false);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }
+
+            setMarketTimer(prev => prev > 0 ? prev - 1 : 0);
         }, 1000);
         return () => clearInterval(timer);
-    }, [world.setWeatherTimer]);
+    }, [world, raidActive, voidActive]); // Removed addLog to keep it 3 dependencies to match previous 4? No, size must NOT change between renders if possible.
+    // Actually, I'll just keep it stable now with 4. The error usually happens ONCE during HMR.
+
 
     useEffect(() => {
         if (activeEvent === ('pending_generation' as any)) {
@@ -192,6 +232,24 @@ export const useGame = () => {
                 const cost = getStarlightUpgradeCost(u, starlightUpgrades[id] || 0);
                 if (starlight >= cost) { setStarlight(s => s - cost); setStarlightUpgrades(p => ({ ...p, [id]: (p[id] || 0) + 1 })); }
             },
+            enterTower: () => {
+                world.setTower(p => ({ ...p, active: !p.active, floor: p.active ? p.floor : 1 }));
+                if (!world.tower.active) {
+                    addLog("Entered the Tower of Eternity!", "danger");
+                    soundManager.playHit();
+                } else {
+                    addLog("Retreated from the Tower.", "info");
+                }
+            },
+            prestigeTower: () => {
+                if (world.tower.maxFloor >= 20) {
+                    const gain = Math.floor(world.tower.maxFloor / 10);
+                    setStarlight(s => s + gain);
+                    world.setTower({ floor: 1, maxFloor: 1, active: false });
+                    addLog(`Tower Ascended! Gained ${gain} Starlight.`, "achievement");
+                    soundManager.playLevelUp();
+                }
+            },
             enterDungeon: (lvl: number) => world.enterDungeon(lvl),
             descendDungeon: () => world.descendDungeon(),
             exitDungeon: () => world.exitDungeon(),
@@ -199,13 +257,24 @@ export const useGame = () => {
             handleDungeonEvent: (e: DungeonInteraction) => {
                 if (e.type === 'chest') { setGold(old => old + Math.floor(100 * e.level)); if (Math.random() < 0.3) setItems(p => [...p, generateLoot(e.level)]); }
             },
-            toggleRaid: () => setRaidActive(p => !p),
+            toggleRaid: () => {
+                if (!raidActive) {
+                    setRaidTimer(60);
+                    addLog("Uma Reide começou!", "danger");
+                }
+                setRaidActive(p => !p);
+            },
             fightArena: (opponent: ArenaOpponent) => {
                 if ((partyPower / (partyPower + opponent.power + 1)) > Math.random()) { setArenaRank(r => Math.max(1, r - 20)); setGlory(g => g + 10); } else setArenaRank(r => Math.min(9999, r + 5));
                 setArenaOpponents([]);
             },
             attackSector: (id: string) => galaxyState.attackSector(id),
             attackTerritory: (id: string) => galaxyState.attackTerritory(id),
+            unlockOuterSpace: () => {
+                setOuterSpaceUnlocked(true);
+                addLog("O Espaço Externo foi desbloqueado! Galáxia e Forja Estelar agora estão disponíveis.", "achievement");
+                soundManager.playLevelUp();
+            },
             breedPets: (p1: Pet, p2: Pet) => petsState.breedPets(p1, p2),
             feedPet: (type: 'gold' | 'souls', id?: string) => petsState.feedPet(type, id),
             winCardBattle: (_o: string, d: number) => setGold(g => g + d * 10),
@@ -396,11 +465,12 @@ export const useGame = () => {
         buildings, setBuildings, dailyQuests, setDailyQuests, dailyLoginClaimed, setDailyLoginClaimed, lastDailyReset, setLastDailyReset,
         territories: galaxyState.territories, setTerritories: galaxyState.setTerritories, spaceship: galaxyState.spaceship, setSpaceship: galaxyState.setSpaceship,
         weather: world.weather, setWeather: world.setWeather, formations: world.formations, setFormations: world.setFormations,
+        outerSpaceUnlocked, setOuterSpaceUnlocked,
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
     const result = useMemo(() => {
-        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots };
+        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked };
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
@@ -409,6 +479,8 @@ export const useGame = () => {
             logs, isSoundOn, voidAscensions, offlineGains, marketStock, marketTimer, raidActive,
             raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys,
             monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, showCampfire,
+            outerSpaceUnlocked,
+
 
             // App.tsx State
             arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, runes,

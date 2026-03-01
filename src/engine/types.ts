@@ -584,8 +584,8 @@ export interface GameActions {
     buyStarlightUpgrade: (id: string) => void;
 
     // Exploration & Combat
-    // enterTower: () => void; // Deprecated
-    // prestigeTower: () => void; // Deprecated
+    enterTower: () => void;
+    prestigeTower: () => void;
     enterDungeon: (bossLevel: number) => void;
     descendDungeon: () => void;
     exitDungeon: () => void;
@@ -597,6 +597,7 @@ export interface GameActions {
     // Galaxy & Territories
     attackSector: (id: string) => void;
     attackTerritory: (id: string) => void;
+    unlockOuterSpace: () => void;
 
     // Minigames/Features
     breedPets: (parent1: Pet, parent2: Pet) => void;

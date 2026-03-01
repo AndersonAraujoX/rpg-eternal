@@ -25,24 +25,24 @@ export const ArenaModal: React.FC<ArenaModalProps> = ({ isOpen, onClose, rank, g
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-yellow-500 text-3xl font-bold flex items-center gap-2"><Swords size={32} /> ARENA</h2>
                     <div className="text-right">
-                        <div className="text-xl text-yellow-200">Rank: <span className="font-bold text-white">#{rank}</span></div>
-                        <div className="text-sm text-yellow-400 flex items-center justify-end gap-1"><Trophy size={14} /> Glory: {glory}</div>
+                        <div className="text-xl text-yellow-200">Ranking: <span className="font-bold text-white">#{rank}</span></div>
+                        <div className="text-sm text-yellow-400 flex items-center justify-end gap-1"><Trophy size={14} /> Glória: {glory}</div>
                     </div>
                 </div>
 
                 <div className="flex gap-4 mb-6">
                     <div className="flex-1 bg-slate-800 p-4 rounded border border-slate-600">
-                        <h3 className="text-gray-400 text-sm uppercase mb-2">Your Team</h3>
+                        <h3 className="text-gray-400 text-sm uppercase mb-2">Seu Time</h3>
                         <div className="flex gap-1 flex-wrap">
                             {heroes.filter(h => h.unlocked && h.assignment === 'combat').map(h => (
                                 <div key={h.id} className="text-2xl" title={h.name}>{h.emoji}</div>
                             ))}
                         </div>
-                        <div className="mt-2 text-cyan-400 font-bold">Power: {Math.floor(teamPower)}</div>
+                        <div className="mt-2 text-cyan-400 font-bold">Poder: {Math.floor(teamPower)}</div>
                     </div>
                 </div>
 
-                <h3 className="text-white font-bold mb-4 border-b border-gray-700 pb-2">CHOOSE OPPONENT</h3>
+                <h3 className="text-white font-bold mb-4 border-b border-gray-700 pb-2">ESCOLHER OPONENTE</h3>
                 <div className="space-y-3">
                     {opponents.map(op => (
                         <div key={op.id} className="flex justify-between items-center bg-gray-800 p-3 rounded hover:bg-gray-700 border border-gray-600 transition-colors">
@@ -55,13 +55,13 @@ export const ArenaModal: React.FC<ArenaModalProps> = ({ isOpen, onClose, rank, g
                             </div>
                             <div className="flex flex-col items-end gap-1">
                                 <span className={`font-bold ${op.power > teamPower ? 'text-red-400' : 'text-green-400'}`}>
-                                    PWR: {op.power}
+                                    POD: {op.power}
                                 </span>
                                 <button
                                     onClick={() => onFight(op)}
                                     className="bg-red-700 hover:bg-red-600 text-white px-4 py-1 rounded font-bold flex items-center gap-2 border border-red-500"
                                 >
-                                    FIGHT <Swords size={16} />
+                                    LUTAR <Swords size={16} />
                                 </button>
                             </div>
                         </div>

@@ -21,18 +21,18 @@ export const BestiaryModal: React.FC<BestiaryModalProps> = ({ isOpen, onClose, m
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95 backdrop-blur-sm">
             <div className="bg-gray-900 border-2 border-amber-700 w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl shadow-2xl relative overflow-hidden">
 
-                {/* Header */}
+                {/* Cabeçalho */}
                 <div className="bg-amber-900/40 p-6 border-b border-amber-800 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <div className="bg-amber-950 p-3 rounded-lg border border-amber-600 shadow-inner">
                             <BookOpen className="text-amber-400" size={32} />
                         </div>
                         <div>
-                            <h2 className="text-3xl font-bold text-amber-100 font-serif tracking-wider">Bestiary</h2>
+                            <h2 className="text-3xl font-bold text-amber-100 font-serif tracking-wider">Bestiário</h2>
                             <p className="text-amber-400/80 text-sm font-mono flex items-center gap-3">
-                                <span>Discovered: {discoveredCount}/{MONSTERS.length} ({completionPercentage}%)</span>
+                                <span>Descobertos: {discoveredCount}/{MONSTERS.length} ({completionPercentage}%)</span>
                                 <span className="w-1 h-1 bg-amber-600 rounded-full"></span>
-                                <span>Total Slain: {totalKills}</span>
+                                <span>Total Abatido: {totalKills}</span>
                             </p>
                         </div>
                     </div>
@@ -41,7 +41,7 @@ export const BestiaryModal: React.FC<BestiaryModalProps> = ({ isOpen, onClose, m
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* Conteúdo */}
                 <div className="overflow-y-auto p-6 custom-scrollbar text-amber-100 flex-1 bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')]">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {MONSTERS.map((monster) => {
@@ -61,7 +61,7 @@ export const BestiaryModal: React.FC<BestiaryModalProps> = ({ isOpen, onClose, m
                                         }
                                     `}
                                 >
-                                    {/* Monster Visual */}
+                                    {/* Visual do Monstro */}
                                     <div className="flex flex-col items-center mb-3">
                                         <div className={`
                                             w-16 h-16 flex items-center justify-center text-4xl bg-gradient-to-br rounded-full shadow-inner mb-2
@@ -70,19 +70,19 @@ export const BestiaryModal: React.FC<BestiaryModalProps> = ({ isOpen, onClose, m
                                             {isDiscovered ? monster.emoji : '?'}
                                         </div>
                                         <h3 className={`font-bold text-lg text-center ${isDiscovered ? 'text-amber-100' : 'text-gray-500'}`}>
-                                            {isDiscovered ? monster.name : 'Unknown'}
+                                            {isDiscovered ? monster.name : 'Desconhecido'}
                                         </h3>
                                     </div>
 
-                                    {/* Stats */}
+                                    {/* Estatísticas */}
                                     {isDiscovered ? (
                                         <div className="space-y-2 text-sm">
                                             <div className="flex justify-between items-center bg-gray-900/50 rounded px-2 py-1">
-                                                <span className="text-gray-400 flex items-center gap-1"><Skull size={12} /> Kills</span>
+                                                <span className="text-gray-400 flex items-center gap-1"><Skull size={12} /> Abates</span>
                                                 <span className="text-white font-mono">{kills}</span>
                                             </div>
 
-                                            {/* Card Status */}
+                                            {/* Status da Carta */}
                                             <div className={`
                                                 flex justify-between items-center rounded px-2 py-1 border
                                                 ${hasCard
@@ -90,12 +90,12 @@ export const BestiaryModal: React.FC<BestiaryModalProps> = ({ isOpen, onClose, m
                                                     : 'bg-gray-900/30 border-gray-700 text-gray-500'}
                                             `}>
                                                 <span className="flex items-center gap-1 text-xs">
-                                                    <Layers size={12} /> Card
+                                                    <Layers size={12} /> Carta
                                                 </span>
                                                 {hasCard ? (
-                                                    <span className="font-bold text-xs bg-amber-600 text-white px-1.5 rounded">Lv {card.count}</span>
+                                                    <span className="font-bold text-xs bg-amber-600 text-white px-1.5 rounded">Nv {card.count}</span>
                                                 ) : (
-                                                    <span className="text-[10px]">Not Found</span>
+                                                    <span className="text-[10px]">Não Encontrada</span>
                                                 )}
                                             </div>
 
@@ -108,7 +108,7 @@ export const BestiaryModal: React.FC<BestiaryModalProps> = ({ isOpen, onClose, m
                                     ) : (
                                         <div className="text-center text-gray-600 text-xs py-4 flex flex-col items-center gap-1">
                                             <HelpCircle size={16} />
-                                            <span>Defeat to unlock</span>
+                                            <span>Derrote para desbloquear</span>
                                         </div>
                                     )}
                                 </div>

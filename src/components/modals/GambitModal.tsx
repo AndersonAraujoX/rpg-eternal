@@ -11,25 +11,25 @@ interface GambitModalProps {
 }
 
 const CONDITIONS: { value: GambitCondition; label: string }[] = [
-    { value: 'always', label: 'Always' },
-    { value: 'hp<50', label: 'Self HP < 50%' },
-    { value: 'hp<30', label: 'Self HP < 30%' },
-    { value: 'mp<50', label: 'Self MP < 50%' },
-    { value: 'ally_hp<50', label: 'Ally HP < 50%' },
-    { value: 'ally_dead', label: 'Ally is Dead' },
-    { value: 'enemy_boss', label: 'Enemy is Boss' },
-    { value: 'enemy_count>2', label: 'Enemy Count > 2' },
+    { value: 'always', label: 'Sempre' },
+    { value: 'hp<50', label: 'HP Próprio < 50%' },
+    { value: 'hp<30', label: 'HP Próprio < 30%' },
+    { value: 'mp<50', label: 'MP Próprio < 50%' },
+    { value: 'ally_hp<50', label: 'HP do Aliado < 50%' },
+    { value: 'ally_dead', label: 'Aliado está Morto' },
+    { value: 'enemy_boss', label: 'Inimigo é Chefe' },
+    { value: 'enemy_count>2', label: 'Qtd. Inimigos > 2' },
 ];
 
 const ACTIONS: { value: GambitAction; label: string }[] = [
-    { value: 'attack', label: 'Attack' },
-    { value: 'strong_attack', label: 'Strong Attack' },
-    { value: 'heal', label: 'Heal (Magic)' },
-    { value: 'use_potion', label: 'Use Potion' },
-    { value: 'cast_fireball', label: 'Cast Fireball' },
-    { value: 'buff_atk', label: 'Buff Attack' },
-    { value: 'revive', label: 'Revive Ally' },
-    { value: 'defend', label: 'Defend' },
+    { value: 'attack', label: 'Atacar' },
+    { value: 'strong_attack', label: 'Ataque Forte' },
+    { value: 'heal', label: 'Curar (Magia)' },
+    { value: 'use_potion', label: 'Usar Poção' },
+    { value: 'cast_fireball', label: 'Lançar Bola de Fogo' },
+    { value: 'buff_atk', label: 'Bufar Ataque' },
+    { value: 'revive', label: 'Reviver Aliado' },
+    { value: 'defend', label: 'Defender' },
 ];
 
 export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero, actions }) => {
@@ -103,7 +103,7 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
                         <div key={g.id} className="flex items-center gap-2 bg-slate-800 p-2 rounded border border-slate-600">
                             <span className="text-gray-400 font-bold w-6">{i + 1}.</span>
                             <div className="flex-1 flex gap-2">
-                                <span className="text-xs text-gray-500 self-center">IF</span>
+                                <span className="text-xs text-gray-500 self-center">SE</span>
                                 <select
                                     className="bg-black text-cyan-300 border border-slate-600 rounded px-2 py-1 text-xs flex-1"
                                     value={g.condition}
@@ -111,7 +111,7 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
                                 >
                                     {CONDITIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                                 </select>
-                                <span className="text-xs text-gray-500 self-center">THEN</span>
+                                <span className="text-xs text-gray-500 self-center">ENTÃO</span>
                                 <select
                                     className="bg-black text-orange-300 border border-slate-600 rounded px-2 py-1 text-xs flex-1"
                                     value={g.action}
@@ -125,7 +125,7 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
                     ))}
                     {gambits.length < 3 && (
                         <button onClick={addGambit} className="w-full py-2 border border-dashed border-gray-600 text-gray-400 rounded hover:text-white hover:border-gray-400 flex items-center justify-center gap-2">
-                            <PlusCircle size={16} /> Add Gambit Slot
+                            <PlusCircle size={16} /> Adicionar Slot de Gambito
                         </button>
                     )}
                 </div>
@@ -135,12 +135,12 @@ export const GambitModal: React.FC<GambitModalProps> = ({ isOpen, onClose, hero,
                         onClick={() => setShowVisualEditor(true)}
                         className="px-4 py-2 border border-cyan-500/30 text-cyan-400 rounded hover:bg-cyan-900/20 flex items-center gap-2 transition-colors text-xs"
                     >
-                        <LayoutGrid size={14} /> VISUAL EDITOR
+                        <LayoutGrid size={14} /> EDITOR VISUAL
                     </button>
                     <div className="flex gap-2">
-                        <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                        <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white">Cancelar</button>
                         <button onClick={handleSave} className="px-6 py-2 bg-cyan-700 text-white rounded font-bold hover:bg-cyan-600 flex items-center gap-2">
-                            <Save size={16} /> SAVE TACTICS
+                            <Save size={16} /> SALVAR TÁTICAS
                         </button>
                     </div>
                 </div>

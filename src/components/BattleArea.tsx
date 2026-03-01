@@ -90,7 +90,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {/* Party DPS Meter & Synergies */}
             <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
                 <div className="bg-black bg-opacity-50 p-1 rounded text-xs font-mono text-yellow-300">
-                    DPS: {formatNumber(partyDps || 0)} | PWR: {formatNumber(partyPower || 0)}
+                    DPS: {formatNumber(partyDps || 0)} | PODER: {formatNumber(partyPower || 0)}
                 </div>
 
 
@@ -99,13 +99,13 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                     <button
                         onClick={() => setShowSynergyTracker(!showSynergyTracker)}
                         className={`p-1 rounded text-xs border ${showSynergyTracker ? 'bg-yellow-600 border-yellow-300 text-black font-bold' : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-white'}`}
-                        title="Toggle Tactical Intel"
+                        title="Alternar Informações Táticas"
                     >
-                        INTEL
+                        INFO
                     </button>
                     {synergies?.some(s => ['burn', 'freeze', 'steam', 'overload'].includes(s.type)) && (
                         <div className="animate-pulse text-xs font-bold text-orange-400 bg-black bg-opacity-50 px-1 rounded ml-1">
-                            REACTION ACTIVE
+                            REAÇÃO ATIVA
                         </div>
                     )}
                 </div>
@@ -130,17 +130,17 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
             {/* Boss */}
             <div className="flex flex-col items-center justify-center mt-2 transition-all">
-                {dungeonActive && <div className="text-yellow-400 font-bold animate-pulse mb-2">GOLD VAULT: {Math.floor(dungeonTimer)}s</div>}
+                {dungeonActive && <div className="text-yellow-400 font-bold animate-pulse mb-2">COFRE DE OURO: {Math.floor(dungeonTimer)}s</div>}
                 <div className="flex items-center gap-2">
                     <div className={`text-6xl md:text-8xl filter drop-shadow-lg grayscale transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''}`}>{boss.emoji}</div>
-                    <div className="text-white opacity-50" title={`Element: ${boss.element}`}>{getElementIcon(boss.element)}</div>
+                    <div className="text-white opacity-50" title={`Elemento: ${boss.element}`}>{getElementIcon(boss.element)}</div>
                     {/* Status Icons based on recent events or state */}
                     <div className="flex gap-1">
                         {combatEvents?.some(e => e.type === 'reaction' && e.text.includes('BURN') && (Date.now() - parseInt(e.id.split('-')[1] || '0')) < 3000) && (
-                            <span title="Burning"><Flame size={16} className="text-orange-500 animate-pulse" /></span>
+                            <span title="Queimando"><Flame size={16} className="text-orange-500 animate-pulse" /></span>
                         )}
                         {combatEvents?.some(e => e.type === 'status' && e.text.includes('FROZEN') && (Date.now() - parseInt(e.id.split('-')[1] || '0')) < 3000) && (
-                            <span title="Frozen"><Droplets size={16} className="text-cyan-400 animate-pulse" /></span>
+                            <span title="Congelado"><Droplets size={16} className="text-cyan-400 animate-pulse" /></span>
                         )}
                     </div>
                 </div>
@@ -164,30 +164,30 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col gap-2 z-20 max-h-[80%] overflow-y-auto w-24 no-scrollbar">
                 {pets && pets.length > 0 && (
                     <div className="flex flex-col gap-1 mb-2 bg-black bg-opacity-50 p-1 rounded">
-                        <span className="text-[8px] text-center text-gray-300 font-bold">FEAST</span>
-                        <button onClick={() => actions.feedPet('gold', 'all')} className="bg-yellow-700 text-[8px] text-white rounded hover:bg-yellow-600 px-1">G (5k)</button>
-                        <button onClick={() => actions.feedPet('souls', 'all')} className="bg-purple-800 text-[8px] text-white rounded hover:bg-purple-700 px-1">S (500)</button>
+                        <span className="text-[8px] text-center text-gray-300 font-bold">BANQUETE</span>
+                        <button onClick={() => actions.feedPet('gold', 'all')} className="bg-yellow-700 text-[8px] text-white rounded hover:bg-yellow-600 px-1">O (5k)</button>
+                        <button onClick={() => actions.feedPet('souls', 'all')} className="bg-purple-800 text-[8px] text-white rounded hover:bg-purple-700 px-1">A (500)</button>
                     </div>
                 )}
                 {pets && [...pets].sort((a, b) => b.level - a.level).map(pet => (
                     <div key={pet.id} className="flex flex-col items-center opacity-90 group relative">
-                        <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer animate-bounce" title={`Lvl ${pet.level} ${pet.name}`}>
+                        <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer animate-bounce" title={`Nvl ${pet.level} ${pet.name}`}>
                             {pet.emoji}
                         </div>
                         {/* Hover Details */}
                         <div className="hidden group-hover:flex absolute left-full top-0 ml-2 bg-black bg-opacity-90 p-2 rounded border border-yellow-500 flex-col z-50 whitespace-nowrap">
-                            <span className="font-bold text-yellow-400">{pet.name} (Lvl {pet.level})</span>
+                            <span className="font-bold text-yellow-400">{pet.name} (Nvl {pet.level})</span>
                             <span className="text-xs text-gray-300">{pet.bonus}</span>
                         </div>
 
                         <div className="flex flex-col items-center bg-black bg-opacity-50 p-1 rounded backdrop-blur-sm mt-1 w-full">
-                            <span className="text-[8px] text-orange-300 font-bold mb-0.5">Lvl {pet.level}</span>
+                            <span className="text-[8px] text-orange-300 font-bold mb-0.5">Nvl {pet.level}</span>
                             <div className="w-10 h-1 bg-gray-700 rounded-full overflow-hidden mb-1">
                                 <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${(pet.xp / pet.maxXp) * 100}%` }}></div>
                             </div>
                             <div className="flex gap-1 opacity-100 transition-opacity">
-                                <button onClick={() => actions.feedPet('gold', pet.id)} className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-yellow-500" title="Feed 100 Gold" disabled={false}>$</button>
-                                <button onClick={() => actions.feedPet('souls', pet.id)} className="w-4 h-4 bg-purple-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-purple-500" title="Feed 10 Souls">S</button>
+                                <button onClick={() => actions.feedPet('gold', pet.id)} className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-yellow-500" title="Alimentar com 100 de Ouro" disabled={false}>$</button>
+                                <button onClick={() => actions.feedPet('souls', pet.id)} className="w-4 h-4 bg-purple-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-purple-500" title="Alimentar com 10 Almas">A</button>
                             </div>
                         </div>
                     </div>
