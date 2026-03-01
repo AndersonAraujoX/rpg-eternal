@@ -36,6 +36,7 @@ export const useGame = () => {
     const [gameSpeed, setGameSpeed] = useState<number>(1);
     const [isSoundOn, setIsSoundOn] = useState<boolean>(false);
     const [items, setItems] = useState<Item[]>([]);
+    const MAX_INVENTORY_SIZE = 200; // Evitar crescimento de memória ilimitado
     const [souls, setSouls] = useState<number>(0);
     const [gold, setGold] = useState<number>(0);
     const [divinity, setDivinity] = useState<number>(0);
@@ -386,12 +387,27 @@ export const useGame = () => {
                 const xpGain = Math.floor(currentBoss.level * 10 * guildXpMult);
                 setGold(g => g + Math.floor(currentBoss.level * 50 * guildGoldMult));
                 setBoss(p => ({ ...p, level: p.level + 1, stats: { ...p.stats, maxHp: Math.floor(p.stats.maxHp * 1.2), hp: Math.floor(p.stats.maxHp * 1.2) } }));
-                addLog(`Boss Defeated! Active heroes gained ${xpGain} XP.`, 'success');
-
-                // Prepare next boss state for local logic if needed, but we set state above.
-                // We use the boolean flag for the hero update logic.
+                addLog(`Boss Derrotado! Heróis ganharam ${xpGain} XP.`, 'success');
             } else {
                 setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
+            }
+
+            // Drop loot ao derrotar boss (com limite de inventário)
+            if (bossDefeated && Math.random() < 0.4) {
+                const lootItem = generateLoot(boss.level);
+                setItems(prev => {
+                    const newItems = [...prev, lootItem];
+                    if (newItems.length > MAX_INVENTORY_SIZE) {
+                        // Auto-vende os itens de menor valor para liberar espaço
+                        const sorted = [...newItems].sort((a, b) => a.value - b.value);
+                        const excess = newItems.length - MAX_INVENTORY_SIZE;
+                        const soldValue = sorted.slice(0, excess)
+                            .reduce((sum, i) => sum + Math.floor(i.value * 0.3), 0);
+                        if (soldValue > 0) setGold(g => g + soldValue);
+                        return sorted.slice(excess);
+                    }
+                    return newItems;
+                });
             }
 
             const miners = (heroes || []).filter(h => h.assignment === 'mine');

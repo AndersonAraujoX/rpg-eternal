@@ -97,7 +97,7 @@ export const usePersistence = (props: PersistenceProps) => {
         starlight, setStarlight,
         starlightUpgrades, setStarlightUpgrades,
         autoSellRarity, setAutoSellRarity,
-        arenaOpponents, setArenaOpponents,
+        arenaOpponents: _arenaOpponents, setArenaOpponents,
         theme, setTheme,
         galaxy, setGalaxy,
         monsterKills, setMonsterKills,
@@ -250,21 +250,51 @@ export const usePersistence = (props: PersistenceProps) => {
         }
     }, []);
 
-    // SAVE
+    // SAVE (a cada 30s em vez de 5s para reduzir pressão de memória/CPU)
     useEffect(() => {
         const saveState = () => {
+            // Compactar heróis: salvar apenas campos de progresso, não dados base estáticos
+            const compactHeroes = heroes.map(h => ({
+                id: h.id,
+                name: h.name,
+                emoji: h.emoji,
+                level: h.level,
+                xp: h.xp,
+                maxXp: h.maxXp,
+                unlocked: h.unlocked,
+                isDead: h.isDead,
+                class: h.class,
+                assignment: h.assignment,
+                stats: h.stats,
+                statPoints: h.statPoints,
+                equipment: h.equipment,
+                gambits: h.gambits,
+                element: h.element,
+                insanity: h.insanity,
+                fatigue: h.fatigue,
+                maxFatigue: h.maxFatigue,
+            }));
+
+            // Compactar itens: salvar apenas os 100 melhores (por valor) para limitar o tamañho
+            const compactItems = [...items]
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 100);
+
             const state = {
-                heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys,
+                heroes: compactHeroes,
+                boss, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys,
                 resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, starlight,
-                starlightUpgrades, theme, galaxy, monsterKills, gameStats, autoSellRarity, arenaOpponents,
+                starlightUpgrades, theme, galaxy, monsterKills, gameStats, autoSellRarity,
                 activeExpeditions, activePotions, buildings,
                 dailyQuests, dailyLoginClaimed, lastDailyReset,
                 territories, spaceship, formations, weather,
+                items: compactItems, // itens compactados
+                // Não salvar: arenaOpponents (regenerado), marketStock (regenerado)
                 lastSaveTime: Date.now()
             };
             localStorage.setItem('rpg_eternal_save_v6', JSON.stringify(state));
         };
-        const timer = setInterval(saveState, 5000); // Auto-save every 5s
+        const timer = setInterval(saveState, 30000); // 30s em vez de 5s
         return () => clearInterval(timer);
     }, [heroes, boss, items, souls, gold, divinity, pets, talents, artifacts, cards, constellations, keys, resources, tower, guild, voidMatter, arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, theme, galaxy, monsterKills, gameStats, activeExpeditions, activePotions, buildings, dailyQuests, dailyLoginClaimed, lastDailyReset, territories, spaceship, formations, weather]);
 };
