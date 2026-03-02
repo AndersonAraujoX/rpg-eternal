@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building as BuildingIcon, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock, ShieldAlert, Lock } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building as BuildingIcon, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock, ShieldAlert, Lock, PawPrint } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild, Building } from '../engine/types';
 import type { WeatherType } from '../engine/weather'; // Phase 48
@@ -16,8 +16,6 @@ interface HeaderProps {
     keys: number;
     voidMatter: number;
     dungeonActive: boolean;
-    raidActive: boolean;
-    raidTimer: number;
     voidActive: boolean;
     voidTimer: number;
     isSoundOn: boolean;
@@ -49,7 +47,7 @@ interface HeaderProps {
     setShowExpeditions?: (v: boolean) => void;
     setShowGarden?: (v: boolean) => void;
     setShowRiftModal?: (v: boolean) => void;
-    setShowBreedingModal?: (v: boolean) => void; // Phase 46
+    setShowPetSpace?: (v: boolean) => void; // Phase 46
     setShowGuildWar?: (v: boolean) => void; // Phase 47
     weather?: WeatherType; // Phase 48
     weatherTimer?: number; // Phase 48
@@ -70,14 +68,14 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-    boss, souls, gold, divinity, tower, keys, voidMatter, dungeonActive, raidActive, raidTimer, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
+    boss, souls, gold, divinity, tower, keys, voidMatter, dungeonActive, voidActive, voidTimer, isSoundOn, gameSpeed, actions,
     setShowShop, setShowTavern, setShowStars, setShowForge, setShowInventory, setShowBestiary, setShowSettings, setShowStats,
     setShowTower, setShowGuild, setShowVoid, setShowArena, setShowQuests, setShowDailyRewards, setShowRunes, setShowAchievements, setShowStarlight, setShowHelp, setShowGalaxy,
     setShowLeaderboard,
     setShowFishing, setShowAlchemy, setShowExpeditions,
     setShowGarden,
     setShowRiftModal, // Update 81: Active
-    setShowBreedingModal, // Phase 46
+    setShowPetSpace, // Phase 46
     setShowGuildWar, // Phase 47
     weather, weatherTimer, // Phase 48
     setShowMuseum, // Phase 49
@@ -146,7 +144,15 @@ export const Header: React.FC<HeaderProps> = ({
                     <Flame size={12} /> {outerSpaceUnlocked ? "Forja Estelar" : "???"}
                 </button>
             )}
-            {setShowRiftModal && <button onClick={() => setShowRiftModal(true)} className="btn-retro bg-purple-900 text-purple-300 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800" title="Fendas Temporais"><Clock size={12} /> Fendas</button>}
+            {setShowRiftModal && boss.level >= 300 && (
+                <button
+                    onClick={() => setShowRiftModal(true)}
+                    className="btn-retro bg-purple-900 text-purple-300 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800"
+                    title="Fendas Temporais (Nível 300+)"
+                >
+                    <Clock size={12} /> Fendas
+                </button>
+            )}
             {setShowWorldBoss && <button onClick={() => setShowWorldBoss(true)} className="btn-retro bg-red-950 text-red-400 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-900 animate-pulse" title="Reide de Chefe Mundial"><Skull size={12} /> Reide</button>}
 
             {tower.floor >= 10 && (
@@ -186,14 +192,14 @@ export const Header: React.FC<HeaderProps> = ({
                     {!hasForge && <Lock size={8} />}
                 </button>
 
-                {setShowBreedingModal && (
+                {setShowPetSpace && (
                     <button
-                        onClick={() => setShowBreedingModal(true)}
+                        onClick={() => setShowPetSpace(true)}
                         disabled={!hasBreeding}
-                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasBreeding ? 'bg-pink-700 text-white border-pink-500 hover:bg-pink-600' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
-                        title={hasBreeding ? "Criação de Pets" : "Bloqueado: Requer Centro de Criação na Vila"}
+                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasBreeding ? 'bg-purple-700 text-white border-purple-500 hover:bg-purple-600' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                        title={hasBreeding ? "Espaço Pet (Gerenciar e Evoluir)" : "Bloqueado: Requer Centro de Criação na Vila"}
                     >
-                        <Zap size={12} /> {hasBreeding ? "Criar" : "???"}
+                        <PawPrint size={12} /> {hasBreeding ? "Espaço Pet" : "???"}
                         {!hasBreeding && <Lock size={8} />}
                     </button>
                 )}
@@ -283,11 +289,11 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Renascer button with Portal Animation */}
             <button
                 onClick={actions.triggerRebirth}
-                className="bg-purple-700 hover:bg-purple-600 px-3 py-1 rounded text-white flex items-center gap-1 text-xs font-bold transition-all group"
-                title="Renascer (Reinicia ganhando Almas)"
+                className="bg-indigo-700 hover:bg-indigo-600 px-3 py-1 rounded text-white flex items-center gap-1 text-xs font-bold transition-all group"
+                title="Ascender (Reinicia ganhando Almas Celestiais)"
             >
                 <Ghost size={12} className="group-hover:animate-bounce" />
-                Renascer
+                Ascender
             </button>
             {setShowDevTools && <button onClick={() => setShowDevTools(true)} className="btn-retro bg-red-900/50 text-red-400 p-2 rounded border border-red-900 hover:bg-red-800 hover:text-white transition-all" title="Ferramentas de Desenvolvedor"><ShieldAlert size={12} /></button>}
             <button onClick={actions.enterDungeon} className="btn-retro bg-stone-800 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-700" title="Entrar na Masmorra"><Castle size={12} /> Masmorra</button>
@@ -310,9 +316,6 @@ export const Header: React.FC<HeaderProps> = ({
                         <button onClick={actions.enterDungeon} className="btn-retro bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-500 text-[10px] animate-pulse border border-yellow-300">COFRE</button>
                     )}
                     {voidActive && <div className="text-purple-400 font-bold animate-pulse text-xs">VAZIO: {Math.floor(voidTimer)}s</div>}
-                    {boss.level >= 20 && !dungeonActive && !voidActive && (
-                        <button onClick={actions.toggleRaid} className={`btn-retro px-2 py-1 rounded text-[10px] flex items-center gap-1 ${raidActive ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-red-900'}`}> <Skull size={12} /> {raidActive ? `${Math.floor(raidTimer)}s` : 'REIDE'} </button>
-                    )}
                 </div>
 
                 <div className="flex gap-1 items-center">

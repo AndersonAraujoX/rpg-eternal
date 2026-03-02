@@ -1,7 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { Tower, RiftState, LogEntry, RiftBlessing, Formation } from '../engine/types';
+import type { Tower, RiftState, LogEntry, RiftBlessing, Formation, Boss } from '../engine/types';
 import { generateDungeon, type DungeonState } from '../engine/dungeon';
 import type { WeatherType } from '../engine/weather';
+import { INITIAL_BOSS } from '../engine/initialData';
 
 import { soundManager } from '../engine/sound';
 
@@ -12,6 +13,7 @@ export const useWorld = (
     dungeonMastery?: import('../engine/types').DungeonMastery
 ) => {
     const [tower, setTower] = useState<Tower>(initialTower);
+    const [towerBoss, setTowerBoss] = useState<Boss>(INITIAL_BOSS);
     const [dungeonActive, setDungeonActive] = useState(false);
     const [dungeonTimer, setDungeonTimer] = useState(0);
     const [activeRift, setActiveRift] = useState<any>(null);
@@ -242,6 +244,7 @@ export const useWorld = (
 
     const result = useMemo(() => ({
         tower, setTower,
+        towerBoss, setTowerBoss,
         dungeonActive, setDungeonActive,
         dungeonTimer, setDungeonTimer,
         activeRift, setActiveRift,
@@ -256,7 +259,7 @@ export const useWorld = (
         enterRift, exitRift, startRift, selectBlessing,
         saveFormation, loadFormation, deleteFormation
     }), [
-        tower, dungeonActive, dungeonTimer, activeRift, riftState, riftTimer,
+        tower, towerBoss, dungeonActive, dungeonTimer, activeRift, riftState, riftTimer,
         dungeonState, maxDungeonDepth, weather, weatherTimer, formations,
         enterDungeon, exitDungeon, moveDungeon, descendDungeon, addDungeonKey,
         enterRift, exitRift, startRift, selectBlessing,

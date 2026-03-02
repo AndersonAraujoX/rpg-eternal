@@ -24,12 +24,17 @@ export const useWorldBoss = (
     }, [worldBoss, gameStats.bossKills]);
 
     // Attack Action
-    const attackWorldBoss = () => {
+    const attackWorldBoss = (manualDamage?: number) => {
         if (!worldBoss || worldBoss.isDead) return;
 
-        // Damage calculation (simulated crit)
-        const isCrit = Math.random() < 0.1;
-        const damage = Math.floor(partyPower * (isCrit ? 2.5 : 1));
+        // Damage calculation (simulated crit or passive)
+        let damage = manualDamage;
+        let isCrit = false;
+
+        if (damage === undefined) {
+            isCrit = Math.random() < 0.1;
+            damage = Math.floor(partyPower * (isCrit ? 2.5 : 1));
+        }
 
         setPersonalDamage(prev => prev + damage);
 
@@ -51,18 +56,11 @@ export const useWorldBoss = (
         if (!worldBoss || worldBoss.isDead) return;
 
         const interval = setInterval(() => {
-            // Passive contribution (Phase Core Fix)
-            const passiveDamage = Math.floor(partyPower * 0.01); // 1% power per second passively
-
             setWorldBoss(prev => {
                 if (!prev || prev.isDead) return prev;
 
                 const updatedBoss = simulateGlobalDamage(prev);
-                const finalHp = Math.max(0, updatedBoss.globalHp - passiveDamage);
-
-                if (passiveDamage > 0) {
-                    setPersonalDamage(p => p + passiveDamage);
-                }
+                const finalHp = updatedBoss.globalHp; // We will handle additional damage via manual calls
 
                 // Check if boss died
                 if (finalHp <= 0) {

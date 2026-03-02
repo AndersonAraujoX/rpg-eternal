@@ -20,6 +20,8 @@ export interface Territory {
     description: string;
     owner: 'player' | 'Xang' | 'Zhauw' | 'Yang' | 'Neutral';
     difficulty: number;
+    level: number;
+    upgradeCost: number;
     bonus: {
         type: 'gold' | 'xp' | 'damage';
         value: number;
@@ -200,6 +202,7 @@ export interface Hero extends Entity {
     statPoints: number;
     stats: Stats;
     skills: Skill[];
+    deathTime?: number;
     equipment: {
         weapon?: Item;
         armor?: Item;
@@ -597,6 +600,7 @@ export interface GameActions {
     // Galaxy & Territories
     attackSector: (id: string) => void;
     attackTerritory: (id: string) => void;
+    upgradeTerritory: (id: string) => void;
     unlockOuterSpace: () => void;
     triggerRebirth: () => void;
     confirmRebirth: () => void;
@@ -604,6 +608,8 @@ export interface GameActions {
     visitTown: () => void;
     triggerAscension: () => void;
     ascendToVoid: () => void;
+    enterVoid: () => void;
+    buyDarkGift: (cost: number, giftId: string) => void;
 
     // Minigames/Features
     breedPets: (parent1: Pet, parent2: Pet) => void;

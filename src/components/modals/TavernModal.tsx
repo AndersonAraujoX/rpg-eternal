@@ -43,20 +43,23 @@ export function TavernModal({ heroes, gold, tavernPurchases, summonTavern, onClo
                     {/* Summoning Section */}
                     <div className="bg-gray-800 p-4 rounded border border-gray-700">
                         <div className="flex justify-between items-center border-b border-gray-600 pb-1 mb-2">
-                            <h3 className="text-lg font-bold text-white">Recrutar Heróis</h3>
+                            <h3 className="text-lg font-bold text-white italic">Convocação: Heróis & Pets</h3>
                             <div className="flex flex-col items-end text-xs text-amber-400">
                                 <span>Sorte de Herói: {currentHeroChance}% {heroPity > 0 && <span className="text-green-400">(+{heroPity * 2}%)</span>}</span>
                                 <span>Sorte de Pet: {currentPetChance}% {petPity > 0 && <span className="text-green-400">(+{petPity * 2}%)</span>}</span>
                             </div>
                         </div>
+                        <p className="text-[10px] text-gray-400 mb-3 leading-tight italic">
+                            *Nota: Cada convocação tem chance fixa de liberar um Herói bloqueado ou um novo Pet aleatório.
+                        </p>
 
                         <div className="flex gap-2">
                             <button
                                 onClick={() => summonTavern(1)}
                                 disabled={gold < cost1}
                                 className={`flex-1 btn-retro py-2 rounded text-white font-bold relative ${cost1 === 0
-                                        ? 'bg-green-700 hover:bg-green-600 border-2 border-green-400 animate-pulse'
-                                        : gold < cost1 ? 'bg-gray-600 cursor-not-allowed' : 'bg-amber-700 hover:bg-amber-600'
+                                    ? 'bg-green-700 hover:bg-green-600 border-2 border-green-400 animate-pulse'
+                                    : gold < cost1 ? 'bg-gray-600 cursor-not-allowed' : 'bg-amber-700 hover:bg-amber-600'
                                     }`}
                             >
                                 {cost1 === 0 ? (

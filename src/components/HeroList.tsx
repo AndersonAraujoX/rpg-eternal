@@ -60,10 +60,20 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                 const contributions = getContributingSynergies(hero);
 
                 return (
-                    <div key={hero.id} className={`relative p-2 rounded border-2 flex flex-col gap-1 transition-all ${!hero.unlocked ? 'opacity-50 border-gray-700 bg-gray-900 pointer-events-none grayscale' :
+                    <div key={hero.id} className={`relative p-2 rounded border-2 flex flex-col gap-1 transition-all ${!hero.unlocked ? 'border-gray-700 bg-gray-900 group/locked' :
                         hero.isDead ? 'border-red-900 bg-red-950 opacity-70' :
                             'border-gray-600 bg-gray-700 hover:bg-gray-600'
                         }`}>
+                        {!hero.unlocked && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/locked:opacity-100 transition-opacity z-10 rounded">
+                                <button
+                                    onClick={() => actions.buyHero(hero.id)}
+                                    className="bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold py-1 px-2 rounded border border-amber-400 shadow-lg"
+                                >
+                                    RECRUTAR (5000o)
+                                </button>
+                            </div>
+                        )}
                         <div className="flex justify-between items-start">
                             <div className="flex items-center gap-1">
                                 <span className="text-xl" role="img" aria-label={hero.name}>{hero.emoji}</span>
@@ -142,35 +152,37 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                             )}
                         </div>
 
-                        {hero.unlocked && (
-                            <div className="flex flex-col gap-1 mt-1">
-                                {/* HP Bar */}
-                                <div className="w-full h-1.5 bg-gray-900 rounded-full overflow-hidden">
-                                    <div className={`h-full transition-all duration-300 ${hero.isDead ? 'bg-red-900' : 'bg-green-500'}`} style={{ width: `${(hero.stats.hp / hero.stats.maxHp) * 100}%` }}></div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-x-2 text-[9px] text-gray-300 mt-1">
-                                    <div className="flex items-center gap-1"><Sword size={8} className="text-red-400" /> {hero.stats.attack}</div>
-                                    <div className="flex items-center gap-1"><Shield size={8} className="text-yellow-400" /> {hero.stats.defense}</div>
-                                    <div className="flex items-center gap-1"><Zap size={8} className="text-blue-400" /> {hero.stats.magic}</div>
-                                    <div className="flex items-center gap-1"><Heart size={8} className="text-pink-400" /> {Math.floor(hero.stats.hp)}</div>
-                                </div>
-
-                                {/* Synergy Contribution Badges */}
-                                {contributions.length > 0 && hero.assignment === 'combat' && (
-                                    <div className="flex gap-1 mt-1 border-t border-gray-700 pt-1 justify-end">
-                                        {contributions.map(s => (
-                                            <div key={s.id} title={`Contribui para: ${s.name}`} className="bg-black bg-opacity-50 rounded p-0.5 border border-gray-700">
-                                                {getSynergyIcon(s.type)}
-                                            </div>
-                                        ))}
+                        {
+                            hero.unlocked && (
+                                <div className="flex flex-col gap-1 mt-1">
+                                    {/* HP Bar */}
+                                    <div className="w-full h-1.5 bg-gray-900 rounded-full overflow-hidden">
+                                        <div className={`h-full transition-all duration-300 ${hero.isDead ? 'bg-red-900' : 'bg-green-500'}`} style={{ width: `${(hero.stats.hp / hero.stats.maxHp) * 100}%` }}></div>
                                     </div>
-                                )}
-                            </div>
-                        )}
+
+                                    <div className="grid grid-cols-2 gap-x-2 text-[9px] text-gray-300 mt-1">
+                                        <div className="flex items-center gap-1"><Sword size={8} className="text-red-400" /> {hero.stats.attack}</div>
+                                        <div className="flex items-center gap-1"><Shield size={8} className="text-yellow-400" /> {hero.stats.defense}</div>
+                                        <div className="flex items-center gap-1"><Zap size={8} className="text-blue-400" /> {hero.stats.magic}</div>
+                                        <div className="flex items-center gap-1"><Heart size={8} className="text-pink-400" /> {Math.floor(hero.stats.hp)}</div>
+                                    </div>
+
+                                    {/* Synergy Contribution Badges */}
+                                    {contributions.length > 0 && hero.assignment === 'combat' && (
+                                        <div className="flex gap-1 mt-1 border-t border-gray-700 pt-1 justify-end">
+                                            {contributions.map(s => (
+                                                <div key={s.id} title={`Contribui para: ${s.name}`} className="bg-black bg-opacity-50 rounded p-0.5 border border-gray-700">
+                                                    {getSynergyIcon(s.type)}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        }
                     </div>
                 )
             })}
-        </div>
+        </div >
     );
 };

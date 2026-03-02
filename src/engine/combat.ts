@@ -176,8 +176,9 @@ export const processCombatTurn = (
 
     const heroHeals: Record<string, number> = {};
 
-    let updatedHeroes = heroes.map(h => {
-        if (h.assignment !== 'combat' || h.isDead || !h.unlocked) return h;
+    let updatedHeroes = heroes.map((h) => {
+        if (h.assignment !== 'combat' || !h.unlocked) return h;
+        const deathPenalty = h.isDead ? 0.5 : 1; // Dead heroes deal 50% damage
 
         let stats = { ...h.stats };
         // Apply Divinity
@@ -368,18 +369,17 @@ export const processCombatTurn = (
             }
         }
 
-        const heroDamageDealt = Math.floor(baseDmg);
+        const heroDamageDealt = Math.floor(baseDmg * deathPenalty);
         totalDmg += heroDamageDealt;
 
-        if (heroDamageDealt > 0 && lifeSteal > 0) {
+        if (heroDamageDealt > 0 && lifeSteal > 0 && !h.isDead) {
             hp = Math.min(stats.maxHp, hp + (heroDamageDealt * lifeSteal));
         }
 
-        // BOSS ATTACK LOGIC (New)
-        // Scale probability by tick duration (standard 1s = 30% chance)
+        // BOSS ATTACK LOGIC — only hits living heroes
         const attackChance = 0.3 * (tickDuration / 1000);
 
-        if (!boss.isDead && Math.random() < attackChance) { // chance for boss to strike this hero
+        if (!boss.isDead && !h.isDead && Math.random() < attackChance) {
             const bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
             hp = Math.max(0, hp - bossDmg);
             if (hp <= 0) {

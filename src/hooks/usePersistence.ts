@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion } from '../engine/types';
-import { INITIAL_HEROES, INITIAL_PET_DATA } from '../engine/initialData';
+import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 
 export interface PersistenceProps {
@@ -8,6 +8,8 @@ export interface PersistenceProps {
     setHeroes: React.Dispatch<React.SetStateAction<Hero[]>>;
     boss: Boss;
     setBoss: React.Dispatch<React.SetStateAction<Boss>>;
+    towerBoss: Boss;
+    setTowerBoss: React.Dispatch<React.SetStateAction<Boss>>;
     items: Item[];
     setItems: React.Dispatch<React.SetStateAction<Item[]>>;
     souls: number;
@@ -85,6 +87,8 @@ export interface PersistenceProps {
     setFormations: React.Dispatch<React.SetStateAction<any[]>>;
     weather: any;
     setWeather: React.Dispatch<React.SetStateAction<any>>;
+    prestigeNodes: Record<string, number>;
+    setPrestigeNodes: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -92,7 +96,7 @@ export const usePersistence = (props: PersistenceProps) => {
         setHeroes, setBoss, setItems, setSouls, setGold,
         setDivinity, setPets, setTalents, setArtifacts,
         setCards, setConstellations, setKeys, setResources,
-        setTower, setGuild, setVoidMatter,
+        setTower, setTowerBoss, setGuild, setVoidMatter,
         setArenaRank, setGlory, setQuests,
         setRunes, setAchievements,
         setStarlight,
@@ -113,7 +117,8 @@ export const usePersistence = (props: PersistenceProps) => {
         setTerritories,
         setSpaceship,
         setFormations,
-        setWeather
+        setWeather,
+        setPrestigeNodes
     } = props;
 
 
@@ -166,10 +171,17 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.talents) setTalents(state.talents);
                 if (state.artifacts) setArtifacts(state.artifacts);
                 if (state.cards) setCards(state.cards);
-                if (state.constellations) setConstellations(state.constellations);
+                if (state.constellations && state.constellations.length > 0) {
+                    // Merge: preserve levels from save, but always include all INITIAL nodes
+                    setConstellations(INITIAL_CONSTELLATIONS.map(initC => {
+                        const savedC = state.constellations.find((c: any) => c.id === initC.id);
+                        return savedC ? { ...initC, level: savedC.level ?? initC.level } : initC;
+                    }));
+                }
                 if (state.keys) setKeys(state.keys);
                 if (state.resources) setResources(state.resources);
                 if (state.tower) setTower(state.tower);
+                if (state.towerBoss) setTowerBoss(state.towerBoss);
                 if (state.guild) {
                     const loadedGuild = { ...state.guild };
                     if (!loadedGuild.monuments) loadedGuild.monuments = {};
@@ -224,6 +236,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.spaceship) setSpaceship(state.spaceship);
                 if (state.formations) setFormations(state.formations);
                 if (state.weather) setWeather(state.weather);
+                if (state.prestigeNodes) setPrestigeNodes(state.prestigeNodes);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -314,11 +327,12 @@ export const usePersistence = (props: PersistenceProps) => {
             const state = {
                 heroes: compactHeroes,
                 boss: p.boss, souls: p.souls, gold: p.gold, divinity: p.divinity, pets: p.pets, talents: p.talents, artifacts: p.artifacts, cards: p.cards, constellations: p.constellations, keys: p.keys,
-                resources: p.resources, tower: p.tower, guild: p.guild, voidMatter: p.voidMatter, arenaRank: p.arenaRank, glory: p.glory, quests: p.quests, runes: p.runes, achievements: p.achievements, starlight: p.starlight,
+                resources: p.resources, tower: p.tower, towerBoss: p.towerBoss, guild: p.guild, voidMatter: p.voidMatter, arenaRank: p.arenaRank, glory: p.glory, quests: p.quests, runes: p.runes, achievements: p.achievements, starlight: p.starlight,
                 starlightUpgrades: p.starlightUpgrades, theme: p.theme, galaxy: p.galaxy, monsterKills: filteredKills, gameStats: p.gameStats, autoSellRarity: p.autoSellRarity,
                 activeExpeditions: p.activeExpeditions, activePotions: p.activePotions, buildings: p.buildings,
                 dailyQuests: p.dailyQuests, dailyLoginClaimed: p.dailyLoginClaimed, lastDailyReset: p.lastDailyReset,
                 territories: p.territories, spaceship: p.spaceship, formations: p.formations, weather: p.weather,
+                prestigeNodes: p.prestigeNodes,
                 items: compactItems,
                 lastSaveTime: Date.now()
             };

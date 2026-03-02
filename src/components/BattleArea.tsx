@@ -19,6 +19,7 @@ interface BattleAreaProps {
     partyPower?: number;
     combatEvents?: CombatEvent[];
     suggestions?: string[];
+    tower?: { active: boolean; floor: number; maxFloor: number };
 }
 
 const getElementIcon = (el: string) => {
@@ -37,13 +38,37 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [] }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, heroes = [], partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [], tower }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
     const [showSynergyTracker, setShowSynergyTracker] = React.useState(false);
+    const [shake, setShake] = React.useState(false);
+    const [flash, setFlash] = React.useState(false);
+    const [victory, setVictory] = React.useState(false);
     const lastEventId = React.useRef<string | null>(null);
+    const lastHp = React.useRef(boss.stats.hp);
+
+    // Filter active heroes for visualization
+    const activeCombatHeroes = React.useMemo(() =>
+        (heroes || []).filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked),
+        [heroes]);
 
     React.useEffect(() => {
         const last = combatEvents[combatEvents.length - 1];
+
+        // Handle Boss Damage Feedback
+        if (boss.stats.hp < lastHp.current) {
+            setShake(true);
+            setFlash(true);
+            setTimeout(() => { setShake(false); setFlash(false); }, 200);
+        }
+
+        if (boss.isDead && lastHp.current > 0) {
+            setVictory(true);
+            setTimeout(() => setVictory(false), 1000);
+        }
+
+        lastHp.current = boss.stats.hp;
+
         if (last && last.id !== lastEventId.current) {
             lastEventId.current = last.id;
 
@@ -72,8 +97,39 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
         return () => clearInterval(timer);
     }, []);
 
+    const isTower = tower?.active;
+
+    const getBackgroundClass = () => {
+        if (isTower) return 'bg-tower';
+        if (dungeonActive) return 'bg-dungeon';
+        if (boss.level > 300) return 'bg-space';
+        if (boss.level > 100) return 'bg-cave';
+        return 'bg-forest';
+    };
+
     return (
-        <div className="flex-1 relative bg-gray-900 flex flex-col justify-between p-4 overflow-hidden" id="battle-field">
+        <div
+            className={`flex-1 relative flex flex-col justify-between p-4 overflow-hidden transition-all duration-1000 ${getBackgroundClass()} ${victory ? 'victory-glow' : ''}`}
+            id="battle-field"
+        >
+            {isTower && (
+                <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"></div>
+            )}
+            {isTower && (
+                <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-black/60 to-transparent z-0"></div>
+            )}
+            {isTower && (
+                <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent z-0"></div>
+            )}
+            {/* Hero Rendering */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full flex gap-2 z-10 opacity-80 pointer-events-none">
+                {activeCombatHeroes.map(h => (
+                    <div key={h.id} className="text-2xl animate-pulse" title={h.name}>
+                        {h.emoji}
+                    </div>
+                ))}
+            </div>
+
             {/* Pet Rendering */}
 
             {/* Particles */}
@@ -129,10 +185,11 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             <div className="absolute inset-0 opacity-10 pointer-events-none flex justify-center items-center"><Sword className="w-64 h-64" /></div>
 
             {/* Boss */}
-            <div className="flex flex-col items-center justify-center mt-2 transition-all">
+            <div className={`flex flex-col items-center justify-center mt-2 transition-all relative z-10 ${shake ? 'shake-anim' : ''} ${flash ? 'impact-flash' : ''}`}>
+                {isTower && <div className="text-cyan-400 font-black text-xl mb-1 animate-pulse drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">ANDAR {tower.floor}</div>}
                 {dungeonActive && <div className="text-yellow-400 font-bold animate-pulse mb-2">COFRE DE OURO: {Math.floor(dungeonTimer)}s</div>}
                 <div className="flex items-center gap-2">
-                    <div className={`text-6xl md:text-8xl filter drop-shadow-lg grayscale transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''}`}>{boss.emoji}</div>
+                    <div className={`text-6xl md:text-8xl filter drop-shadow-2xl transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''} ${isTower ? 'sepia-[0.5] brightness-125' : ''}`}>{isTower ? '🏰' : boss.emoji}</div>
                     <div className="text-white opacity-50" title={`Elemento: ${boss.element}`}>{getElementIcon(boss.element)}</div>
                     {/* Status Icons based on recent events or state */}
                     <div className="flex gap-1">
@@ -161,14 +218,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
             {/* Pet */}
             {/* Pets List */}
-            <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col gap-2 z-20 max-h-[80%] overflow-y-auto w-24 no-scrollbar">
-                {pets && pets.length > 0 && (
-                    <div className="flex flex-col gap-1 mb-2 bg-black bg-opacity-50 p-1 rounded">
-                        <span className="text-[8px] text-center text-gray-300 font-bold">BANQUETE</span>
-                        <button onClick={() => actions.feedPet('gold', 'all')} className="bg-yellow-700 text-[8px] text-white rounded hover:bg-yellow-600 px-1">O (5k)</button>
-                        <button onClick={() => actions.feedPet('souls', 'all')} className="bg-purple-800 text-[8px] text-white rounded hover:bg-purple-700 px-1">A (500)</button>
-                    </div>
-                )}
+            <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col gap-2 z-20 max-h-[80%] overflow-y-auto overflow-x-hidden w-24 scrollbar-hide">
                 {pets && [...pets].sort((a, b) => b.level - a.level).map(pet => (
                     <div key={pet.id} className="flex flex-col items-center opacity-90 group relative">
                         <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer animate-bounce" title={`Nvl ${pet.level} ${pet.name}`}>

@@ -1,9 +1,11 @@
 import React from 'react';
-import { Building, Shield, Coins, ArrowUp, Lock } from 'lucide-react';
+import { Building, Shield, Coins, ArrowUp, Lock, Users, Sword } from 'lucide-react';
 import { GUILDS } from '../../engine/types';
 import type { Guild, GameActions } from '../../engine/types';
 import { MONUMENT_DEFINITIONS, getMonumentCost, getMonumentValue } from '../../engine/guild';
 import { formatNumber } from '../../utils';
+
+interface GuildQueueEntry { name: string; emoji: string; power: number; }
 
 interface GuildModalProps {
     isOpen: boolean;
@@ -11,17 +13,24 @@ interface GuildModalProps {
     guild: Guild | null;
     gold: number;
     actions: GameActions;
+    guildQueue?: GuildQueueEntry[];
 }
 
-export const GuildModal: React.FC<GuildModalProps> = ({ isOpen, onClose, guild, gold, actions }) => {
+export const GuildModal: React.FC<GuildModalProps> = ({ isOpen, onClose, guild, gold, actions, guildQueue = [] }) => {
     if (!isOpen) return null;
+    const isLeader = guild !== null && (guild.totalContribution || 0) >= 10000;
 
     return (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black bg-opacity-95">
             <div className="bg-slate-900 border-4 border-green-600 w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-2xl relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-white font-bold hover:text-red-500">X</button>
                 <h2 className="text-green-400 text-3xl font-bold mb-6 flex items-center justify-center gap-2 border-b border-green-800 pb-2">
-                    <Building size={32} /> GUILD HALL
+                    <Building size={32} /> GUILDA
+                    {guildQueue.length > 0 && (
+                        <span className="ml-2 bg-orange-600 text-white text-sm px-2 py-0.5 rounded-full font-bold">
+                            {guildQueue.length} recrutas esperando
+                        </span>
+                    )}
                 </h2>
 
                 {!guild ? (
@@ -162,6 +171,33 @@ export const GuildModal: React.FC<GuildModalProps> = ({ isOpen, onClose, guild, 
                                     );
                                 })}
                             </div>
+                        </div>
+                    </div>
+                )}
+                {/* Guild Queue (Arena Fighters) */}
+                {guildQueue.length > 0 && (
+                    <div className="mt-6 bg-orange-950/30 border border-orange-800/50 p-4 rounded-lg">
+                        <h4 className="text-orange-400 font-bold mb-3 flex items-center gap-2">
+                            <Users size={16} /> Fila de Recrutas ({guildQueue.length})
+                        </h4>
+                        {!isLeader && (
+                            <p className="text-xs text-gray-400 mb-3 italic">
+                                Torne-se Líder (contribua 10.000 Ouro) para aceitar os recrutas.
+                            </p>
+                        )}
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {guildQueue.map((r, i) => (
+                                <div key={i} className="flex items-center justify-between bg-gray-800 p-2 rounded text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <span>{r.emoji}</span>
+                                        <span className="text-white font-medium">{r.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-gray-400 text-xs">
+                                        <Sword size={10} className="text-red-400" />
+                                        {formatNumber(r.power)}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}

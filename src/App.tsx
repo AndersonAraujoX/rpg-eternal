@@ -54,6 +54,8 @@ import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 
 import { DevToolsModal } from './components/modals/DevToolsModal'; // Dev Tools
 import { PortalResetModal } from './components/modals/PortalResetModal';
 import { PrestigeTreeModal } from './components/modals/PrestigeTreeModal';
+import { PetSpaceModal } from './components/modals/PetSpaceModal';
+import { WeatherOverlays } from './components/WeatherOverlays';
 
 import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
 
@@ -61,7 +63,7 @@ function App() {
   const {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
-    ultimateCharge, raidActive, raidTimer, tower, guild, voidMatter, voidActive, voidTimer,
+    ultimateCharge, raidActive, tower, guild, voidMatter, voidActive, voidTimer,
     arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
     victory,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
@@ -88,7 +90,7 @@ function App() {
     voidAscensions,
     formations, saveFormation, loadFormation, deleteFormation, // Update 74
     activeEvent,
-    prestigeNodes, townVisited, triggerRebirth,
+    prestigeNodes, townVisited, triggerRebirth, guildQueue,
     setSouls, setDivinity, setStarlight, setHeroes, setGameSpeed, portalConfig, setPortalConfig
   } = useGame();
 
@@ -131,6 +133,7 @@ function App() {
   const [showExpeditions, setShowExpeditions] = useState(false);
   const [showGarden, setShowGarden] = useState(false);
   const [showBreedingModal, setShowBreedingModal] = useState(false); // Phase 46
+  const [showPetSpace, setShowPetSpace] = useState(false);
   const [showGuildWar, setShowGuildWar] = useState(false); // Phase 47
   const [showMuseum, setShowMuseum] = useState(false); // Phase 49
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null); // Phase 57
@@ -210,6 +213,9 @@ function App() {
 
       <div className="crt-overlay"></div>
 
+      {/* WEATHER OVERLAYS */}
+      <WeatherOverlays weather={weather} />
+
       {/* Game Container */}
       <div className={`w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-opacity-95 border-4 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm transition-colors duration-500 ${themeClass}`}>
         {/* TOWN EVENT WIDGET */}
@@ -218,7 +224,7 @@ function App() {
         <Header
           boss={boss} souls={souls} gold={gold} divinity={divinity} resources={resources}
           tower={tower} guild={guild} keys={keys} voidMatter={voidMatter}
-          dungeonActive={dungeonActive} raidActive={raidActive} raidTimer={raidTimer}
+          dungeonActive={dungeonActive}
           voidActive={voidActive} voidTimer={voidTimer}
           isSoundOn={isSoundOn} gameSpeed={gameSpeed} actions={{ ...actions, triggerRebirth, visitTown: () => { actions.visitTown(); setShowTown(true); } }}
           setShowShop={setShowShop} setShowTavern={setShowTavern} setShowStars={setShowStars}
@@ -231,7 +237,7 @@ function App() {
           setShowLeaderboard={setShowLeaderboard} setShowHelp={setShowHelp}
           setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy}
           setShowExpeditions={setShowExpeditions} setShowGarden={setShowGarden}
-          setShowRiftModal={setShowRiftModal} setShowBreedingModal={setShowBreedingModal}
+          setShowRiftModal={setShowRiftModal}
           setShowGuildWar={setShowGuildWar} weather={weather} weatherTimer={weatherTimer}
           setShowMuseum={setShowMuseum} setShowTown={(v) => { if (v) actions.visitTown(); setShowTown(v); }}
           setShowCampfire={setShowCampfire} setShowStarForge={setShowStarForge}
@@ -239,6 +245,7 @@ function App() {
           setShowDevTools={setShowDevTools}
           outerSpaceUnlocked={outerSpaceUnlocked}
           setShowPrestigeTree={setShowPrestigeTree}
+          setShowPetSpace={setShowPetSpace}
           townVisited={townVisited}
           voidAscensions={voidAscensions}
           buildings={buildings}
@@ -281,8 +288,8 @@ function App() {
       {showForge && <ForgeModal resources={resources} forgeUpgrade={actions.forgeUpgrade} onClose={() => setShowForge(false)} setResources={setResources} />}
       {showInventory && <InventoryModal isOpen={true} items={items} onClose={() => setShowInventory(false)} />}
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
-      <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} />
-      <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} voidAscensions={voidAscensions} />
+      <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} guildQueue={guildQueue} />
+      <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} voidAscensions={voidAscensions} voidActive={voidActive} voidTimer={voidTimer} />
       <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} opponents={arenaOpponents} onFight={actions.fightArena} />
       {showQuests && (
         <QuestModal
@@ -347,7 +354,8 @@ function App() {
         gameStats={gameStats}
       />
       {showBreedingModal && <BreedingModal isOpen={true} onClose={() => setShowBreedingModal(false)} pets={pets} breedPets={breedPets} gold={gold} />}
-      {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} partyPower={partyPower} guild={guild} />}
+      {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} partyPower={partyPower} guild={guild} gold={gold} />}
+      {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
       <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />

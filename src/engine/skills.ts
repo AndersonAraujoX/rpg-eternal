@@ -314,3 +314,72 @@ export const CLASS_SKILLS: Record<string, Skill[]> = {
         passive('fi10', 'Poseidon', '+50 Magic', 50, { magic: 50 }),
     ],
 };
+
+// ─────────────────────────────────────────────
+// SKILL UTILITY FUNCTIONS
+// ─────────────────────────────────────────────
+
+/**
+ * Checks if a skill is unlocked at the given hero level.
+ */
+export const isSkillUnlocked = (skill: Skill, heroLevel: number): boolean => {
+    return heroLevel >= skill.unlockLevel;
+};
+
+/**
+ * Returns all skills (active + passive) for a class that are unlocked at the given level.
+ */
+export const getSkillsForHero = (heroClass: string, heroLevel: number): Skill[] => {
+    const all = CLASS_SKILLS[heroClass] ?? [];
+    return all.filter(s => isSkillUnlocked(s, heroLevel));
+};
+
+/**
+ * Returns only ACTIVE skills from a list that are unlocked at the given level.
+ */
+export const getActiveSkills = (skills: Skill[], heroLevel: number): Skill[] => {
+    return skills.filter(s => s.type === 'active' && isSkillUnlocked(s, heroLevel));
+};
+
+/**
+ * Sums all stat bonuses from PASSIVE skills in the given list that are unlocked at the given level.
+ */
+export const getPassiveStatBonus = (skills: Skill[], heroLevel: number): Partial<Stats> => {
+    const total: Partial<Stats> = {};
+    skills
+        .filter(s => s.type === 'passive' && isSkillUnlocked(s, heroLevel) && s.statBonus)
+        .forEach(s => {
+            (Object.keys(s.statBonus!) as Array<keyof Stats>).forEach(stat => {
+                const val = s.statBonus![stat] ?? 0;
+                total[stat] = (total[stat] ?? 0) + val;
+            });
+        });
+    return total;
+};
+
+/**
+ * Convenience: returns total passive stat bonuses for a class at a given level.
+ */
+export const getTotalPassiveStatBonus = (heroClass: string, heroLevel: number): Partial<Stats> => {
+    const skills = CLASS_SKILLS[heroClass] ?? [];
+    return getPassiveStatBonus(skills, heroLevel);
+};
+
+/**
+ * Estimates the raw damage output of an active skill given the hero's base attack.
+ * Returns 0 for heal/buff skills.
+ */
+export const getSkillDamageEstimate = (skill: Skill, baseAttack: number): number => {
+    if (skill.effectType !== 'damage') return 0;
+    return Math.floor(baseAttack * skill.value);
+};
+
+/**
+ * Returns the highest-damage active skill available from a list,
+ * or null if no damage skills are unlocked.
+ */
+export const getBestDamageSkill = (skills: Skill[], heroLevel: number): Skill | null => {
+    const available = getActiveSkills(skills, heroLevel).filter(s => s.effectType === 'damage');
+    if (available.length === 0) return null;
+    return available.reduce((best, s) => s.value > best.value ? s : best);
+};

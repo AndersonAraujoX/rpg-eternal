@@ -94,8 +94,8 @@ export const INITIAL_BUILDINGS: Building[] = [
     },
     {
         id: 'breeding_center',
-        name: 'Centro de Criação',
-        description: 'Onde pets são criados e fortalecidos.',
+        name: 'Espaço Pet',
+        description: 'Local para gerenciar, evoluir e cuidar dos seus pets.',
         level: 0,
         maxLevel: 1,
         cost: 15000,
