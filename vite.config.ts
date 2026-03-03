@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/rpg-eternal/',
+  base: './',
   build: {
-    outDir: 'dist',
+    outDir: 'docs',
     sourcemap: true,
   },
 })
