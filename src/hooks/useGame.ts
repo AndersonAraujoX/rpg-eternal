@@ -873,7 +873,10 @@ export const useGame = () => {
             let currentBoss = { ...targetBoss };
 
             // Apply Galaxy Gold/XP Buffs to the gains
-            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0));
+            const townHallLevel = buildings.find(b => b.id === 'town_hall')?.level || 0;
+            const townHallGoldMult = 1 + (townHallLevel * 0.05); // 5% per level
+
+            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult;
             const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0));
 
             if (res.totalDmg >= currentBoss.stats.hp) {

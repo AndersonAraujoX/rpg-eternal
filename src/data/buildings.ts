@@ -3,13 +3,13 @@ import type { Building } from '../engine/types';
 export const INITIAL_BUILDINGS: Building[] = [
     {
         id: 'town_hall',
-        name: 'Town Hall',
-        description: 'Increases Gold Gain from all sources.',
-        level: 1,
+        name: 'Prefeitura',
+        description: 'Gerencie sua cidade. Desbloqueia o Modo Construção.',
+        level: 0,
         maxLevel: 10,
         cost: 1000,
         costScaling: 1.5,
-        bonus: '+5% Gold / Lvl',
+        bonus: '+5% Ouro / Lvl',
         effectValue: 0.05,
         currency: 'gold',
         emoji: '🏛️'
