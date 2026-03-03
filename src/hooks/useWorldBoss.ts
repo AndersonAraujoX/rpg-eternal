@@ -6,8 +6,7 @@ export const useWorldBoss = (
     partyPower: number,
     gameStats: GameStats,
     addLog: (msg: string, type?: LogEntry['type']) => void,
-    setSouls: (fn: (prev: number) => number) => void,
-    setGold: (fn: (prev: number) => number) => void
+    onWorldBossClaimed: (rewards: any) => void
 ) => {
     const [worldBoss, setWorldBoss] = useState<WorldBoss | null>(null);
     const [personalDamage, setPersonalDamage] = useState(0);
@@ -82,12 +81,9 @@ export const useWorldBoss = (
     const claimReward = () => {
         if (!worldBoss || !canClaim) return;
 
-        const { souls, gold } = calculateWorldBossRewards(worldBoss.tier, personalDamage);
+        const rewards = calculateWorldBossRewards(worldBoss.tier, personalDamage);
 
-        setSouls(s => s + souls);
-        setGold(g => g + gold);
-
-        addLog(`Claimed World Boss Rewards: +${souls} Souls, +${gold} Gold`, 'achievement');
+        onWorldBossClaimed(rewards);
 
         // Reset boss (will trigger auto-generate effect)
         setWorldBoss(null);

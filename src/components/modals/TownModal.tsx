@@ -9,10 +9,22 @@ interface TownModalProps {
     buildings: Building[];
     gold: number;
     upgradeBuilding: (id: string) => void;
+    tower?: import('../../engine/types').Tower;
+    openIndustry?: () => void;
 }
 
-export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings, gold, upgradeBuilding }) => {
+export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings, gold, upgradeBuilding, tower, openIndustry }) => {
     if (!isOpen) return null;
+
+    const visibleBuildings = buildings.filter(b => {
+        if (b.id === 'celestial_observatory') {
+            return (tower?.maxFloor || 0) >= 100;
+        }
+        if (b.id === 'industry') {
+            return (tower?.maxFloor || 0) >= 50;
+        }
+        return true;
+    });
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md transition-all duration-500">
@@ -51,7 +63,7 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
                 {/* Buildings Grid */}
                 <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
-                        {buildings.map(building => {
+                        {visibleBuildings.map(building => {
                             const isMax = building.level >= building.maxLevel;
                             const canAfford = gold >= building.cost;
                             const isSpecial = building.id === 'guild_hall';

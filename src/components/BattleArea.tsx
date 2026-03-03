@@ -20,6 +20,7 @@ interface BattleAreaProps {
     combatEvents?: CombatEvent[];
     suggestions?: string[];
     tower?: { active: boolean; floor: number; maxFloor: number };
+    voidActive?: boolean;
 }
 
 const getElementIcon = (el: string) => {
@@ -38,7 +39,7 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, heroes = [], partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [], tower }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, heroes = [], partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [], tower, voidActive = false }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
     const [showSynergyTracker, setShowSynergyTracker] = React.useState(false);
     const [shake, setShake] = React.useState(false);
@@ -100,6 +101,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
     const isTower = tower?.active;
 
     const getBackgroundClass = () => {
+        if (voidActive) return 'bg-void';
         if (isTower) return 'bg-tower';
         if (dungeonActive) return 'bg-dungeon';
         if (boss.level > 300) return 'bg-space';
@@ -121,10 +123,9 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {isTower && (
                 <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent z-0"></div>
             )}
-            {/* Hero Rendering */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full flex gap-2 z-10 opacity-80 pointer-events-none">
                 {activeCombatHeroes.map(h => (
-                    <div key={h.id} className={`text-2xl transition-all duration-500 ${h.isDead ? 'opacity-30 grayscale sepia brightness-50 scale-90' : 'animate-pulse'}`} title={h.isDead ? `${h.name} (CAÍDO - 50% DPS)` : h.name}>
+                    <div key={h.id} className={`text-2xl transition-all duration-500 ${h.isDead ? 'opacity-50 sepia scale-90' : 'animate-pulse'}`} title={h.isDead ? `${h.name} (MACHUCADO - 50% DPS)` : h.name}>
                         {h.emoji}
                     </div>
                 ))}
@@ -185,11 +186,11 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             <div className="absolute inset-0 opacity-10 pointer-events-none flex justify-center items-center"><Sword className="w-64 h-64" /></div>
 
             {/* Boss */}
-            <div className={`flex flex-col items-center justify-center mt-2 transition-all relative z-10 ${shake ? 'shake-anim' : ''} ${flash ? 'impact-flash' : ''}`}>
+            <div className={`flex flex-col items-center justify-center mt-2 transition-all relative z-10 ${shake ? 'shake-anim' : ''} ${flash ? 'impact-flash' : ''} ${voidActive ? 'scale-110 drop-shadow-[0_0_30px_rgba(255,0,255,0.4)]' : ''}`}>
                 {isTower && <div className="text-cyan-400 font-black text-xl mb-1 animate-pulse drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">ANDAR {tower.floor}</div>}
                 {dungeonActive && <div className="text-yellow-400 font-bold animate-pulse mb-2">COFRE DE OURO: {Math.floor(dungeonTimer)}s</div>}
                 <div className="flex items-center gap-2">
-                    <div className={`text-6xl md:text-8xl filter drop-shadow-2xl transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''} ${isTower ? 'sepia-[0.5] brightness-125' : ''}`}>{isTower ? '🏰' : boss.emoji}</div>
+                    <div className={`text-6xl md:text-8xl filter drop-shadow-2xl transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''} ${isTower ? 'sepia-[0.5] brightness-125' : ''} ${voidActive ? 'animate-bounce drop-shadow-[0_0_20px_purple] scale-125' : ''}`}>{isTower ? '🏰' : boss.emoji}</div>
                     <div className="text-white opacity-50" title={`Elemento: ${boss.element}`}>{getElementIcon(boss.element)}</div>
                     {/* Status Icons based on recent events or state */}
                     <div className="flex gap-1">

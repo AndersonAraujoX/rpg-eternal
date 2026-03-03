@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGame } from './hooks/useGame';
+import { useIndustry } from './hooks/useIndustry';
 import { Header } from './components/Header';
 import { HeroList } from './components/HeroList';
 import { BattleArea } from './components/BattleArea';
@@ -48,6 +49,7 @@ import { MuseumModal } from './components/modals/MuseumModal';
 import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
 import { WorldBossModal } from './components/modals/WorldBossModal'; // Phase 6
 import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
+import { IndustryModal } from './components/modals/IndustryModal';
 
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
@@ -60,6 +62,7 @@ import { WeatherOverlays } from './components/WeatherOverlays';
 import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
 
 function App() {
+  const industry = useIndustry();
   const {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
@@ -97,6 +100,7 @@ function App() {
 
   const [showShop, setShowShop] = useState(false);
   const [showTown, setShowTown] = useState(false); // Phase 53
+  const [showIndustry, setShowIndustry] = useState(false);
   const [showCardBattle, setShowCardBattle] = useState(false); // Phase 55
   const [showDailyRewards, setShowDailyRewards] = useState(false); // Phase 56
   const [showMarket, setShowMarket] = useState(false);
@@ -139,6 +143,14 @@ function App() {
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null); // Phase 57
 
   const [importString, setImportString] = useState('');
+
+  // Industry Tick Loop
+  useEffect(() => {
+    const interval = setInterval(() => {
+      industry.processTick(1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -363,7 +375,8 @@ function App() {
       {showBreedingModal && <BreedingModal isOpen={true} onClose={() => setShowBreedingModal(false)} pets={pets} breedPets={breedPets} gold={gold} />}
       {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} partyPower={partyPower} guild={guild} gold={gold} />}
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
-      <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} />
+      <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} tower={tower} openIndustry={() => setShowIndustry(true)} />
+      <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
 

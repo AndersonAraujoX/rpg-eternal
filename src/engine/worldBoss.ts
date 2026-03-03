@@ -54,8 +54,22 @@ export const simulateGlobalDamage = (boss: WorldBoss): WorldBoss => {
 
 export const calculateWorldBossRewards = (tier: number, damageDealt: number) => {
     // Reward based on tier and damage contribution
-    const souls = Math.floor(damageDealt * 0.1 * tier);
-    const gold = Math.floor(damageDealt * 0.5 * tier);
+    const tierMultiplier = tier * tier; // Tiers 1, 4, 9, 16
+    const baseGold = 1000000 * tierMultiplier;
 
-    return { souls, gold };
+    // Scaling rewards
+    const scalingGold = Math.floor(damageDealt * 0.5 * tier);
+    const gold = baseGold + scalingGold;
+    const souls = Math.floor(damageDealt * 0.1 * tier);
+    const petXp = Math.floor(damageDealt * 0.05 * tier);
+    const guildXp = Math.floor(damageDealt * 0.01 * tier);
+
+    // Bonus Guild Members based on Tier
+    const guildMembers = tier + 1;
+
+    // Random Bonus Pet if damage is absurdly high (0.1% chance base, scaling up)
+    const petChance = Math.min(1.0, damageDealt / (50000000 * tier));
+    const wonPet = Math.random() < petChance;
+
+    return { souls, gold, petXp, guildXp, guildMembers, wonPet, tier };
 };

@@ -155,17 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             {setShowWorldBoss && <button onClick={() => setShowWorldBoss(true)} className="btn-retro bg-red-950 text-red-400 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-900 animate-pulse" title="Reide de Chefe Mundial"><Skull size={12} /> Reide</button>}
 
-            {tower.floor >= 10 && (
-                <>
-                    <button onClick={() => setShowVoid && setShowVoid(true)} className="flex items-center gap-1 bg-purple-900 border border-purple-700 px-2 py-1 rounded text-purple-100 hover:bg-purple-800 animate-pulse" title="O Vazio">
-                        <Ghost size={12} /> {voidMatter}
-                    </button>
-                    <button onClick={() => setShowCampfire && setShowCampfire(true)} className="p-2 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 transition-colors text-orange-400" title="Descansar">
-                        <span className="sr-only">Fogueira</span>
-                        🔥
-                    </button>
-                </>
-            )}
+            {/* Vazio e Fogueira removidos a pedido do usuário */}
             {/* Phase 47: Guild War */}
             <button onClick={() => setShowGuildWar && setShowGuildWar(true)} className="btn-retro bg-orange-700 text-white px-2 py-1 rounded border border-orange-500 hover:bg-orange-600 flex items-center gap-1" title="Guerras de Guilda"> ⚔️ Guerra </button>
         </>

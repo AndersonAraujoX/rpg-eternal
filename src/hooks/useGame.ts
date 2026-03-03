@@ -4,6 +4,7 @@ import type { Hero, Boss, LogEntry, Item, Gambit, Quest, ArenaOpponent, Rune, Ac
 import { POTIONS } from '../engine/types';
 import { getStarlightUpgradeCost, STARLIGHT_UPGRADES } from '../engine/starlight';
 import { checkDailyReset, generateDailyQuests, LOGIN_REWARDS } from '../engine/dailies';
+import { formatNumber } from '../utils';
 import { soundManager } from '../engine/sound';
 import { usePersistence } from './usePersistence';
 import { useWorldBoss } from './useWorldBoss';
@@ -155,9 +156,67 @@ export const useGame = () => {
         }
     });
 
-    const worldBossState = useWorldBoss(partyPower, gameStats, addLog, setSouls, setGold);
+    const worldBossState = useWorldBoss(partyPower, gameStats, addLog, (rewards) => {
+        setGold(g => g + rewards.gold);
+        setSouls(s => s + rewards.souls);
 
-    const activeHeroes = useMemo(() => (heroes || []).filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked), [heroes]);
+        if (rewards.guildXp > 0 || rewards.guildMembers > 0) {
+            guildState.setGuild(prev => {
+                if (!prev) return prev;
+                let newXp = prev.xp + rewards.guildXp;
+                let newLevel = prev.level;
+                let newMaxXp = prev.maxXp;
+                let newBonusVal = prev.bonusValue || 0.1;
+
+                while (newXp >= newMaxXp) {
+                    newLevel += 1;
+                    newXp -= newMaxXp;
+                    newMaxXp = Math.floor(newMaxXp * 1.2);
+                    newBonusVal += 0.01;
+                }
+
+                return {
+                    ...prev,
+                    level: newLevel,
+                    xp: newXp,
+                    maxXp: newMaxXp,
+                    bonusValue: newBonusVal,
+                    members: prev.members + rewards.guildMembers,
+                    bonus: prev.bonus?.replace(/\d+%/, `${Math.round(newBonusVal * 100)}%`) || ""
+                };
+            });
+        }
+
+        if (rewards.petXp > 0) {
+            petsState.setPets(prev => prev.map(p => {
+                let newXp = p.xp + rewards.petXp;
+                let newLevel = p.level;
+                let newMaxXp = p.maxXp;
+                while (newXp >= newMaxXp) {
+                    newLevel++;
+                    newXp -= newMaxXp;
+                    newMaxXp = Math.floor(newMaxXp * 1.5);
+                }
+                return { ...p, level: newLevel, xp: newXp, maxXp: newMaxXp };
+            }));
+        }
+
+        if (rewards.wonPet) {
+            // Import INITIAL_PETS later if possible, or just generate a fresh low level pet
+            const randomPets = [
+                { id: `pet-${Date.now()}`, name: 'Cão Infernal', emoji: '🐕', level: 1, xp: 0, maxXp: 100, bonus: '+10% Dano Crítico' },
+                { id: `pet-${Date.now()}`, name: 'Corvo Sombrio', emoji: '🐦‍⬛', level: 1, xp: 0, maxXp: 100, bonus: '+20% Poder Sombrio' },
+                { id: `pet-${Date.now()}`, name: 'Espírito Ancestral', emoji: '👻', level: 1, xp: 0, maxXp: 100, bonus: '+5% Defesa Mágica' },
+            ] as import('../engine/types').Pet[];
+            const petDrop = randomPets[Math.floor(Math.random() * randomPets.length)];
+            petsState.setPets(prev => [...prev, petDrop]);
+            addLog(`VOCÊ ENCONTROU UM PET LENDÁRIO NA REIDE: ${petDrop.name}!`, 'achievement');
+        }
+
+        addLog(`Recompensas da Reide: ${formatNumber(rewards.gold)} Ouro, ${rewards.souls} Almas, ${rewards.guildXp} Guild XP, ${rewards.guildMembers} Novos Membros!`, 'achievement');
+    });
+
+    const activeHeroes = useMemo(() => (heroes || []).filter(h => h.assignment === 'combat' && h.unlocked), [heroes]);
 
     const prestigeAtkMult = useMemo(() => 1 + (prestigeNodes['atk_1'] || 0) * 0.1 + (prestigeNodes['atk_2'] || 0) * 0.05, [prestigeNodes]);
     const prestigeHpMult = useMemo(() => 1 + (prestigeNodes['hp_1'] || 0) * 0.1 + (prestigeNodes['hp_2'] || 0) * 0.1, [prestigeNodes]);
@@ -450,10 +509,18 @@ export const useGame = () => {
             },
             enterTower: () => {
                 const wasActive = world.tower.active;
-                world.setTower(p => ({ ...p, active: !p.active, floor: wasActive ? p.floor : 1 }));
+                const currentFloor = world.tower.floor || 1;
+
+                // Persistence FIX: Don't reset floor to 1 if we're entering.
+                // If exiting, keep the floor. If entering, keep the floor.
+                world.setTower(p => ({ ...p, active: !p.active }));
+
                 if (!wasActive) {
-                    addLog("Entrou na Torre da Eternidade!", "danger");
+                    addLog(`Entrou na Torre da Eternidade! (Andar ${currentFloor})`, "danger");
                     soundManager.playHit();
+                    // Ensure the tower boss is ready for this floor
+                    const tBoss = getNextBoss(currentFloor);
+                    world.setTowerBoss({ ...tBoss, id: `tower-${currentFloor}` });
                 } else {
                     addLog("Recuou da Torre.", "info");
                 }
@@ -772,7 +839,17 @@ export const useGame = () => {
             if (activeHeroes.length === 0 && !world.tower.active) return;
 
             const isTower = world.tower.active;
-            const targetBoss = isTower ? world.towerBoss : boss;
+            let targetBoss = isTower ? world.towerBoss : boss;
+
+            // VOID BOSS EMOJI FIX
+            if (voidActive && !isTower) {
+                targetBoss = {
+                    ...targetBoss,
+                    name: "Entidade Galáctica",
+                    emoji: "🌌"
+                };
+            }
+
             const tick = Math.max(40, (1000 / gameSpeed) * (1 - (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
 
             if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);

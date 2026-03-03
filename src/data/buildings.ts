@@ -169,5 +169,31 @@ export const INITIAL_BUILDINGS: Building[] = [
         effectValue: 1,
         currency: 'gold',
         emoji: '💎'
+    },
+    {
+        id: 'celestial_observatory',
+        name: 'Observatório Celestial',
+        description: 'Estuda os astros para aumentar o ganho de Luz Estelar.',
+        level: 0,
+        maxLevel: 10,
+        cost: 100000,
+        costScaling: 2.0,
+        bonus: '+10% Luz Estelar / Lvl',
+        effectValue: 0.1,
+        currency: 'gold',
+        emoji: '🔭'
+    },
+    {
+        id: 'industry',
+        name: 'Indústria',
+        description: 'Automação pesada para aumentar a eficiência de coleta de recursos.',
+        level: 0,
+        maxLevel: 10,
+        cost: 50000,
+        costScaling: 1.8,
+        bonus: '+15% Velocidade de Coleta / Lvl',
+        effectValue: 0.15,
+        currency: 'gold',
+        emoji: '🏭'
     }
 ];
