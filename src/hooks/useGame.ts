@@ -214,7 +214,8 @@ export const useGame = () => {
     const calculatedPartyPower = useMemo(() => {
         if (!heroes) return 0;
         const baseStats = activeHeroes.reduce((sum, h) => {
-            return sum + (h.stats.attack || 0) + Math.floor((h.stats.maxHp || 0) / 10) + (h.stats.magic || 0) + (h.stats.defense || 0);
+            const hPower = (h.stats.attack || 0) + Math.floor((h.stats.maxHp || 0) / 10) + (h.stats.magic || 0) + (h.stats.defense || 0);
+            return sum + (h.isDead ? hPower * 0.5 : hPower);
         }, 0);
 
         const itemsPower = itemStats.attack + Math.floor(itemStats.hp / 10) + itemStats.magic + itemStats.defense;

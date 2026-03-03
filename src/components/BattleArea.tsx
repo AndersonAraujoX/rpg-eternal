@@ -49,7 +49,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
     // Filter active heroes for visualization
     const activeCombatHeroes = React.useMemo(() =>
-        (heroes || []).filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked),
+        (heroes || []).filter(h => h.assignment === 'combat' && h.unlocked),
         [heroes]);
 
     React.useEffect(() => {
@@ -124,7 +124,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {/* Hero Rendering */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full flex gap-2 z-10 opacity-80 pointer-events-none">
                 {activeCombatHeroes.map(h => (
-                    <div key={h.id} className="text-2xl animate-pulse" title={h.name}>
+                    <div key={h.id} className={`text-2xl transition-all duration-500 ${h.isDead ? 'opacity-30 grayscale sepia brightness-50 scale-90' : 'animate-pulse'}`} title={h.isDead ? `${h.name} (CAÍDO - 50% DPS)` : h.name}>
                         {h.emoji}
                     </div>
                 ))}

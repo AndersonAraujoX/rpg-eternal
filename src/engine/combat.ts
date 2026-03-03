@@ -308,7 +308,7 @@ export const processCombatTurn = (
                                 // HEAL LOGIC
                                 let targetHero = h;
                                 if (processedSkill.target === 'lowest_hp') {
-                                    const allies = heroes.filter(a => !a.isDead && a.unlocked);
+                                    const allies = heroes.filter(a => a.unlocked);
                                     targetHero = allies.sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0] || h;
                                 }
 
@@ -338,7 +338,7 @@ export const processCombatTurn = (
 
         if (gambitAction === 'heal') {
             baseDmg = 0;
-            const target = heroes.filter(a => !a.isDead && a.unlocked).sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0];
+            const target = heroes.filter(a => a.unlocked).sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0];
             if (target) {
                 const healAmt = stats.magic * 2;
                 heroHeals[target.id] = (heroHeals[target.id] || 0) + healAmt;
@@ -396,7 +396,8 @@ export const processCombatTurn = (
     updatedHeroes = updatedHeroes.map(h => {
         const heal = heroHeals[h.id];
         if (heal) {
-            return { ...h, stats: { ...h.stats, hp: Math.min(h.stats.maxHp, h.stats.hp + heal) } };
+            const newHp = Math.min(h.stats.maxHp, h.stats.hp + heal);
+            return { ...h, isDead: newHp <= 0, stats: { ...h.stats, hp: newHp } };
         }
         return h;
     });

@@ -18,14 +18,10 @@ export interface TavernResult {
 }
 
 export const calculateTavernCost = (amount: number, currentPurchases: number) => {
-    // Primeira convocação é GRATUITA
-    if (currentPurchases === 0 && amount === 1) return 0;
-    const baseCost = 500;
     const costIncrease = 50;
     let totalCost = 0;
-    const startFrom = currentPurchases === 0 ? 1 : currentPurchases; // Pular a primeira (já foi grátis)
     for (let i = 0; i < amount; i++) {
-        totalCost += baseCost + ((startFrom + i) * costIncrease);
+        totalCost += (currentPurchases + i) * costIncrease;
     }
     return totalCost;
 };
