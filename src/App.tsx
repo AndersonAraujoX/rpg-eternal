@@ -317,7 +317,14 @@ function App() {
       />
 
       {/* PHASE 41 Modals */}
-      <FishingModal isOpen={showFishing} onClose={() => setShowFishing(false)} fishCount={resources.fish || 0} setFish={() => actions.manualFish && actions.manualFish()} />
+      <FishingModal
+        isOpen={showFishing}
+        onClose={() => setShowFishing(false)}
+        fishCount={resources.fish || 0}
+        legendaryCount={gameStats.legendaryFishCount || 0}
+        setFish={() => actions.manualFish && actions.manualFish()}
+        {...({ setGameStats: (actions as any).setGameStats } as any)}
+      />
 
       <AlchemyModal isOpen={showAlchemy} onClose={() => setShowAlchemy(false)} resources={resources} activePotions={activePotions || []} brewPotion={actions.brewPotion} />
 

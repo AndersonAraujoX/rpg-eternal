@@ -63,6 +63,27 @@ export interface Artifact {
     emoji: string;
     bonus: string;
     unlocked: boolean;
+    // New: structured bonus for logic
+    bonusType: 'gold' | 'xp' | 'damage' | 'defense' | 'speed';
+    bonusValue: number;
+}
+
+export interface ClassTalent {
+    id: string;
+    name: string;
+    description: string;
+    unlocked: boolean;
+    pointsCost: number;
+    bonus: Partial<Stats>;
+    specialEffect?: string; // e.g., "counter_attack"
+}
+
+export interface ClassMastery {
+    level: number;
+    xp: number;
+    maxXp: number;
+    points: number;
+    unlockedTalents: string[]; // Talent IDs
 }
 
 export interface ConstellationNode {
@@ -149,6 +170,14 @@ export interface GameStats {
     petPity?: number;        // Bad Luck Protection for Pets
     voidAscensions: number;
     highestRiftFloor?: number; // Update 81
+    voidGuardianHighestDamage?: number; // New Game Mode
+    legendaryFishCount: number; // Phase 10: Advanced Fishing
+    automationActive: {
+        fishing: boolean;
+        crafting: boolean;
+        garden: boolean;
+        expeditions: boolean;
+    };
 }
 
 export interface DailyQuest {
@@ -264,6 +293,13 @@ export interface ItemAffix {
     stat?: keyof Stats;
 }
 
+export interface SetBonus {
+    id: string;
+    name: string;
+    requiredCount: number;
+    bonus: Partial<Stats>;
+}
+
 // Phase 92: Town Events
 export type TownEventType = 'merchant' | 'raid' | 'festival' | 'crisis';
 
@@ -320,6 +356,14 @@ export interface Rune {
     bonus: string; // e.g. "+5% Attack"
     stat: 'attack' | 'defense' | 'hp' | 'xp' | 'gold' | 'magic';
     value: number; // Percentage
+}
+
+export interface RuneWord {
+    id: string;
+    name: string;
+    description: string;
+    runeSequence: string[]; // Rune names/IDs
+    bonus: Partial<Stats>;
 }
 
 export interface StarlightUpgrade {
@@ -393,6 +437,7 @@ export interface Expedition {
     rewards: { type: 'gold' | 'xp' | 'item' | 'artifact', min: number, max: number }[];
     heroIds: string[]; // Assigned heroes
     startTime?: number; // Timestamp
+    guild?: boolean; // New: Guild Expedition flag
 }
 
 export const EXPEDITIONS: Expedition[] = [
@@ -689,6 +734,10 @@ export interface GameActions {
     saveFormation: (name: string) => void;
     loadFormation: (formation: any) => void;
     deleteFormation: (id: string) => void;
+
+    // Phase 10: Meta-Progression
+    unlockArtifact: (id: string) => void;
+    buyClassTalent: (className: HeroClass, talentId: string) => void;
 }
 
 export interface WorldBoss extends Boss {

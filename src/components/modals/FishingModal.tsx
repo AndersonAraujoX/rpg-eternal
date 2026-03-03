@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Fish, Anchor } from 'lucide-react';
-import { processFishing } from '../../engine/fishing';
+import { processFishingAdvanced } from '../../engine/fishing';
 import { soundManager } from '../../engine/sound';
 
 interface FishingModalProps {
     isOpen: boolean;
     onClose: () => void;
     fishCount: number;
+    legendaryCount: number;
     setFish: (n: number) => void;
+    setGameStats: (fn: (prev: any) => any) => void;
 }
 
-export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fishCount, setFish }) => {
+export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fishCount, legendaryCount, setFish, setGameStats }) => {
     const [animate, setAnimate] = useState(false);
 
     if (!isOpen) return null;
@@ -19,10 +21,13 @@ export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fis
         setAnimate(true);
         setTimeout(() => setAnimate(false), 500);
 
-        const caught = processFishing(1);
-        if (caught > 0) {
-            setFish(fishCount + caught);
+        const { fish, legendary } = processFishingAdvanced(1);
+        if (fish > 0) {
+            setFish(fishCount + fish);
             soundManager.playLevelUp();
+        }
+        if (legendary) {
+            setGameStats(prev => ({ ...prev, legendaryFishCount: (prev.legendaryFishCount || 0) + 1 }));
         }
     };
 
@@ -56,6 +61,13 @@ export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fis
                     </div>
                     <p className="text-xs text-gray-500 uppercase tracking-widest">Peixes Capturados</p>
                 </div>
+
+                {legendaryCount > 0 && (
+                    <div className="bg-yellow-900/20 p-4 rounded-lg border border-yellow-700/50 text-center mb-6">
+                        <p className="text-yellow-500 font-bold text-sm uppercase mb-1">Peixes Lendários</p>
+                        <p className="text-2xl text-yellow-100 font-mono">🌟 {legendaryCount}</p>
+                    </div>
+                )}
 
                 <button
                     onClick={handleCast}

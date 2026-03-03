@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
-import type { Hero, Boss, LogEntry, Item, Gambit, Quest, ArenaOpponent, Rune, Achievement, GameStats, Resources, Building, DailyQuest, CombatEvent, Potion, MarketItem, GardenPlot, Expedition, GameActions, Stats, Pet, Rift, RiftBlessing, DungeonInteraction } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Gambit, Quest, ArenaOpponent, Rune, Achievement, GameStats, Resources, Building, DailyQuest, CombatEvent, Potion, MarketItem, GardenPlot, Expedition, GameActions, Stats, Pet, Rift, RiftBlessing, DungeonInteraction, ClassMastery, HeroClass } from '../engine/types';
 import { POTIONS } from '../engine/types';
 import { getStarlightUpgradeCost, STARLIGHT_UPGRADES } from '../engine/starlight';
 import { checkDailyReset, generateDailyQuests, LOGIN_REWARDS } from '../engine/dailies';
@@ -17,15 +17,21 @@ import { generateLoot } from '../engine/loot';
 import { shouldSummonTavern } from '../engine/automation';
 import { simulateTavernSummon } from '../engine/tavern';
 import { processMining } from '../engine/mining';
-import { processFishing } from '../engine/fishing';
-import { brewPotion } from '../engine/alchemy';
+import { processFishingAdvanced } from '../engine/fishing';
+import { brewPotion, transmuteResources, ELIXIRS } from '../engine/alchemy';
 import { startExpedition } from '../engine/expeditions';
+import { mysticReforge } from '../engine/starForge';
+import { processGlobalAutomation } from '../engine/automation';
 // import { generateTownEvent } from '../engine/townEvents';
+import { validateGuildExpeditionTeam } from '../engine/guildExpeditions';
+import { useVoidGuardian } from './useVoidGuardian';
+import { calculateVoidGuardianRewards } from '../engine/voidBoss';
 import { PRESTIGE_CLASSES } from '../engine/classes';
+import { CLASS_TALENTS } from '../data/masteryData';
 import { PRESTIGE_NODES, getPrestigeNodeCost } from '../components/modals/PrestigeTreeModal';
 import { MONSTERS } from '../engine/bestiary';
 
-import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS } from '../engine/initialData';
+import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GALAXY } from '../engine/galaxy';
 import { generateInitialArenaBoard, calculateWinChance, applyVictoryGrowth, spawnReplacementOpponent } from '../engine/arena';
@@ -57,6 +63,7 @@ const getNextBoss = (level: number): Boss => {
 export const useGame = () => {
     // CORE STATE
     const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
+    const [classMastery, setClassMastery] = useState<Record<string, ClassMastery>>(INITIAL_CLASS_MASTERY);
     const [boss, setBoss] = useState<Boss>(INITIAL_BOSS);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [gameSpeed, setGameSpeed] = useState<number>(1);
@@ -71,7 +78,7 @@ export const useGame = () => {
     const [victory, setVictory] = useState(false);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<import('../engine/types').Talent[]>([]);
-    const [artifacts, setArtifacts] = useState<import('../engine/types').Artifact[]>([]);
+    const [artifacts, setArtifacts] = useState<import('../engine/types').Artifact[]>(RARE_ARTIFACTS);
     const [cards, setCards] = useState<import('../engine/types').MonsterCard[]>([]);
     const [monsterKills, setMonsterKills] = useState<Record<string, number>>({});
     const [constellations, setConstellations] = useState<import('../engine/types').ConstellationNode[]>(INITIAL_CONSTELLATIONS);
@@ -138,6 +145,15 @@ export const useGame = () => {
     const [quests, setQuests] = useState<Quest[]>([]);
     const [runes, setRunes] = useState<Rune[]>([]);
     const [combatEvents, setCombatEvents] = useState<CombatEvent[]>([]);
+
+    const voidGuardian = useVoidGuardian(partyPower, addLog, (dmg) => {
+        const rewards = calculateVoidGuardianRewards(dmg);
+        setGold(g => g + rewards.gold);
+        setSouls(s => s + rewards.souls);
+        if (dmg > (gameStats.voidGuardianHighestDamage || 0)) {
+            setGameStats(prev => ({ ...prev, voidGuardianHighestDamage: dmg }));
+        }
+    });
 
     const worldBossState = useWorldBoss(partyPower, gameStats, addLog, setSouls, setGold);
 
@@ -207,6 +223,16 @@ export const useGame = () => {
         return Math.floor((baseStats + itemsPower + petsPower) * totalAtkMult * armyMult);
     }, [activeHeroes, itemStats, petStats, totalAtkMult, armyMult]);
 
+    const artifactMultipliers = useMemo(() => {
+        const mults = { gold: 1, xp: 1, damage: 1, defense: 1, speed: 1 };
+        artifacts.forEach(a => {
+            if (a.unlocked && a.bonusType) {
+                mults[a.bonusType] *= (1 + a.bonusValue);
+            }
+        });
+        return mults;
+    }, [artifacts]);
+
     // Sync calculated power to state for UI and other hooks
     useEffect(() => {
         setPartyPower(calculatedPartyPower);
@@ -217,7 +243,9 @@ export const useGame = () => {
         souls, talents, constellations, artifacts, cards, achievements,
         pets: petsState.pets, activeSynergies: activeSynergies as any[],
         boss, ultimateCharge, gold, gameSpeed,
-        galaxyDamageMult: galaxyBuffs.damageMult
+        galaxyDamageMult: galaxyBuffs.damageMult,
+        classMastery,
+        artifactMultipliers
     });
 
     useEffect(() => {
@@ -225,9 +253,11 @@ export const useGame = () => {
             souls, talents, constellations, artifacts, cards, achievements,
             pets: petsState.pets, activeSynergies: activeSynergies as any[],
             boss, ultimateCharge, gold, gameSpeed,
-            galaxyDamageMult: galaxyBuffs.damageMult
+            galaxyDamageMult: galaxyBuffs.damageMult,
+            classMastery,
+            artifactMultipliers
         };
-    }, [souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult]);
+    }, [souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers]);
 
     // Side Effects
     useEffect(() => {
@@ -388,6 +418,28 @@ export const useGame = () => {
                     setDivinity(d => d - node.cost);
                     setConstellations(p => p.map(c => c.id === id ? { ...c, level: c.level + 1 } : c));
                     addLog(`Benção Celestial: ${node.name} Nvl ${node.level + 1}!`, 'success');
+                }
+            },
+            unlockArtifact: (id: string) => {
+                setArtifacts(prev => prev.map(a => a.id === id ? { ...a, unlocked: true } : a));
+                const art = RARE_ARTIFACTS.find(a => a.id === id);
+                if (art) addLog(`Relíquia Descoberta: ${art.name}!`, 'achievement');
+            },
+            buyClassTalent: (className: HeroClass, talentId: string) => {
+                const mastery = classMastery[className];
+                const talents = CLASS_TALENTS[className] || [];
+                const talent = talents.find(t => t.id === talentId);
+
+                if (mastery && talent && mastery.points >= talent.pointsCost && !mastery.unlockedTalents.includes(talentId)) {
+                    setClassMastery(prev => ({
+                        ...prev,
+                        [className]: {
+                            ...mastery,
+                            points: mastery.points - talent.pointsCost,
+                            unlockedTalents: [...mastery.unlockedTalents, talentId]
+                        }
+                    }));
+                    addLog(`Talento Desbloqueado: ${talent.name}!`, 'success');
                 }
             },
             buyStarlightUpgrade: (id: string) => {
@@ -604,8 +656,70 @@ export const useGame = () => {
                 const item = items.find(i => i.id === itemId); const rune = runes.find(r => r.id === runeId);
                 if (item && rune && item.runes.length < item.sockets) { setRunes(p => p.filter(r => r.id !== runeId)); setItems(p => p.map(i => i.id === itemId ? { ...i, runes: [...i.runes, rune] } : i)); }
             },
-            reforgeItem: (_id: string) => { if (gold >= 500) { setGold(g => g - 500); addLog("Reforged item", "craft"); } },
-            manualFish: () => { const f = processFishing(1); if (f > 0) setResources(r => ({ ...r, fish: r.fish + f })); },
+            reforgeItem: (id: string) => {
+                const item = items.find(i => i.id === id);
+                if (item && gold >= 5000) {
+                    setGold(g => g - 5000);
+                    const newItem = mysticReforge(item);
+                    setItems(p => p.map(i => i.id === item.id ? newItem : i));
+                    addLog(`Item ${item.name} reforjado misticamente!`, 'craft');
+                }
+            },
+            transmuteResources: (from: keyof Resources, to: keyof Resources, amount: number) => {
+                const res = transmuteResources(from, to, amount, resources);
+                if (res.success) {
+                    setResources(r => {
+                        const next = { ...r };
+                        if (res.cost && from in res.cost) {
+                            (next as any)[from] -= (res.cost[from] || 0);
+                        }
+                        if (res.gain && to in res.gain) {
+                            (next as any)[to] += (res.gain[to] || 0);
+                        }
+                        return next;
+                    });
+                    addLog(`Transmutação concluída: ${amount} ${to} obtidos!`, 'success');
+                } else {
+                    addLog(res.error || "Transmutação falhou", 'error');
+                }
+            },
+            useElixir: (heroId: string) => {
+                const elixir = ELIXIRS.ELIXIR_OF_ETERNITY;
+                const hero = heroes.find(h => h.id === heroId);
+                const hasResources = elixir.cost.every(c => (resources[c.type as keyof Resources] || 0) >= c.amount);
+
+                if (hero && hasResources) {
+                    setResources(r => {
+                        const next = { ...r };
+                        elixir.cost.forEach(c => (next as any)[c.type] -= c.amount);
+                        return next;
+                    });
+                    setHeroes(p => p.map(h => h.id === heroId ? {
+                        ...h,
+                        stats: { ...h.stats, [elixir.stat]: h.stats[elixir.stat] + elixir.value }
+                    } : h));
+                    addLog(`${hero.name} consumiu o Elixir da Eternidade! +${elixir.value} ${elixir.stat}`, 'success');
+                } else {
+                    addLog("Recursos insuficientes para o Elixir!", 'error');
+                }
+            },
+            toggleAutomation: (type: keyof GameStats['automationActive']) => {
+                setGameStats(prev => ({
+                    ...prev,
+                    automationActive: {
+                        ...prev.automationActive,
+                        [type]: !prev.automationActive[type]
+                    }
+                }));
+            },
+            manualFish: () => {
+                const res = processFishingAdvanced(1, (achievements.find(a => a.id === 'fi1')?.isUnlocked ? 0.1 : 0));
+                if (res.fish > 0) setResources(r => ({ ...r, fish: r.fish + res.fish }));
+                if (res.legendary) {
+                    setGameStats(s => ({ ...s, legendaryFishCount: (s.legendaryFishCount || 0) + 1 }));
+                    addLog("🎣 Você pescou um PEIXE LENDÁRIO!", "achievement");
+                }
+            },
             brewPotion: (id: string) => {
                 const pot = POTIONS.find(p => p.id === id); if (pot && brewPotion(pot, resources).success) {
                     setResources(r => { const n = { ...r }; (pot.cost as any[]).forEach(c => (n as any)[c.type] -= c.amount); return n; });
@@ -613,6 +727,16 @@ export const useGame = () => {
                 }
             },
             startExpedition: (e: Expedition) => { setHeroes(startExpedition(e, heroes)); setActiveExpeditions(p => [...p, e]); },
+            startGuildExpedition: (e: Expedition) => {
+                if (validateGuildExpeditionTeam(e.heroIds, heroes)) {
+                    setHeroes(startExpedition(e, heroes));
+                    setActiveExpeditions(p => [...p, { ...e, startTime: Date.now() }]);
+                    addLog(`Expedição de Guilda ${e.name} iniciada!`, 'success');
+                } else {
+                    addLog("Falha ao iniciar expedição: heróis ocupados ou inválidos.", "error");
+                }
+            },
+            startVoidChallenge: () => voidGuardian.startChallenge(),
             setTheme: (t: string) => setTheme(t),
             setAutoSellRarity: (r: 'none' | 'common' | 'rare') => setAutoSellRarity(r),
             resetSave: () => { localStorage.clear(); window.location.reload(); },
@@ -638,22 +762,22 @@ export const useGame = () => {
             assignHero: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h))
         };
         return baseActions as GameActions;
-    }, [buildings, gold, items, runes, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery]);
+    }, [buildings, gold, items, runes, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
         const runTick = () => {
-            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult } = stateRef.current;
+            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers } = stateRef.current;
             if (activeHeroes.length === 0 && !world.tower.active) return;
 
             const isTower = world.tower.active;
             const targetBoss = isTower ? world.towerBoss : boss;
-
             const tick = Math.max(40, (1000 / gameSpeed) * (1 - (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
 
             if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);
 
-            const res = processCombatTurn(activeHeroes, targetBoss, calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult), 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies);
+            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage;
+            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies);
 
             damageAccumulator.current += res.totalDmg;
 
@@ -701,6 +825,29 @@ export const useGame = () => {
                     setBoss(p => ({ ...p, ...nextBossData }));
                     addLog(`Boss ${currentBoss.name} Derrotado! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
                 }
+
+                // Award Class Mastery XP
+                const combatClasses = new Set(activeHeroes.filter(h => !h.isDead).map(h => h.class));
+                combatClasses.forEach(cls => {
+                    const masteryXP = Math.floor(currentBoss.level * 2);
+                    setClassMastery(prev => {
+                        const m = prev[cls] || { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] };
+                        let newXP = m.xp + masteryXP;
+                        let newLvl = m.level;
+                        let newMaxXP = m.maxXp;
+                        let newPoints = m.points;
+
+                        while (newXP >= newMaxXP) {
+                            newXP -= newMaxXP;
+                            newLvl++;
+                            newMaxXP = Math.floor(newMaxXP * 1.5);
+                            newPoints++;
+                            addLog(`Maestria de ${cls} subiu para o Nível ${newLvl}! +1 Ponto de Talento.`, 'achievement');
+                        }
+
+                        return { ...prev, [cls]: { ...m, level: newLvl, xp: newXP, maxXp: newMaxXP, points: newPoints } };
+                    });
+                });
             } else {
                 if (isTower) {
                     world.setTowerBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
@@ -780,6 +927,19 @@ export const useGame = () => {
                 });
             });
 
+            // Global Automation Processing
+            const autoResult = processGlobalAutomation(gameStats, resources, activeExpeditions);
+            if (Object.keys(autoResult.resources).length > 0) {
+                setResources(prev => {
+                    const next = { ...prev };
+                    Object.entries(autoResult.resources).forEach(([k, v]) => (next as any)[k] += v);
+                    return next;
+                });
+            }
+            if (Object.keys(autoResult.stats).length > 0) {
+                setGameStats(prev => ({ ...prev, ...autoResult.stats }));
+            }
+
             // Re-schedule
             loopRef.current = setTimeout(runTick, tick);
         };
@@ -815,11 +975,11 @@ export const useGame = () => {
             raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys,
             monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, showCampfire,
             outerSpaceUnlocked, prestigeNodes, townVisited, portalConfig, guildQueue,
+            arenaRank, glory, quests, runes, theme, autoSellRarity, arenaOpponents,
 
 
             // App.tsx State
-            arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, runes,
-            gameSpeed, pets: petsState.pets, artifacts, talents,
+            gameSpeed, pets: petsState.pets, artifacts, talents, classMastery,
             dungeonActive: world.dungeonActive,
             dungeonTimer: world.dungeonTimer,
             tower: world.tower,
@@ -836,6 +996,7 @@ export const useGame = () => {
             synergies: activeSynergies,
             buildings,
 
+            voidGuardian,
             actions: ACTIONS,
             // Root actions for legacy compatibility
             ...ACTIONS,
@@ -843,10 +1004,11 @@ export const useGame = () => {
             setPortalConfig,
             ascendToVoid: ACTIONS.ascendToVoid,
             worldBoss: worldBossState.worldBoss, worldBossDamage: worldBossState.personalDamage, worldBossCanClaim: worldBossState.canClaim,
-            guildXpMult
+            guildXpMult,
+            setGameStats
         };
     }, [gold, souls, divinity, starlight, heroes, items, dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats, world, guildState.guild, activeHeroes, partyPower, partyDps, activeEvent, victory, boss, resources, starlightUpgrades, talents, achievements, combatEvents, logs, isSoundOn, offlineGains, marketStock, marketTimer, raidActive,
-        raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys, monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, ACTIONS, worldBossState, guildXpMult, showCampfire, galaxyState.spaceship, galaxyState.territories, galaxyState.galaxy, activeSynergies, buildings, arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, runes, gameSpeed, petsState.pets, artifacts, prestigeNodes, townVisited, portalConfig, guildQueue]);
+        raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys, monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, ACTIONS, worldBossState, voidGuardian, guildXpMult, showCampfire, galaxyState.spaceship, galaxyState.territories, galaxyState.galaxy, activeSynergies, buildings, arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, runes, gameSpeed, petsState.pets, artifacts, classMastery, prestigeNodes, townVisited, portalConfig, guildQueue]);
 
     return result;
 };

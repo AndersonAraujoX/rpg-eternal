@@ -59,3 +59,14 @@ export const calculateCraftingResult = (accuracy: number, heat: number): number 
 
     return Math.min(100, Math.floor(baseQuality));
 };
+export const mysticReforge = (item: import('./types').Item): import('./types').Item => {
+    if (item.rarity !== 'legendary' && item.rarity !== 'chimera') return item;
+
+    const { prefix, suffix } = generateAffixes(item.level || 1, item.rarity);
+    return {
+        ...item,
+        prefix,
+        suffix,
+        quality: calculateCraftingResult(Math.random(), Math.random()) // Randomize quality on reforge too
+    };
+};

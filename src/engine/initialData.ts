@@ -1,4 +1,4 @@
-import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameStats, Achievement, Building, CardOpponent, LeaderboardEntry, Spaceship } from './types';
+import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameStats, Achievement, Building, CardOpponent, LeaderboardEntry, Spaceship, ClassMastery } from './types';
 
 
 export const INITIAL_ACHIEVEMENTS: Achievement[] = [
@@ -100,7 +100,14 @@ export const INITIAL_GAME_STATS: GameStats = {
     fishCaught: 0,
     voidAscensions: 0,
     heroPity: 0,
-    petPity: 0
+    petPity: 0,
+    legendaryFishCount: 0,
+    automationActive: {
+        fishing: false,
+        crafting: false,
+        garden: false,
+        expeditions: false
+    }
 };
 
 export const INITIAL_BUILDINGS: Building[] = [
@@ -145,10 +152,22 @@ export const FAKE_LEADERBOARD: LeaderboardEntry[] = [
 
 
 export const RARE_ARTIFACTS: Artifact[] = [
-    { id: 'a1', name: 'Coroa dos Reis', description: 'Comece no Nível 5', emoji: '👑', bonus: 'nível+5', unlocked: false },
-    { id: 'a2', name: 'Pedra do Vazio', description: '+50% em Todos os Status', emoji: '🌑', bonus: 'stats+50', unlocked: false },
-    { id: 'a3', name: 'Pena de Fênix', description: 'Ressurreição Automática (10s)', emoji: '🪶', bonus: 'ressurreição', unlocked: false }
+    { id: 'a1', name: 'Coroa dos Reis', description: 'Comece no Nível 5', emoji: '👑', bonus: 'nível+5', unlocked: false, bonusType: 'xp', bonusValue: 5.0 },
+    { id: 'a2', name: 'Pedra do Vazio', description: '+50% em Todos os Status', emoji: '🌑', bonus: 'stats+50', unlocked: false, bonusType: 'damage', bonusValue: 0.5 },
+    { id: 'a3', name: 'Pena de Fênix', description: 'Ressurreição Automática (10s)', emoji: '🪶', bonus: 'ressurreição', unlocked: false, bonusType: 'defense', bonusValue: 0.2 }
 ];
+
+export const INITIAL_CLASS_MASTERY: Record<string, ClassMastery> = {
+    'Warrior': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+    'Mage': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+    'Healer': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+    'Rogue': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+    'Paladin': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+    'Warlock': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+    'Dragoon': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+    'Sage': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+    'Necromancer': { level: 1, xp: 0, maxXp: 100, points: 0, unlockedTalents: [] },
+};
 
 export const GUILDS: Guild[] = [
     { id: 'g1', name: 'Xang', description: '+10% de Dano Físico', bonusType: 'physical', bonusValue: 0.1, level: 1, xp: 0, maxXp: 1000, bonus: '+10% de Dano Físico', members: 0, monuments: {}, totalContribution: 0 },

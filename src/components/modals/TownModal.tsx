@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Hammer, ArrowUpCircle, Info, Lock } from 'lucide-react';
+import { Home, Hammer, Info, Lock } from 'lucide-react';
 import type { Building } from '../../engine/types';
 import { formatNumber } from '../../utils';
 
@@ -84,7 +84,7 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
                                             <div className="flex justify-between items-center text-sm">
                                                 <span className="text-stone-500">Efeito atual</span>
                                                 <span className="text-green-400 font-bold bg-green-400/10 px-2 py-0.5 rounded">
-                                                    {building.level > 0 ? (building.effectValue * (building.level === 1 && building.maxLevel === 1 ? 1 : building.level)).toLocaleString() : '---'}
+                                                    {building.level > 0 ? (building.effectValue * building.level).toLocaleString() : '---'}
                                                 </span>
                                             </div>
                                             <div className="w-full bg-stone-800 h-1.5 rounded-full overflow-hidden">
