@@ -1,10 +1,8 @@
-import type { Hero, Boss, GambitAction, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement, CombatEvent } from './types';
+import type { Hero, Boss, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement, CombatEvent } from './types';
 import type { Synergy } from './synergies';
 import { checkActiveCombos, type ComboDefinition } from './combos';
 import { type TowerMutator } from './mutators';
 import { type WeatherType } from './weather';
-import { evaluateGambit } from './gambits';
-import { ITEM_SETS } from './sets';
 
 export const getElementalMult = (atkEl: string, defEl: string) => {
     if (atkEl === 'neutral' || defEl === 'neutral') return 1;
@@ -26,40 +24,7 @@ export const calculateHeroPower = (hero: Hero): number => {
     // Implementation Plan said "Global Multiplier". So after everything.
     // const divMult = 1 + (divinity * 0.1); 
 
-    if (hero.equipment) {
-        const runeMultipliers: Record<string, number> = {};
-        const setCounts: Record<string, number> = {};
 
-        Object.values(hero.equipment).forEach(item => {
-            if (item) {
-                stats[item.stat] += item.value;
-                if (item.runes) {
-                    item.runes.forEach(rune => {
-                        runeMultipliers[rune.stat] = (runeMultipliers[rune.stat] || 0) + rune.value;
-                    });
-                }
-                if (item.setId) {
-                    setCounts[item.setId] = (setCounts[item.setId] || 0) + 1;
-                }
-            }
-        });
-
-        // Apply Set Bonuses
-        Object.entries(setCounts).forEach(([setId, count]) => {
-            const set = ITEM_SETS.find(s => s.id === setId);
-            if (set && count >= set.requiredPieces) {
-                // Apply bonus (additive to rune multipliers for simplicity, or separate?)
-                // Let's add to runeMultipliers to reuse the multiplier logic
-                runeMultipliers[set.bonusStat] = (runeMultipliers[set.bonusStat] || 0) + set.bonusValue;
-            }
-        });
-
-        (Object.keys(runeMultipliers) as Array<keyof typeof stats>).forEach(stat => {
-            if (stats[stat] !== undefined) {
-                stats[stat] = Math.floor(stats[stat] * (1 + runeMultipliers[stat]!));
-            }
-        });
-    }
 
     const baseScore = stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2);
     let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)));
@@ -192,47 +157,10 @@ export const processCombatTurn = (
             stats.speed = Math.floor(stats.speed * multiplier);
         }
 
-        if (h.equipment) {
-            const runeMultipliers: Record<string, number> = {};
-
-            Object.values(h.equipment).forEach(item => {
-                if (item) {
-                    stats[item.stat] += item.value;
-
-                    // Apply Runes
-                    if (item.runes) {
-                        item.runes.forEach(rune => {
-                            runeMultipliers[rune.stat] = (runeMultipliers[rune.stat] || 0) + rune.value;
-                        });
-                    }
-                }
-            });
-
-            // Iterate multipliers and apply to stats
-            (Object.keys(runeMultipliers) as Array<keyof typeof stats>).forEach(stat => {
-                if (stats[stat] !== undefined) {
-                    stats[stat] = Math.floor(stats[stat] * (1 + runeMultipliers[stat]!));
-                }
-            });
-
-            const equippedSets = new Map<string, number>();
-            Object.values(h.equipment).forEach(i => {
-                if (i?.setId) equippedSets.set(i.setId, (equippedSets.get(i.setId) || 0) + 1);
-            });
-
-            equippedSets.forEach((count, setId) => {
-                const set = ITEM_SETS.find(s => s.id === setId);
-                if (set && count >= set.requiredPieces) {
-                    stats[set.bonusStat] = Math.floor(stats[set.bonusStat] * (1 + set.bonusValue));
-                }
-            });
-        }
-
         let hp = h.stats.hp;
 
         // Phase 91: Insanity System
-        const hasVoidItem = h.equipment && Object.values(h.equipment).some(item => item?.suffix?.name === 'of the Void');
-        let insanityGain = hasVoidItem ? 1 : 0;
+        let insanityGain = 0;
         let newInsanity = Math.min(100, (h.insanity || 0) + insanityGain);
 
         let skipTurn = false;
@@ -325,29 +253,7 @@ export const processCombatTurn = (
             });
         }
 
-        // Gambit Analysis
-        let gambitAction: GambitAction = 'attack';
-        if (h.gambits && h.gambits.length > 0) {
-            for (const g of h.gambits) {
-                if (evaluateGambit(h, g, [boss], heroes, weather)) {
-                    gambitAction = g.action;
-                    break;
-                }
-            }
-        }
 
-        if (gambitAction === 'heal') {
-            baseDmg = 0;
-            const target = heroes.filter(a => a.unlocked).sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0];
-            if (target) {
-                const healAmt = stats.magic * 2;
-                heroHeals[target.id] = (heroHeals[target.id] || 0) + healAmt;
-            }
-        } else if (gambitAction === 'strong_attack') {
-            if (h.stats.mp >= 10) { baseDmg *= 1.5; }
-        } else if (gambitAction === 'aoe_attack') {
-            baseDmg += stats.magic * 3;
-        }
 
         const critRoll = Math.random();
         if (critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0)) {

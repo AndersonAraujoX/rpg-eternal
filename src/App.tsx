@@ -16,7 +16,6 @@ import { StatisticsModal } from './components/modals/StatisticsModal';
 import { HelpModal } from './components/modals/HelpModal';
 import { OfflineModal } from './components/modals/OfflineModal';
 import { DailyRewardsModal } from './components/modals/DailyRewardsModal'; // Phase 56
-import { HeroGearModal } from './components/modals/HeroGearModal'; // Phase 57
 import { VictoryModal } from './components/modals/VictoryModal'; // Phase 9 Victory
 
 import { TowerModal } from './components/modals/TowerModal';
@@ -86,7 +85,6 @@ function App() {
     buildings, upgradeBuilding, // Phase 53
     dailyQuests, dailyLoginClaimed, claimLoginReward, claimDailyQuest, checkDailies, // Phase 56
     winCardBattle, // Phase 55
-    equipItem, unequipItem, // Phase 57
     spaceship, upgradeSpaceship, // Phase 59
     dungeonState, moveDungeon, exitDungeon, handleDungeonEvent, descendDungeon, // Phase 61 & 83
     synergies, // Fixed: Destructured from useGame
@@ -140,7 +138,6 @@ function App() {
   const [showPetSpace, setShowPetSpace] = useState(false);
   const [showGuildWar, setShowGuildWar] = useState(false); // Phase 47
   const [showMuseum, setShowMuseum] = useState(false); // Phase 49
-  const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null); // Phase 57
 
   const [importString, setImportString] = useState('');
 
@@ -421,16 +418,7 @@ function App() {
         />
       )}
 
-      {selectedHeroId && (
-        <HeroGearModal
-          isOpen={!!selectedHeroId}
-          hero={heroes.find(h => h.id === selectedHeroId)!}
-          inventory={items}
-          onClose={() => setSelectedHeroId(null)}
-          onEquip={equipItem}
-          onUnequip={unequipItem}
-        />
-      )}
+
       <StarForgeModal
         isOpen={showStarForge}
         onClose={() => setShowStarForge(false)}

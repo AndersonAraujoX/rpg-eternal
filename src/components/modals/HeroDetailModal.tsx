@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Hero, GameActions, Stats } from '../../engine/types';
-import { ITEM_SETS } from '../../engine/sets';
 import { X, Sword, Shield, Zap, Heart, Wind, Flame, Droplets, Leaf } from 'lucide-react';
 
 interface HeroDetailModalProps {
@@ -124,21 +123,7 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                         </div>
                     </div>
 
-                    {/* Weapon XP (If Evolving) */}
-                    {hero.equipment?.weapon?.evolutionId && (
-                        <div>
-                            <div className="flex justify-between text-xs text-yellow-300 mb-1">
-                                <span>XP da Arma ({hero.equipment.weapon.name})</span>
-                                <span>{hero.equipment.weapon.xp || 0} / {hero.equipment.weapon.maxXp || 100}</span>
-                            </div>
-                            <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden border border-yellow-700/50">
-                                <div
-                                    className="h-full bg-gradient-to-r from-yellow-600 to-red-500 transition-all duration-300"
-                                    style={{ width: `${Math.min(100, ((hero.equipment.weapon.xp || 0) / (hero.equipment.weapon.maxXp || 100)) * 100)}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    )}
+
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -185,23 +170,6 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                             ) : (
                                 <div className="text-center text-gray-500 text-sm py-2">Nenhuma habilabilidade ativa desbloqueada.</div>
                             )}
-                        </div>
-
-                        {/* Set Bonuses */}
-                        <div>
-                            <h3 className="text-xl font-bold text-white mb-2">Bônus de Conjunto</h3>
-                            <div className="bg-gray-900 border border-gray-700 rounded p-2">
-                                {ITEM_SETS.map(set => {
-                                    const equippedCount = Object.values(hero.equipment || {}).filter(i => i && i.setId === set.id).length;
-                                    const isActive = equippedCount >= set.requiredPieces;
-                                    return (
-                                        <div key={set.id} className={`flex justify-between text-xs ${isActive ? "text-green-400 font-bold" : "text-gray-500"}`}>
-                                            <span>{set.name} ({equippedCount}/{set.requiredPieces})</span>
-                                            <span>+{Math.round(set.bonusValue * 100)}% {set.bonusStat.toUpperCase()}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
                         </div>
 
                         <div>

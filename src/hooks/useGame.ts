@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
-import type { Hero, Boss, LogEntry, Item, Gambit, Quest, ArenaOpponent, Rune, Achievement, GameStats, Resources, Building, DailyQuest, CombatEvent, Potion, MarketItem, GardenPlot, Expedition, GameActions, Stats, Pet, Rift, RiftBlessing, DungeonInteraction, ClassMastery, HeroClass } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Quest, ArenaOpponent, Achievement, GameStats, Resources, Building, DailyQuest, CombatEvent, Potion, MarketItem, GardenPlot, Expedition, GameActions, Stats, Pet, Rift, RiftBlessing, DungeonInteraction, ClassMastery, HeroClass } from '../engine/types';
 import { POTIONS } from '../engine/types';
 import { getStarlightUpgradeCost, STARLIGHT_UPGRADES } from '../engine/starlight';
 import { checkDailyReset, generateDailyQuests, LOGIN_REWARDS } from '../engine/dailies';
@@ -144,7 +144,7 @@ export const useGame = () => {
     const [gameStats, setGameStats] = useState<GameStats>(INITIAL_GAME_STATS);
     const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
     const [quests, setQuests] = useState<Quest[]>([]);
-    const [runes, setRunes] = useState<Rune[]>([]);
+
     const [combatEvents, setCombatEvents] = useState<CombatEvent[]>([]);
 
     const voidGuardian = useVoidGuardian(partyPower, addLog, (dmg) => {
@@ -234,14 +234,7 @@ export const useGame = () => {
         ...h, stats: { ...h.stats, attack: Math.floor(h.stats.attack * guildAtkMult * prestigeAtkMult * (1 + galaxyBuffs.damageMult)), maxHp: Math.floor(h.stats.maxHp * guildHpMult * prestigeHpMult), hp: Math.floor(h.stats.hp * guildHpMult * prestigeHpMult) }
     }))), [activeHeroes, guildAtkMult, guildHpMult, prestigeAtkMult, prestigeHpMult, galaxyBuffs.damageMult]);
 
-    const itemStats = useMemo(() => {
-        return activeHeroes.reduce((acc, h) => {
-            Object.values(h.equipment || {}).forEach(item => {
-                if (item) acc[item.stat] = (acc[item.stat] || 0) + (item.value || 0);
-            });
-            return acc;
-        }, { attack: 0, defense: 0, hp: 0, magic: 0, speed: 0 } as Record<string, number>);
-    }, [activeHeroes]);
+
 
     const petStats = useMemo(() => {
         return (petsState.pets || []).reduce((acc, p) => {
@@ -277,11 +270,10 @@ export const useGame = () => {
             return sum + (h.isDead ? hPower * 0.5 : hPower);
         }, 0);
 
-        const itemsPower = itemStats.attack + Math.floor(itemStats.hp / 10) + itemStats.magic + itemStats.defense;
         const petsPower = petStats.attack + Math.floor(petStats.hp / 10) + petStats.magic + petStats.defense;
 
-        return Math.floor((baseStats + itemsPower + petsPower) * totalAtkMult * armyMult);
-    }, [activeHeroes, itemStats, petStats, totalAtkMult, armyMult]);
+        return Math.floor((baseStats + petsPower) * totalAtkMult * armyMult);
+    }, [activeHeroes, petStats, totalAtkMult, armyMult]);
 
     const artifactMultipliers = useMemo(() => {
         const mults = { gold: 1, xp: 1, damage: 1, defense: 1, speed: 1 };
@@ -460,17 +452,6 @@ export const useGame = () => {
             reviveHero: (id: string) => { if (gold >= 5000) { setGold(g => g - 5000); setHeroes(p => p.map(h => h.id === id ? { ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp * 0.5 } } : h)); addLog("Hero revived!", "success"); } },
             renameHero: (id: string, name: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, name } : h)),
             changeHeroEmoji: (id: string, e: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, emoji: e } : h)),
-            equipItem: (id: string, item: Item) => setHeroes(p => p.map(h => {
-                if (h.id === id) {
-                    const s = (item.slot || (item.type === 'weapon' ? 'weapon' : item.type === 'armor' ? 'armor' : 'accessory'));
-                    const old = h.equipment[s as keyof Hero['equipment']]; if (old) setItems(inv => [...inv, old]);
-                    setItems(inv => inv.filter(i => i.id !== item.id));
-                    return { ...h, equipment: { ...h.equipment, [s]: item } };
-                }
-                return h;
-            })),
-            unequipItem: (id: string, s: 'weapon' | 'armor' | 'accessory') => setHeroes(p => p.map(h => h.id === id && h.equipment[s] ? (setItems(inv => [...inv, h.equipment[s]!]), { ...h, equipment: { ...h.equipment, [s]: undefined } }) : h)),
-            updateGambits: (id: string, gs: Gambit[]) => setHeroes(p => p.map(h => h.id === id ? { ...h, gambits: gs } : h)),
             buyTalent: (id: string, _a?: number) => setTalents(p => p.map(t => (t.id === id && souls >= t.cost) ? (setSouls(s => s - t.cost), { ...t, level: t.level + 1, cost: Math.floor(t.cost * t.costScaling) }) : t)),
             buyConstellation: (id: string) => {
                 const node = constellations.find(c => c.id === id);
@@ -713,26 +694,6 @@ export const useGame = () => {
             },
             buyDarkGift: (cost: number, _e: string) => { if (voidMatter >= cost) setVoidMatter(v => v - cost); },
             ascendToVoid: () => setVoidActive(true),
-            craftRune: () => {
-                if (resources.mithril >= 10 && souls >= 50) {
-                    setResources(r => ({ ...r, mithril: r.mithril - 10 })); setSouls(s => s - 50);
-                    const r: Rune = { id: `r-${Date.now()}`, name: 'Rune', rarity: 'common', stat: 'attack', value: 0.05, bonus: '+5%' };
-                    setRunes(p => [...p, r]);
-                }
-            },
-            socketRune: (itemId: string, runeId: string) => {
-                const item = items.find(i => i.id === itemId); const rune = runes.find(r => r.id === runeId);
-                if (item && rune && item.runes.length < item.sockets) { setRunes(p => p.filter(r => r.id !== runeId)); setItems(p => p.map(i => i.id === itemId ? { ...i, runes: [...i.runes, rune] } : i)); }
-            },
-            reforgeItem: (id: string) => {
-                const item = items.find(i => i.id === id);
-                if (item && gold >= 5000) {
-                    setGold(g => g - 5000);
-                    const newItem = mysticReforge(item);
-                    setItems(p => p.map(i => i.id === item.id ? newItem : i));
-                    addLog(`Item ${item.name} reforjado misticamente!`, 'craft');
-                }
-            },
             transmuteResources: (from: keyof Resources, to: keyof Resources, amount: number) => {
                 const res = transmuteResources(from, to, amount, resources);
                 if (res.success) {
@@ -816,8 +777,7 @@ export const useGame = () => {
             enterRift: (rift: Rift) => world.enterRift(rift), exitRift: (s: boolean) => world.exitRift(s), startRift: () => world.startRift(), selectBlessing: (b: RiftBlessing) => world.selectBlessing(b),
             saveFormation: (n: string) => world.saveFormation(n, activeHeroes.map(h => h.id)), loadFormation: (f: any) => world.loadFormation(f.id), deleteFormation: (id: string) => world.deleteFormation(id),
             upgradeMonument: (id: string) => guildState.upgradeMonument(id),
-            moveGambit: (hId: string, gId: string, x: number, y: number) => setHeroes(p => p.map(h => h.id === hId ? { ...h, gambits: h.gambits.map(g => g.id === gId ? { ...g, position: { x, y } } : g) } : h)),
-            renameGambit: (hId: string, gId: string, name: string) => setHeroes(p => p.map(h => h.id === hId ? { ...h, gambits: h.gambits.map(g => g.id === gId ? { ...g, customName: name } : g) } : h)),
+
             attackWorldBoss: () => worldBossState.attackWorldBoss(), claimWorldBossReward: () => worldBossState.claimReward(),
             challengeVoidCore: () => { if (voidMatter >= 10) addLog("Challenging Void Core...", "danger"); },
             setVictory: (v: boolean) => setVictory(v),
@@ -830,7 +790,7 @@ export const useGame = () => {
             assignHero: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h))
         };
         return baseActions as GameActions;
-    }, [buildings, gold, items, runes, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
@@ -1034,7 +994,7 @@ export const useGame = () => {
         pets: petsState.pets, setPets: petsState.setPets, talents, setTalents, artifacts, setArtifacts, cards, setCards,
         constellations, setConstellations, keys, setKeys, resources, setResources, tower: world.tower, setTower: world.setTower,
         guild: guildState.guild, setGuild: guildState.setGuild, voidMatter, setVoidMatter, arenaRank, setArenaRank, glory, setGlory,
-        quests, setQuests, runes, setRunes, achievements, setAchievements, starlight, setStarlight, starlightUpgrades, setStarlightUpgrades,
+        quests, setQuests, achievements, setAchievements, starlight, setStarlight, starlightUpgrades, setStarlightUpgrades,
         autoSellRarity, setAutoSellRarity, theme, setTheme, galaxy: galaxyState.galaxy, setGalaxy: galaxyState.setGalaxy,
         monsterKills, setMonsterKills, gameStats, setGameStats, activeExpeditions, setActiveExpeditions, activePotions, setActivePotions,
         buildings, setBuildings, dailyQuests, setDailyQuests, dailyLoginClaimed, setDailyLoginClaimed, lastDailyReset, setLastDailyReset,
@@ -1056,7 +1016,7 @@ export const useGame = () => {
             raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys,
             monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, showCampfire,
             outerSpaceUnlocked, prestigeNodes, townVisited, portalConfig, guildQueue,
-            arenaRank, glory, quests, runes, theme, autoSellRarity, arenaOpponents,
+            arenaRank, glory, quests, theme, autoSellRarity, arenaOpponents,
 
 
             // App.tsx State
@@ -1089,7 +1049,7 @@ export const useGame = () => {
             setGameStats
         };
     }, [gold, souls, divinity, starlight, heroes, items, dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats, world, guildState.guild, activeHeroes, partyPower, partyDps, activeEvent, victory, boss, resources, starlightUpgrades, talents, achievements, combatEvents, logs, isSoundOn, offlineGains, marketStock, marketTimer, raidActive,
-        raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys, monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, ACTIONS, worldBossState, voidGuardian, guildXpMult, showCampfire, galaxyState.spaceship, galaxyState.territories, galaxyState.galaxy, activeSynergies, buildings, arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, runes, gameSpeed, petsState.pets, artifacts, classMastery, prestigeNodes, townVisited, portalConfig, guildQueue]);
+        raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys, monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, ACTIONS, worldBossState, voidGuardian, guildXpMult, showCampfire, galaxyState.spaceship, galaxyState.territories, galaxyState.galaxy, activeSynergies, buildings, arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, gameSpeed, petsState.pets, artifacts, classMastery, prestigeNodes, townVisited, portalConfig, guildQueue]);
 
     return result;
 };

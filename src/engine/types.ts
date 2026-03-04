@@ -219,24 +219,16 @@ export interface Hero extends Entity {
     isDead: boolean;
     element: ElementType;
     assignment: 'combat' | 'mine' | 'expedition' | 'campfire' | 'none';
-    gambits: Gambit[];
-    // Phase 91: Corruption System
-    insanity: number; // 0-100
+    insanity: number;
     level: number;
     xp: number;
     maxXp: number;
-    // Phase 80: Campfire System
-    fatigue: number; // 0-100
+    fatigue: number;
     maxFatigue: number;
     statPoints: number;
     stats: Stats;
     skills: Skill[];
     deathTime?: number;
-    equipment: {
-        weapon?: Item;
-        armor?: Item;
-        accessory?: Item;
-    };
 }
 
 export interface GalaxySector {
@@ -278,28 +270,6 @@ export type LogEntry = {
 
 export type Log = LogEntry;
 
-export interface ItemSet {
-    id: string;
-    name: string;
-    bonusStat: 'attack' | 'defense' | 'hp' | 'magic' | 'speed';
-    bonusValue: number; // Multiplier e.g. 0.2 for +20%
-    requiredPieces: number;
-}
-
-export interface ItemAffix {
-    type: 'stats' | 'effect';
-    name: string; // e.g., "of the Wolf"
-    value: number; // e.g., 0.05 for +5%
-    stat?: keyof Stats;
-}
-
-export interface SetBonus {
-    id: string;
-    name: string;
-    requiredCount: number;
-    bonus: Partial<Stats>;
-}
-
 // Phase 92: Town Events
 export type TownEventType = 'merchant' | 'raid' | 'festival' | 'crisis';
 
@@ -327,44 +297,11 @@ export interface TownEvent {
 export interface Item {
     id: string;
     name: string;
-    type: 'weapon' | 'armor' | 'potion' | 'accessory'; // Added accessory
-    slot?: 'weapon' | 'armor' | 'accessory'; // Added slot
-    setId?: string; // Added Set ID
-    stat: 'attack' | 'defense' | 'hp' | 'magic' | 'speed';
+    type: 'potion' | 'material' | 'currency';
     value: number;
-    rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'chimera';
-    sockets: number;
-    runes: Rune[];
-    // Phase 78: Evolving Gear
-    level?: number;
-    xp?: number;
-    maxXp?: number;
-    evolutionId?: string; // ID of the next stage item
-    // Phase 90: Sets
-    // setId already declared above
-    // Phase 1: Star Forge
-    quality?: number; // 0-100%
-    prefix?: ItemAffix;
-    suffix?: ItemAffix;
-    craftedBy?: string;
-}
-
-export interface Rune {
-    id: string;
-    name: string;
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
-    bonus: string; // e.g. "+5% Attack"
-    stat: 'attack' | 'defense' | 'hp' | 'xp' | 'gold' | 'magic';
-    value: number; // Percentage
 }
 
-export interface RuneWord {
-    id: string;
-    name: string;
-    description: string;
-    runeSequence: string[]; // Rune names/IDs
-    bonus: Partial<Stats>;
-}
 
 export interface StarlightUpgrade {
     id: string;
@@ -468,21 +405,7 @@ export interface Guild {
     totalContribution: number;
 }
 
-export type GambitCondition = 'always' | 'hp<50' | 'hp<30' | 'mp<50' | 'ally_hp<50' | 'ally_dead' | 'enemy_boss' | 'enemy_count>2' |
-    'enemy_fire' | 'enemy_water' | 'enemy_nature' | 'enemy_dark' | 'enemy_light' |
-    'weather_rain' | 'weather_blizzard' | 'weather_sandstorm' | 'weather_eclipse' | 'weather_aurora' |
-    'party_full' | 'party_low_hp';
-export type GambitAction = 'attack' | 'heal' | 'strong_attack' | 'aoe_attack' | 'use_potion' | 'revive' | 'buff_atk' | 'buff_def' | 'defend' | 'cast_fireball';
 
-export interface Gambit {
-    id: string;
-    condition: GambitCondition;
-    action: GambitAction;
-    target?: string; // 'self', 'weakest_ally', 'boss'
-    // Visual Editor Data (Phase 5)
-    position?: { x: number; y: number };
-    customName?: string;
-}
 
 export interface Building {
     id: string;
@@ -622,9 +545,6 @@ export interface GameActions {
     purifyHero: (heroId: string) => void;
     renameHero: (heroId: string, name: string) => void;
     changeHeroEmoji: (heroId: string, emoji: string) => void;
-    equipItem: (heroId: string, item: Item) => void;
-    unequipItem: (heroId: string, slot: 'weapon' | 'armor' | 'accessory') => void;
-    updateGambits: (heroId: string, gambits: Gambit[]) => void;
 
     // Progression
     buyTalent: (id: string, amount?: number) => void;
@@ -680,9 +600,6 @@ export interface GameActions {
     checkDailies: () => void;
 
     // Crafting & Items
-    craftRune: () => void;
-    socketRune: (itemId: string, runeId: string) => void;
-    reforgeItem: (itemId: string) => void;
     manualFish: () => void;
     brewPotion: (potionId: string) => void;
     startExpedition: (exp: Expedition) => void;
@@ -710,9 +627,6 @@ export interface GameActions {
     // Phase 3
     upgradeMonument: (id: string) => void;
 
-    // Phase 5: Gambit Editor
-    moveGambit: (heroId: string, gambitId: string, x: number, y: number) => void;
-    renameGambit: (heroId: string, gambitId: string, name: string) => void;
 
     // Phase 6: World Boss
     attackWorldBoss: () => void;
