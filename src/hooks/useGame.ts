@@ -71,7 +71,7 @@ export const useGame = () => {
     const [gameSpeed, setGameSpeed] = useState<number>(1);
     const [isSoundOn, setIsSoundOn] = useState<boolean>(false);
     const [items, setItems] = useState<Item[]>([]);
-    const MAX_INVENTORY_SIZE = 200; // Evitar crescimento de memória ilimitado
+    const MAX_INVENTORY_SIZE = 50; // Jogo mais compacto na memoria
     const [souls, setSouls] = useState<number>(0);
     const [gold, setGold] = useState<number>(0);
     const [divinity, setDivinity] = useState<number>(0);
@@ -127,7 +127,7 @@ export const useGame = () => {
 
     const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
         const newLog: LogEntry = { id: (Date.now() + Math.random()).toString(), message, type, timestamp: Date.now() };
-        setLogs(prev => [newLog, ...prev].slice(0, 20));
+        setLogs(prev => [newLog, ...prev].slice(0, 5));
     }, []);
 
     // SUB-HOOKS
@@ -843,7 +843,7 @@ export const useGame = () => {
             damageAccumulator.current += res.totalDmg;
 
             if (res.events && res.events.length > 0) {
-                setCombatEvents(prev => [...prev, ...res.events].slice(-20));
+                setCombatEvents(prev => [...prev, ...res.events].slice(-5));
             }
 
             const petDpsBonus = (pets || []).reduce((sum, pet) => sum + (pet.level * 5), 0);

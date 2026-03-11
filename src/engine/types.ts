@@ -294,14 +294,47 @@ export interface TownEvent {
     buffValue?: number;
 }
 
+export interface ItemAffix {
+    id: string;
+    name: string;
+    stat: string;
+    value: number;
+    tier: number;
+    type?: string;
+}
+
 export interface Item {
     id: string;
     name: string;
-    type: 'potion' | 'material' | 'currency' | 'equipment';
+    type: 'potion' | 'material' | 'currency' | 'equipment' | 'weapon' | 'armor' | 'accessory';
     value: number; // Could be sell value or stat value
-    rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'divine' | 'chimera';
     stat?: string; // e.g. 'attack', 'defense', 'maxHp'
     runes?: Rune[];
+    level?: number;
+    evolutionId?: string;
+    xp?: number;
+    maxXp?: number;
+    sockets?: number;
+    prefix?: ItemAffix;
+    suffix?: ItemAffix;
+    quality?: number;
+    slot?: string;
+    craftedBy?: string;
+    setId?: string;
+}
+
+export interface ItemSet {
+    id: string;
+    name: string;
+    pieces: string[]; // Item IDs
+    bonusStat?: string;
+    bonusValue?: number;
+    bonuses: {
+        piecesRequired: number;
+        stat: string;
+        value: number;
+    }[];
 }
 
 
@@ -688,6 +721,8 @@ export interface Rune {
     name: string;
     description: string;
     type: 'attack' | 'defense' | 'magic' | 'hp' | 'speed' | 'crit';
+    stat?: string;
+    bonus?: string;
     value: number; // The multiplier or flat bonus
     rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 }

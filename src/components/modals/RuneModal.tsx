@@ -59,7 +59,7 @@ export const RuneModal: React.FC<RuneModalProps> = ({ isOpen, onClose, items, re
                                 <div className={`font-bold ${r.rarity === 'legendary' ? 'text-orange-400' : r.rarity === 'epic' ? 'text-purple-400' : r.rarity === 'rare' ? 'text-blue-400' : 'text-gray-300'}`}>
                                     {r.name}
                                 </div>
-                                <div className="text-xs text-green-400">{r.bonus}</div>
+                                <div className="text-xs text-green-400">+{r.value} {r.stat}</div>
                             </div>
                         ))}
                     </div>
@@ -80,10 +80,10 @@ export const RuneModal: React.FC<RuneModalProps> = ({ isOpen, onClose, items, re
                                     className={`p-2 mb-2 rounded border cursor-pointer ${selectedItem?.id === i.id ? 'bg-blue-900 border-blue-400' : 'bg-slate-800 border-slate-600 hover:bg-slate-700'} relative`}
                                 >
                                     <div className={`font-bold ${i.rarity === 'legendary' ? 'text-orange-400' : 'text-purple-400'}`}>{i.name}</div>
-                                    <div className="text-xs text-gray-400">Sockets: {i.runes.length} / {i.sockets}</div>
+                                    <div className="text-xs text-gray-400">Sockets: {i.runes?.length || 0} / {i.sockets || 0}</div>
                                     <div className="flex gap-1 mt-1">
-                                        {Array.from({ length: i.sockets }).map((_, idx) => (
-                                            <div key={idx} className={`w-3 h-3 rounded-full border ${i.runes[idx] ? 'bg-purple-500 border-purple-300' : 'bg-black border-gray-600'}`}></div>
+                                        {Array.from({ length: i.sockets || 0 }).map((_, idx) => (
+                                            <div key={idx} className={`w-3 h-3 rounded-full border ${i.runes?.[idx] ? 'bg-purple-500 border-purple-300' : 'bg-black border-gray-600'}`}></div>
                                         ))}
                                     </div>
                                 </div>
@@ -98,19 +98,19 @@ export const RuneModal: React.FC<RuneModalProps> = ({ isOpen, onClose, items, re
                                     <div className="text-4xl mb-4">⚔️</div>
 
                                     <div className="w-full space-y-2 mb-6">
-                                        {Array.from({ length: selectedItem.sockets }).map((_, idx) => (
+                                        {Array.from({ length: selectedItem.sockets || 0 }).map((_, idx) => (
                                             <div key={idx} className="flex items-center gap-2 bg-black p-2 rounded border border-gray-700">
-                                                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${selectedItem.runes[idx] ? 'bg-purple-900 border-purple-500' : 'bg-gray-900 border-gray-600'}`}>
-                                                    {selectedItem.runes[idx] ? <Gem size={12} /> : null}
+                                                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${selectedItem.runes?.[idx] ? 'bg-purple-900 border-purple-500' : 'bg-gray-900 border-gray-600'}`}>
+                                                    {selectedItem.runes?.[idx] ? <Gem size={12} /> : null}
                                                 </div>
                                                 <span className="text-sm text-gray-300">
-                                                    {selectedItem.runes[idx] ? selectedItem.runes[idx].name : 'Empty Socket'}
+                                                    {selectedItem.runes?.[idx] ? selectedItem.runes[idx].name : 'Empty Socket'}
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
 
-                                    {selectedItem.runes.length < selectedItem.sockets ? (
+                                    {(selectedItem.runes?.length || 0) < (selectedItem.sockets || 0) ? (
                                         <div className="mt-auto w-full">
                                             <div className="text-sm text-center mb-2 text-gray-400">
                                                 {selectedRune ? `Socket ${selectedRune.name}?` : 'Select a Rune from Inventory'}

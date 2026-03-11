@@ -4,36 +4,31 @@ export const ITEM_SETS: ItemSet[] = [
     {
         id: 'set_iron',
         name: 'Iron Legion',
-        bonusStat: 'defense',
-        bonusValue: 0.2, // +20% Defense
-        requiredPieces: 2
+        bonuses: [{ stat: 'defense', value: 0.2, piecesRequired: 2 }],
+        pieces: []
     },
     {
         id: 'set_arcane',
         name: 'Arcane Council',
-        bonusStat: 'magic',
-        bonusValue: 0.2, // +20% Magic
-        requiredPieces: 2
+        bonuses: [{ stat: 'magic', value: 0.2, piecesRequired: 2 }],
+        pieces: []
     },
     {
         id: 'set_ranger',
         name: 'Forest Walker',
-        bonusStat: 'speed',
-        bonusValue: 0.15, // +15% Speed
-        requiredPieces: 2
+        bonuses: [{ stat: 'speed', value: 0.15, piecesRequired: 2 }],
+        pieces: []
     },
     {
         id: 'set_dragon',
         name: 'Dragon Slayer',
-        bonusStat: 'attack',
-        bonusValue: 0.25, // +25% Attack
-        requiredPieces: 3
+        bonuses: [{ stat: 'attack', value: 0.25, piecesRequired: 3 }],
+        pieces: []
     },
     {
         id: 'set_titan',
         name: 'Titan Guard',
-        bonusStat: 'hp',
-        bonusValue: 0.3, // +30% HP
-        requiredPieces: 3
+        bonuses: [{ stat: 'hp', value: 0.3, piecesRequired: 3 }],
+        pieces: []
     }
 ];

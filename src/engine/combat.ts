@@ -26,7 +26,7 @@ export const calculateHeroPower = (hero: Hero): number => {
 
 
 
-    const baseScore = stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2);
+    const baseScore = (stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2)) * 0.5;
     let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)));
 
     // Phase 80: Fatigue Penalty
@@ -45,22 +45,34 @@ export const calculateDamageMultiplier = (souls: number, talents: Talent[], cons
     const _cards = cards || [];
     const _pets = pets || [];
     const _achievements = achievements || [];
+
+    // Base multiplier starts at 1
+    let totalBonus = 0;
     
+    // Additive Soul Bonus
+    totalBonus += (souls * 0.05);
+
+    // Additive Talent Bonus
     const dmgTalent = _talents.find(t => t.stat === 'attack');
+    if (dmgTalent) totalBonus += (dmgTalent.level * dmgTalent.valuePerLevel);
+
+    // Additive Constellation Bonus
     const cScale = _constellations.find(c => c.bonusType === 'bossDamage');
-    const starMult = cScale ? (1 + cScale.level * cScale.valuePerLevel) : 1;
-    let mult = (1 + (souls * 0.05) + (dmgTalent ? (dmgTalent.level * dmgTalent.valuePerLevel) : 0)) * starMult;
+    if (cScale) totalBonus += (cScale.level * cScale.valuePerLevel);
 
+    // Additive Void Artifact Bonus
     const hasVoidStone = _artifacts.some(a => a.id === 'a2');
-    if (hasVoidStone) mult *= 1.5;
+    if (hasVoidStone) totalBonus += 0.5;
 
+    // Additive Cards Bonus
     const attackCards = _cards.filter(c => c.stat === 'attack');
-    const cardBonus = attackCards.reduce((acc, c) => acc + (c.count * c.value), 0);
-    mult *= (1 + cardBonus);
+    totalBonus += attackCards.reduce((acc, c) => acc + (c.count * c.value), 0);
 
+    // Additive Achievements Bonus
     const achievementBonus = _achievements.filter(a => a.isUnlocked).length * 0.01;
-    mult *= (1 + achievementBonus);
+    totalBonus += achievementBonus;
 
+    // Additive Pets Bonus (Dano Crítico e outros buffs viram dps aditivo)
     const petDamageBonus = _pets.reduce((acc, p) => {
         if (p.isDead) return acc;
         if (p.bonus.includes('DPS') || p.bonus.includes('Attack')) {
@@ -69,12 +81,13 @@ export const calculateDamageMultiplier = (souls: number, talents: Talent[], cons
         }
         return acc;
     }, 0);
-    mult *= (1 + petDamageBonus);
+    totalBonus += petDamageBonus * 0.5; // Scale pet dps bonus down
 
-    // Apply Galaxy Buff
-    mult *= (1 + galaxyDamageMult);
+    // Additive Galaxy Bonus
+    totalBonus += galaxyDamageMult;
 
-    return mult;
+    // Return final linear multiplier to prevent infinite scaling
+    return 1 + totalBonus;
 };
 
 export const processCombatTurn = (
@@ -107,8 +120,10 @@ export const processCombatTurn = (
     const burnEffect = activeSynergies.find(s => s.type === 'burn');
     const freezeEffect = activeSynergies.find(s => s.type === 'freeze');
 
-    // Apply Attack Speed as extra damage multiplier for now (simulating more hits)
-    let effectiveDamageMult = damageMult * (1 + attackSpeedBonus);
+    // Apply Attack Speed logic: scale additively but cap the max impact 
+    // to prevent astronomical numbers or intervals hitting 0.
+    const cappedSpeedBonus = Math.min(attackSpeedBonus, 3.0); // Max +300% effective speed gain
+    let effectiveDamageMult = damageMult * (1 + cappedSpeedBonus);
 
     // Burn Damage (DoT)
     if (burnEffect && !boss.isDead) {

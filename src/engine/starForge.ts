@@ -1,22 +1,22 @@
 import type { ItemAffix } from './types';
 
 const PREFIXES: ItemAffix[] = [
-    { type: 'stats', name: 'Burning', value: 0.1, stat: 'attack' },
-    { type: 'stats', name: 'Frozen', value: 0.1, stat: 'defense' },
-    { type: 'stats', name: 'Void', value: 0.15, stat: 'magic' },
-    { type: 'stats', name: 'Stellar', value: 0.1, stat: 'speed' },
-    { type: 'stats', name: 'Cosmic', value: 0.05, stat: 'hp' }, // 5% all stats logic handled elsewhere or specific stat
-    { type: 'stats', name: 'Radiant', value: 0.15, stat: 'hp' },
-    { type: 'effect', name: 'Unstable', value: 0.2, stat: 'attack' } // High risk high reward? For now just stats
+    { id: 'p1', tier: 1, type: 'stats', name: 'Burning', value: 0.1, stat: 'attack' },
+    { id: 'p2', tier: 1, type: 'stats', name: 'Frozen', value: 0.1, stat: 'defense' },
+    { id: 'p3', tier: 1, type: 'stats', name: 'Void', value: 0.15, stat: 'magic' },
+    { id: 'p4', tier: 1, type: 'stats', name: 'Stellar', value: 0.1, stat: 'speed' },
+    { id: 'p5', tier: 1, type: 'stats', name: 'Cosmic', value: 0.05, stat: 'hp' }, // 5% all stats logic handled elsewhere or specific stat
+    { id: 'p6', tier: 1, type: 'stats', name: 'Radiant', value: 0.15, stat: 'hp' },
+    { id: 'p7', tier: 1, type: 'effect', name: 'Unstable', value: 0.2, stat: 'attack' } // High risk high reward? For now just stats
 ];
 
 const SUFFIXES: ItemAffix[] = [
-    { type: 'stats', name: 'of the Comet', value: 0.1, stat: 'speed' },
-    { type: 'stats', name: 'of the Nebula', value: 0.15, stat: 'mp' },
-    { type: 'stats', name: 'of the Black Hole', value: 0.05, stat: 'attack' }, // Crit logic later
-    { type: 'stats', name: 'of the Supernova', value: 0.2, stat: 'attack' },
-    { type: 'stats', name: 'of the Pulsar', value: 0.1, stat: 'magic' },
-    { type: 'stats', name: 'of the Titan', value: 0.2, stat: 'defense' }
+    { id: 's1', tier: 1, type: 'stats', name: 'of the Comet', value: 0.1, stat: 'speed' },
+    { id: 's2', tier: 1, type: 'stats', name: 'of the Nebula', value: 0.15, stat: 'mp' },
+    { id: 's3', tier: 1, type: 'stats', name: 'of the Black Hole', value: 0.05, stat: 'attack' }, // Crit logic later
+    { id: 's4', tier: 1, type: 'stats', name: 'of the Supernova', value: 0.2, stat: 'attack' },
+    { id: 's5', tier: 1, type: 'stats', name: 'of the Pulsar', value: 0.1, stat: 'magic' },
+    { id: 's6', tier: 1, type: 'stats', name: 'of the Titan', value: 0.2, stat: 'defense' }
 ];
 
 export const generateAffixes = (_itemLevel: number, _rarity: string): { prefix?: ItemAffix, suffix?: ItemAffix } => {
@@ -60,7 +60,7 @@ export const calculateCraftingResult = (accuracy: number, heat: number): number 
     return Math.min(100, Math.floor(baseQuality));
 };
 export const mysticReforge = (item: import('./types').Item): import('./types').Item => {
-    if (item.rarity !== 'legendary' && item.rarity !== 'chimera') return item;
+    if (item.rarity !== 'legendary' && item.rarity !== ('chimera' as any)) return item;
 
     const { prefix, suffix } = generateAffixes(item.level || 1, item.rarity);
     return {

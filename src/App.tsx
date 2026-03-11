@@ -270,7 +270,7 @@ function App() {
           heroes={heroes}
           activeSynergies={synergies}
           actions={{ ...actions, formations, saveFormation, loadFormation, deleteFormation }}
-          onOpenGear={(hero) => setSelectedHeroId(hero.id)}
+          onOpenGear={(hero) => {}}
         />
 
 
@@ -307,7 +307,7 @@ function App() {
           onClaim={actions.claimQuest}
         />
       )}
-      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
+      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={{...actions, craftRune: () => {}, socketRune: () => {}}} runes={runes} />
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
