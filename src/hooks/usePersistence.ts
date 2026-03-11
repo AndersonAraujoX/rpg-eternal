@@ -142,8 +142,8 @@ export const usePersistence = (props: PersistenceProps) => {
                             // Ensure element/assignment are backfilled if missing in save
                             element: savedH.element || initH.element,
                             assignment: savedH.assignment || 'combat',
-                            gambits: savedH.gambits || initH.gambits,
-                            insanity: (savedH as any).corruption ? 50 : (savedH.insanity || 0),
+                            // gambits: savedH.gambits || initH.gambits,
+                            // insanity: (savedH as any).corruption ? 50 : (savedH.insanity || 0),
                         };
                     }
                     return initH; // New hero added to game, not in save
@@ -304,13 +304,13 @@ export const usePersistence = (props: PersistenceProps) => {
                 unlocked: h.unlocked,
                 isDead: h.isDead,
                 assignment: h.assignment,
-                stats: { hp: h.stats.hp, maxHp: h.stats.maxHp, attack: h.stats.attack, defense: h.stats.defense, magic: h.stats.magic, speed: h.stats.speed, mp: h.stats.mp, maxMp: h.stats.maxMp },
+                stats: h.stats,
                 statPoints: h.statPoints,
-                equipment: h.equipment,
-                gambits: h.gambits,
+                // equipment: h.equipment,
+                // gambits: h.gambits,
                 element: h.element,
-                insanity: h.insanity,
-                fatigue: h.fatigue,
+                // insanity: h.insanity,
+                // fatigue: h.fatigue,
             }));
 
             // Compactar itens: salvar apenas os 50 melhores

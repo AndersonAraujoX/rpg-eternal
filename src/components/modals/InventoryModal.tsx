@@ -29,8 +29,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose,
         }
         // Count rune bonuses
         item.runes?.forEach(r => {
-            if (r.stat && r.value) {
-                totals[r.stat] = (totals[r.stat] || 0) + r.value;
+            if (r.type && r.value) {
+                totals[r.type] = (totals[r.type] || 0) + r.value;
             }
         });
     });
@@ -96,7 +96,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose,
 
                 {/* Top legendaries section */}
                 {topLegendaries.length > 0 && (
-                    <div className="bg-orange-900/20 border border-orange-800/40 rounded-lg p-3">
+                    <div className="bg-orange-900/20 border border-orange-800/40 rounded-lg p-3 mb-4">
                         <div className="text-xs text-orange-400 font-bold uppercase tracking-wider mb-2">⭐ Top Lendários</div>
                         <div className="space-y-1">
                             {topLegendaries.map(item => (
@@ -109,12 +109,40 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose,
                     </div>
                 )}
 
-                {items.length === 0 && (
-                    <div className="text-center text-gray-600 py-8">
-                        <Briefcase className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                        <p>Inventário vazio</p>
+                {/* Full Item List */}
+                <div className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden flex flex-col max-h-60">
+                    <div className="bg-slate-800 p-2 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-slate-700">
+                        Todos os Itens
                     </div>
-                )}
+                    <div className="overflow-y-auto p-2 space-y-2 no-scrollbar">
+                        {items.length > 0 ? (
+                            items.slice().sort((a, b) => RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity) || b.value - a.value).map((item, index) => (
+                                <div key={item.id || index} className={`flex items-center justify-between p-2 rounded text-sm ${item.rarity === 'legendary' ? 'bg-orange-900/30 border border-orange-800/50' :
+                                    item.rarity === 'epic' ? 'bg-purple-900/30 border border-purple-800/50' :
+                                        item.rarity === 'rare' ? 'bg-blue-900/30 border border-blue-800/50' :
+                                            'bg-gray-800 border border-gray-700'
+                                    }`}>
+                                    <div className="flex flex-col">
+                                        <span className={`font-bold ${item.rarity === 'legendary' ? 'text-orange-400' :
+                                            item.rarity === 'epic' ? 'text-purple-400' :
+                                                item.rarity === 'rare' ? 'text-blue-400' :
+                                                    'text-gray-300'
+                                            }`}>{item.name}</span>
+                                        <span className="text-[10px] text-gray-500 uppercase">{item.rarity}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-green-400 font-mono text-xs">+{item.value} {item.stat}</span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center text-gray-600 py-4">
+                                <Briefcase className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                <p className="text-xs">Inventário vazio</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

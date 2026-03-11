@@ -314,7 +314,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <div className="bg-gray-800 px-2 py-1 rounded text-xs flex items-center gap-1 border border-gray-600 group relative cursor-help mr-2">
                             <span>{WEATHER_DATA[weather].icon}</span>
                             {/* <span className="hidden sm:inline text-gray-300">{weather}</span> */}
-                            <span className="text-gray-500 font-mono text-[10px]">{Math.floor(weatherTimer / 60)}:{(weatherTimer % 60).toString().padStart(2, '0')}</span>
+                            <span className="text-gray-500 font-mono text-[10px]">{Math.floor((weatherTimer || 0) / 60)}:{((weatherTimer || 0) % 60).toString().padStart(2, '0')}</span>
 
                             <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900 border border-gray-600 p-2 rounded shadow-xl hidden group-hover:block z-50">
                                 <div className="font-bold text-white mb-1">{WEATHER_DATA[weather].name}</div>

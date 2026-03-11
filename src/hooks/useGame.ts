@@ -67,6 +67,7 @@ export const useGame = () => {
     const [classMastery, setClassMastery] = useState<Record<string, ClassMastery>>(INITIAL_CLASS_MASTERY);
     const [boss, setBoss] = useState<Boss>(INITIAL_BOSS);
     const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [runes, setRunes] = useState<import('../engine/types').Rune[]>([]); // ADDED RUNES STATE
     const [gameSpeed, setGameSpeed] = useState<number>(1);
     const [isSoundOn, setIsSoundOn] = useState<boolean>(false);
     const [items, setItems] = useState<Item[]>([]);
@@ -421,6 +422,12 @@ export const useGame = () => {
                 const passiveDmg = Math.floor(calculatedPartyPower * 0.05);
                 if (passiveDmg > 0) { /* Handled in sub-hook */ }
             }
+
+            // Update play time
+            setGameStats(prev => ({
+                ...prev,
+                playTime: (prev.playTime || 0) + 1
+            }));
         }, 1000);
         return () => clearInterval(timer);
     }, [raidActive, voidActive, calculatedPartyPower]);
@@ -787,7 +794,23 @@ export const useGame = () => {
                 const cost = (dungeonMastery[type] + 1) * 1000;
                 if (souls >= cost) { setSouls(s => s - cost); setDungeonMastery(prev => ({ ...prev, [type]: prev[type] + 1 })); }
             },
-            assignHero: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h))
+            assignHero: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h)),
+            manualAttack: () => {
+                const dmg = Math.max(1, Math.floor(calculatedPartyPower * 0.05)); // 5% of party power per click
+                
+                // Track click stat
+                setGameStats(s => ({ ...s, clicks: (s.clicks || 0) + 1, totalDamageDealt: (s.totalDamageDealt || 0) + dmg }));
+                
+                // Deal damage (will be processed on next tick or instantly depending on HP)
+                if (world.tower.active) {
+                    world.setTowerBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - dmg } }));
+                } else {
+                    setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - dmg } }));
+                }
+                
+                // Visual feedback sound (optional)
+                // soundManager.playHit();
+            }
         };
         return baseActions as GameActions;
     }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery]);
@@ -977,9 +1000,21 @@ export const useGame = () => {
                     return next;
                 });
             }
-            if (Object.keys(autoResult.stats).length > 0) {
-                setGameStats(prev => ({ ...prev, ...autoResult.stats }));
-            }
+            
+            // Collect all stats updates including combat damage
+            setGameStats(prev => {
+                let nextStats = { ...prev };
+                if (Object.keys(autoResult.stats).length > 0) {
+                    nextStats = { ...nextStats, ...autoResult.stats };
+                }
+                
+                // Track damage if we're attacking
+                if (res.totalDmg > 0) {
+                    nextStats.totalDamageDealt = (nextStats.totalDamageDealt || 0) + res.totalDmg;
+                }
+                
+                return nextStats;
+            });
 
             // Re-schedule
             loopRef.current = setTimeout(runTick, tick);
@@ -994,7 +1029,7 @@ export const useGame = () => {
         pets: petsState.pets, setPets: petsState.setPets, talents, setTalents, artifacts, setArtifacts, cards, setCards,
         constellations, setConstellations, keys, setKeys, resources, setResources, tower: world.tower, setTower: world.setTower,
         guild: guildState.guild, setGuild: guildState.setGuild, voidMatter, setVoidMatter, arenaRank, setArenaRank, glory, setGlory,
-        quests, setQuests, achievements, setAchievements, starlight, setStarlight, starlightUpgrades, setStarlightUpgrades,
+        quests, setQuests, runes, setRunes, achievements, setAchievements, starlight, setStarlight, starlightUpgrades, setStarlightUpgrades,
         autoSellRarity, setAutoSellRarity, theme, setTheme, galaxy: galaxyState.galaxy, setGalaxy: galaxyState.setGalaxy,
         monsterKills, setMonsterKills, gameStats, setGameStats, activeExpeditions, setActiveExpeditions, activePotions, setActivePotions,
         buildings, setBuildings, dailyQuests, setDailyQuests, dailyLoginClaimed, setDailyLoginClaimed, lastDailyReset, setLastDailyReset,
@@ -1006,9 +1041,9 @@ export const useGame = () => {
     } as any);
 
     const result = useMemo(() => {
-        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked };
+        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes };
         return {
-            gold, souls, divinity, starlight, heroes, items, inventory: items,
+            gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
             guild: guildState.guild, activeHeroes, partyPower, partyDps, activeEvent,
             victory, boss, resources, starlightUpgrades, achievements, combatEvents,

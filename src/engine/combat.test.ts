@@ -5,11 +5,10 @@ import type { Hero, Boss } from './types';
 // Mocks
 const mockHero = (element: Hero['element']): Hero => ({
     id: 'h1', name: 'Test', class: 'Warrior', stats: { hp: 100, maxHp: 100, attack: 10, defense: 0, magic: 0, speed: 10, mp: 0, maxMp: 0 },
-    element, assignment: 'combat', gambits: [], insanity: 0,
+    element, assignment: 'combat', insanity: 0,
     emoji: '🦸', type: 'hero', unlocked: true, isDead: false,
     level: 1, xp: 0, maxXp: 100, statPoints: 0, skills: [],
-    fatigue: 0, maxFatigue: 100,
-    equipment: {}
+    fatigue: 0, maxFatigue: 100
 });
 
 const mockBoss = (element: Boss['element']): Boss => ({
@@ -59,20 +58,22 @@ import { calculateDamageMultiplier } from './combat';
 describe('calculateDamageMultiplier', () => {
     it('scales linearly with souls and divinity', () => {
         // Base is 1. Souls * 0.05 + Div * 1.0
-        const mult = calculateDamageMultiplier(100, 2, [], [], [], mockBoss('neutral'), [], [], []);
-        // 1 + (100 * 0.05) + (2 * 1.0) = 1 + 5 + 2 = 8
-        expect(mult).toBe(8);
+        const mult = calculateDamageMultiplier(100, [], [], [], mockBoss('neutral'), [], [], [], 0);
+        // 1 + (100 * 0.05) = 6
+        // Wait, the previous test asserted 8 based on (2 * 1.0) divinity. Divinity was removed from calculateDamageMultiplier in favor of global multiplier.
+        // Let's adjust the test to just test souls.
+        expect(mult).toBe(6);
     });
 
     it('applies Void Stone artifact multiplier', () => {
         const artifacts = [{ id: 'a2', name: 'Void Stone', description: '', isEquipped: false }];
-        const mult = calculateDamageMultiplier(0, 0, [], [], artifacts as any, mockBoss('neutral'), [], [], []);
+        const mult = calculateDamageMultiplier(0, [], [], artifacts as any, mockBoss('neutral'), [], [], [], 0);
         expect(mult).toBe(1.5);
     });
 
     it('applies Monster Card bonuses', () => {
         const cards = [{ id: 'c1', name: 'Goblin', stat: 'attack', value: 0.1, count: 5, rarity: 'common', maxCount: 10, dropRate: 0.1, location: '' }];
-        const mult = calculateDamageMultiplier(0, 0, [], [], [], mockBoss('neutral'), cards as any, [], []);
+        const mult = calculateDamageMultiplier(0, [], [], [], mockBoss('neutral'), cards as any, [], [], 0);
         // Card bonus: 5 * 0.1 = 0.5. Total: 1 * (1 + 0.5) = 1.5
         expect(mult).toBe(1.5);
     });

@@ -297,9 +297,11 @@ export interface TownEvent {
 export interface Item {
     id: string;
     name: string;
-    type: 'potion' | 'material' | 'currency';
-    value: number;
+    type: 'potion' | 'material' | 'currency' | 'equipment';
+    value: number; // Could be sell value or stat value
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    stat?: string; // e.g. 'attack', 'defense', 'maxHp'
+    runes?: Rune[];
 }
 
 
@@ -679,4 +681,13 @@ export interface Formation {
     id: string;
     name: string;
     heroIds: string[];
+}
+
+export interface Rune {
+    id: string;
+    name: string;
+    description: string;
+    type: 'attack' | 'defense' | 'magic' | 'hp' | 'speed' | 'crit';
+    value: number; // The multiplier or flat bonus
+    rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 }

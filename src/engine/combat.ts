@@ -39,22 +39,29 @@ export const calculateHeroPower = (hero: Hero): number => {
 };
 
 export const calculateDamageMultiplier = (souls: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], _boss: Boss, cards: MonsterCard[], achievements: Achievement[] = [], pets: Pet[] = [], galaxyDamageMult: number = 0) => {
-    const dmgTalent = talents.find(t => t.stat === 'attack');
-    const cScale = constellations.find(c => c.bonusType === 'bossDamage');
+    const _talents = talents || [];
+    const _constellations = constellations || [];
+    const _artifacts = artifacts || [];
+    const _cards = cards || [];
+    const _pets = pets || [];
+    const _achievements = achievements || [];
+    
+    const dmgTalent = _talents.find(t => t.stat === 'attack');
+    const cScale = _constellations.find(c => c.bonusType === 'bossDamage');
     const starMult = cScale ? (1 + cScale.level * cScale.valuePerLevel) : 1;
     let mult = (1 + (souls * 0.05) + (dmgTalent ? (dmgTalent.level * dmgTalent.valuePerLevel) : 0)) * starMult;
 
-    const hasVoidStone = artifacts.some(a => a.id === 'a2');
+    const hasVoidStone = _artifacts.some(a => a.id === 'a2');
     if (hasVoidStone) mult *= 1.5;
 
-    const attackCards = (cards || []).filter(c => c.stat === 'attack');
+    const attackCards = _cards.filter(c => c.stat === 'attack');
     const cardBonus = attackCards.reduce((acc, c) => acc + (c.count * c.value), 0);
     mult *= (1 + cardBonus);
 
-    const achievementBonus = (achievements || []).filter(a => a.isUnlocked).length * 0.01;
+    const achievementBonus = _achievements.filter(a => a.isUnlocked).length * 0.01;
     mult *= (1 + achievementBonus);
 
-    const petDamageBonus = pets.reduce((acc, p) => {
+    const petDamageBonus = _pets.reduce((acc, p) => {
         if (p.isDead) return acc;
         if (p.bonus.includes('DPS') || p.bonus.includes('Attack')) {
             const match = p.bonus.match(/(\d+)%/);
@@ -190,12 +197,11 @@ export const processCombatTurn = (
             baseDmg = 0;
         }
 
+        let skillDmg = 0;
         // Active Skills Logic
-        if (h.skills) {
+        if (h.skills && !skipTurn && !attackAlly) {
             h.skills.forEach(s => {
                 if (s.type === 'active') {
-                    let skillDmg = 0;
-
                     if (s.currentCooldown > 0) {
                         if (mutator?.id === 'elemental_chaos' && h.element !== 'neutral') {
                             baseDmg *= 2;
@@ -231,51 +237,52 @@ export const processCombatTurn = (
 
                                 if (isHealConverted && Math.random() < 0.2) events.push({ id: `blood-${h.id}-${Date.now()}`, type: 'status', text: 'Bloodthirst!', value: 0 });
 
-                                skillDmg = rawSkillDmg;
+                                skillDmg += rawSkillDmg;
                             } else if (processedSkill.effectType === 'heal') {
                                 // HEAL LOGIC
                                 let targetHero = h;
                                 if (processedSkill.target === 'lowest_hp') {
-                                    const allies = heroes.filter(a => a.unlocked);
-                                    targetHero = allies.sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0] || h;
+                                    const allies = heroes.filter(a => a.unlocked && !a.isDead);
+                                    if (allies.length > 0) {
+                                       targetHero = allies.sort((a, b) => (a.stats.hp / a.stats.maxHp) - (b.stats.hp / b.stats.maxHp))[0];
+                                    }
                                 }
 
                                 const healAmount = stats.maxHp * processedSkill.value;
                                 heroHeals[targetHero.id] = (heroHeals[targetHero.id] || 0) + healAmount;
                                 events.push({ id: `heal-${h.id}-${Date.now()}`, type: 'status', text: 'HEAL', value: healAmount, x: 50, y: 50 });
-                                baseDmg = 0;
                             }
                             s.currentCooldown = s.cooldown;
                         }
                     }
-                    totalDmg += Math.floor(skillDmg);
                 }
             });
         }
-
-
 
         const critRoll = Math.random();
         if (critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0)) {
             const critMult = 2 + critDmgBonus;
             baseDmg *= critMult;
+            skillDmg *= critMult;
             crits++;
         }
+
+        let totalHeroAttack = baseDmg + skillDmg;
 
         if (isUltimate) {
             const activeCombos = checkActiveCombos(heroes);
             if (activeCombos.length > 0) {
                 const bestCombo = activeCombos.sort((a: ComboDefinition, b: ComboDefinition) => b.multiplier - a.multiplier)[0];
-                baseDmg *= bestCombo.multiplier;
+                totalHeroAttack *= bestCombo.multiplier;
                 if (Math.random() < 0.2) {
                     events.push({ id: `combo-${Date.now()}-${Math.random()}`, type: 'damage', text: `COMBO: ${bestCombo.name}!`, value: 0, x: 50, y: 20 });
                 }
             } else {
-                baseDmg *= 5;
+                totalHeroAttack *= 5;
             }
         }
 
-        const heroDamageDealt = Math.floor(baseDmg * deathPenalty);
+        const heroDamageDealt = Math.floor(totalHeroAttack * deathPenalty);
         totalDmg += heroDamageDealt;
 
         if (heroDamageDealt > 0 && lifeSteal > 0 && !h.isDead) {

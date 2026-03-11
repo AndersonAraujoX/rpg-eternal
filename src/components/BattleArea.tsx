@@ -190,7 +190,12 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                 {isTower && <div className="text-cyan-400 font-black text-xl mb-1 animate-pulse drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">ANDAR {tower.floor}</div>}
                 {dungeonActive && <div className="text-yellow-400 font-bold animate-pulse mb-2">COFRE DE OURO: {Math.floor(dungeonTimer)}s</div>}
                 <div className="flex items-center gap-2">
-                    <div className={`text-6xl md:text-8xl filter drop-shadow-2xl transition-transform ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''} ${isTower ? 'sepia-[0.5] brightness-125' : ''} ${voidActive ? 'animate-bounce drop-shadow-[0_0_20px_purple] scale-125' : ''}`}>{isTower ? '🏰' : boss.emoji}</div>
+                    <div 
+                        className={`text-6xl md:text-8xl filter drop-shadow-2xl transition-transform cursor-pointer hover:scale-110 active:scale-90 select-none ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''} ${isTower ? 'sepia-[0.5] brightness-125' : ''} ${voidActive ? 'animate-bounce drop-shadow-[0_0_20px_purple] scale-125' : ''}`}
+                        onClick={() => actions.manualAttack && actions.manualAttack()}
+                    >
+                        {isTower ? '🏰' : boss.emoji}
+                    </div>
                     <div className="text-white opacity-50" title={`Elemento: ${boss.element}`}>{getElementIcon(boss.element)}</div>
                     {/* Status Icons based on recent events or state */}
                     <div className="flex gap-1">

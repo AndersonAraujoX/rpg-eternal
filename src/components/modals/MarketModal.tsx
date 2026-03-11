@@ -18,6 +18,7 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
     if (!isOpen) return null;
 
     const formatTime = (ms: number) => {
+        if (!ms || isNaN(ms)) return "0:00";
         const s = Math.floor(ms / 1000);
         const m = Math.floor(s / 60);
         const sec = s % 60;

@@ -31,7 +31,7 @@ describe('Prestige System Logic', () => {
         const firstNode = PRESTIGE_NODES[0];
         expect(firstNode).toHaveProperty('id');
         expect(firstNode).toHaveProperty('name');
-        expect(firstNode).toHaveProperty('cost');
+        expect(firstNode).toHaveProperty('baseCost');
     });
 });
 

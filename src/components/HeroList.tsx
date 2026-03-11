@@ -3,7 +3,7 @@ import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull, Flame, Droplets, Shie
 import type { Hero } from '../engine/types';
 import type { Synergy } from '../engine/synergies';
 import { SYNERGY_DEFINITIONS } from '../engine/synergies';
-import { GambitModal } from './modals/GambitModal';
+
 import { HeroDetailModal } from './modals/HeroDetailModal';
 
 import { Info, Crown } from 'lucide-react'; // Phase 58
@@ -53,7 +53,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
 
     return (
         <div className="flex-1 bg-gray-800 p-2 overflow-y-auto no-scrollbar grid grid-cols-2 md:grid-cols-3 gap-2 border-t-4 border-gray-600">
-            <GambitModal isOpen={!!selectedHero} onClose={() => setSelectedHero(null)} hero={selectedHero} actions={actions} />
+
             <HeroDetailModal isOpen={!!viewingHero} onClose={() => setViewingHero(null)} hero={viewingHero} actions={actions} />
 
             {heroes.map(hero => {

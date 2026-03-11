@@ -86,7 +86,7 @@ export const TownEventWidget: React.FC<TownEventWidgetProps> = ({ event, actions
 
             <div className="mt-3 flex items-center justify-center gap-1 text-[9px] font-mono text-gray-400">
                 <Clock size={10} />
-                <span>Expires in {Math.floor(event.duration)}s</span>
+                <span>Expires in {isNaN(event.duration) || !event.duration ? 0 : Math.floor(event.duration)}s</span>
             </div>
         </div>
     );
