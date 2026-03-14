@@ -93,7 +93,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
     React.useEffect(() => {
         const timer = setInterval(() => {
-            setParticles(prev => prev.map(p => ({ ...p, age: p.age + 1, y: p.y - 1 })).filter(p => p.age < 20));
+            setParticles(prev => prev.length ? prev.map(p => ({ ...p, age: p.age + 1, y: p.y - 1 })).filter(p => p.age < 20) : prev);
         }, 50);
         return () => clearInterval(timer);
     }, []);
