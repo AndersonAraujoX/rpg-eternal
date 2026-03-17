@@ -320,13 +320,27 @@ export const processCombatTurn = (
         return { ...h, insanity: newInsanity, stats: { ...h.stats, hp }, skills: h.skills, isDead: hp <= 0 };
     });
 
-    // Final pass to apply heals
-    updatedHeroes = updatedHeroes.map(h => {
+    // Final pass to apply heals (Referential stability: only clone if changed)
+    updatedHeroes = updatedHeroes.map((h, i) => {
         const heal = heroHeals[h.id];
+        const originalHero = heroes[i]; // Reference to initial input
+
         if (heal) {
             const newHp = Math.min(h.stats.maxHp, h.stats.hp + heal);
+            // If even after heal/insanity/damage nothing changed significantly from the START of the turn
+            // we could return originalHero. But usually combat implies changes.
             return { ...h, isDead: newHp <= 0, stats: { ...h.stats, hp: newHp } };
         }
+
+        // Deep check: did insanity OR hp change from the HEROES array passed in?
+        const hasDmg = h.stats.hp !== originalHero.stats.hp;
+        const hasInsanity = h.insanity !== originalHero.insanity;
+        const hasSkillChange = h.skills !== originalHero.skills; // skills are mutated in-place sometimes in the loop above? No, let's be safe.
+
+        if (!hasDmg && !hasInsanity && !hasSkillChange && h.isDead === originalHero.isDead) {
+            return originalHero;
+        }
+
         return h;
     });
 

@@ -1,4 +1,4 @@
-import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameStats, Achievement, Building, CardOpponent, LeaderboardEntry, Spaceship, ClassMastery } from './types';
+import type { Hero, Boss, Pet, Talent, ConstellationNode, Artifact, Guild, GameStats, Achievement, Building, CardOpponent, LeaderboardEntry, Spaceship, ClassMastery, TownState, MarketTrend, AncientRelic } from './types';
 
 
 export const INITIAL_ACHIEVEMENTS: Achievement[] = [
@@ -195,3 +195,24 @@ export const INITIAL_SPACESHIP: Spaceship = {
     },
     upgrades: []
 };
+export const INITIAL_TOWN: TownState = {
+    prosperity: 0,
+    stability: 100,
+    crime: 0,
+    relics: []
+};
+
+export const INITIAL_MARKET_TREND: MarketTrend = {
+    type: 'neutral',
+    multiplier: 1.0,
+    name: 'Stable Market',
+    description: 'No major shifts in the market.',
+    endTime: Date.now() + 3600000 // 1 hour
+};
+
+export const ANCIENT_RELICS: AncientRelic[] = [
+    { id: 'relic_crown', name: 'Coroa do Antigo Rei', description: '+10% Prosperidade da Cidade', type: 'prosperity', value: 0.1, emoji: '👑' },
+    { id: 'relic_shield', name: 'Escudo Guardião', description: '+5% Estabilidade da Cidade', type: 'stability', value: 0.05, emoji: '🛡️' },
+    { id: 'relic_coin', name: 'Moeda da Fortuna', description: '+5% Lucro do Mercado', type: 'market', value: 0.05, emoji: '🪙' },
+    { id: 'relic_torch', name: 'Tocha da Ordem', description: '-5% Criminalidade', type: 'crime', value: -0.05, emoji: '🔦' }
+];

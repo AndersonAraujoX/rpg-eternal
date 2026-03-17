@@ -294,6 +294,34 @@ export interface TownEvent {
     buffValue?: number;
 }
 
+// Phase 100: Market Dynamics & Town Sovereignty
+export type MarketTrendType = 'bull' | 'bear' | 'neutral' | 'volatile' | 'crash' | 'boom';
+
+export interface MarketTrend {
+    type: MarketTrendType;
+    multiplier: number; // 0.8 to 1.2 typically
+    name: string;
+    description: string;
+    endTime: number; // Timestamp
+}
+
+export interface AncientRelic {
+    id: string;
+    name: string;
+    description: string;
+    bonusType: 'gold_gain' | 'price_reduction' | 'exp_gain' | 'dungeon_reveal';
+    bonusValue: number;
+    count: number;
+    emoji: string;
+}
+
+export interface TownState {
+    prosperity: number;
+    stability: number;
+    crime: number;
+    relics: AncientRelic[];
+}
+
 export interface ItemAffix {
     id: string;
     name: string;
@@ -687,6 +715,8 @@ export interface GameActions {
     // Phase 10: Meta-Progression
     unlockArtifact: (id: string) => void;
     buyClassTalent: (className: HeroClass, talentId: string) => void;
+    // Phase 100
+    collectRelic: (relic: AncientRelic) => void;
 }
 
 export interface WorldBoss extends Boss {

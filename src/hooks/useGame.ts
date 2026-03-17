@@ -37,6 +37,9 @@ import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GALAXY } from '../engine/galaxy';
 import { generateInitialArenaBoard, calculateWinChance, applyVictoryGrowth, spawnReplacementOpponent } from '../engine/arena';
 import { INITIAL_TERRITORIES, applyTerritoryUpgrade } from '../engine/guildWar';
+import { INITIAL_TOWN, INITIAL_MARKET_TREND } from '../engine/initialData';
+import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
+import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
 
 const getNextBoss = (level: number): Boss => {
     const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
@@ -113,6 +116,8 @@ export const useGame = () => {
     const [outerSpaceUnlocked, setOuterSpaceUnlocked] = useState(false);
     const [prestigeNodes, setPrestigeNodes] = useState<Record<string, number>>({});
     const [townVisited, setTownVisited] = useState(false);
+    const [town, setTown] = useState<TownState>(INITIAL_TOWN);
+    const [marketTrend, setMarketTrend] = useState<MarketTrend>(INITIAL_MARKET_TREND);
     const [portalConfig, setPortalConfig] = useState<{
         title: string;
         message: string;
@@ -428,6 +433,16 @@ export const useGame = () => {
                 ...prev,
                 playTime: (prev.playTime || 0) + 1
             }));
+
+            // Phase 100: Market Trend Rotation
+            setMarketTrend(prev => {
+                if (Date.now() >= prev.endTime) {
+                    const nextTrend = generateRandomTrend(60);
+                    addLog(`Economia da Cidade mudou para: ${nextTrend.name}!`, 'action');
+                    return nextTrend;
+                }
+                return prev;
+            });
         }, 1000);
         return () => clearInterval(timer);
     }, [raidActive, voidActive, calculatedPartyPower]);
@@ -549,6 +564,7 @@ export const useGame = () => {
             },
             visitTown: () => {
                 setTownVisited(true);
+                setTown(t => ({ ...t, prosperity: t.prosperity + 1 }));
             },
             prestigeTower: () => {
                 if (world.tower.maxFloor >= 20) {
@@ -810,10 +826,23 @@ export const useGame = () => {
                 
                 // Visual feedback sound (optional)
                 // soundManager.playHit();
+            },
+            collectRelic: (relic: AncientRelic) => {
+                setTown(prev => {
+                    const existing = prev.relics.find(r => r.id === relic.id);
+                    let newRelics;
+                    if (existing) {
+                        newRelics = prev.relics.map(r => r.id === relic.id ? { ...r, count: (r.count || 0) + 1 } : r);
+                    } else {
+                        newRelics = [...prev.relics, { ...relic, count: 1 }];
+                    }
+                    return { ...prev, relics: newRelics, prosperity: prev.prosperity + 10 };
+                });
+                addLog(`Relíquia Antiga instalada: ${relic.name}!`, 'success');
             }
         };
         return baseActions as GameActions;
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
@@ -946,33 +975,32 @@ export const useGame = () => {
             setHeroes(prev => {
                 const miners = (prev || []).filter(h => h.assignment === 'mine');
                 const mYield = processMining(miners);
-                if (mYield) setResources(r => ({ ...r, copper: r.copper + (mYield.copper || 0), iron: r.iron + (mYield.iron || 0), mithril: r.mithril + (mYield.mithril || 0) }));
+                if (mYield && ((mYield.copper || 0) > 0 || (mYield.iron || 0) > 0 || (mYield.mithril || 0) > 0)) {
+                    setResources(r => ({ ...r, copper: r.copper + (mYield.copper || 0), iron: r.iron + (mYield.iron || 0), mithril: r.mithril + (mYield.mithril || 0) }));
+                }
 
-                return prev.map(oldHero => {
+                let changed = false;
+                const nextHeroes = prev.map(oldHero => {
                     const combatHero = res.updatedHeroes.find(h => h.id === oldHero.id);
-                    let h = combatHero ? { ...combatHero } : { ...oldHero };
+                    let h = combatHero || oldHero;
                     const now = Date.now();
 
                     // Track deathTime for newly dead heroes
                     if (h.isDead && !oldHero.isDead) {
-                        h.deathTime = now;
+                        h = { ...h, deathTime: now };
                     }
 
                     // Auto-revive logic: 10 seconds (10000ms)
                     if (h.isDead && h.deathTime && now - h.deathTime >= 10000) {
-                        h.isDead = false;
-                        h.stats.hp = h.stats.maxHp;
-                        h.deathTime = undefined;
+                        h = { ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp }, deathTime: undefined };
                         addLog(`${h.name} ressurgiu e voltou ao combate!`, 'success');
                     }
 
                     if (bossDefeated && combatHero && !h.isDead) {
                         const xpGain = Math.floor(currentBoss.level * 10 * finalXpMult);
                         let newXp = (h.xp || 0) + xpGain;
-                        // ...
                         let newLevel = h.level || 1;
                         let newMaxXp = h.maxXp || 100;
-                        let newStats = { ...h.stats };
                         let currentStatPoints = h.statPoints || 0;
 
                         while (newXp >= newMaxXp) {
@@ -981,19 +1009,29 @@ export const useGame = () => {
                             newMaxXp = Math.floor(newMaxXp * 1.5);
                             currentStatPoints += 5;
                         }
-                        h = { ...h, xp: newXp, level: newLevel, maxXp: newMaxXp, stats: { ...newStats }, statPoints: currentStatPoints };
+                        if (newLevel !== h.level || newXp !== h.xp) {
+                            h = { ...h, xp: newXp, level: newLevel, maxXp: newMaxXp, statPoints: currentStatPoints };
+                        }
                     }
 
-                    if (h.assignment === 'combat') h.fatigue = Math.min(100, (h.fatigue || 0) + 0.1);
-                    else h.fatigue = Math.max(0, (h.fatigue || 0) - 1);
+                    const fatigueDelta = h.assignment === 'combat' ? 0.1 : -1;
+                    const prevFatigue = h.fatigue || 0;
+                    const newFatigue = Math.max(0, Math.min(100, prevFatigue + fatigueDelta));
+                    
+                    if (newFatigue !== prevFatigue) {
+                        h = { ...h, fatigue: newFatigue };
+                    }
 
+                    if (h !== oldHero) changed = true;
                     return h;
                 });
+
+                return changed ? nextHeroes : prev;
             });
 
             // Global Automation Processing
             const autoResult = processGlobalAutomation(gameStats, resources, activeExpeditions);
-            if (Object.keys(autoResult.resources).length > 0) {
+            if (autoResult.resources && Object.values(autoResult.resources).some(v => v > 0)) {
                 setResources(prev => {
                     const next = { ...prev };
                     Object.entries(autoResult.resources).forEach(([k, v]) => (next as any)[k] += v);
@@ -1002,19 +1040,22 @@ export const useGame = () => {
             }
             
             // Collect all stats updates including combat damage
-            setGameStats(prev => {
-                let nextStats = { ...prev };
-                if (Object.keys(autoResult.stats).length > 0) {
-                    nextStats = { ...nextStats, ...autoResult.stats };
-                }
-                
-                // Track damage if we're attacking
-                if (res.totalDmg > 0) {
-                    nextStats.totalDamageDealt = (nextStats.totalDamageDealt || 0) + res.totalDmg;
-                }
-                
-                return nextStats;
-            });
+            const statsDelta = (Object.keys(autoResult.stats).length > 0) || (res.totalDmg > 0);
+            if (statsDelta) {
+                setGameStats(prev => {
+                    let nextStats = { ...prev };
+                    if (Object.keys(autoResult.stats).length > 0) {
+                        nextStats = { ...nextStats, ...autoResult.stats };
+                    }
+                    
+                    // Track damage if we're attacking
+                    if (res.totalDmg > 0) {
+                        nextStats.totalDamageDealt = (nextStats.totalDamageDealt || 0) + res.totalDmg;
+                    }
+                    
+                    return nextStats;
+                });
+            }
 
             // Re-schedule
             loopRef.current = setTimeout(runTick, tick);
