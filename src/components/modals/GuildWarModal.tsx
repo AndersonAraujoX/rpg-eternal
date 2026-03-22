@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Sword, Shield, Map as MapIcon, Flag, Coins, Activity, Lock, TrendingUp, Star } from 'lucide-react';
-import type { Territory, Guild } from '../../engine/types';
+import type { Guild } from '../../engine/types';
+import type { Territory } from '../../engine/types';
 import { formatNumber } from '../../utils';
 
 interface GuildWarModalProps {
@@ -8,19 +9,78 @@ interface GuildWarModalProps {
     territories: Territory[];
     onAttack: (territoryId: string) => void;
     onUpgrade: (territoryId: string) => void;
+    onAdvanceMap: () => void;
     partyPower: number;
     guild: Guild | null;
     gold: number;
+    industryInventory?: Record<string, number>;
+    onBombard?: (territoryId: string, weaponId: 'siege_catapult' | 'plasma_cannon') => void;
 }
 
-export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, partyPower, guild, gold }: GuildWarModalProps) {
+export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, onAdvanceMap, partyPower, guild, gold, industryInventory = {}, onBombard }: GuildWarModalProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || territories.length === 0) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const w = canvas.width;
+        const h = canvas.height;
+        const cellSize = 5; // Retro pixel size
+        const cols = w / cellSize;
+        const rows = h / cellSize;
+
+        const colorMap: Record<string, string> = {
+            'player': '#16a34a',
+            'Xang': '#dc2626',
+            'Zhauw': '#2563eb',
+            'Yang': '#ca8a04',
+            'Kael': '#9333ea', // purple-600
+            'Vyrn': '#0d9488', // teal-600
+            'Ocean': '#0369a1', // light ocean blue
+            'Neutral': '#4b5563'
+        };
+
+        ctx.clearRect(0, 0, w, h);
+
+        const centers = territories.map(t => ({
+            x: (t.coordinates.x + 10) * 5 * (w / 100), // (x+10)*5 gives %
+            y: (t.coordinates.y + 10) * 5 * (h / 100),
+            color: colorMap[t.owner] || colorMap['Neutral']
+        }));
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const px = c * cellSize + cellSize / 2;
+                const py = r * cellSize + cellSize / 2;
+
+                let minDist = Infinity;
+                let closestColor = '#000';
+
+                for (const point of centers) {
+                    const dist = Math.hypot(px - point.x, py - point.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestColor = point.color;
+                    }
+                }
+
+                ctx.fillStyle = closestColor;
+                ctx.globalAlpha = 0.4; // 40% opacity 
+                ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+            }
+        }
+    }, [territories]);
 
     // Always read from latest territories prop to pick up upgrades
     const selected = selectedId ? territories.find(t => t.id === selectedId) ?? null : null;
 
     const isLeader = guild !== null && (guild.totalContribution || 0) >= 10000;
-    const playerTerritories = territories.filter(t => t.owner === 'player').length;
+    const capturableTerritories = territories.filter(t => t.owner !== 'Ocean');
+    const playerTerritories = capturableTerritories.filter(t => t.owner === 'player').length;
 
     const ownerColor = (owner: string) => {
         switch (owner) {
@@ -28,6 +88,8 @@ export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, party
             case 'Xang': return 'text-red-400 border-red-500 bg-red-900/20';
             case 'Zhauw': return 'text-blue-400 border-blue-500 bg-blue-900/20';
             case 'Yang': return 'text-yellow-400 border-yellow-500 bg-yellow-900/20';
+            case 'Kael': return 'text-purple-400 border-purple-500 bg-purple-900/20';
+            case 'Vyrn': return 'text-teal-400 border-teal-500 bg-teal-900/20';
             default: return 'text-gray-400 border-gray-500 bg-gray-900/20';
         }
     };
@@ -63,10 +125,29 @@ export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, party
                         </h2>
                         <div className="text-xs text-gray-400 mt-1">
                             Capture e melhore territórios para bônus passivos. {' '}
-                            <span className="text-green-400 font-bold">{playerTerritories}/{territories.length} conquistados</span>
+                            <span className="text-green-400 font-bold">{playerTerritories}/{capturableTerritories.length} conquistados</span>
                         </div>
                     </div>
-                    <div className="flex gap-3">
+                    {isLeader && capturableTerritories.length > 0 && (
+                        <button
+                            onClick={() => {
+                                const msg = playerTerritories === capturableTerritories.length
+                                    ? "Isso apagará o mapa atual e gerará um território totalmente novo e muito mais difícil. Os bônus passivos atuais serão descartados, mas o novo mapa trará recompensas muito superiores. Tem certeza?"
+                                    : "Atenção: Você não conquistou todos os territórios! Ao avançar agora, você abandona a campanha atual e gera um novo mapa aleatório do zero. Deseja realmente descartar este mapa?";
+                                if (confirm(msg)) {
+                                    onAdvanceMap();
+                                    setSelectedId(null);
+                                }
+                            }}
+                            className={`font-bold py-2 px-6 rounded-lg border-2 animate-pulse ml-4 font-mono uppercase tracking-widest text-sm ${playerTerritories === territories.length
+                                ? "bg-green-600 hover:bg-green-500 text-white border-green-400 shadow-[0_0_15px_rgba(22,163,74,0.5)]"
+                                : "bg-red-900/80 hover:bg-red-800 text-red-100 border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                                }`}
+                        >
+                            {playerTerritories === territories.length ? "Avançar Campanha" : "Gerar Novo Mapa"}
+                        </button>
+                    )}
+                    <div className="flex gap-3 ml-auto">
                         <div className="bg-gray-800 px-3 py-2 rounded-lg border border-gray-700 text-center">
                             <div className="text-xs text-gray-400">Poder</div>
                             <div className="text-lg font-bold text-white flex items-center gap-1">
@@ -110,6 +191,15 @@ export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, party
                                 style={{ backgroundImage: 'linear-gradient(#4a2000 1px, transparent 1px), linear-gradient(90deg, #4a2000 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
                             <div className="relative w-[600px] h-[400px]">
+                                {/* Voronoi Regions Layer */}
+                                <canvas
+                                    ref={canvasRef}
+                                    width={600}
+                                    height={400}
+                                    className="absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-500"
+                                    style={{ filter: 'brightness(1.5) contrast(1.2) drop-shadow(0 0 10px rgba(0,0,0,0.5))' }}
+                                />
+
                                 {territories.map(t => {
                                     const wc = winChanceLabel(t.difficulty);
                                     return (
@@ -132,9 +222,9 @@ export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, party
 
                             {/* Legend */}
                             <div className="absolute bottom-4 left-4 bg-gray-900/80 p-2 rounded border border-gray-700 text-xs text-gray-300 space-y-1">
-                                {[['green', 'Você'], ['red', 'Xang'], ['blue', 'Zhauw'], ['yellow', 'Yang'], ['gray', 'Neutro']].map(([c, label]) => (
+                                {[['green', 'Você'], ['red', 'Xang'], ['blue', 'Zhauw'], ['yellow', 'Yang'], ['purple', 'Kael'], ['teal', 'Vyrn'], ['sky', 'Oceano'], ['gray', 'Neutro']].map(([c, label]) => (
                                     <div key={label} className="flex items-center gap-2">
-                                        <div className={`w-3 h-3 bg-${c}-500 rounded-full`} />
+                                        <div className={`w-3 h-3 bg-${c === 'sky' ? 'sky-700' : c + '-500'} rounded-full`} />
                                         {label}
                                     </div>
                                 ))}
@@ -217,14 +307,45 @@ export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, party
 
                                     <div className="flex-1" />
 
-                                    {/* Action button */}
+                                    {/* Action buttons */}
                                     {selected.owner !== 'player' ? (
-                                        <button
-                                            onClick={() => onAttack(selected.id)}
-                                            className="w-full py-4 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-900/50 transition-all hover:scale-105"
-                                        >
-                                            <Sword className="w-5 h-5" /> SITIAR
-                                        </button>
+                                        <div className="space-y-2">
+                                            {onBombard && (
+                                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                                    <button
+                                                        onClick={() => onBombard(selected.id, 'siege_catapult')}
+                                                        disabled={!(industryInventory['siege_catapult'] > 0)}
+                                                        className={`flex flex-col items-center justify-center p-2 rounded border text-xs font-bold transition-all
+                                                            ${industryInventory['siege_catapult'] > 0
+                                                                ? 'bg-amber-900 border-amber-600 hover:bg-amber-800 text-amber-200'
+                                                                : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50'}`}
+                                                    >
+                                                        <span className="text-xl mb-1">🪨</span>
+                                                        <span>Catapulta</span>
+                                                        <span className="text-[9px] opacity-75">{industryInventory['siege_catapult'] || 0} Disponíveis</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onBombard(selected.id, 'plasma_cannon')}
+                                                        disabled={!(industryInventory['plasma_cannon'] > 0)}
+                                                        className={`flex flex-col items-center justify-center p-2 rounded border text-xs font-bold transition-all
+                                                            ${industryInventory['plasma_cannon'] > 0
+                                                                ? 'bg-cyan-900 border-cyan-600 hover:bg-cyan-800 text-cyan-200'
+                                                                : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50'}`}
+                                                    >
+                                                        <span className="text-xl mb-1">☄️</span>
+                                                        <span>Canhão Plasma</span>
+                                                        <span className="text-[9px] opacity-75">{industryInventory['plasma_cannon'] || 0} Disponíveis</span>
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={() => onAttack(selected.id)}
+                                                className="w-full py-4 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-900/50 transition-all hover:scale-105"
+                                            >
+                                                <Sword className="w-5 h-5" /> SITIAR
+                                            </button>
+                                        </div>
                                     ) : (
                                         <div className="w-full py-3 rounded-lg bg-green-900/50 border border-green-700 text-green-200 font-bold flex items-center justify-center gap-2 cursor-default">
                                             <Shield className="w-5 h-5" /> DEFENDENDO

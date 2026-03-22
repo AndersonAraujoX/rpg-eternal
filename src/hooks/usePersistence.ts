@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Rune, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 
@@ -44,8 +44,6 @@ export interface PersistenceProps {
     setGlory: React.Dispatch<React.SetStateAction<number>>;
     quests: Quest[];
     setQuests: React.Dispatch<React.SetStateAction<Quest[]>>;
-    runes: Rune[];
-    setRunes: React.Dispatch<React.SetStateAction<Rune[]>>;
     achievements: Achievement[];
     setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>;
     starlight: number;
@@ -98,7 +96,7 @@ export const usePersistence = (props: PersistenceProps) => {
         setCards, setConstellations, setKeys, setResources,
         setTower, setTowerBoss, setGuild, setVoidMatter,
         setArenaRank, setGlory, setQuests,
-        setRunes, setAchievements,
+        setAchievements,
         setStarlight,
         setStarlightUpgrades,
         setAutoSellRarity,
@@ -142,7 +140,6 @@ export const usePersistence = (props: PersistenceProps) => {
                             // Ensure element/assignment are backfilled if missing in save
                             element: savedH.element || initH.element,
                             assignment: savedH.assignment || 'combat',
-                            gambits: savedH.gambits || initH.gambits,
                             insanity: (savedH as any).corruption ? 50 : (savedH.insanity || 0),
                         };
                     }
@@ -192,7 +189,6 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.arenaRank) setArenaRank(state.arenaRank);
                 if (state.glory) setGlory(state.glory);
                 if (state.quests) setQuests(state.quests);
-                if (state.runes) setRunes(state.runes);
                 if (state.achievements) setAchievements(state.achievements);
 
                 if (state.starlight) setStarlight(state.starlight);
@@ -232,7 +228,9 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.arenaOpponents) setArenaOpponents(state.arenaOpponents);
                 if (state.dailyLoginClaimed !== undefined) setDailyLoginClaimed(state.dailyLoginClaimed);
                 if (state.lastDailyReset) setLastDailyReset(state.lastDailyReset);
-                if (state.territories) setTerritories(state.territories);
+                if (state.territories && state.territories.length > 5) {
+                    setTerritories(state.territories);
+                } // Fallback to memory defaults (dynamic procedural map) if save layout is legacy (<=5)
                 if (state.spaceship) setSpaceship(state.spaceship);
                 if (state.formations) setFormations(state.formations);
                 if (state.weather) setWeather(state.weather);
@@ -306,8 +304,6 @@ export const usePersistence = (props: PersistenceProps) => {
                 assignment: h.assignment,
                 stats: { hp: h.stats.hp, maxHp: h.stats.maxHp, attack: h.stats.attack, defense: h.stats.defense, magic: h.stats.magic, speed: h.stats.speed, mp: h.stats.mp, maxMp: h.stats.maxMp },
                 statPoints: h.statPoints,
-                equipment: h.equipment,
-                gambits: h.gambits,
                 element: h.element,
                 insanity: h.insanity,
                 fatigue: h.fatigue,
@@ -327,7 +323,7 @@ export const usePersistence = (props: PersistenceProps) => {
             const state = {
                 heroes: compactHeroes,
                 boss: p.boss, souls: p.souls, gold: p.gold, divinity: p.divinity, pets: p.pets, talents: p.talents, artifacts: p.artifacts, cards: p.cards, constellations: p.constellations, keys: p.keys,
-                resources: p.resources, tower: p.tower, towerBoss: p.towerBoss, guild: p.guild, voidMatter: p.voidMatter, arenaRank: p.arenaRank, glory: p.glory, quests: p.quests, runes: p.runes, achievements: p.achievements, starlight: p.starlight,
+                resources: p.resources, tower: p.tower, towerBoss: p.towerBoss, guild: p.guild, voidMatter: p.voidMatter, arenaRank: p.arenaRank, glory: p.glory, quests: p.quests, achievements: p.achievements, starlight: p.starlight,
                 starlightUpgrades: p.starlightUpgrades, theme: p.theme, galaxy: p.galaxy, monsterKills: filteredKills, gameStats: p.gameStats, autoSellRarity: p.autoSellRarity,
                 activeExpeditions: p.activeExpeditions, activePotions: p.activePotions, buildings: p.buildings,
                 dailyQuests: p.dailyQuests, dailyLoginClaimed: p.dailyLoginClaimed, lastDailyReset: p.lastDailyReset,

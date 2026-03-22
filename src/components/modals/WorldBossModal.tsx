@@ -9,21 +9,31 @@ interface WorldBossModalProps {
     worldBoss: WorldBoss | null;
     personalDamage: number;
     canClaim: boolean;
+    cooldownUntil?: number | null;
     attackAction: () => void;
     claimAction: () => void;
 }
 
 export const WorldBossModal: React.FC<WorldBossModalProps> = ({
-    isOpen, onClose, worldBoss, personalDamage, canClaim, attackAction, claimAction
+    isOpen, onClose, worldBoss, personalDamage, canClaim, cooldownUntil, attackAction, claimAction
 }) => {
     if (!isOpen) return null;
 
     if (!worldBoss) {
+        const cdLeft = cooldownUntil ? Math.max(0, Math.floor((cooldownUntil - Date.now()) / 1000)) : 0;
+        const cMins = Math.floor(cdLeft / 60);
+        const cSecs = cdLeft % 60;
+
         return (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
                 <div className="bg-gray-900 p-6 rounded-lg border-2 border-gray-600 text-center max-w-md w-full">
                     <h2 className="text-2xl font-bold text-gray-400 mb-4">Chefe Mundial</h2>
-                    <p className="text-gray-500">O chefe fugiu ou foi derrotado. Um novo titã surgirá em breve...</p>
+                    <p className="text-gray-500 mb-4">O chefe fugiu ou foi derrotado. Um novo titã surgirá em breve...</p>
+                    {cooldownUntil ? (
+                        <div className="text-3xl font-mono text-red-500 font-bold mb-4 animate-pulse">
+                            {cMins.toString().padStart(2, '0')}:{cSecs.toString().padStart(2, '0')}
+                        </div>
+                    ) : null}
                     <button onClick={onClose} className="mt-6 px-4 py-2 bg-gray-700 rounded hover:bg-gray-600 w-full">Fechar</button>
                 </div>
             </div>

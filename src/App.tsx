@@ -65,8 +65,8 @@ function App() {
   const {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
-    ultimateCharge, raidActive, tower, guild, voidMatter, voidActive, voidTimer,
-    arenaRank, glory, quests, runes, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
+    ultimateCharge, raidActive, tower, guild, voidMatter, voidActive, voidTimer, worldBossCooldownUntil,
+    arenaRank, glory, quests, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
     victory,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
     outerSpaceUnlocked,
@@ -242,6 +242,7 @@ function App() {
           setShowSettings={setShowSettings} setShowVoid={setShowVoid} setShowArena={setShowArena}
           setShowQuests={setShowQuests} setShowDailyRewards={setShowDailyRewards}
           setShowRunes={setShowRunes} setShowAchievements={setShowAchievements}
+
           setShowStarlight={setShowStarlight} setShowGalaxy={setShowGalaxy}
           setShowLeaderboard={setShowLeaderboard} setShowHelp={setShowHelp}
           setShowFishing={setShowFishing} setShowAlchemy={setShowAlchemy}
@@ -269,8 +270,7 @@ function App() {
         <HeroList
           heroes={heroes}
           activeSynergies={synergies}
-          actions={{ ...actions, formations, saveFormation, loadFormation, deleteFormation }}
-          onOpenGear={(hero) => setSelectedHeroId(hero.id)}
+          actions={actions}
         />
 
 
@@ -307,7 +307,6 @@ function App() {
           onClaim={actions.claimQuest}
         />
       )}
-      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={actions} runes={runes} />
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
@@ -370,9 +369,28 @@ function App() {
         gameStats={gameStats}
       />
       {showBreedingModal && <BreedingModal isOpen={true} onClose={() => setShowBreedingModal(false)} pets={pets} breedPets={breedPets} gold={gold} />}
-      {showGuildWar && <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} partyPower={partyPower} guild={guild} gold={gold} />}
+
+      {showGuildWar && (() => {
+        const handleBombard = (id: string, weaponId: 'siege_catapult' | 'plasma_cannon') => {
+          const currentCount = industry.inventory[weaponId] || 0;
+          if (currentCount >= 1) {
+            industry.setIndustryState(prev => ({
+              ...prev,
+              inventory: {
+                ...prev.inventory,
+                [weaponId]: prev.inventory[weaponId] - 1
+              }
+            }));
+            const multiplier = weaponId === 'siege_catapult' ? 0.5 : 0.1;
+            const weaponName = weaponId === 'siege_catapult' ? 'Catapulta de Cerco' : 'Canhão de Plasma';
+            actions.bombardTerritory(id, multiplier, weaponName);
+          }
+        };
+        return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} />;
+      })()}
+
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
-      <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} tower={tower} openIndustry={() => setShowIndustry(true)} />
+      <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} tower={tower} openIndustry={() => setShowIndustry(true)} openForge={() => setShowForge(true)} openFishing={() => setShowFishing(true)} openAlchemy={() => setShowAlchemy(true)} openExpeditions={() => setShowExpeditions(true)} openGarden={() => setShowGarden(true)} />
       <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
@@ -432,6 +450,7 @@ function App() {
         worldBoss={worldBoss || null}
         personalDamage={worldBossDamage || 0}
         canClaim={worldBossCanClaim || false}
+        cooldownUntil={worldBossCooldownUntil}
         attackAction={actions.attackWorldBoss}
         claimAction={actions.claimWorldBossReward}
       />

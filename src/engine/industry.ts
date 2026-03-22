@@ -42,7 +42,9 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     { id: 'copper_wire', name: 'Fio de Cobre', description: 'Fiação condutora básica.', emoji: '🧵' },
     { id: 'iron_gear', name: 'Engrenagem', description: 'Componente mecânico essencial.', emoji: '⚙️' },
     { id: 'basic_circuit', name: 'Circuito Básico', description: 'Placa de controle simples.', emoji: '🖲️' },
-    { id: 'science_red', name: 'Ciência a Vapor (Vermelha)', description: 'Pacote de pesquisa básica.', emoji: '🧪' }
+    { id: 'science_red', name: 'Ciência a Vapor (Vermelha)', description: 'Pacote de pesquisa básica.', emoji: '🧪' },
+    { id: 'siege_catapult', name: 'Catapulta de Cerco', description: 'Arma brutal de guerra. Diminui a dificuldade de territórios.', emoji: '🪨' },
+    { id: 'plasma_cannon', name: 'Canhão de Plasma', description: 'Tecnologia cósmica que aniquila defesas de guerra.', emoji: '☄️' }
 ];
 
 export const MACHINES: MachineInfo[] = [
@@ -64,6 +66,9 @@ export const RECIPES: Recipe[] = [
     { id: 'craft_gear', name: 'Montar: Engrenagem', inputs: { 'iron_ingot': 2 }, outputs: { 'iron_gear': 1 }, time: 3, machineType: 'assembler', powerDraw: 30 },
     { id: 'craft_circuit', name: 'Montar: Circuito Básico', inputs: { 'iron_ingot': 1, 'copper_wire': 3 }, outputs: { 'basic_circuit': 1 }, time: 5, machineType: 'assembler', powerDraw: 40 },
     { id: 'craft_science_red', name: 'Criar Ciência Vermelha', inputs: { 'copper_wire': 1, 'iron_gear': 1 }, outputs: { 'science_red': 1 }, time: 5, machineType: 'assembler', powerDraw: 50 },
+
+    { id: 'craft_catapult', name: 'Montar: Catapulta de Cerco', inputs: { 'iron_gear': 50, 'coal': 100 }, outputs: { 'siege_catapult': 1 }, time: 60, machineType: 'assembler', powerDraw: 100 },
+    { id: 'craft_plasma_cannon', name: 'Montar: Canhão de Plasma', inputs: { 'basic_circuit': 20, 'copper_wire': 100 }, outputs: { 'plasma_cannon': 1 }, time: 300, machineType: 'assembler', powerDraw: 500 },
 
     { id: 'gen_steam', name: 'Gerar Energia a Vapor', inputs: { 'coal': 1 }, outputs: {}, time: 10, machineType: 'generator', powerDraw: -500 } // negative draw = generation (produces 500 MW)
 ];

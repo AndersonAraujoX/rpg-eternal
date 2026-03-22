@@ -162,26 +162,11 @@ export const Header: React.FC<HeaderProps> = ({
     );
 
     const renderSkillsButtons = () => {
-        const hasForge = buildings.find(b => b.id === 'forge_workshop' && b.level > 0);
         const hasBreeding = buildings.find(b => b.id === 'breeding_center' && b.level > 0);
-        const hasFishing = buildings.find(b => b.id === 'fishing_dock' && b.level > 0);
-        const hasAlchemy = buildings.find(b => b.id === 'alchemy_lab' && b.level > 0);
-        const hasExpeditions = buildings.find(b => b.id === 'expedition_post' && b.level > 0);
-        const hasGarden = buildings.find(b => b.id === 'mystic_garden' && b.level > 0);
         const hasRunes = buildings.find(b => b.id === 'rune_sanctuary' && b.level > 0);
 
         return (
             <>
-                <button
-                    onClick={() => setShowForge(true)}
-                    disabled={!hasForge}
-                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasForge ? 'bg-orange-900 text-orange-200 border-orange-500 hover:bg-orange-800' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
-                    title={hasForge ? "A Forja" : "Bloqueado: Requer Oficina de Forja na Vila"}
-                >
-                    <Hammer size={12} /> {hasForge ? "Forja" : "???"}
-                    {!hasForge && <Lock size={8} />}
-                </button>
-
                 {setShowPetSpace && (
                     <button
                         onClick={() => setShowPetSpace(true)}
@@ -191,54 +176,6 @@ export const Header: React.FC<HeaderProps> = ({
                     >
                         <PawPrint size={12} /> {hasBreeding ? "Espaço Pet" : "???"}
                         {!hasBreeding && <Lock size={8} />}
-                    </button>
-                )}
-
-                {setShowFishing && (
-                    <button
-                        onClick={() => setShowFishing(true)}
-                        disabled={!hasFishing}
-                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasFishing ? 'bg-cyan-800 text-cyan-200 border-cyan-500 hover:bg-cyan-700' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
-                        title={hasFishing ? "Pesca" : "Bloqueado: Requer Doca de Pesca na Vila"}
-                    >
-                        <Anchor size={12} /> {hasFishing ? "Pescar" : "???"}
-                        {!hasFishing && <Lock size={8} />}
-                    </button>
-                )}
-
-                {setShowAlchemy && (
-                    <button
-                        onClick={() => setShowAlchemy(true)}
-                        disabled={!hasAlchemy}
-                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasAlchemy ? 'bg-purple-800 text-purple-200 border-purple-500 hover:bg-purple-700' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
-                        title={hasAlchemy ? "Alquimia" : "Bloqueado: Requer Laboratório de Alquimia na Vila"}
-                    >
-                        <FlaskConical size={12} /> {hasAlchemy ? "Poções" : "???"}
-                        {!hasAlchemy && <Lock size={8} />}
-                    </button>
-                )}
-
-                {setShowExpeditions && (
-                    <button
-                        onClick={() => setShowExpeditions(true)}
-                        disabled={!hasExpeditions}
-                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasExpeditions ? 'bg-amber-800 text-amber-200 border-amber-500 hover:bg-amber-700' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
-                        title={hasExpeditions ? "Expedições" : "Bloqueado: Requer Posto de Expedição na Vila"}
-                    >
-                        <Map size={12} /> {hasExpeditions ? "Explorar" : "???"}
-                        {!hasExpeditions && <Lock size={8} />}
-                    </button>
-                )}
-
-                {setShowGarden && (
-                    <button
-                        onClick={() => setShowGarden(true)}
-                        disabled={!hasGarden}
-                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${hasGarden ? 'bg-green-800 text-green-200 border-green-500 hover:bg-green-700' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
-                        title={hasGarden ? "O Grande Jardim" : "Bloqueado: Requer Jardim Místico na Vila"}
-                    >
-                        <Leaf size={12} /> {hasGarden ? "Jardim" : "???"}
-                        {!hasGarden && <Lock size={8} />}
                     </button>
                 )}
 
@@ -313,12 +250,34 @@ export const Header: React.FC<HeaderProps> = ({
                     {weather && weatherTimer && (
                         <div className="bg-gray-800 px-2 py-1 rounded text-xs flex items-center gap-1 border border-gray-600 group relative cursor-help mr-2">
                             <span>{WEATHER_DATA[weather].icon}</span>
-                            {/* <span className="hidden sm:inline text-gray-300">{weather}</span> */}
                             <span className="text-gray-500 font-mono text-[10px]">{Math.floor(weatherTimer / 60)}:{(weatherTimer % 60).toString().padStart(2, '0')}</span>
 
-                            <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900 border border-gray-600 p-2 rounded shadow-xl hidden group-hover:block z-50">
-                                <div className="font-bold text-white mb-1">{WEATHER_DATA[weather].name}</div>
-                                <div className="text-[10px] text-green-400">Bônus: +{Math.abs(WEATHER_DATA[weather].bonus.value * 100)}% {WEATHER_DATA[weather].bonus.stat.toUpperCase()}</div>
+                            <div className="absolute top-full right-0 mt-2 w-64 bg-gray-900 border border-gray-600 p-2 rounded shadow-xl hidden group-hover:block z-50">
+                                <div className="font-bold text-white mb-1 flex items-center gap-1">
+                                    {WEATHER_DATA[weather].icon} {WEATHER_DATA[weather].name}
+                                </div>
+                                <div className="text-[10px] text-gray-400 italic mb-2">{WEATHER_DATA[weather].description}</div>
+
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
+                                    {WEATHER_DATA[weather].bonus.value > 0 && (
+                                        <div className="text-green-400 col-span-2">➔ +{Math.round(WEATHER_DATA[weather].bonus.value * 100)}% {WEATHER_DATA[weather].bonus.stat.toUpperCase()}</div>
+                                    )}
+                                    {WEATHER_DATA[weather].bonus.value < 0 && (
+                                        <div className="text-red-400 col-span-2">➔ {Math.round(WEATHER_DATA[weather].bonus.value * 100)}% {WEATHER_DATA[weather].bonus.stat.toUpperCase()}</div>
+                                    )}
+
+                                    {Object.entries(WEATHER_DATA[weather].elementModifiers).map(([el, mult]) => (
+                                        <div key={el} className={mult > 1 ? 'text-blue-300' : 'text-red-300'}>
+                                            {el}: {mult > 1 ? '+' : ''}{Math.round((mult - 1) * 100)}% Dano
+                                        </div>
+                                    ))}
+
+                                    {WEATHER_DATA[weather].guildWarBonus.value !== 0 && (
+                                        <div className={`col-span-2 mt-1 ${WEATHER_DATA[weather].guildWarBonus.value > 0 ? 'text-yellow-300' : 'text-red-400'}`}>
+                                            ⚔️ Guerra: {WEATHER_DATA[weather].guildWarBonus.value > 0 ? '+' : ''}{Math.round(WEATHER_DATA[weather].guildWarBonus.value * 100)}% {WEATHER_DATA[weather].guildWarBonus.stat.toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}

@@ -18,7 +18,7 @@ export interface Territory {
     id: string;
     name: string;
     description: string;
-    owner: 'player' | 'Xang' | 'Zhauw' | 'Yang' | 'Neutral';
+    owner: 'player' | 'Xang' | 'Zhauw' | 'Yang' | 'Neutral' | 'Kael' | 'Vyrn' | 'Ocean';
     difficulty: number;
     level: number;
     upgradeCost: number;
@@ -229,6 +229,8 @@ export interface Hero extends Entity {
     stats: Stats;
     skills: Skill[];
     deathTime?: number;
+    isAwakened?: boolean;
+    awakeningTitle?: string;
 }
 
 export interface GalaxySector {
@@ -540,6 +542,7 @@ export interface GameActions {
     spendStatPoint: (heroId: string, stat: keyof Stats) => void;
     recruitHero: (heroId: string) => void;
     evolveHero: (heroId: string) => void;
+    awakenHero: (heroId: string) => void;
     toggleAssignment: (heroId: string) => void;
     // Phase 91: Corruption
     purifyHero: (heroId: string) => void;
@@ -565,7 +568,9 @@ export interface GameActions {
     // Galaxy & Territories
     attackSector: (id: string) => void;
     attackTerritory: (id: string) => void;
+    bombardTerritory: (id: string, multiplier: number, weaponName: string) => void;
     upgradeTerritory: (id: string) => void;
+    advanceGuildWarMap: () => void;
     unlockOuterSpace: () => void;
     triggerRebirth: () => void;
     confirmRebirth: () => void;

@@ -1,26 +1,80 @@
 
-export interface Territory {
-    id: string;
-    name: string;
-    description: string;
-    owner: 'player' | 'Xang' | 'Zhauw' | 'Yang' | 'Neutral';
-    difficulty: number; // Required Power to have 50% win chance
-    level: number;      // Upgrade level (starts at 1)
-    upgradeCost: number; // Gold cost for next upgrade
-    bonus: {
-        type: 'gold' | 'xp' | 'damage';
-        value: number; // Multiplier (e.g., 0.1 for +10%)
-    };
-    coordinates: { x: number; y: number }; // For visual map (-10 to 10 grid)
-}
+import type { Territory } from './types';
 
-export const INITIAL_TERRITORIES: Territory[] = [
-    { id: 't1', name: 'Planícies Douradas', description: 'Terras férteis ricas em ouro.', owner: 'Xang', difficulty: 500, level: 1, upgradeCost: 2000, bonus: { type: 'gold', value: 0.10 }, coordinates: { x: -5, y: -5 } },
-    { id: 't2', name: 'Picos de Ferro', description: 'Montanhas que protegem forjas antigas.', owner: 'Zhauw', difficulty: 1500, level: 1, upgradeCost: 5000, bonus: { type: 'damage', value: 0.05 }, coordinates: { x: 5, y: 5 } },
-    { id: 't3', name: 'Floresta Mística', description: 'Florestas cheias de mana.', owner: 'Yang', difficulty: 3000, level: 1, upgradeCost: 10000, bonus: { type: 'xp', value: 0.10 }, coordinates: { x: -5, y: 5 } },
-    { id: 't4', name: 'Fortaleza Central', description: 'O coração estratégico do reino.', owner: 'Neutral', difficulty: 10000, level: 1, upgradeCost: 25000, bonus: { type: 'damage', value: 0.15 }, coordinates: { x: 0, y: 0 } },
-    { id: 't5', name: 'Terras das Sombras', description: 'Terras amaldiçoadas difíceis de manter.', owner: 'Neutral', difficulty: 25000, level: 1, upgradeCost: 50000, bonus: { type: 'gold', value: 0.25 }, coordinates: { x: 5, y: -5 } },
-];
+// INITIAL_TERRITORIES is now dynamic and moved to the bottom of the file
+
+const MAP_NAMES = ['Fortaleza de Ferro', 'Garganta do Dragão', 'Ruínas Esquecidas', 'Pilar dos Deuses', 'Planície Sangrenta', 'Vale do Crepúsculo', 'Acampamento Titã', 'Montanhas Uivantes'];
+const CLANS: Territory['owner'][] = ['Xang', 'Zhauw', 'Yang', 'Kael', 'Vyrn', 'Neutral'];
+const BONUS_TYPES: ('gold' | 'xp' | 'damage')[] = ['gold', 'xp', 'damage'];
+
+export const generateGuildWarMap = (partyPower: number): Territory[] => {
+    const tier = Math.max(1, Math.floor(Math.log10(Math.max(10, partyPower) / 10)));
+    const numNodes = Math.floor(Math.random() * 8) + 12 + tier; // 12 to 20+ nodes
+
+    const territories: Territory[] = [];
+    const usedCoords = new Set<string>();
+
+    const getCoord = (): { x: number, y: number } => {
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * 21) - 10;
+            y = Math.floor(Math.random() * 21) - 10;
+        } while (usedCoords.has(`${x},${y}`));
+        usedCoords.add(`${x},${y}`);
+        return { x, y };
+    };
+
+    // Spawn Oceans (Uncapturable terrain data for Voronoi)
+    const numOceans = Math.floor(Math.random() * 6) + 4; // 4 to 9 ocean centers
+    for (let i = 0; i < numOceans; i++) {
+        territories.push({
+            id: `ocean-${i}`,
+            name: 'Mar Desconhecido',
+            description: 'Águas profundas.',
+            owner: 'Ocean',
+            difficulty: 9999999,
+            level: 1,
+            upgradeCost: 0,
+            bonus: { type: 'gold', value: 0 },
+            coordinates: getCoord()
+        });
+    }
+
+    for (let i = 0; i < numNodes; i++) {
+        // Random placement from -10 to 10
+        const coords = getCoord();
+
+        // Difficulty scales around partyPower. From easy (30%) to hard (150%)
+        const diffMultiplier = 0.3 + (Math.random() * 1.2);
+        const difficulty = Math.max(500, partyPower * diffMultiplier);
+
+        const bonusVal = 0.05 + (Math.random() * 0.1 * tier);
+
+        territories.push({
+            id: `gw-${Date.now()}-${i}`,
+            name: `${MAP_NAMES[Math.floor(Math.random() * MAP_NAMES.length)]} ${Math.floor(Math.random() * 100)}`,
+            description: 'Posto avançado inimigo ou terra devoluta.',
+            owner: CLANS[Math.floor(Math.random() * CLANS.length)],
+            difficulty: Math.floor(difficulty),
+            level: 1,
+            upgradeCost: Math.floor(difficulty * 2), // Example scaling
+            bonus: {
+                type: BONUS_TYPES[Math.floor(Math.random() * BONUS_TYPES.length)],
+                value: parseFloat(bonusVal.toFixed(2))
+            },
+            coordinates: coords
+        });
+    }
+
+    // Force first generated node to be neutral and easy
+    territories[0].owner = 'Neutral';
+    territories[0].difficulty = Math.floor(Math.max(500, partyPower * 0.2));
+    territories[0].name = 'Ponto de Desembarque';
+
+    return territories;
+};
+
+export const INITIAL_TERRITORIES: Territory[] = generateGuildWarMap(100);
 
 export const simulateSiege = (territory: Territory, partyPower: number): boolean => {
     const ratio = partyPower / territory.difficulty;
