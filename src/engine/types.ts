@@ -42,10 +42,57 @@ export interface Entity {
     evolutionCount?: number;
 }
 
+export type ItemType = 'weapon' | 'armor' | 'accessory' | 'potion' | 'material' | 'currency';
+export type ItemRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type ItemStat = 'attack' | 'defense' | 'hp' | 'magic' | 'speed' | 'gold' | 'crit';
 
+export interface Rune {
+    id: string;
+    name: string;
+    stat: ItemStat;
+    value: number;
+    emoji: string;
+    rarity: ItemRarity;
+}
+
+export interface ItemAffix {
+    id: string;
+    name: string;
+    stat: ItemStat;
+    multiplier: number;
+}
+
+export interface ItemSet {
+    id: string;
+    name: string;
+    itemIds: string[];
+    bonuses: { count: number; description: string; stats: Partial<Stats> }[];
+}
+
+export interface Item {
+    id: string;
+    name: string;
+    type: ItemType;
+    rarity: ItemRarity;
+    value: number;
+    emoji?: string;
+    stat?: ItemStat;
+    sockets?: number;
+    runes?: Rune[];
+    prefix?: ItemAffix;
+    suffix?: ItemAffix;
+    quality?: number;
+    level?: number;
+    xp?: number;
+    maxXp?: number;
+    evolutionId?: string;
+    unlocked?: boolean;
+    setId?: string;
+}
 
 export interface Talent {
     id: string;
+
     name: string;
     level: number;
     maxLevel: number;
@@ -296,14 +343,6 @@ export interface TownEvent {
     buffValue?: number;
 }
 
-export interface Item {
-    id: string;
-    name: string;
-    type: 'potion' | 'material' | 'currency';
-    value: number;
-    rarity: 'common' | 'rare' | 'epic' | 'legendary';
-}
-
 
 export interface StarlightUpgrade {
     id: string;
@@ -466,7 +505,7 @@ export interface MarketItem {
     cost: number;
     currency: 'gold' | 'divinity' | 'voidMatter';
     stock: number;
-    type: 'potion' | 'gambit_box' | 'corrupted_scroll' | 'pet_egg_fragment' | 'mysterious_item';
+    type: string; // 'potion' | 'gambit_box' | 'corrupted_scroll' | 'pet_egg_fragment' | 'mysterious_item'
     value?: number; // Effect magnitude
     emoji: string;
 }
