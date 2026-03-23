@@ -11,16 +11,29 @@ export const useWorldBoss = (
     const [worldBoss, setWorldBoss] = useState<WorldBoss | null>(null);
     const [personalDamage, setPersonalDamage] = useState(0);
     const [canClaim, setCanClaim] = useState(false);
+    const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+
+    // Cooldown tick
+    useEffect(() => {
+        if (cooldownUntil !== null) {
+            const interval = setInterval(() => {
+                if (Date.now() >= cooldownUntil) {
+                    setCooldownUntil(null);
+                }
+            }, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [cooldownUntil]);
 
     // Auto-generate boss if none exists
     useEffect(() => {
-        if (!worldBoss) {
+        if (!worldBoss && cooldownUntil === null) {
             const nextTier = Math.floor((gameStats.bossKills || 0) / 50) + 1;
             setWorldBoss(generateWorldBoss(nextTier));
             setPersonalDamage(0);
             setCanClaim(false);
         }
-    }, [worldBoss, gameStats.bossKills]);
+    }, [worldBoss, gameStats.bossKills, cooldownUntil]);
 
     // Attack Action
     const attackWorldBoss = (manualDamage?: number) => {
@@ -81,19 +94,21 @@ export const useWorldBoss = (
     const claimReward = () => {
         if (!worldBoss || !canClaim) return;
 
-        const rewards = calculateWorldBossRewards(worldBoss.tier, personalDamage);
+        const rewards = calculateWorldBossRewards(worldBoss.tier, personalDamage, worldBoss.maxGlobalHp);
 
         onWorldBossClaimed(rewards);
 
-        // Reset boss (will trigger auto-generate effect)
+        // Reset boss and start cooldown
         setWorldBoss(null);
         setCanClaim(false);
+        setCooldownUntil(Date.now() + 30 * 60 * 1000); // 30 minutes
     };
 
     return {
         worldBoss,
         personalDamage,
         canClaim,
+        cooldownUntil,
         attackWorldBoss,
         claimReward
     };

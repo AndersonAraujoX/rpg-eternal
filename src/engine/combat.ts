@@ -2,7 +2,7 @@ import type { Hero, Boss, Pet, ConstellationNode, Talent, Artifact, MonsterCard,
 import type { Synergy } from './synergies';
 import { checkActiveCombos, type ComboDefinition } from './combos';
 import { type TowerMutator } from './mutators';
-import { type WeatherType } from './weather';
+import { type WeatherType, WEATHER_DATA } from './weather';
 
 export const getElementalMult = (atkEl: string, defEl: string) => {
     if (atkEl === 'neutral' || defEl === 'neutral') return 1;
@@ -208,6 +208,10 @@ export const processCombatTurn = (
 
         let baseDmg = stats.attack * effectiveDamageMult * getElementalMult(h.element, boss.element);
 
+        if (weather && WEATHER_DATA[weather]?.elementModifiers[h.element]) {
+            baseDmg *= WEATHER_DATA[weather].elementModifiers[h.element]!;
+        }
+
         if (skipTurn || attackAlly) {
             baseDmg = 0;
         }
@@ -245,6 +249,9 @@ export const processCombatTurn = (
 
                                 if (processedSkill.element) {
                                     rawSkillDmg *= getElementalMult(processedSkill.element, boss.element);
+                                    if (weather && WEATHER_DATA[weather]?.elementModifiers[processedSkill.element]) {
+                                        rawSkillDmg *= WEATHER_DATA[weather].elementModifiers[processedSkill.element]!;
+                                    }
                                 }
 
                                 if (riftRestriction === 'phys_immune' && ['Warrior', 'Rogue', 'Berserker'].includes(h.class)) rawSkillDmg = 0;

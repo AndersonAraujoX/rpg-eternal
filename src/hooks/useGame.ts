@@ -36,10 +36,11 @@ import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS,
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GALAXY } from '../engine/galaxy';
 import { generateInitialArenaBoard, calculateWinChance, applyVictoryGrowth, spawnReplacementOpponent } from '../engine/arena';
-import { INITIAL_TERRITORIES, applyTerritoryUpgrade } from '../engine/guildWar';
+import { INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege } from '../engine/guildWar';
 import { INITIAL_TOWN, INITIAL_MARKET_TREND } from '../engine/initialData';
 import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
 import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
+import { WEATHER_DATA } from '../engine/weather';
 
 const getNextBoss = (level: number): Boss => {
     const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
@@ -469,6 +470,35 @@ export const useGame = () => {
                 const h = heroes.find(x => x.id === id);
                 if (h && h.level >= 50) setHeroes(p => p.map(curr => curr.id === id ? { ...curr, class: (PRESTIGE_CLASSES as any)[h.class] || h.class, level: 1 } : curr));
             },
+            awakenHero: (id: string) => {
+                const h = heroes.find(x => x.id === id);
+                const goldCost = 100000;
+                const soulsCost = 50000;
+                if (h && h.level >= 100 && !h.isAwakened && gold >= goldCost && souls >= soulsCost) {
+                    setGold(g => g - goldCost);
+                    setSouls(s => s - soulsCost);
+                    setHeroes(p => p.map(curr => curr.id === id ? {
+                        ...curr,
+                        isAwakened: true,
+                        awakeningTitle: 'Desperto',
+                        level: 100, // Cap
+                        stats: {
+                            ...curr.stats,
+                            maxHp: Math.floor(curr.stats.maxHp * 1.5),
+                            hp: Math.floor(curr.stats.maxHp * 1.5),
+                            attack: Math.floor(curr.stats.attack * 1.5),
+                            defense: Math.floor(curr.stats.defense * 1.5),
+                            magic: Math.floor(curr.stats.magic * 1.5)
+                        }
+                    } : curr));
+                    addLog(`☄️ LIMIT BREAK! ${h.name} alcançou o Despertar! Seus atributos explodiram de poder!`, 'achievement');
+                    soundManager.playLevelUp();
+                } else if (h && (gold < goldCost || souls < soulsCost)) {
+                    addLog(`Recursos insuficientes. O Despertar exige ${goldCost} Ouro e ${soulsCost} Almas.`, 'error');
+                } else if (h && h.level < 100) {
+                    addLog(`Herói não está pronto. O Despertar exige Nível 100.`, 'info');
+                }
+            },
             toggleAssignment: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h)),
             purifyHero: (id: string) => { if (gold >= 1000) { setGold(g => g - 1000); setHeroes(p => p.map(h => h.id === id ? { ...h, insanity: 0 } : h)); addLog("Hero purified!", "success"); } },
             reviveHero: (id: string) => { if (gold >= 5000) { setGold(g => g - 5000); setHeroes(p => p.map(h => h.id === id ? { ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp * 0.5 } } : h)); addLog("Hero revived!", "success"); } },
@@ -630,7 +660,30 @@ export const useGame = () => {
                 }
             },
             attackSector: (id: string) => galaxyState.attackSector(id),
-            attackTerritory: (id: string) => galaxyState.attackTerritory(id),
+            attackTerritory: (id: string) => {
+                const map = galaxyState.territories;
+                const t = map.find((x: any) => x.id === id);
+                if (!t || t.owner === 'player') return;
+
+                const success = simulateSiege(t, calculatedPartyPower);
+                if (success) {
+                    const weatherBonus = (world.weather && WEATHER_DATA[world.weather]) ? WEATHER_DATA[world.weather].guildWarBonus : { stat: 'none', value: 0 };
+
+                    let goldReward = t.difficulty * 2;
+                    let xpReward = t.difficulty;
+
+                    if (weatherBonus.stat === 'gold') goldReward *= (1 + weatherBonus.value);
+                    if (weatherBonus.stat === 'xp') xpReward *= (1 + weatherBonus.value);
+
+                    setGold(g => g + Math.floor(goldReward));
+                    guildState.setGuild((g: any) => g ? { ...g, xp: g.xp + Math.floor(xpReward) } : g);
+
+                    galaxyState.setTerritories((prev: any[]) => prev.map((pt: any) => pt.id === id ? { ...pt, owner: 'player' } : pt));
+                    addLog(`Vitória! A Guilda conquistou ${t.name}. +${Math.floor(goldReward)} Ouro, +${Math.floor(xpReward)} Guild XP.`, 'success');
+                } else {
+                    addLog(`Derrota cruel ao tentar invadir ${t.name}... Suas tropas recuaram.`, 'danger');
+                }
+            },
             upgradeTerritory: (id: string) => {
                 const t = galaxyState.territories.find((t: any) => t.id === id);
                 if (!t || t.owner !== 'player') return;
@@ -641,6 +694,21 @@ export const useGame = () => {
                     ter.id === id ? applyTerritoryUpgrade(ter) : ter
                 ));
                 addLog(`✨ ${t.name} melhorado para Nível ${(t.level || 1) + 1}! Bônus aumentado.`, 'success');
+            },
+            bombardTerritory: (id: string, multiplier: number, weaponName: string) => {
+                const t = galaxyState.territories.find((t: any) => t.id === id);
+                if (!t || t.owner === 'player') return;
+
+                galaxyState.setTerritories((prev: any[]) => prev.map((ter: any) =>
+                    ter.id === id ? { ...ter, difficulty: Math.max(1, Math.floor(ter.difficulty * multiplier)) } : ter
+                ));
+                addLog(`💥 ${weaponName} disparada! As defesas de ${t.name} desmoronaram e a dificuldade despencou!`, 'achievement');
+                soundManager.playHit();
+            },
+            advanceGuildWarMap: () => {
+                const newMap = generateGuildWarMap(partyPower);
+                galaxyState.setTerritories(newMap);
+                addLog("O exército da guilda marchou para uma nova e perigosa fronteira!", "achievement");
             },
             unlockOuterSpace: () => {
                 setOuterSpaceUnlocked(true);
@@ -1120,7 +1188,7 @@ export const useGame = () => {
             ...setUIState,
             setPortalConfig,
             ascendToVoid: ACTIONS.ascendToVoid,
-            worldBoss: worldBossState.worldBoss, worldBossDamage: worldBossState.personalDamage, worldBossCanClaim: worldBossState.canClaim,
+            worldBoss: worldBossState.worldBoss, worldBossDamage: worldBossState.personalDamage, worldBossCanClaim: worldBossState.canClaim, worldBossCooldownUntil: worldBossState.cooldownUntil,
             guildXpMult,
             setGameStats
         };

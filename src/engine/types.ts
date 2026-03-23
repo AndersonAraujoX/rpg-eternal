@@ -18,7 +18,7 @@ export interface Territory {
     id: string;
     name: string;
     description: string;
-    owner: 'player' | 'Xang' | 'Zhauw' | 'Yang' | 'Neutral';
+    owner: 'player' | 'Xang' | 'Zhauw' | 'Yang' | 'Neutral' | 'Kael' | 'Vyrn' | 'Ocean';
     difficulty: number;
     level: number;
     upgradeCost: number;
@@ -42,10 +42,65 @@ export interface Entity {
     evolutionCount?: number;
 }
 
+export type ItemType = 'weapon' | 'armor' | 'accessory' | 'potion' | 'material' | 'currency' | 'equipment';
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'divine' | 'chimera';
+export type ItemStat = 'attack' | 'defense' | 'hp' | 'magic' | 'speed' | 'gold' | 'crit' | 'mp';
 
+export interface Rune {
+    id: string;
+    name: string;
+    stat?: string;
+    value: number;
+    emoji?: string;
+    rarity: ItemRarity;
+    description?: string;
+    type?: string;
+    bonus?: string;
+}
+
+export interface ItemAffix {
+    id: string;
+    name: string;
+    stat: string;
+    multiplier?: number;
+    value?: number;
+    tier?: number;
+    type?: string;
+}
+
+export interface ItemSet {
+    id: string;
+    name: string;
+    itemIds: string[];
+    bonuses: { count: number; description: string; stats: Partial<Stats> }[];
+}
+
+export interface Item {
+    id: string;
+    name: string;
+    type: ItemType;
+    rarity: ItemRarity;
+    value: number;
+    emoji?: string;
+    stat?: ItemStat;
+    sockets?: number;
+    runes?: Rune[];
+    prefix?: ItemAffix;
+    suffix?: ItemAffix;
+    quality?: number;
+    level?: number;
+    xp?: number;
+    maxXp?: number;
+    evolutionId?: string;
+    unlocked?: boolean;
+    setId?: string;
+    slot?: string;
+    craftedBy?: string;
+}
 
 export interface Talent {
     id: string;
+
     name: string;
     level: number;
     maxLevel: number;
@@ -229,6 +284,8 @@ export interface Hero extends Entity {
     stats: Stats;
     skills: Skill[];
     deathTime?: number;
+    isAwakened?: boolean;
+    awakeningTitle?: string;
 }
 
 export interface GalaxySector {
@@ -294,6 +351,7 @@ export interface TownEvent {
     buffValue?: number;
 }
 
+
 // Phase 100: Market Dynamics & Town Sovereignty
 export type MarketTrendType = 'bull' | 'bear' | 'neutral' | 'volatile' | 'crash' | 'boom';
 
@@ -309,7 +367,7 @@ export interface AncientRelic {
     id: string;
     name: string;
     description: string;
-    bonusType: 'gold_gain' | 'price_reduction' | 'exp_gain' | 'dungeon_reveal';
+    bonusType: 'gold_gain' | 'price_reduction' | 'exp_gain' | 'dungeon_reveal' | 'prosperity' | 'stability' | 'market' | 'crime';
     bonusValue: number;
     count: number;
     emoji: string;
@@ -322,48 +380,8 @@ export interface TownState {
     relics: AncientRelic[];
 }
 
-export interface ItemAffix {
-    id: string;
-    name: string;
-    stat: string;
-    value: number;
-    tier: number;
-    type?: string;
-}
 
-export interface Item {
-    id: string;
-    name: string;
-    type: 'potion' | 'material' | 'currency' | 'equipment' | 'weapon' | 'armor' | 'accessory';
-    value: number; // Could be sell value or stat value
-    rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'divine' | 'chimera';
-    stat?: string; // e.g. 'attack', 'defense', 'maxHp'
-    runes?: Rune[];
-    level?: number;
-    evolutionId?: string;
-    xp?: number;
-    maxXp?: number;
-    sockets?: number;
-    prefix?: ItemAffix;
-    suffix?: ItemAffix;
-    quality?: number;
-    slot?: string;
-    craftedBy?: string;
-    setId?: string;
-}
 
-export interface ItemSet {
-    id: string;
-    name: string;
-    pieces: string[]; // Item IDs
-    bonusStat?: string;
-    bonusValue?: number;
-    bonuses: {
-        piecesRequired: number;
-        stat: string;
-        value: number;
-    }[];
-}
 
 
 export interface StarlightUpgrade {
@@ -527,7 +545,7 @@ export interface MarketItem {
     cost: number;
     currency: 'gold' | 'divinity' | 'voidMatter';
     stock: number;
-    type: 'potion' | 'gambit_box' | 'corrupted_scroll' | 'pet_egg_fragment' | 'mysterious_item';
+    type: string; // 'potion' | 'gambit_box' | 'corrupted_scroll' | 'pet_egg_fragment' | 'mysterious_item'
     value?: number; // Effect magnitude
     emoji: string;
 }
@@ -603,6 +621,7 @@ export interface GameActions {
     spendStatPoint: (heroId: string, stat: keyof Stats) => void;
     recruitHero: (heroId: string) => void;
     evolveHero: (heroId: string) => void;
+    awakenHero: (heroId: string) => void;
     toggleAssignment: (heroId: string) => void;
     // Phase 91: Corruption
     purifyHero: (heroId: string) => void;
@@ -628,7 +647,9 @@ export interface GameActions {
     // Galaxy & Territories
     attackSector: (id: string) => void;
     attackTerritory: (id: string) => void;
+    bombardTerritory: (id: string, multiplier: number, weaponName: string) => void;
     upgradeTerritory: (id: string) => void;
+    advanceGuildWarMap: () => void;
     unlockOuterSpace: () => void;
     triggerRebirth: () => void;
     confirmRebirth: () => void;
@@ -746,13 +767,4 @@ export interface Formation {
     heroIds: string[];
 }
 
-export interface Rune {
-    id: string;
-    name: string;
-    description: string;
-    type: 'attack' | 'defense' | 'magic' | 'hp' | 'speed' | 'crit';
-    stat?: string;
-    bonus?: string;
-    value: number; // The multiplier or flat bonus
-    rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-}
+

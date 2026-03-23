@@ -87,8 +87,22 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                                 {hero.name} {ElementIcon}
                             </h2>
                         )}
-                        <div className="text-gray-400 text-sm">{hero.class} - Nível {hero.level || 1}</div>
+                        <div className="text-gray-400 text-sm flex items-center gap-2 mt-1">
+                            {hero.isAwakened && <span className="text-yellow-400 font-bold px-2 py-0.5 bg-yellow-900/30 rounded border border-yellow-600/50 shadow-[0_0_8px_rgba(255,200,0,0.2)]">{hero.awakeningTitle}</span>}
+                            <span>{hero.class} - Nível {hero.level || 1}</span>
+                        </div>
                     </div>
+                    {hero.level >= 100 && !hero.isAwakened && (
+                        <div className="flex items-center ml-2">
+                            <button
+                                onClick={() => actions.awakenHero(hero.id)}
+                                className="bg-gradient-to-r from-amber-700 to-yellow-600 hover:from-amber-600 hover:to-yellow-500 text-amber-100 font-bold px-4 py-2 rounded-lg shadow-[0_0_15px_rgba(255,165,0,0.3)] animate-pulse border border-yellow-400 flex items-center gap-1 text-sm"
+                                title="Despertar: Requer 100k Ouro e 50k Almas. Aumenta massivamente os status primários do Herói."
+                            >
+                                <Zap size={16} className="text-yellow-200" /> DESPERTAR
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* XP Bars */}

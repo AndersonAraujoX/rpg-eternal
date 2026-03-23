@@ -11,9 +11,14 @@ interface TownModalProps {
     upgradeBuilding: (id: string) => void;
     tower?: import('../../engine/types').Tower;
     openIndustry?: () => void;
+    openForge?: () => void;
+    openFishing?: () => void;
+    openAlchemy?: () => void;
+    openExpeditions?: () => void;
+    openGarden?: () => void;
 }
 
-export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings, gold, upgradeBuilding, tower, openIndustry }) => {
+export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings, gold, upgradeBuilding, tower, openIndustry, openForge, openFishing, openAlchemy, openExpeditions, openGarden }) => {
     const [viewMode, setViewMode] = useState<'overview' | 'construction'>('overview');
 
     if (!isOpen) return null;
@@ -194,6 +199,36 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
                                             </div>
 
                                             {/* Action Button */}
+                                            {building.id === 'industry' && building.level > 0 && openIndustry && (
+                                                <button onClick={openIndustry} className="w-full mb-3 py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-900/50">
+                                                    ACESSAR INDÚSTRIA
+                                                </button>
+                                            )}
+                                            {building.id === 'forge_workshop' && building.level > 0 && openForge && (
+                                                <button onClick={openForge} className="w-full mb-3 py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white shadow-orange-900/50">
+                                                    <Hammer size={18} /> ACESSAR FORJA
+                                                </button>
+                                            )}
+                                            {building.id === 'fishing_dock' && building.level > 0 && openFishing && (
+                                                <button onClick={openFishing} className="w-full mb-3 py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white shadow-cyan-900/50">
+                                                    ACESSAR PESCA
+                                                </button>
+                                            )}
+                                            {building.id === 'alchemy_lab' && building.level > 0 && openAlchemy && (
+                                                <button onClick={openAlchemy} className="w-full mb-3 py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-purple-900/50">
+                                                    ACESSAR ALQUIMIA
+                                                </button>
+                                            )}
+                                            {building.id === 'expedition_post' && building.level > 0 && openExpeditions && (
+                                                <button onClick={openExpeditions} className="w-full mb-3 py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-900/50">
+                                                    ACESSAR EXPEDIÇÕES
+                                                </button>
+                                            )}
+                                            {building.id === 'mystic_garden' && building.level > 0 && openGarden && (
+                                                <button onClick={openGarden} className="w-full mb-3 py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white shadow-green-900/50">
+                                                    ACESSAR JARDIM
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => upgradeBuilding(building.id)}
                                                 disabled={isMax || !canAfford}

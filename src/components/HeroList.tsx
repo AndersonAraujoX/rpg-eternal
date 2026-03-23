@@ -13,11 +13,9 @@ interface HeroListProps {
     heroes: Hero[];
     actions: any;
     activeSynergies?: Synergy[];
-    onOpenGear: (hero: Hero) => void;
 }
 
-export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSynergies = [], onOpenGear }) => {
-    const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
+export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSynergies = [] }) => {
     const [viewingHero, setViewingHero] = useState<Hero | null>(null);
     // Update 74
 
@@ -60,9 +58,11 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                 const contributions = getContributingSynergies(hero);
 
                 return (
-                    <div key={hero.id} className={`relative p-2 rounded border-2 flex flex-col gap-1 transition-all ${!hero.unlocked ? 'border-gray-700 bg-gray-900 group/locked' :
-                        hero.isDead ? 'border-red-900 bg-red-950 opacity-70' :
-                            'border-gray-600 bg-gray-700 hover:bg-gray-600'
+                    <div key={hero.id} className={`relative p-2 rounded border-2 flex flex-col gap-1 transition-all 
+                        ${!hero.unlocked ? 'border-gray-700 bg-gray-900 group/locked' :
+                            hero.isDead ? 'border-red-900 bg-red-950 opacity-70' :
+                                hero.isAwakened ? 'border-yellow-500 bg-gray-700 shadow-[inset_0_0_15px_rgba(234,179,8,0.2)] hover:bg-gray-600' :
+                                    'border-gray-600 bg-gray-700 hover:bg-gray-600'
                         }`}>
                         {!hero.unlocked && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/locked:opacity-100 transition-opacity z-10 rounded">
@@ -85,22 +85,17 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                         )}
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-gray-400">{hero.class} (Nvl {hero.level})</span>
+                                        <span className="text-[10px] text-gray-400">{hero.class} (Nvl {hero.level}{hero.isAwakened ? ' ★' : ''})</span>
                                         {((hero.fatigue || 0) >= 50) && (
                                             <ShieldAlert size={10} className={(hero.fatigue || 0) >= 80 ? 'text-red-500 animate-pulse' : 'text-yellow-500'} />
                                         )}
+                                        {hero.isAwakened && <Zap size={10} className="text-yellow-400 animate-pulse" />}
                                     </div>
                                 </div>
                             </div>
                             {hero.unlocked && (
                                 <div className="flex gap-1">
-                                    <button
-                                        onClick={() => setSelectedHero(hero)}
-                                        className="p-1 rounded bg-slate-800 text-cyan-400 hover:text-cyan-200 border border-slate-600"
-                                        title="Editar Táticas de IA"
-                                    >
-                                        <Brain size={10} />
-                                    </button>
+
                                     <button
                                         onClick={() => actions.toggleAssignment(hero.id)}
                                         className={`p-1 rounded border ${hero.assignment === 'combat' ? 'bg-red-900 border-red-500 text-red-200' : 'bg-blue-900 border-blue-500 text-blue-200'}`}
@@ -124,13 +119,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                             <Heart size={10} />
                                         </button>
                                     )}
-                                    <button
-                                        onClick={() => onOpenGear(hero)}
-                                        className="p-1 rounded bg-yellow-900 border border-yellow-500 text-yellow-200"
-                                        title="Gerenciar Equipamentos"
-                                    >
-                                        <Shield size={10} />
-                                    </button>
+
                                     <button
                                         onClick={() => setViewingHero(hero)}
                                         className="p-1 rounded bg-green-900 border border-green-500 text-green-200"

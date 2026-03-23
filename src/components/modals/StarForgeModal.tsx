@@ -220,13 +220,13 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
                                         {resultItem.prefix && (
                                             <div className="flex justify-between text-sm text-green-400">
                                                 <span>{resultItem.prefix.name}</span>
-                                                <span>+{resultItem.prefix.value * 100}% {resultItem.prefix.stat}</span>
+                                                <span>+{((resultItem.prefix.value || resultItem.prefix.multiplier) || 0) * 100}% {resultItem.prefix.stat}</span>
                                             </div>
                                         )}
                                         {resultItem.suffix && (
                                             <div className="flex justify-between text-sm text-green-400">
                                                 <span>{resultItem.suffix.name}</span>
-                                                <span>+{resultItem.suffix.value * 100}% {resultItem.suffix.stat}</span>
+                                                <span>+{((resultItem.suffix.value || resultItem.suffix.multiplier) || 0) * 100}% {resultItem.suffix.stat}</span>
                                             </div>
                                         )}
                                     </div>
