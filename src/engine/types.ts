@@ -284,8 +284,13 @@ export interface Hero extends Entity {
     stats: Stats;
     skills: Skill[];
     deathTime?: number;
+    // Awakening
     isAwakened?: boolean;
     awakeningTitle?: string;
+    awakenedAt?: number; // Timestamp do Despertar (para o Hall of Fame)
+    // Mutation / Corruption
+    isMutated?: boolean;
+    mutationType?: 'berserk' | 'shadow' | 'arcane' | 'cursed'; // Tipos de corrupção
 }
 
 export interface GalaxySector {
@@ -625,6 +630,7 @@ export interface GameActions {
     toggleAssignment: (heroId: string) => void;
     // Phase 91: Corruption
     purifyHero: (heroId: string) => void;
+    purifyMutation: (heroId: string) => void; // Remove mutação (custo maior)
     renameHero: (heroId: string, name: string) => void;
     changeHeroEmoji: (heroId: string, emoji: string) => void;
 

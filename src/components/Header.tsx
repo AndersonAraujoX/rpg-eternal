@@ -2,8 +2,8 @@ import React from 'react';
 import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building as BuildingIcon, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock, ShieldAlert, Lock, PawPrint } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild, Building } from '../engine/types';
-import type { WeatherType } from '../engine/weather'; // Phase 48
-import { WEATHER_DATA } from '../engine/weather'; // Phase 48
+import type { WeatherType } from '../engine/weather';
+import { WEATHER_DATA, getDayNightPhase, getDayNightSecondsLeft, DAY_NIGHT_DATA } from '../engine/weather';
 
 interface HeaderProps {
     boss: Boss;
@@ -282,6 +282,34 @@ export const Header: React.FC<HeaderProps> = ({
                             </div>
                         </div>
                     )}
+
+                    {/* 🌙 Indicador Dia/Noite */}
+                    {(() => {
+                        const nowSec = Math.floor(Date.now() / 1000);
+                        const phase = getDayNightPhase(nowSec);
+                        const secsLeft = getDayNightSecondsLeft(nowSec);
+                        const dn = DAY_NIGHT_DATA[phase];
+                        const minsLeft = Math.floor(secsLeft / 60);
+                        const secsPart = secsLeft % 60;
+                        return (
+                            <div className="bg-gray-800 px-2 py-1 rounded text-xs flex items-center gap-1 border border-gray-700 group relative cursor-help">
+                                <span className={phase === 'night' ? 'animate-pulse' : ''}>{dn.icon}</span>
+                                <span className="text-gray-500 font-mono text-[10px]">{minsLeft}:{String(secsPart).padStart(2,'0')}</span>
+                                <div className="absolute top-full right-0 mt-2 w-56 bg-gray-900 border border-gray-600 p-2 rounded shadow-xl hidden group-hover:block z-50">
+                                    <div className="font-bold text-white mb-1 flex items-center gap-1">{dn.icon} {dn.name}</div>
+                                    <div className="text-[10px] text-gray-400 italic mb-2">{dn.description}</div>
+                                    <div className="grid grid-cols-2 gap-1 text-[10px]">
+                                        {dn.goldMultiplier !== 1 && <div className="text-yellow-300">💰 Ouro: ×{dn.goldMultiplier}</div>}
+                                        {dn.xpMultiplier !== 1 && <div className="text-blue-300">⭐ XP: ×{dn.xpMultiplier}</div>}
+                                        {dn.damageMultiplier !== 1 && <div className="text-red-300">⚔️ Dano: ×{dn.damageMultiplier}</div>}
+                                        {Object.entries(dn.elementBonus).map(([el, v]) => (
+                                            <div key={el} className={v > 1 ? 'text-green-300' : 'text-red-300'}>{el}: {v > 1 ? '+' : ''}{Math.round((v-1)*100)}%</div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     <button onClick={actions.toggleSound} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600">{isSoundOn ? <Volume2 size={12} /> : <VolumeX size={12} />}</button>
                     <button onClick={() => actions.setGameSpeed(gameSpeed === 1 ? 2 : gameSpeed === 2 ? 5 : gameSpeed === 5 ? 10 : gameSpeed === 10 ? 25 : 1)} className="btn-retro bg-blue-700 px-2 py-1 rounded text-[10px] min-w-[40px] text-center"><Zap size={10} className="inline mr-1" />{gameSpeed}x</button>

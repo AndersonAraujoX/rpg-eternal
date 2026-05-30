@@ -481,7 +481,8 @@ export const useGame = () => {
                         ...curr,
                         isAwakened: true,
                         awakeningTitle: 'Desperto',
-                        level: 100, // Cap
+                        awakenedAt: Date.now(), // ⏰ Timestamp para o Hall of Fame
+                        level: 100,
                         stats: {
                             ...curr.stats,
                             maxHp: Math.floor(curr.stats.maxHp * 1.5),
@@ -500,7 +501,27 @@ export const useGame = () => {
                 }
             },
             toggleAssignment: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h)),
-            purifyHero: (id: string) => { if (gold >= 1000) { setGold(g => g - 1000); setHeroes(p => p.map(h => h.id === id ? { ...h, insanity: 0 } : h)); addLog("Hero purified!", "success"); } },
+            purifyHero: (id: string) => {
+                if (gold >= 1000) {
+                    setGold(g => g - 1000);
+                    setHeroes(p => p.map(h => h.id === id ? { ...h, insanity: 0, isMutated: false, mutationType: undefined } : h));
+                    addLog("Herói purificado! Insanidade e Corrupção removidas.", "success");
+                }
+            },
+            // Purifica a mutação sem resetar insanidade (custo maior)
+            purifyMutation: (id: string) => {
+                const h = heroes.find(x => x.id === id);
+                const cost = 25000;
+                if (h && h.isMutated && gold >= cost) {
+                    setGold(g => g - cost);
+                    setHeroes(p => p.map(curr => curr.id === id ? { ...curr, isMutated: false, mutationType: undefined, insanity: Math.max(0, (curr.insanity || 0) - 40) } : curr));
+                    addLog(`✨ ${h.name} foi purificado da Corrupção por ${cost} Ouro!`, 'success');
+                } else if (h && !h.isMutated) {
+                    addLog(`${h?.name} não está corrompido.`, 'info');
+                } else {
+                    addLog(`Precisa de ${cost} Ouro para purificar a Mutação.`, 'error');
+                }
+            },
             reviveHero: (id: string) => { if (gold >= 5000) { setGold(g => g - 5000); setHeroes(p => p.map(h => h.id === id ? { ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp * 0.5 } } : h)); addLog("Hero revived!", "success"); } },
             renameHero: (id: string, name: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, name } : h)),
             changeHeroEmoji: (id: string, e: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, emoji: e } : h)),

@@ -2,7 +2,7 @@ import type { Hero, Boss, Pet, ConstellationNode, Talent, Artifact, MonsterCard,
 import type { Synergy } from './synergies';
 import { checkActiveCombos, type ComboDefinition } from './combos';
 import { type TowerMutator } from './mutators';
-import { type WeatherType, WEATHER_DATA } from './weather';
+import { type WeatherType, WEATHER_DATA, getDayNightPhase, DAY_NIGHT_DATA } from './weather';
 
 export const getElementalMult = (atkEl: string, defEl: string) => {
     if (atkEl === 'neutral' || defEl === 'neutral') return 1;
@@ -212,6 +212,24 @@ export const processCombatTurn = (
             baseDmg *= WEATHER_DATA[weather].elementModifiers[h.element]!;
         }
 
+        // 🌙 Bônus do Ciclo Dia/Noite
+        const dayNightPhase = getDayNightPhase(Math.floor(Date.now() / 1000));
+        const dayNightEffect = DAY_NIGHT_DATA[dayNightPhase];
+        baseDmg *= dayNightEffect.damageMultiplier;
+        // Bônus elemental do ciclo (ex: dark +50% à noite)
+        if (dayNightEffect.elementBonus[h.element]) {
+            baseDmg *= dayNightEffect.elementBonus[h.element]!;
+        }
+
+        // 🧬 Mutação Berserk: +40% dano, mas pode atacar aliados
+        if (h.isMutated) {
+            baseDmg *= 1.4;
+            if (Math.random() < 0.15) {
+                attackAlly = true;
+                events.push({ id: `mutation-${h.id}-${Date.now()}`, type: 'damage', text: '☠️ FRENESI!', element: 'dark', x: 50, y: 50, value: 0 });
+            }
+        }
+
         if (skipTurn || attackAlly) {
             baseDmg = 0;
         }
@@ -324,7 +342,20 @@ export const processCombatTurn = (
             }
         }
 
-        return { ...h, insanity: newInsanity, stats: { ...h.stats, hp }, skills: h.skills, isDead: hp <= 0 };
+        // 🧬 Auto-corrupção ao atingir insanidade 100
+        const shouldMutate = newInsanity >= 100 && !h.isMutated;
+        const MUTATION_TYPES: Hero['mutationType'][] = ['berserk', 'shadow', 'arcane', 'cursed'];
+        const randomMutation = MUTATION_TYPES[Math.floor(Math.random() * MUTATION_TYPES.length)];
+
+        return {
+            ...h,
+            insanity: newInsanity,
+            isMutated: h.isMutated || shouldMutate,
+            mutationType: shouldMutate ? randomMutation : h.mutationType,
+            stats: { ...h.stats, hp },
+            skills: h.skills,
+            isDead: hp <= 0
+        };
     });
 
     // Final pass to apply heals (Referential stability: only clone if changed)

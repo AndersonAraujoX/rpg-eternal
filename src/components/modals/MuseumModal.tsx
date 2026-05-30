@@ -15,7 +15,7 @@ interface MuseumModalProps {
 }
 
 export function MuseumModal({ onClose, heroes, pets, cards, items, onDuel }: MuseumModalProps) {
-    const [activeTab, setActiveTab] = useState<'heroes' | 'pets' | 'cards' | 'artifacts'>('heroes');
+    const [activeTab, setActiveTab] = useState<'heroes' | 'pets' | 'cards' | 'artifacts' | 'champions'>('heroes');
 
     // Calculate Progress
     const totalHeroes = INITIAL_HEROES.length; // Approximate, assuming initial list is all unique base heroes
@@ -71,6 +71,9 @@ export function MuseumModal({ onClose, heroes, pets, cards, items, onDuel }: Mus
                     </button>
                     <button onClick={() => setActiveTab('artifacts')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${activeTab === 'artifacts' ? 'text-orange-400 border-b-2 border-orange-500 bg-gray-800/50' : 'text-gray-500 hover:text-gray-300'}`}>
                         <Trophy className="w-4 h-4" /> Artifacts
+                    </button>
+                    <button onClick={() => setActiveTab('champions')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${activeTab === 'champions' ? 'text-yellow-300 border-b-2 border-yellow-400 bg-gray-800/50' : 'text-gray-500 hover:text-gray-300'}`}>
+                        🌟 Hall of Fame
                     </button>
                 </div>
 
@@ -160,6 +163,47 @@ export function MuseumModal({ onClose, heroes, pets, cards, items, onDuel }: Mus
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'champions' && (() => {
+                        const champions = heroes.filter(h => h.isAwakened);
+                        return (
+                            <div>
+                                <div className="text-xs text-gray-400 mb-4 bg-gradient-to-r from-yellow-900/30 to-transparent border border-yellow-700/40 p-3 rounded flex items-center gap-2">
+                                    🌟 <span>Heróis que transcenderam os limites mortais e alcançaram o <strong className="text-yellow-400">Despertar</strong>.</span>
+                                </div>
+                                {champions.length === 0 ? (
+                                    <div className="text-center text-gray-500 py-16 italic">
+                                        <div className="text-4xl mb-3">🏆</div>
+                                        Nenhum campeão ainda. Leve um herói ao Nível 100 para Despertar!
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {champions.map((h, i) => (
+                                            <div key={h.id} className="relative bg-gradient-to-br from-yellow-900/30 to-gray-900 border border-yellow-600/60 rounded-xl p-4 flex gap-4 items-center shadow-[0_0_20px_rgba(234,179,8,0.15)] overflow-hidden">
+                                                <div className="absolute inset-0 opacity-5 bg-gradient-to-r from-yellow-400 to-transparent" />
+                                                <div className="text-4xl z-10">{h.emoji}</div>
+                                                <div className="flex-1 z-10">
+                                                    <div className="font-bold text-yellow-300 text-lg">{h.name}</div>
+                                                    <div className="text-xs text-yellow-500 font-semibold mb-1">{h.awakeningTitle ?? 'Desperto'} • {h.class}</div>
+                                                    <div className="grid grid-cols-3 gap-1 text-[10px] text-gray-300">
+                                                        <span>❤️ {Math.floor(h.stats.maxHp)}</span>
+                                                        <span>⚔️ {Math.floor(h.stats.attack)}</span>
+                                                        <span>⚡ {Math.floor(h.stats.magic)}</span>
+                                                    </div>
+                                                    {h.awakenedAt && (
+                                                        <div className="text-[9px] text-gray-600 mt-1">
+                                                            Despertou em: {new Date(h.awakenedAt).toLocaleDateString('pt-BR')}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="absolute top-2 right-2 text-yellow-400 text-xs font-black">#{i + 1}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                 </div>
             </div>

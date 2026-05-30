@@ -61,8 +61,9 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                     <div key={hero.id} className={`relative p-2 rounded border-2 flex flex-col gap-1 transition-all 
                         ${!hero.unlocked ? 'border-gray-700 bg-gray-900 group/locked' :
                             hero.isDead ? 'border-red-900 bg-red-950 opacity-70' :
-                                hero.isAwakened ? 'border-yellow-500 bg-gray-700 shadow-[inset_0_0_15px_rgba(234,179,8,0.2)] hover:bg-gray-600' :
-                                    'border-gray-600 bg-gray-700 hover:bg-gray-600'
+                            hero.isMutated ? 'border-red-600 bg-red-950/30 shadow-[inset_0_0_15px_rgba(220,38,38,0.3)] animate-pulse hover:bg-gray-600' :
+                            hero.isAwakened ? 'border-yellow-500 bg-gray-700 shadow-[inset_0_0_15px_rgba(234,179,8,0.2)] hover:bg-gray-600' :
+                            'border-gray-600 bg-gray-700 hover:bg-gray-600'
                         }`}>
                         {!hero.unlocked && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/locked:opacity-100 transition-opacity z-10 rounded">
@@ -90,6 +91,11 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                             <ShieldAlert size={10} className={(hero.fatigue || 0) >= 80 ? 'text-red-500 animate-pulse' : 'text-yellow-500'} />
                                         )}
                                         {hero.isAwakened && <Zap size={10} className="text-yellow-400 animate-pulse" />}
+                                        {hero.isMutated && (
+                                            <span className="text-[8px] bg-red-900 text-red-300 border border-red-600 px-1 rounded font-bold animate-pulse">
+                                                💀 CORROMPIDO
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
