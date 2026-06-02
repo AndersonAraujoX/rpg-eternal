@@ -387,6 +387,7 @@ export const useGame = () => {
         classMastery,
         artifactMultipliers,
         patronDeity, deityLevel, deityFavor, deityEnergy,
+        divinity,
         resources, items, runes
     });
 
@@ -399,9 +400,10 @@ export const useGame = () => {
             classMastery,
             artifactMultipliers,
             patronDeity, deityLevel, deityFavor, deityEnergy,
+            divinity,
             resources, items, runes
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, resources, items, runes]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes]);
 
     // Side Effects
     useEffect(() => {
@@ -1502,7 +1504,7 @@ export const useGame = () => {
 
             const moraleDamageMult = 0.5 + (teamMorale / 100) * 0.6;
             const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * getMonumentMultipliers().attack;
-            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? (world.towerBoss?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
+            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? ((world.towerBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
 
             damageAccumulator.current += res.totalDmg;
 
@@ -1808,6 +1810,8 @@ export const useGame = () => {
 
             voidGuardian,
             monuments,
+            teamMorale,
+            heroBonds,
             patronDeity,
             deityLevel,
             deityFavor,
@@ -1819,7 +1823,6 @@ export const useGame = () => {
             setPortalConfig,
             ascendToVoid: ACTIONS.ascendToVoid,
             removeCurse: ACTIONS.removeCurse,
-            purchase: ACTIONS.purchase,
             enshrineHero: ACTIONS.enshrineHero,
             pledgeDeity: ACTIONS.pledgeDeity,
             offerToDeity: ACTIONS.offerToDeity,

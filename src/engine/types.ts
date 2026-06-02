@@ -753,6 +753,8 @@ export interface GameActions {
     socketRune: (itemId: string, runeId: string) => void;
     combineRunes: (runeIds: string[]) => void;
     invokeWeather: (weather: WeatherType) => void;
+    pledgeDeity: (deityId: string | null) => void;
+    offerToDeity: (offeringType: 'souls' | 'divinity') => void;
 }
 
 export interface WorldBoss extends Boss {
