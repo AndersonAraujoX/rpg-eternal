@@ -776,8 +776,10 @@ export const TownModal: React.FC<TownModalProps> = ({
                                                 <span className="text-[9px] text-stone-500 text-center">+500 Favor</span>
                                             </div>
                                             {/* Quick Info Box */}
-                                    <div className="bg-black/35 p-3 rounded-lg border border-white/5 text-[10px] text-stone-550 mt-6 leading-relaxed text-left">
-                                        ⚠️ **Aviso de Renegação**: Se você decidir abandonar seu deus atual, todo o favor e nível serão completamente perdidos. Escolha sabiamente.
+                                            <div className="bg-black/35 p-3 rounded-lg border border-white/5 text-[10px] text-stone-550 mt-6 leading-relaxed text-left">
+                                                ⚠️ **Aviso de Renegação**: Se você decidir abandonar seu deus atual, todo o favor e nível serão completamente perdidos. Escolha sabiamente.
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
