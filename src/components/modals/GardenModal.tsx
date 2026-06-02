@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sprout, Lock } from 'lucide-react';
 import type { GardenPlot, SeedType, Resources } from '../../engine/types';
 import { SEEDS } from '../../engine/types';
-import { plantSeed, harvestPlot, unlockPlot, UNLOCK_COSTS } from '../../engine/garden';
+import { plantSeed, harvestPlot, unlockPlot, UNLOCK_COSTS, tickGarden } from '../../engine/garden';
 
 interface GardenModalProps {
     isOpen: boolean;
@@ -13,10 +13,19 @@ interface GardenModalProps {
     setResources: React.Dispatch<React.SetStateAction<Resources>>;
     gold: number;
     setGold: (g: number) => void;
+    gardenSpeedMult?: number;
 }
 
-export const GardenModal: React.FC<GardenModalProps> = ({ isOpen, onClose, plots, setPlots, resources, setResources, gold, setGold }) => {
+export const GardenModal: React.FC<GardenModalProps> = ({ isOpen, onClose, plots, setPlots, resources, setResources, gold, setGold, gardenSpeedMult = 1.0 }) => {
     const [selectedSeed, setSelectedSeed] = useState<SeedType>('moonleaf');
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const interval = setInterval(() => {
+            setPlots(tickGarden(plots, Date.now(), gardenSpeedMult));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [isOpen, plots, setPlots, gardenSpeedMult]);
 
     if (!isOpen) return null;
 

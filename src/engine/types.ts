@@ -1,3 +1,5 @@
+import type { WeatherType } from './weather';
+
 export type Stats = {
     hp: number;
     maxHp: number;
@@ -291,6 +293,7 @@ export interface Hero extends Entity {
     // Mutation / Corruption
     isMutated?: boolean;
     mutationType?: 'berserk' | 'shadow' | 'arcane' | 'cursed'; // Tipos de corrupção
+    curses?: string[]; // Active curses: 'blood', 'evil', 'abyss'
 }
 
 export interface GalaxySector {
@@ -333,7 +336,7 @@ export type LogEntry = {
 export type Log = LogEntry;
 
 // Phase 92: Town Events
-export type TownEventType = 'merchant' | 'raid' | 'festival' | 'crisis';
+export type TownEventType = 'merchant' | 'raid' | 'festival' | 'crisis' | 'circus';
 
 export interface TownEvent {
     id: string;
@@ -631,6 +634,7 @@ export interface GameActions {
     // Phase 91: Corruption
     purifyHero: (heroId: string) => void;
     purifyMutation: (heroId: string) => void; // Remove mutação (custo maior)
+    removeCurse: (heroId: string, curse: string) => void; // Remove uma maldição específica
     renameHero: (heroId: string, name: string) => void;
     changeHeroEmoji: (heroId: string, emoji: string) => void;
 
@@ -744,6 +748,11 @@ export interface GameActions {
     buyClassTalent: (className: HeroClass, talentId: string) => void;
     // Phase 100
     collectRelic: (relic: AncientRelic) => void;
+    enshrineHero: (slotIndex: number, heroId: string | null) => void;
+    craftRune: () => void;
+    socketRune: (itemId: string, runeId: string) => void;
+    combineRunes: (runeIds: string[]) => void;
+    invokeWeather: (weather: WeatherType) => void;
 }
 
 export interface WorldBoss extends Boss {

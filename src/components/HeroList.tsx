@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull, Flame, Droplets, ShieldAlert } from 'lucide-react';
-import type { Hero } from '../engine/types';
+import type { Hero, Building } from '../engine/types';
 import type { Synergy } from '../engine/synergies';
 import { SYNERGY_DEFINITIONS } from '../engine/synergies';
 
@@ -13,9 +13,11 @@ interface HeroListProps {
     heroes: Hero[];
     actions: any;
     activeSynergies?: Synergy[];
+    buildings?: Building[];
+    heroBonds?: Record<string, { xp: number, level: number, type: 'comrades' | 'rivals' | 'soulmates' }>;
 }
 
-export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSynergies = [] }) => {
+export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSynergies = [], buildings = [], heroBonds = {} }) => {
     const [viewingHero, setViewingHero] = useState<Hero | null>(null);
     // Update 74
 
@@ -52,7 +54,15 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
     return (
         <div className="flex-1 bg-gray-800 p-2 overflow-y-auto no-scrollbar grid grid-cols-2 md:grid-cols-3 gap-2 border-t-4 border-gray-600">
 
-            <HeroDetailModal isOpen={!!viewingHero} onClose={() => setViewingHero(null)} hero={viewingHero} actions={actions} />
+            <HeroDetailModal
+                isOpen={!!viewingHero}
+                onClose={() => setViewingHero(null)}
+                hero={viewingHero ? heroes.find(h => h.id === viewingHero.id) || viewingHero : null}
+                actions={actions}
+                buildings={buildings}
+                heroBonds={heroBonds}
+                heroes={heroes}
+            />
 
             {heroes.map(hero => {
                 const contributions = getContributingSynergies(hero);

@@ -65,6 +65,7 @@ interface HeaderProps {
     townVisited?: boolean;
     voidAscensions?: number;
     buildings?: Building[];
+    teamMorale?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -89,7 +90,8 @@ export const Header: React.FC<HeaderProps> = ({
     setShowPrestigeTree,
     townVisited,
     voidAscensions = 0,
-    buildings = []
+    buildings = [],
+    teamMorale = 100
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
 
@@ -236,6 +238,22 @@ export const Header: React.FC<HeaderProps> = ({
                     <button onClick={() => setShowShop(true)} className="btn-retro bg-purple-900 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800 min-w-[60px] justify-center"> <Ghost size={12} /> {formatNumber(souls)} </button>
                     <button onClick={() => setShowTavern(true)} className="btn-retro bg-amber-700 text-amber-100 px-2 py-1 rounded border border-amber-500 flex items-center gap-1 hover:bg-amber-600 min-w-[60px] justify-center"> <Coins size={12} /> {formatNumber(gold)} </button>
                     {divinity > 0 && <button onClick={() => setShowStars(true)} className="btn-retro bg-cyan-900 text-cyan-200 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-800"><Crown size={12} /> {formatNumber(divinity)}</button>}
+
+                    {/* Morale Badge */}
+                    <div className="bg-gray-800 px-2 py-1 rounded border border-gray-700 text-xs flex items-center gap-1 group relative cursor-help">
+                        <span className="text-pink-400">🔥</span>
+                        <span className="text-gray-300 font-bold">Moral: {Math.round(teamMorale)}%</span>
+                        <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-gray-700 p-2 rounded shadow-xl hidden group-hover:block z-50 text-[10px] text-gray-300">
+                            <div className="font-bold text-white mb-1">📊 Moral do Time</div>
+                            <div className="text-gray-400 italic mb-2">Reflete o desempenho e a sinergia recente da equipe.</div>
+                            <div className="text-green-400">➔ Vitória (+5% Moral)</div>
+                            <div className="text-red-400">➔ Queda de Herói (-10% Moral)</div>
+                            <div className="text-blue-400">➔ Fogueira (+0.5%/s por herói)</div>
+                            <div className="text-yellow-300 mt-2 font-bold">Efeitos Atuais:</div>
+                            <div>⚔️ Dano Coletivo: <span className="font-mono">{Math.round((0.5 + (teamMorale / 100) * 0.6) * 100)}%</span></div>
+                            <div>⭐ Ganho de XP: <span className="font-mono">{Math.round((0.5 + (teamMorale / 100) * 0.7) * 100)}%</span></div>
+                        </div>
+                    </div>
 
                     {/* Keys & Raid Status (Compact) */}
                     {keys > 0 && <span className="text-amber-500 flex items-center gap-1 bg-gray-800 px-2 py-1 rounded"><Key size={10} /> {keys}</span>}

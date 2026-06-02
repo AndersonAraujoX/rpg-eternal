@@ -92,7 +92,10 @@ function App() {
     formations, saveFormation, loadFormation, deleteFormation, // Update 74
     activeEvent,
     prestigeNodes, townVisited, triggerRebirth, guildQueue,
-    setSouls, setDivinity, setStarlight, setHeroes, setGameSpeed, portalConfig, setPortalConfig
+    setSouls, setDivinity, setStarlight, setHeroes, setGameSpeed, portalConfig, setPortalConfig,
+    teamMorale, heroBonds, monuments, enshrineHero,
+    patronDeity, deityLevel, deityFavor, deityEnergy, pledgeDeity, offerToDeity,
+    runes, craftRune, socketRune, combineRunes, invokeWeather
   } = useGame();
 
 
@@ -259,6 +262,7 @@ function App() {
           townVisited={townVisited}
           voidAscensions={voidAscensions}
           buildings={buildings}
+          teamMorale={teamMorale}
         />
 
         <BattleArea
@@ -271,6 +275,8 @@ function App() {
           heroes={heroes}
           activeSynergies={synergies}
           actions={{ ...actions, formations, saveFormation, loadFormation, deleteFormation }}
+          buildings={buildings}
+          heroBonds={heroBonds}
         />
 
 
@@ -307,7 +313,7 @@ function App() {
           onClaim={actions.claimQuest}
         />
       )}
-      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={{...actions, craftRune: () => {}, socketRune: () => {}}} runes={[]} />
+      <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={{ craftRune, socketRune, combineRunes }} runes={runes || []} />
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
       <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
@@ -339,7 +345,7 @@ function App() {
 
       <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} />
 
-      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} />
+      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0} />
 
       <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} />
 
@@ -391,7 +397,34 @@ function App() {
       })()}
 
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
-      <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} tower={tower} openIndustry={() => setShowIndustry(true)} openForge={() => setShowForge(true)} openFishing={() => setShowFishing(true)} openAlchemy={() => setShowAlchemy(true)} openExpeditions={() => setShowExpeditions(true)} openGarden={() => setShowGarden(true)} />
+      <TownModal
+        isOpen={showTown}
+        onClose={() => setShowTown(false)}
+        buildings={buildings}
+        gold={gold}
+        upgradeBuilding={upgradeBuilding}
+        tower={tower}
+        openIndustry={() => setShowIndustry(true)}
+        openForge={() => setShowForge(true)}
+        openFishing={() => setShowFishing(true)}
+        openAlchemy={() => setShowAlchemy(true)}
+        openExpeditions={() => setShowExpeditions(true)}
+        openGarden={() => setShowGarden(true)}
+        openRunes={() => { setShowRunes(true); setShowTown(false); }}
+        heroes={heroes}
+        monuments={monuments}
+        enshrineHero={enshrineHero}
+        patronDeity={patronDeity}
+        deityLevel={deityLevel}
+        deityFavor={deityFavor}
+        deityEnergy={deityEnergy}
+        pledgeDeity={pledgeDeity}
+        offerToDeity={offerToDeity}
+        souls={souls}
+        divinity={divinity}
+        invokeWeather={invokeWeather}
+        resources={resources}
+      />
       <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />

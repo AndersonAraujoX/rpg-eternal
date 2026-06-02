@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { processCombatTurn } from './combat';
 import type { Hero, Boss } from './types';
+import * as weatherModule from './weather';
+
+// Fix cycle flakiness by forcing 'day' phase
+vi.spyOn(weatherModule, 'getDayNightPhase').mockReturnValue('day');
 
 // Mocks
 const mockHero = (element: Hero['element']): Hero => ({
@@ -21,15 +25,15 @@ describe('Elemental Synergy', () => {
         const hero = mockHero('fire');
         const boss = mockBoss('nature');
         const { totalDmg } = processCombatTurn([hero], boss, 1, 0, false, []);
-        // Base atk 10 * 1.5 = 15
-        expect(totalDmg).toBe(15);
+        // Base atk 10 * 1.5 * 1.1 (day bonus for fire) = 16.5 (floor to 16)
+        expect(totalDmg).toBe(16);
     });
 
     it('Fire deals reduced damage to Water', () => {
         const hero = mockHero('fire');
         const boss = mockBoss('water');
         const { totalDmg } = processCombatTurn([hero], boss, 1, 0, false, []);
-        // Base atk 10 * 0.5 = 5
+        // Base atk 10 * 0.5 * 1.1 (day bonus for fire) = 5.5 (floor to 5)
         expect(totalDmg).toBe(5);
     });
 
@@ -37,11 +41,13 @@ describe('Elemental Synergy', () => {
         let hero = mockHero('light');
         let boss = mockBoss('dark');
         let { totalDmg } = processCombatTurn([hero], boss, 1, 0, false, []);
-        expect(totalDmg).toBe(15);
+        // Light vs Dark: 10 * 1.5 * 1.1 (day bonus for light) = 16.5 (floor to 16)
+        expect(totalDmg).toBe(16);
 
         hero = mockHero('dark');
         boss = mockBoss('light');
         totalDmg = processCombatTurn([hero], boss, 1, 0, false, []).totalDmg;
+        // Dark vs Light: 10 * 1.5 (no day bonus for dark) = 15
         expect(totalDmg).toBe(15);
     });
 

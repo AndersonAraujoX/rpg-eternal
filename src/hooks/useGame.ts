@@ -23,7 +23,7 @@ import { brewPotion, transmuteResources, ELIXIRS } from '../engine/alchemy';
 import { startExpedition } from '../engine/expeditions';
 import { mysticReforge } from '../engine/starForge';
 import { processGlobalAutomation } from '../engine/automation';
-// import { generateTownEvent } from '../engine/townEvents';
+import { generateTownEvent } from '../engine/townEvents';
 import { validateGuildExpeditionTeam } from '../engine/guildExpeditions';
 import { useVoidGuardian } from './useVoidGuardian';
 import { calculateVoidGuardianRewards } from '../engine/voidBoss';
@@ -41,6 +41,8 @@ import { INITIAL_TOWN, INITIAL_MARKET_TREND } from '../engine/initialData';
 import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
 import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
 import { WEATHER_DATA } from '../engine/weather';
+
+import { INITIAL_GARDEN } from '../engine/garden';
 
 const getNextBoss = (level: number): Boss => {
     const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
@@ -68,6 +70,9 @@ const getNextBoss = (level: number): Boss => {
 export const useGame = () => {
     // CORE STATE
     const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
+    const [teamMorale, setTeamMorale] = useState<number>(100);
+    const [heroBonds, setHeroBonds] = useState<Record<string, { xp: number, level: number, type: 'comrades' | 'rivals' | 'soulmates' }>>({});
+    const [monuments, setMonuments] = useState<(string | null)[]>([null, null, null]);
     const [classMastery, setClassMastery] = useState<Record<string, ClassMastery>>(INITIAL_CLASS_MASTERY);
     const [boss, setBoss] = useState<Boss>(INITIAL_BOSS);
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -96,7 +101,11 @@ export const useGame = () => {
     const [lastDailyReset, setLastDailyReset] = useState<number>(Date.now());
     const [activeExpeditions, setActiveExpeditions] = useState<Expedition[]>([]);
     const [activePotions, setActivePotions] = useState<{ id: string, name: string, effect: Potion['effect'], value: number, endTime: number }[]>([]);
-    const [gardenPlots, setGardenPlots] = useState<GardenPlot[]>([]);
+    const [gardenPlots, setGardenPlots] = useState<GardenPlot[]>(INITIAL_GARDEN);
+    const [patronDeity, setPatronDeity] = useState<string | null>(null);
+    const [deityLevel, setDeityLevel] = useState<number>(1);
+    const [deityFavor, setDeityFavor] = useState<number>(0);
+    const [deityEnergy, setDeityEnergy] = useState<number>(0);
     const [marketStock, setMarketStock] = useState<MarketItem[]>([]);
     const [marketTimer, setMarketTimer] = useState<number>(0);
     const [ultimateCharge, setUltimateCharge] = useState<number>(0);
@@ -241,6 +250,78 @@ export const useGame = () => {
         ...h, stats: { ...h.stats, attack: Math.floor(h.stats.attack * guildAtkMult * prestigeAtkMult * (1 + galaxyBuffs.damageMult)), maxHp: Math.floor(h.stats.maxHp * guildHpMult * prestigeHpMult), hp: Math.floor(h.stats.hp * guildHpMult * prestigeHpMult) }
     }))), [activeHeroes, guildAtkMult, guildHpMult, prestigeAtkMult, prestigeHpMult, galaxyBuffs.damageMult]);
 
+    const getMonumentMultipliers = useCallback(() => {
+        let gold = 1.0;
+        let attack = 1.0;
+        let defense = 1.0;
+        let speed = 1.0;
+        let maxHp = 1.0;
+        let lifesteal = 0.0;
+
+        monuments.forEach(heroId => {
+            if (!heroId) return;
+            const hero = heroes.find(h => h.id === heroId);
+            if (!hero || !hero.isAwakened) return;
+
+            const cls = hero.class;
+            if (['Warrior', 'Paladin', 'Templar'].includes(cls)) {
+                defense += 0.10;
+            } else if (['Mage', 'Sorcerer', 'Sage', 'Illusionist'].includes(cls)) {
+                attack += 0.10;
+            } else if (['Rogue', 'Ninja', 'Assassin', 'Ranger', 'Dragoon'].includes(cls)) {
+                speed += 0.10;
+            } else if (['Warlock', 'Necromancer', 'Druid'].includes(cls)) {
+                lifesteal += 0.10;
+            } else if (['Healer', 'Bard', 'Monk', 'Viking'].includes(cls)) {
+                maxHp += 0.10;
+            } else if (['Blacksmith', 'Miner', 'Fisherman', 'Pirate', 'Engineer'].includes(cls)) {
+                gold += 0.10;
+            }
+        });
+
+        // Deity Passives
+        if (patronDeity === 'aurelius') {
+            attack *= 1.15 + (deityLevel - 1) * 0.05;
+        } else if (patronDeity === 'tenebris') {
+            lifesteal += 0.15 + (deityLevel - 1) * 0.05;
+        } else if (patronDeity === 'gaya') {
+            maxHp *= 1.15 + (deityLevel - 1) * 0.05;
+            gold *= 1.15 + (deityLevel - 1) * 0.05;
+        }
+
+        // Equipment and Runes Passive bonuses
+        let totalAttackVal = 0;
+        let totalDefenseVal = 0;
+        let totalSpeedVal = 0;
+        let totalHpVal = 0;
+        let totalLifestealVal = 0;
+
+        (items || []).forEach(item => {
+            if (item.stat === 'attack') totalAttackVal += item.value;
+            else if (item.stat === 'defense') totalDefenseVal += item.value;
+            else if (item.stat === 'hp') totalHpVal += item.value;
+            else if (item.stat === 'magic') totalAttackVal += item.value;
+            else if (item.stat === 'speed') totalSpeedVal += item.value;
+
+            (item.runes || []).forEach(rune => {
+                if (rune.stat === 'attack') totalAttackVal += rune.value;
+                else if (rune.stat === 'defense') totalDefenseVal += rune.value;
+                else if (rune.stat === 'hp' || rune.stat === 'maxHp') totalHpVal += rune.value;
+                else if (rune.stat === 'magic') totalAttackVal += rune.value;
+                else if (rune.stat === 'speed') totalSpeedVal += rune.value;
+                else if (rune.stat === 'lifesteal') totalLifestealVal += rune.value;
+            });
+        });
+
+        // 1 value in item stats = +0.2% boost
+        attack += totalAttackVal * 0.002;
+        defense += totalDefenseVal * 0.002;
+        speed += totalSpeedVal * 0.001;
+        maxHp += totalHpVal * 0.002;
+        lifesteal += totalLifestealVal * 0.001;
+
+        return { gold, attack, defense, speed, maxHp, lifesteal };
+    }, [monuments, heroes, patronDeity, deityLevel, items]);
 
 
     const petStats = useMemo(() => {
@@ -279,8 +360,8 @@ export const useGame = () => {
 
         const petsPower = petStats.attack + Math.floor(petStats.hp / 10) + petStats.magic + petStats.defense;
 
-        return Math.floor((baseStats + petsPower) * totalAtkMult * armyMult);
-    }, [activeHeroes, petStats, totalAtkMult, armyMult]);
+        return Math.floor((baseStats + petsPower) * totalAtkMult * armyMult * getMonumentMultipliers().attack);
+    }, [activeHeroes, petStats, totalAtkMult, armyMult, getMonumentMultipliers]);
 
     const artifactMultipliers = useMemo(() => {
         const mults = { gold: 1, xp: 1, damage: 1, defense: 1, speed: 1 };
@@ -299,24 +380,28 @@ export const useGame = () => {
 
     // REFS FOR LOOP STABILITY
     const stateRef = useRef({
-        souls, talents, constellations, artifacts, cards, achievements,
+        heroes, souls, talents, constellations, artifacts, cards, achievements,
         pets: petsState.pets, activeSynergies: activeSynergies as any[],
         boss, ultimateCharge, gold, gameSpeed,
         galaxyDamageMult: galaxyBuffs.damageMult,
         classMastery,
-        artifactMultipliers
+        artifactMultipliers,
+        patronDeity, deityLevel, deityFavor, deityEnergy,
+        resources, items, runes
     });
 
     useEffect(() => {
         stateRef.current = {
-            souls, talents, constellations, artifacts, cards, achievements,
+            heroes, souls, talents, constellations, artifacts, cards, achievements,
             pets: petsState.pets, activeSynergies: activeSynergies as any[],
             boss, ultimateCharge, gold, gameSpeed,
             galaxyDamageMult: galaxyBuffs.damageMult,
             classMastery,
-            artifactMultipliers
+            artifactMultipliers,
+            patronDeity, deityLevel, deityFavor, deityEnergy,
+            resources, items, runes
         };
-    }, [souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, resources, items, runes]);
 
     // Side Effects
     useEffect(() => {
@@ -358,7 +443,16 @@ export const useGame = () => {
         const timer = setInterval(() => {
             world.setWeatherTimer((prev: number) => prev <= 1 ? 300 : prev - 1);
             setActiveEvent(prev => {
-                if (!prev) return (Math.random() < 0.001) ? ('pending_generation' as any) : null;
+                if (!prev) {
+                    if (Math.random() < 0.002) {
+                        const event = generateTownEvent(boss.level, []);
+                        if (event) {
+                            addLog(`📣 Novo evento na cidade: ${event.name}!`, 'achievement');
+                            return event;
+                        }
+                    }
+                    return null;
+                }
                 const remaining = prev.duration - 1;
                 return remaining <= 0 ? null : { ...prev, duration: remaining };
             });
@@ -373,16 +467,18 @@ export const useGame = () => {
                         const goldReward = Math.floor(raidPower * 2.5 + raidBossLevel * 50);
                         const soulReward = Math.floor(raidBossLevel / 5) + 1;
                         const starReward = Math.floor(Math.random() * 3) + 1;
+                        const deityMult = stateRef.current.patronDeity === 'aurelius' ? 1.15 + (stateRef.current.deityLevel - 1) * 0.05 : 1.0;
+                        const finalStar = Math.floor(starReward * deityMult);
                         const dropItem = Math.random() < 0.4;
                         setGold(g => g + goldReward);
                         setSouls(s => s + soulReward);
-                        setStarlight(sl => sl + starReward);
+                        setStarlight(sl => sl + finalStar);
                         if (dropItem) {
                             const item = generateLoot(raidBossLevel);
                             setItems(inv => [...inv.slice(-199), item]);
-                            addLog(`🏆 Reide Concluída! +${goldReward} Ouro, +${soulReward} Almas, +${starReward} ⭐ Luz Estelar, item encontrado: ${item.name}!`, 'achievement');
+                            addLog(`🏆 Reide Concluída! +${goldReward} Ouro, +${soulReward} Almas, +${finalStar} ⭐ Luz Estelar, item encontrado: ${item.name}!`, 'achievement');
                         } else {
-                            addLog(`🏆 Reide Concluída! +${goldReward} Ouro, +${soulReward} Almas, +${starReward} ⭐ Luz Estelar!`, 'achievement');
+                            addLog(`🏆 Reide Concluída! +${goldReward} Ouro, +${soulReward} Almas, +${finalStar} ⭐ Luz Estelar!`, 'achievement');
                         }
                         return 0;
                     }
@@ -500,7 +596,14 @@ export const useGame = () => {
                     addLog(`Herói não está pronto. O Despertar exige Nível 100.`, 'info');
                 }
             },
-            toggleAssignment: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h)),
+            toggleAssignment: (id: string) => {
+                const h = stateRef.current.heroes.find(x => x.id === id);
+                if (h && h.curses?.includes('abyss') && h.assignment === 'combat') {
+                    addLog(`${h.name} está preso pelas Correntes do Abismo e não pode deixar o combate!`, 'error');
+                    return;
+                }
+                setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h));
+            },
             purifyHero: (id: string) => {
                 if (gold >= 1000) {
                     setGold(g => g - 1000);
@@ -625,7 +728,9 @@ export const useGame = () => {
                         message: "A energia da torre converge para um novo começo.",
                         rewardText: `${gain} Luz Estelar`,
                         onConfirm: () => {
-                            setStarlight(s => s + gain);
+                            const deityMult = stateRef.current.patronDeity === 'aurelius' ? 1.15 + (stateRef.current.deityLevel - 1) * 0.05 : 1.0;
+                            const finalGain = Math.floor(gain * deityMult);
+                            setStarlight(s => s + finalGain);
                             world.setTower({ floor: 1, maxFloor: world.tower.maxFloor, active: false });
                             addLog(`Tower Ascended! Gained ${gain} Starlight.`, "achievement");
                             soundManager.playLevelUp();
@@ -640,6 +745,22 @@ export const useGame = () => {
             moveDungeon: (x: number, y: number): DungeonInteraction | null => world.moveDungeon(x, y),
             handleDungeonEvent: (e: DungeonInteraction) => {
                 if (e.type === 'chest') { setGold(old => old + Math.floor(100 * e.level)); if (Math.random() < 0.3) setItems(p => [...p, generateLoot(e.level)]); }
+                if (e.type === 'exit') {
+                    if (Math.random() < 0.3) {
+                        const combatants = stateRef.current.heroes.filter(h => h.assignment === 'combat' && !h.isDead);
+                        if (combatants.length > 0) {
+                            const luckyHero = combatants[Math.floor(Math.random() * combatants.length)];
+                            const curseList = ['blood', 'evil', 'abyss'];
+                            const currentCurses = luckyHero.curses || [];
+                            const availableCurses = curseList.filter(c => !currentCurses.includes(c));
+                            if (availableCurses.length > 0) {
+                                const newCurse = availableCurses[Math.floor(Math.random() * availableCurses.length)];
+                                setHeroes(prev => prev.map(h => h.id === luckyHero.id ? { ...h, curses: [...(h.curses || []), newCurse] } : h));
+                                addLog(`⚠️ ${luckyHero.name} foi amaldiçoado com ${newCurse === 'blood' ? 'Maldição do Sangue 🩸' : newCurse === 'evil' ? 'Olho Maligno 👁️' : 'Correntes do Abismo ⛓️'}!`, 'danger');
+                            }
+                        }
+                    }
+                }
             },
             toggleRaid: () => {
                 if (!raidActive) {
@@ -739,7 +860,214 @@ export const useGame = () => {
             breedPets: (p1: Pet, p2: Pet) => petsState.breedPets(p1, p2),
             feedPet: (type: 'gold' | 'souls', id?: string) => petsState.feedPet(type, id),
             winCardBattle: (_o: string, d: number) => setGold(g => g + d * 10),
-            forgeUpgrade: (m: 'copper' | 'iron' | 'mithril') => addLog(`Upgraded Forge with ${m}`, 'craft'),
+            forgeUpgrade: (m: 'copper' | 'iron' | 'mithril') => {
+                const costMap = { copper: 100, iron: 50, mithril: 10 };
+                const cost = costMap[m];
+                if (stateRef.current.resources[m] >= cost) {
+                    setResources(r => ({ ...r, [m]: r[m] - cost }));
+                    addLog(`⚒️ Upgrade de Forja Realizado: Equipamento de ${m.toUpperCase()} reforjado!`, 'success');
+                } else {
+                    addLog(`Recursos insuficientes de ${m.toUpperCase()} para melhorar a Forja.`, 'error');
+                }
+            },
+            craftRune: () => {
+                const costMithril = 10;
+                const costSouls = 50;
+                if (stateRef.current.resources.mithril >= costMithril && stateRef.current.souls >= costSouls) {
+                    setResources(r => ({ ...r, mithril: r.mithril - costMithril }));
+                    setSouls(s => s - costSouls);
+                    
+                    const rand = Math.random();
+                    let rarity: import('../engine/types').ItemRarity = 'common';
+                    let valMultiplier = 1;
+                    if (rand < 0.03) {
+                        rarity = 'legendary';
+                        valMultiplier = 10;
+                    } else if (rand < 0.15) {
+                        rarity = 'epic';
+                        valMultiplier = 5;
+                    } else if (rand < 0.40) {
+                        rarity = 'rare';
+                        valMultiplier = 2.5;
+                    }
+                    
+                    const statsPool: ('attack' | 'defense' | 'hp' | 'speed' | 'lifesteal')[] = ['attack', 'defense', 'hp', 'speed', 'lifesteal'];
+                    const stat = statsPool[Math.floor(Math.random() * statsPool.length)];
+                    
+                    let baseVal = Math.floor(Math.random() * 5) + 5;
+                    let val = Math.floor(baseVal * valMultiplier);
+                    if (stat === 'speed') val = Math.max(1, Math.floor(val * 0.2));
+                    if (stat === 'lifesteal') val = Math.max(1, Math.floor(val * 0.1));
+                    
+                    const statNameMap = {
+                        attack: 'Força',
+                        defense: 'Proteção',
+                        hp: 'Vitalidade',
+                        speed: 'Rapidez',
+                        lifesteal: 'Vampirismo'
+                    };
+                    const runeName = `Runa da ${statNameMap[stat]}`;
+                    
+                    const emojiMap = {
+                        attack: '⚔️',
+                        defense: '🛡️',
+                        hp: '💚',
+                        speed: '⚡',
+                        lifesteal: '🩸'
+                    };
+                    const emoji = emojiMap[stat];
+                    
+                    const newRune: import('../engine/types').Rune = {
+                        id: `rune-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                        name: runeName,
+                        stat: stat === 'hp' ? 'hp' : stat,
+                        value: val,
+                        emoji,
+                        rarity,
+                        description: `Aumenta ${stat} em +${val}`
+                    };
+                    
+                    setRunes(prev => [...prev, newRune]);
+                    addLog(`🔮 Runa Criada: ${newRune.name} (${newRune.rarity.toUpperCase()}) +${newRune.value} ${newRune.stat}!`, 'success');
+                } else {
+                    addLog('Recursos insuficientes para forjar uma runa.', 'error');
+                }
+            },
+            socketRune: (itemId: string, runeId: string) => {
+                const item = stateRef.current.items.find(i => i.id === itemId);
+                const rune = stateRef.current.runes.find(r => r.id === runeId);
+                
+                if (!item || !rune) {
+                    addLog('Item ou Runa não encontrados.', 'error');
+                    return;
+                }
+                
+                const currentRunes = item.runes || [];
+                const maxSockets = item.sockets || 0;
+                
+                if (currentRunes.length >= maxSockets) {
+                    addLog('Este item não possui engastes vazios disponíveis.', 'error');
+                    return;
+                }
+                
+                setRunes(prev => prev.filter(r => r.id !== runeId));
+                setItems(prevItems => prevItems.map(i => {
+                    if (i.id === itemId) {
+                        return {
+                            ...i,
+                            runes: [...(i.runes || []), rune]
+                        };
+                    }
+                    return i;
+                }));
+                
+                addLog(`✨ Runa ${rune.name} engastada com sucesso no item ${item.name}!`, 'success');
+            },
+            combineRunes: (runeIds: string[]) => {
+                if (runeIds.length !== 3) {
+                    addLog('Selecione exatamente 3 runas para fundir.', 'error');
+                    return;
+                }
+                const runesToCombine = stateRef.current.runes.filter(r => runeIds.includes(r.id));
+                if (runesToCombine.length !== 3) {
+                    addLog('Algumas runas selecionadas não foram encontradas no inventário.', 'error');
+                    return;
+                }
+                
+                const [r1, r2, r3] = runesToCombine;
+                if (r1.rarity !== r2.rarity || r2.rarity !== r3.rarity) {
+                    addLog('Todas as 3 runas devem ser da mesma raridade para fundir.', 'error');
+                    return;
+                }
+                
+                const currentRarity = r1.rarity;
+                let nextRarity: import('../engine/types').ItemRarity;
+                let valMultiplier = 1;
+                
+                if (currentRarity === 'common') {
+                    nextRarity = 'rare';
+                    valMultiplier = 2.5;
+                } else if (currentRarity === 'rare') {
+                    nextRarity = 'epic';
+                    valMultiplier = 5;
+                } else if (currentRarity === 'epic') {
+                    nextRarity = 'legendary';
+                    valMultiplier = 10;
+                } else {
+                    addLog('Apenas runas Comuns, Raras ou Épicas podem ser fundidas.', 'error');
+                    return;
+                }
+
+                const costSouls = 50;
+                if (stateRef.current.souls < costSouls) {
+                    addLog(`Almas insuficientes para fundir. Requer ${costSouls} Almas.`, 'error');
+                    return;
+                }
+
+                setSouls(s => s - costSouls);
+                setRunes(prev => prev.filter(r => !runeIds.includes(r.id)));
+                
+                // Roll new stats for fused rune
+                const statsPool: ('attack' | 'defense' | 'hp' | 'speed' | 'lifesteal')[] = ['attack', 'defense', 'hp', 'speed', 'lifesteal'];
+                const stat = statsPool[Math.floor(Math.random() * statsPool.length)];
+                
+                let baseVal = Math.floor(Math.random() * 5) + 5;
+                let val = Math.floor(baseVal * valMultiplier);
+                if (stat === 'speed') val = Math.max(1, Math.floor(val * 0.2));
+                if (stat === 'lifesteal') val = Math.max(1, Math.floor(val * 0.1));
+                
+                const statNameMap = {
+                    attack: 'Força',
+                    defense: 'Proteção',
+                    hp: 'Vitalidade',
+                    speed: 'Rapidez',
+                    lifesteal: 'Vampirismo'
+                };
+                const runeName = `Runa da ${statNameMap[stat]}`;
+                
+                const emojiMap = {
+                    attack: '⚔️',
+                    defense: '🛡️',
+                    hp: '💚',
+                    speed: '⚡',
+                    lifesteal: '🩸'
+                };
+                const emoji = emojiMap[stat];
+                
+                const newRune: import('../engine/types').Rune = {
+                    id: `rune-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                    name: runeName,
+                    stat: stat === 'hp' ? 'hp' : stat,
+                    value: val,
+                    emoji,
+                    rarity: nextRarity,
+                    description: `Aumenta ${stat} em +${val}`
+                };
+                
+                setRunes(prev => [...prev, newRune]);
+                addLog(`🔮 Fusão de Runas Concluída: ${newRune.name} (${newRune.rarity.toUpperCase()}) +${newRune.value} ${newRune.stat}!`, 'success');
+            },
+            invokeWeather: (weatherType: import('../engine/weather').WeatherType) => {
+                const hasAltar = buildings.find(b => b.id === 'altar_deities' && b.level > 0);
+                if (!hasAltar) {
+                    addLog('Requer o Altar dos Deuses na Vila construído.', 'error');
+                    return;
+                }
+                const herbCost = 10;
+                const soulsCost = 100;
+                
+                if (stateRef.current.resources.herbs < herbCost || stateRef.current.souls < soulsCost) {
+                    addLog(`Recursos insuficientes. Requer ${herbCost} Ervas e ${soulsCost} Almas.`, 'error');
+                    return;
+                }
+                
+                setResources(r => ({ ...r, herbs: r.herbs - herbCost }));
+                setSouls(s => s - soulsCost);
+                
+                world.setWeather(weatherType);
+                world.setWeatherTimer(300);
+                addLog(`⛪ Ritual do Clima realizado! O tempo mudou para: ${WEATHER_DATA[weatherType].name}!`, 'success');
+            },
             craftStarForgedItem: (item: Item, gCost: number, fCost: number) => {
                 if (gold >= gCost && resources.starFragments >= fCost) {
                     setGold(g => g - gCost); setResources(r => ({ ...r, starFragments: r.starFragments - fCost }));
@@ -886,20 +1214,195 @@ export const useGame = () => {
             closeOfflineModal: () => setOfflineGains(null),
             claimQuest: (id: string) => setQuests(p => p.map(q => q.id === id && q.progress >= q.target ? { ...q, isClaimed: true } : q)),
             buyMarketItem: (item: MarketItem) => { if (gold >= item.cost) { setGold(g => g - item.cost); setMarketStock(p => p.filter(i => i.id !== item.id)); } },
-            enterRift: (rift: Rift) => world.enterRift(rift), exitRift: (s: boolean) => world.exitRift(s), startRift: () => world.startRift(), selectBlessing: (b: RiftBlessing) => world.selectBlessing(b),
+            enterRift: (rift: Rift) => world.enterRift(rift),
+            exitRift: (success: boolean) => {
+                world.exitRift(success);
+                if (success) {
+                    if (Math.random() < 0.4) {
+                        const combatants = stateRef.current.heroes.filter(h => h.assignment === 'combat' && !h.isDead);
+                        if (combatants.length > 0) {
+                            const luckyHero = combatants[Math.floor(Math.random() * combatants.length)];
+                            const curseList = ['blood', 'evil', 'abyss'];
+                            const currentCurses = luckyHero.curses || [];
+                            const availableCurses = curseList.filter(c => !currentCurses.includes(c));
+                            if (availableCurses.length > 0) {
+                                const newCurse = availableCurses[Math.floor(Math.random() * availableCurses.length)];
+                                setHeroes(prev => prev.map(h => h.id === luckyHero.id ? { ...h, curses: [...(h.curses || []), newCurse] } : h));
+                                addLog(`⚠️ ${luckyHero.name} foi amaldiçoado com ${newCurse === 'blood' ? 'Maldição do Sangue 🩸' : newCurse === 'evil' ? 'Olho Maligno 👁️' : 'Correntes do Abismo ⛓️'}!`, 'danger');
+                            }
+                        }
+                    }
+                }
+            },
+            startRift: () => world.startRift(), selectBlessing: (b: RiftBlessing) => world.selectBlessing(b),
             saveFormation: (n: string) => world.saveFormation(n, activeHeroes.map(h => h.id)), loadFormation: (f: any) => world.loadFormation(f.id), deleteFormation: (id: string) => world.deleteFormation(id),
             upgradeMonument: (id: string) => guildState.upgradeMonument(id),
 
             attackWorldBoss: () => worldBossState.attackWorldBoss(), claimWorldBossReward: () => worldBossState.claimReward(),
             challengeVoidCore: () => { if (voidMatter >= 10) addLog("Challenging Void Core...", "danger"); },
             setVictory: (v: boolean) => setVictory(v),
-            interactWithEvent: (id: string, action: 'buy' | 'defend' | 'join', data?: any) => { if (activeEvent?.id === id && action === 'buy') setGold(g => g - (data?.item?.value || 0)); },
+            interactWithEvent: (id: string, action: 'buy' | 'defend' | 'join', data?: any) => {
+                if (activeEvent?.id === id && action === 'buy') {
+                    const item = data?.item;
+                    if (!item) return;
+                    const cost = item.value;
+                    if (stateRef.current.gold >= cost) {
+                        setGold(g => g - cost);
+                        setActiveEvent(prev => {
+                            if (!prev || !prev.items) return prev;
+                            return { ...prev, items: prev.items.filter(i => i.id !== item.id) };
+                        });
+
+                        if (item.name.includes('Convite')) {
+                            const locked = stateRef.current.heroes.filter(h => !h.unlocked);
+                            if (locked.length > 0) {
+                                const recruit = locked[Math.floor(Math.random() * locked.length)];
+                                setHeroes(p => p.map(h => h.id === recruit.id ? { ...h, unlocked: true } : h));
+                                addLog(`🎪 Circo: Você recrutou ${recruit.name}!`, 'success');
+                            } else {
+                                addLog(`🎪 Circo: Todos os heróis já estão recrutados. Reembolsando custo...`, 'info');
+                                setGold(g => g + cost);
+                            }
+                        } else if (item.name.includes('Saco Misterioso')) {
+                            const randVal = Math.random();
+                            if (randVal < 0.4) {
+                                const soulsGained = 500;
+                                setSouls(s => s + soulsGained);
+                                addLog(`🎪 Circo: O Saco Misterioso continha ${soulsGained} Almas!`, 'success');
+                            } else if (randVal < 0.8) {
+                                const goldGained = 5000;
+                                setGold(g => g + goldGained);
+                                addLog(`🎪 Circo: O Saco Misterioso continha ${goldGained} Ouro!`, 'success');
+                            } else {
+                                const newPet = {
+                                    id: `pet-circus-${Date.now()}`,
+                                    name: 'Coelho da Cartola',
+                                    type: 'pet',
+                                    emoji: '🐇',
+                                    rarity: Math.random() < 0.7 ? 'common' : Math.random() < 0.9 ? 'rare' : 'epic',
+                                    level: 1,
+                                    xp: 0,
+                                    maxXp: 100,
+                                    bonus: Math.random() < 0.7 ? '+5% Speed' : Math.random() < 0.9 ? '+10% Speed' : '+20% Speed',
+                                    stats: { hp: 0, maxHp: 0, mp: 0, maxMp: 0, attack: 1, defense: 0, magic: 1, speed: 10 },
+                                    isDead: false
+                                };
+                                petsState.setPets(p => [...p, newPet as any]);
+                                addLog(`🎪 Circo: Você ganhou um Pet raro: ${newPet.name}!`, 'success');
+                            }
+                        } else {
+                            setItems(p => [...p, item]);
+                            addLog(`🎪 Circo: Comprou ${item.name}!`, 'success');
+                        }
+                    } else {
+                        addLog(`Ouro insuficiente para comprar este item.`, 'error');
+                    }
+                }
+            },
+            removeCurse: (heroId: string, curse: string) => {
+                const h = stateRef.current.heroes.find(x => x.id === heroId);
+                const cost = 50000;
+                if (h && h.curses?.includes(curse) && stateRef.current.gold >= cost) {
+                    setGold(g => g - cost);
+                    setHeroes(p => p.map(curr => curr.id === heroId ? { ...curr, curses: (curr.curses || []).filter(c => c !== curse) } : curr));
+                    addLog(`✨ A maldição foi purificada de ${h.name} por ${cost} Ouro!`, 'success');
+                } else if (h && !h.curses?.includes(curse)) {
+                    addLog(`${h.name} não possui essa maldição.`, 'info');
+                } else {
+                    addLog(`Ouro insuficiente para purificar a maldição (${cost} Ouro).`, 'error');
+                }
+            },
+            pledgeDeity: (deityId: string | null) => {
+                setPatronDeity(deityId);
+                setDeityLevel(1);
+                setDeityFavor(0);
+                setDeityEnergy(0);
+                if (deityId) {
+                    const DEITIES_MOCK = [
+                        { id: 'aurelius', name: 'Aurelius, o Pai do Sol' },
+                        { id: 'tenebris', name: 'Tenebris, o Tecelão do Vazio' },
+                        { id: 'gaya', name: 'Gaya, a Matriarca da Terra' }
+                    ];
+                    const d = DEITIES_MOCK.find(x => x.id === deityId);
+                    addLog(`🏛️ Sua guilda se consagrou a ${d ? d.name : deityId}!`, 'success');
+                } else {
+                    addLog(`🏛️ Sua guilda renegou seu antigo deus padroeiro.`, 'info');
+                }
+            },
+            offerToDeity: (offeringType: 'souls' | 'divinity') => {
+                let costMet = false;
+                if (offeringType === 'souls' && stateRef.current.souls >= 5000) {
+                    setSouls(s => s - 5000);
+                    costMet = true;
+                    addLog(`⛪ Você ofereceu 5000 Almas ao seu Deus Padroeiro!`, 'success');
+                } else if (offeringType === 'divinity' && stateRef.current.divinity >= 100) {
+                    setDivinity(d => d - 100);
+                    costMet = true;
+                    addLog(`⛪ Você ofereceu 100 de Divindade ao seu Deus Padroeiro!`, 'success');
+                } else {
+                    addLog(`Recursos insuficientes para a oferenda.`, 'error');
+                }
+
+                if (costMet) {
+                    const currentLevel = stateRef.current.deityLevel;
+                    const currentFavor = stateRef.current.deityFavor;
+                    let newFavor = currentFavor + 500;
+                    const req = currentLevel * 1000;
+                    if (newFavor >= req) {
+                        newFavor -= req;
+                        setDeityLevel(currentLevel + 1);
+                        addLog(`✨ O favor de seu Deus aumentou! Nível do Padroeiro subiu para ${currentLevel + 1}!`, 'achievement');
+                    }
+                    setDeityFavor(newFavor);
+                }
+            },
+            enshrineHero: (slotIndex: number, heroId: string | null) => {
+                if (heroId) {
+                    const hero = stateRef.current.heroes.find(h => h.id === heroId);
+                    if (!hero || !hero.isAwakened) {
+                        addLog(`Apenas heróis Despertados podem ser consagrados no Panteão!`, 'error');
+                        return;
+                    }
+                }
+                setMonuments(prev => {
+                    const next = [...prev];
+                    if (heroId) {
+                        const existingIndex = prev.indexOf(heroId);
+                        if (existingIndex !== -1 && existingIndex !== slotIndex) {
+                            next[existingIndex] = null;
+                        }
+                    }
+                    next[slotIndex] = heroId;
+                    return next;
+                });
+                if (heroId) {
+                    const hero = stateRef.current.heroes.find(h => h.id === heroId);
+                    addLog(`🏛️ ${hero ? hero.name : 'Herói'} consagrado no Panteão da Eternidade!`, 'success');
+                } else {
+                    addLog(`🏛️ Estátua removida do Panteão.`, 'info');
+                }
+            },
             dismissEvent: () => setActiveEvent(null),
             buyMasteryUpgrade: (type: keyof import('../engine/types').DungeonMastery) => {
                 const cost = (dungeonMastery[type] + 1) * 1000;
                 if (souls >= cost) { setSouls(s => s - cost); setDungeonMastery(prev => ({ ...prev, [type]: prev[type] + 1 })); }
             },
-            assignHero: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h)),
+            assignHero: (id: string, assignment?: Hero['assignment']) => {
+                const h = stateRef.current.heroes.find(x => x.id === id);
+                if (h && h.curses?.includes('abyss') && h.assignment === 'combat') {
+                    addLog(`${h.name} está preso pelas Correntes do Abismo e não pode deixar o combate!`, 'error');
+                    return;
+                }
+                setHeroes(p => p.map(h => {
+                    if (h.id === id) {
+                        if (assignment) {
+                            return { ...h, assignment };
+                        }
+                        return { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' };
+                    }
+                    return h;
+                }));
+            },
             manualAttack: () => {
                 const dmg = Math.max(1, Math.floor(calculatedPartyPower * 0.05)); // 5% of party power per click
                 
@@ -931,7 +1434,7 @@ export const useGame = () => {
             }
         };
         return baseActions as GameActions;
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, monuments]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
@@ -955,10 +1458,90 @@ export const useGame = () => {
 
             if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);
 
-            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage;
-            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies);
+            // Passive recovery & campfire recovery of fatigue & team morale
+            const campfireCount = stateRef.current.heroes.filter(h => h.assignment === 'campfire').length;
+            const moraleRecovery = 0.1 + (campfireCount * 0.5);
+            setTeamMorale(prev => Math.min(100, prev + moraleRecovery));
+
+            // Accumulate bond XP for combat partners
+            const livingCombatants = stateRef.current.heroes.filter(h => h.assignment === 'combat' && !h.isDead);
+            if (livingCombatants.length >= 2) {
+                setHeroBonds(prev => {
+                    const next = { ...prev };
+                    let updated = false;
+                    for (let i = 0; i < livingCombatants.length; i++) {
+                        for (let j = i + 1; j < livingCombatants.length; j++) {
+                            const id1 = livingCombatants[i].id;
+                            const id2 = livingCombatants[j].id;
+                            const key = [id1, id2].sort().join('-');
+                            
+                            const current = next[key] || { xp: 0, level: 1, type: 'comrades' };
+                            if (current.level >= 3) continue;
+
+                            let nextXp = current.xp + 1;
+                            let nextLvl = current.level;
+                            const maxXP = nextLvl === 2 ? 300 : 100;
+
+                            if (nextXp >= maxXP) {
+                                nextXp = 0;
+                                nextLvl++;
+                                if (nextLvl === 2) {
+                                    const types: ('comrades' | 'rivals' | 'soulmates')[] = ['comrades', 'rivals', 'soulmates'];
+                                    current.type = types[Math.floor(Math.random() * types.length)];
+                                }
+                                addLog(`💞 O vínculo entre ${livingCombatants[i].name} e ${livingCombatants[j].name} subiu para o Nível ${nextLvl}!`, 'achievement');
+                            }
+
+                            next[key] = { xp: nextXp, level: nextLvl, type: current.type };
+                            updated = true;
+                        }
+                    }
+                    return updated ? next : prev;
+                });
+            }
+
+            const moraleDamageMult = 0.5 + (teamMorale / 100) * 0.6;
+            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * getMonumentMultipliers().attack;
+            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? (world.towerBoss?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
 
             damageAccumulator.current += res.totalDmg;
+
+            if (stateRef.current.patronDeity && !targetBoss.isDead) {
+                setDeityEnergy(prev => {
+                    const next = prev + 1; // 1% charge per tick
+                    if (next >= 100) {
+                        const level = stateRef.current.deityLevel;
+                        if (stateRef.current.patronDeity === 'aurelius') {
+                            const avgAtk = activeHeroes.length > 0
+                                ? activeHeroes.reduce((sum, h) => sum + h.stats.attack, 0) / activeHeroes.length
+                                : 20;
+                            const activeSpellDmg = Math.floor(avgAtk * 50 * level);
+                            damageAccumulator.current += activeSpellDmg;
+                            addLog(`✨ Aurelius, o Pai do Sol conjura Meteoro Solar causando ${activeSpellDmg.toLocaleString()} de dano!`, 'success');
+                        } else if (stateRef.current.patronDeity === 'tenebris') {
+                            setHeroes(prevHeroes => prevHeroes.map(h => {
+                                if (h.assignment === 'combat' && !h.isDead) {
+                                    const healAmount = Math.floor(h.stats.maxHp * 0.3 * level);
+                                    const newHp = Math.min(h.stats.maxHp, h.stats.hp + healAmount);
+                                    return { ...h, stats: { ...h.stats, hp: newHp } };
+                                }
+                                return h;
+                            }));
+                            addLog(`🌌 Tenebris, o Tecelão do Vazio invoca Barreira Entrópica protegendo a equipe!`, 'success');
+                        } else if (stateRef.current.patronDeity === 'gaya') {
+                            setHeroes(prevHeroes => prevHeroes.map(h => {
+                                if (h.assignment === 'combat' && !h.isDead) {
+                                    return { ...h, stats: { ...h.stats, hp: h.stats.maxHp, mp: h.stats.maxMp } };
+                                }
+                                return h;
+                            }));
+                            addLog(`🌿 Gaya, a Matriarca da Terra canaliza Rejuvenescimento Telúrico restaurando toda a equipe!`, 'success');
+                        }
+                        return 0;
+                    }
+                    return next;
+                });
+            }
 
             if (res.events && res.events.length > 0) {
                 setCombatEvents(prev => [...prev, ...res.events].slice(-5));
@@ -977,12 +1560,18 @@ export const useGame = () => {
             const townHallLevel = buildings.find(b => b.id === 'town_hall')?.level || 0;
             const townHallGoldMult = 1 + (townHallLevel * 0.05); // 5% per level
 
-            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult;
+            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * getMonumentMultipliers().gold;
             const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0));
+
+            const moraleXpMult = 0.5 + (teamMorale / 100) * 0.7;
 
             if (res.totalDmg >= currentBoss.stats.hp) {
                 bossDefeated = true;
-                const xpGain = Math.floor(currentBoss.level * 10 * finalXpMult);
+                
+                // Aumenta a moral nas vitórias
+                setTeamMorale(prev => Math.min(100, prev + 5));
+
+                const xpGain = Math.floor(currentBoss.level * 10 * finalXpMult * moraleXpMult);
                 const goldGain = Math.floor(currentBoss.level * 50 * finalGoldMult);
 
                 setGold(g => g + goldGain);
@@ -1074,9 +1663,10 @@ export const useGame = () => {
                     let h = combatHero || oldHero;
                     const now = Date.now();
 
-                    // Track deathTime for newly dead heroes
+                    // Reduz moral na queda de heróis
                     if (h.isDead && !oldHero.isDead) {
                         h = { ...h, deathTime: now };
+                        setTeamMorale(prev => Math.max(0, prev - 10));
                     }
 
                     // Auto-revive logic: 10 seconds (10000ms)
@@ -1086,7 +1676,18 @@ export const useGame = () => {
                     }
 
                     if (bossDefeated && combatHero && !h.isDead) {
-                        const xpGain = Math.floor(currentBoss.level * 10 * finalXpMult);
+                        // Rivals bond: +20% XP
+                        let xpMult = finalXpMult;
+                        const otherActive = prev.filter(oth => oth.id !== h.id && oth.assignment === 'combat' && !oth.isDead);
+                        otherActive.forEach(oth => {
+                            const key = [h.id, oth.id].sort().join('-');
+                            const bond = heroBonds[key];
+                            if (bond && bond.level >= 3 && bond.type === 'rivals') {
+                                xpMult *= 1.2;
+                            }
+                        });
+
+                        const xpGain = Math.floor(currentBoss.level * 10 * xpMult * moraleXpMult);
                         let newXp = (h.xp || 0) + xpGain;
                         let newLevel = h.level || 1;
                         let newMaxXp = h.maxXp || 100;
@@ -1167,11 +1768,14 @@ export const useGame = () => {
         weather: world.weather, setWeather: world.setWeather, formations: world.formations, setFormations: world.setFormations,
         outerSpaceUnlocked, setOuterSpaceUnlocked,
         prestigeNodes, setPrestigeNodes,
+        teamMorale, setTeamMorale,
+        heroBonds, setHeroBonds,
+        monuments, setMonuments,
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
     const result = useMemo(() => {
-        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes };
+        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy };
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
@@ -1203,18 +1807,31 @@ export const useGame = () => {
             buildings,
 
             voidGuardian,
+            monuments,
+            patronDeity,
+            deityLevel,
+            deityFavor,
+            deityEnergy,
             actions: ACTIONS,
             // Root actions for legacy compatibility
             ...ACTIONS,
             ...setUIState,
             setPortalConfig,
             ascendToVoid: ACTIONS.ascendToVoid,
+            removeCurse: ACTIONS.removeCurse,
+            purchase: ACTIONS.purchase,
+            enshrineHero: ACTIONS.enshrineHero,
+            pledgeDeity: ACTIONS.pledgeDeity,
+            offerToDeity: ACTIONS.offerToDeity,
+            craftRune: ACTIONS.craftRune,
+            socketRune: ACTIONS.socketRune,
+            combineRunes: ACTIONS.combineRunes,
+            invokeWeather: ACTIONS.invokeWeather,
             worldBoss: worldBossState.worldBoss, worldBossDamage: worldBossState.personalDamage, worldBossCanClaim: worldBossState.canClaim, worldBossCooldownUntil: worldBossState.cooldownUntil,
             guildXpMult,
             setGameStats
         };
-    }, [gold, souls, divinity, starlight, heroes, items, dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats, world, guildState.guild, activeHeroes, partyPower, partyDps, activeEvent, victory, boss, resources, starlightUpgrades, talents, achievements, combatEvents, logs, isSoundOn, offlineGains, marketStock, marketTimer, raidActive,
-        raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys, monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, ACTIONS, worldBossState, voidGuardian, guildXpMult, showCampfire, galaxyState.spaceship, galaxyState.territories, galaxyState.galaxy, activeSynergies, buildings, arenaOpponents, arenaRank, glory, theme, autoSellRarity, quests, gameSpeed, petsState.pets, artifacts, classMastery, prestigeNodes, townVisited, portalConfig, guildQueue]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes]);
 
     return result;
 };

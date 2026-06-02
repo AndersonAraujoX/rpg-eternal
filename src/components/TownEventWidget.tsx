@@ -13,6 +13,7 @@ export const TownEventWidget: React.FC<TownEventWidgetProps> = ({ event, actions
     const getIcon = () => {
         switch (event.type) {
             case 'merchant': return <ShoppingBag className="text-amber-400" size={16} />;
+            case 'circus': return <span className="text-sm">🎪</span>;
             case 'raid': return <ShieldAlert className="text-red-500 animate-pulse" size={16} />;
             case 'festival': return <PartyPopper className="text-pink-400" size={16} />;
             default: return null;
@@ -20,6 +21,7 @@ export const TownEventWidget: React.FC<TownEventWidgetProps> = ({ event, actions
     };
 
     const getRarityColor = () => {
+        if (event.type === 'circus') return 'border-orange-500 bg-orange-950/60 shadow-[0_0_15px_rgba(249,115,22,0.4)]';
         return event.rarity === 'rare' ? 'border-purple-500 bg-purple-900/40' : 'border-blue-500 bg-blue-900/40';
     };
 
@@ -40,7 +42,7 @@ export const TownEventWidget: React.FC<TownEventWidgetProps> = ({ event, actions
             </p>
 
             <div className="space-y-2">
-                {event.type === 'merchant' && event.items && (
+                {(event.type === 'merchant' || event.type === 'circus') && event.items && (
                     <div className="grid grid-cols-1 gap-1">
                         {event.items.map(item => (
                             <button
@@ -50,10 +52,14 @@ export const TownEventWidget: React.FC<TownEventWidgetProps> = ({ event, actions
                             >
                                 <div className="flex flex-col items-start">
                                     <span className="text-[10px] font-bold text-amber-200 group-hover:text-amber-400">{item.name}</span>
-                                    <span className="text-[8px] text-gray-400">+{item.value} {item.stat}</span>
+                                    <span className="text-[8px] text-gray-400">
+                                        {item.name.includes('Convite') ? 'Recruta um herói bloqueado' :
+                                         item.name.includes('Saco') ? 'Almas, Ouro ou Pet raro!' :
+                                         `+${item.value} ${item.stat}`}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1 text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-1 rounded">
-                                    💰 {formatNumber(item.value * 2)}
+                                    💰 {formatNumber(item.value)}
                                 </div>
                             </button>
                         ))}
