@@ -31,6 +31,7 @@ import { PRESTIGE_CLASSES } from '../engine/classes';
 import { CLASS_TALENTS } from '../data/masteryData';
 import { PRESTIGE_NODES, getPrestigeNodeCost } from '../components/modals/PrestigeTreeModal';
 import { MONSTERS } from '../engine/bestiary';
+import { FEATURES_LIST, getUnlocksState } from '../engine/features';
 
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -153,6 +154,34 @@ export const useGame = () => {
     const [quests, setQuests] = useState<Quest[]>([]);
 
     const [combatEvents, setCombatEvents] = useState<CombatEvent[]>([]);
+
+    // Progression Feature Unlocks monitor
+    const previousUnlocksRef = useRef<Record<string, boolean>>({});
+    useEffect(() => {
+        const currentUnlocks = getUnlocksState({
+            bossLevel: boss.level,
+            highestFloor: world.tower.maxFloor || 1,
+            voidAscensions: voidAscensions,
+            buildings: buildings || [],
+            outerSpaceUnlocked: !!outerSpaceUnlocked
+        });
+
+        // Initialize on first load without logging
+        if (Object.keys(previousUnlocksRef.current).length === 0) {
+            previousUnlocksRef.current = currentUnlocks;
+            return;
+        }
+
+        // Compare
+        FEATURES_LIST.forEach(feature => {
+            if (currentUnlocks[feature.id] && !previousUnlocksRef.current[feature.id]) {
+                addLog(`✨ MECÂNICA DESBLOQUEADA: ${feature.name}! ${feature.icon}`, 'achievement');
+                soundManager.playLevelUp();
+            }
+        });
+
+        previousUnlocksRef.current = currentUnlocks;
+    }, [boss.level, world.tower.maxFloor, voidAscensions, buildings, outerSpaceUnlocked]);
 
     const voidGuardian = useVoidGuardian(partyPower, addLog, (dmg) => {
         const rewards = calculateVoidGuardianRewards(dmg);

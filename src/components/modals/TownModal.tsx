@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Home, Hammer, Info, Lock, ArrowLeft } from 'lucide-react';
+import { Home, Hammer, Info, Lock, ArrowLeft, ShieldAlert } from 'lucide-react';
 import type { Building } from '../../engine/types';
 import { formatNumber } from '../../utils';
+import { FEATURES_LIST } from '../../engine/features';
 
 interface TownModalProps {
     isOpen: boolean;
@@ -16,9 +17,11 @@ interface TownModalProps {
     openAlchemy?: () => void;
     openExpeditions?: () => void;
     openGarden?: () => void;
+    bossLevel?: number;
+    voidAscensions?: number;
 }
 
-export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings, gold, upgradeBuilding, tower, openIndustry, openForge, openFishing, openAlchemy, openExpeditions, openGarden }) => {
+export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings, gold, upgradeBuilding, tower, openIndustry, openForge, openFishing, openAlchemy, openExpeditions, openGarden, bossLevel = 0, voidAscensions = 0 }) => {
     const [viewMode, setViewMode] = useState<'overview' | 'construction'>('overview');
 
     if (!isOpen) return null;
@@ -155,6 +158,15 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
                                 const canAfford = gold >= building.cost;
                                 const isSpecial = building.id === 'guild_hall';
 
+                                const featureDef = FEATURES_LIST.find(f => f.id === building.id);
+                                const isBuildingUnlocked = !featureDef || featureDef.checkUnlocked({
+                                    bossLevel,
+                                    highestFloor: tower?.maxFloor || 1,
+                                    voidAscensions,
+                                    buildings,
+                                    outerSpaceUnlocked: false
+                                });
+
                                 return (
                                     <div
                                         key={building.id}
@@ -194,7 +206,12 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
                                                 </div>
                                                 <div className="text-[10px] text-stone-500 italic mt-1 flex justify-between">
                                                     <span>{building.bonus}</span>
-                                                    {isSpecial && building.level === 0 && <span className="text-amber-400 animate-pulse flex items-center gap-1 font-bold uppercase"><Lock size={10} /> Desbloqueio Crítico</span>}
+                                                    {!isBuildingUnlocked && featureDef && (
+                                                        <span className="text-red-400 animate-pulse flex items-center gap-1 font-bold uppercase">
+                                                            <Lock size={10} /> Requer: {featureDef.unlockRequirementText}
+                                                        </span>
+                                                    )}
+                                                    {isSpecial && building.level === 0 && isBuildingUnlocked && <span className="text-amber-400 animate-pulse flex items-center gap-1 font-bold uppercase"><Lock size={10} /> Desbloqueio Crítico</span>}
                                                 </div>
                                             </div>
 
@@ -230,18 +247,24 @@ export const TownModal: React.FC<TownModalProps> = ({ isOpen, onClose, buildings
                                                 </button>
                                             )}
                                             <button
-                                                onClick={() => upgradeBuilding(building.id)}
-                                                disabled={isMax || !canAfford}
+                                                onClick={() => isBuildingUnlocked && upgradeBuilding(building.id)}
+                                                disabled={isMax || !canAfford || !isBuildingUnlocked}
                                                 className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-2xl
                                                 ${isMax
                                                         ? 'bg-stone-800 text-stone-500 cursor-default border border-stone-700'
-                                                        : canAfford
-                                                            ? 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-900/20 active:scale-95'
-                                                            : 'bg-stone-900/50 text-stone-600 cursor-not-allowed border border-stone-800'
+                                                        : !isBuildingUnlocked
+                                                            ? 'bg-red-950/20 text-red-500/60 border border-red-900/30 cursor-not-allowed'
+                                                            : canAfford
+                                                                ? 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-900/20 active:scale-95'
+                                                                : 'bg-stone-900/50 text-stone-600 cursor-not-allowed border border-stone-800'
                                                     }`}
                                             >
                                                 {isMax ? (
                                                     <>MÁXIMO ALCANÇADO</>
+                                                ) : !isBuildingUnlocked ? (
+                                                    <span className="flex items-center gap-1">
+                                                        <Lock size={12} /> BLOQUEADO
+                                                    </span>
                                                 ) : (
                                                     <>
                                                         <Hammer size={18} className={canAfford ? 'animate-bounce' : ''} />

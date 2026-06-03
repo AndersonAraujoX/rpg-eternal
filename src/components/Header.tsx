@@ -4,6 +4,7 @@ import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild, Building } from '../engine/types';
 import type { WeatherType } from '../engine/weather'; // Phase 48
 import { WEATHER_DATA } from '../engine/weather'; // Phase 48
+import { getUnlocksState } from '../engine/features';
 
 interface HeaderProps {
     boss: Boss;
@@ -65,6 +66,7 @@ interface HeaderProps {
     townVisited?: boolean;
     voidAscensions?: number;
     buildings?: Building[];
+    setShowJourney: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -89,13 +91,23 @@ export const Header: React.FC<HeaderProps> = ({
     setShowPrestigeTree,
     townVisited,
     voidAscensions = 0,
-    buildings = []
+    buildings = [],
+    setShowJourney
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
+
+    const unlocks = getUnlocksState({
+        bossLevel: boss.level,
+        highestFloor: tower.maxFloor || 1,
+        voidAscensions: voidAscensions,
+        buildings: buildings || [],
+        outerSpaceUnlocked: !!outerSpaceUnlocked
+    });
 
     // Button Groups
     const renderMainButtons = () => (
         <>
+            <button onClick={() => setShowJourney(true)} className="btn-retro bg-amber-900 text-amber-200 px-2 py-1 rounded border border-amber-500 flex items-center gap-1 hover:bg-amber-800" title="Jornada de Destino"><Map size={12} /> Jornada</button>
             <button onClick={() => setShowInventory(true)} className="btn-retro bg-slate-700 text-slate-200 px-2 py-1 rounded border border-slate-500 flex items-center gap-1 hover:bg-slate-600" title="Inventário"><Briefcase size={12} /> Mochila</button>
             <button
                 onClick={() => setShowGuild(true)}
@@ -107,9 +119,14 @@ export const Header: React.FC<HeaderProps> = ({
                 {!buildings.find(b => b.id === 'guild_hall' && b.level > 0) && <Lock size={8} />}
             </button>
             {setShowTown && (
-                <button onClick={() => { if (setShowTown) setShowTown(true); }} className="btn-retro bg-stone-700 text-stone-200 px-2 py-1 rounded border border-stone-500 flex items-center gap-1 hover:bg-stone-600 relative" title="Vila">
-                    <Home size={12} /> Vila
-                    {activeEvent && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-white" />}
+                <button
+                    onClick={() => { if (unlocks.town) setShowTown(true); }}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.town ? 'bg-stone-700 text-stone-200 border-stone-500 hover:bg-stone-600 relative' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={unlocks.town ? "Vila" : "Bloqueado: Requer Chefe Nível 10"}
+                >
+                    <Home size={12} /> {unlocks.town ? "Vila" : "???"}
+                    {!unlocks.town && <Lock size={8} />}
+                    {unlocks.town && activeEvent && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-white" />}
                 </button>
             )}
             {setShowPrestigeTree && voidAscensions > 0 && (
@@ -144,16 +161,26 @@ export const Header: React.FC<HeaderProps> = ({
                     <Flame size={12} /> {outerSpaceUnlocked ? "Forja Estelar" : "???"}
                 </button>
             )}
-            {setShowRiftModal && boss.level >= 300 && (
+            {setShowRiftModal && (
                 <button
-                    onClick={() => setShowRiftModal(true)}
-                    className="btn-retro bg-purple-900 text-purple-300 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800"
-                    title="Fendas Temporais (Nível 300+)"
+                    onClick={() => { if (unlocks.rifts) setShowRiftModal(true); }}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.rifts ? 'bg-purple-900 text-purple-300 border-purple-500 hover:bg-purple-800' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={unlocks.rifts ? "Fendas Temporais" : "Bloqueado: Requer Andar 120"}
                 >
-                    <Clock size={12} /> Fendas
+                    <Clock size={12} /> {unlocks.rifts ? "Fendas" : "???"}
+                    {!unlocks.rifts && <Lock size={8} />}
                 </button>
             )}
-            {setShowWorldBoss && <button onClick={() => setShowWorldBoss(true)} className="btn-retro bg-red-950 text-red-400 px-2 py-1 rounded border border-red-500 flex items-center gap-1 hover:bg-red-900 animate-pulse" title="Reide de Chefe Mundial"><Skull size={12} /> Reide</button>}
+            {setShowWorldBoss && (
+                <button
+                    onClick={() => { if (unlocks.world_boss) setShowWorldBoss(true); }}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.world_boss ? 'bg-red-950 text-red-400 border-red-500 hover:bg-red-900 animate-pulse' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={unlocks.world_boss ? "Reide de Chefe Mundial" : "Bloqueado: Requer Chefe Nível 150"}
+                >
+                    <Skull size={12} /> {unlocks.world_boss ? "Reide" : "???"}
+                    {!unlocks.world_boss && <Lock size={8} />}
+                </button>
+            )}
 
             {/* Vazio e Fogueira removidos a pedido do usuário */}
             {/* Phase 47: Guild War */}
@@ -201,7 +228,16 @@ export const Header: React.FC<HeaderProps> = ({
             {setShowMuseum && <button onClick={() => setShowMuseum(true)} className="btn-retro bg-emerald-900 text-emerald-200 px-2 py-1 rounded border border-emerald-500 flex items-center gap-1 hover:bg-emerald-800" title="O Museu"><BookOpen size={12} /> Museu</button>}
             <button onClick={() => setShowStats(true)} className="btn-retro bg-blue-900 text-blue-200 px-2 py-1 rounded border border-blue-500 flex items-center gap-1 hover:bg-blue-800" title="Status"><BarChart2 size={12} /> Status</button>
             <button onClick={() => setShowBestiary(true)} className="btn-retro bg-amber-900 text-amber-200 px-2 py-1 rounded border border-amber-600 flex items-center hover:bg-amber-800 text-[10px]" title="Bestiário (Registro de Monstros)"><BookOpen size={12} /> Bestiário</button>
-            {setShowStarlight && <button onClick={() => setShowStarlight(true)} className="btn-retro bg-cyan-950 text-cyan-400 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-900 animate-pulse" title="Constelações de Automação"><Settings size={12} /> Auto</button>}
+            {setShowStarlight && (
+                <button
+                    onClick={() => { if (unlocks.starlight) setShowStarlight(true); }}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.starlight ? 'bg-cyan-950 text-cyan-400 border-cyan-500 hover:bg-cyan-900 animate-pulse' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={unlocks.starlight ? "Constelações de Automação" : "Bloqueado: Requer Andar 180"}
+                >
+                    <Settings size={12} /> {unlocks.starlight ? "Auto" : "???"}
+                    {!unlocks.starlight && <Lock size={8} />}
+                </button>
+            )}
             <button onClick={() => setShowSettings(true)} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600"><Settings size={12} /></button>
             <button onClick={() => setShowHelp(true)} className="btn-retro bg-gray-600 text-gray-200 px-2 py-1 rounded border border-gray-400 flex items-center gap-1 hover:bg-gray-500" title="Ajuda"><HelpCircle size={12} /></button>
             {!outerSpaceUnlocked && boss.level >= 50 && (

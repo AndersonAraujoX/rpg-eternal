@@ -47,6 +47,7 @@ import { TownModal } from './components/modals/TownModal'; // Phase 53
 import { MuseumModal } from './components/modals/MuseumModal';
 import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
 import { WorldBossModal } from './components/modals/WorldBossModal'; // Phase 6
+import { JourneyModal } from './components/modals/JourneyModal';
 import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
 import { IndustryModal } from './components/modals/IndustryModal';
 
@@ -98,6 +99,7 @@ function App() {
 
   const [showShop, setShowShop] = useState(false);
   const [showTown, setShowTown] = useState(false); // Phase 53
+  const [showJourney, setShowJourney] = useState(false);
   const [showIndustry, setShowIndustry] = useState(false);
   const [showCardBattle, setShowCardBattle] = useState(false); // Phase 55
   const [showDailyRewards, setShowDailyRewards] = useState(false); // Phase 56
@@ -259,6 +261,7 @@ function App() {
           townVisited={townVisited}
           voidAscensions={voidAscensions}
           buildings={buildings}
+          setShowJourney={setShowJourney}
         />
 
         <BattleArea
@@ -391,7 +394,7 @@ function App() {
       })()}
 
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
-      <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} tower={tower} openIndustry={() => setShowIndustry(true)} openForge={() => setShowForge(true)} openFishing={() => setShowFishing(true)} openAlchemy={() => setShowAlchemy(true)} openExpeditions={() => setShowExpeditions(true)} openGarden={() => setShowGarden(true)} />
+      <TownModal isOpen={showTown} onClose={() => setShowTown(false)} buildings={buildings} gold={gold} upgradeBuilding={upgradeBuilding} tower={tower} openIndustry={() => setShowIndustry(true)} openForge={() => setShowForge(true)} openFishing={() => setShowFishing(true)} openAlchemy={() => setShowAlchemy(true)} openExpeditions={() => setShowExpeditions(true)} openGarden={() => setShowGarden(true)} bossLevel={boss.level} voidAscensions={voidAscensions} />
       <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
@@ -497,6 +500,17 @@ function App() {
         souls={souls}
         prestigeNodes={prestigeNodes}
         onBuyNode={actions.buyPrestigeNode}
+      />
+      <JourneyModal
+        isOpen={showJourney}
+        onClose={() => setShowJourney(false)}
+        state={{
+          bossLevel: boss.level,
+          highestFloor: tower.maxFloor || 1,
+          voidAscensions,
+          buildings,
+          outerSpaceUnlocked: !!outerSpaceUnlocked
+        }}
       />
     </div>
   );
