@@ -15,12 +15,12 @@ export const INITIAL_GARDEN: GardenPlot[] = [
 
 export const UNLOCK_COSTS = [0, 0, 0, 1000, 2500, 5000, 10000, 25000, 50000]; // Gold costs for index 0-8
 
-export const tickGarden = (plots: GardenPlot[], now: number): GardenPlot[] => {
+export const tickGarden = (plots: GardenPlot[], now: number, speedMult: number = 1.0): GardenPlot[] => {
     return plots.map(plot => {
         if (!plot.seed || plot.growth >= 100) return plot;
 
         const seedData = SEEDS[plot.seed];
-        const elapsed = (now - plot.plantedAt) / 1000; // seconds
+        const elapsed = ((now - plot.plantedAt) / 1000) * speedMult; // seconds
         const progress = Math.min(100, (elapsed / seedData.growthTime) * 100);
 
         return { ...plot, growth: progress };

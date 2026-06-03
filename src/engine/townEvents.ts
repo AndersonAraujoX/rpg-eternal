@@ -1,6 +1,6 @@
 import type { Item } from './types';
 
-export type TownEventType = 'merchant' | 'raid' | 'festival' | 'crisis';
+export type TownEventType = 'merchant' | 'raid' | 'festival' | 'crisis' | 'circus';
 
 export interface TownEvent {
     id: string;
@@ -28,8 +28,9 @@ export const generateTownEvent = (gameStage: number, _activeEvents: TownEvent[])
     const roll = Math.random();
     let type: TownEventType = 'merchant';
 
-    if (roll < 0.5) type = 'merchant';
-    else if (roll < 0.75) type = 'festival';
+    if (roll < 0.3) type = 'merchant';
+    else if (roll < 0.5) type = 'festival';
+    else if (roll < 0.7) type = 'circus';
     else if (roll < 0.9) type = 'raid'; // Only if gameStage > 5?
 
     if (type === 'raid' && gameStage < 5) type = 'merchant'; // Safety for early game
@@ -88,6 +89,46 @@ export const generateTownEvent = (gameStage: number, _activeEvents: TownEvent[])
             baseEvent.name = 'Warrior Tournament';
         }
         baseEvent.rarity = 'rare';
+    } else if (type === 'circus') {
+        baseEvent.name = '🎪 Circo Ambulante';
+        baseEvent.description = 'O Circo Ambulante chegou com atrações bizarras e ofertas únicas!';
+        baseEvent.rarity = 'legendary';
+        baseEvent.duration = 300; // 5 minutos
+        baseEvent.items = [
+            {
+                id: `circus-item-hero-${Date.now()}`,
+                name: '🎟️ Convite de Recrutamento (90% Desconto)',
+                type: 'currency' as any,
+                slot: 'accessory',
+                stat: 'speed',
+                value: 500,
+                rarity: 'rare',
+                sockets: 0,
+                runes: []
+            },
+            {
+                id: `circus-item-legendary-${Date.now()}`,
+                name: '🤡 Máscara do Palhaço Macabro',
+                type: 'weapon',
+                slot: 'weapon',
+                stat: 'attack',
+                value: Math.max(1000, gameStage * 100),
+                rarity: 'legendary',
+                sockets: 3,
+                runes: []
+            },
+            {
+                id: `circus-item-mystery-${Date.now()}`,
+                name: '🎁 Saco Misterioso (Surpresa!)',
+                type: 'material' as any,
+                slot: 'armor',
+                stat: 'defense',
+                value: 1000,
+                rarity: 'epic',
+                sockets: 1,
+                runes: []
+            }
+        ];
     } else if (type === 'raid') {
         baseEvent.name = 'Monster Raid';
         baseEvent.description = 'Monsters are attacking the town gates!';

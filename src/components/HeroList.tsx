@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull, Flame, Droplets, ShieldAlert } from 'lucide-react';
-import type { Hero } from '../engine/types';
+import type { Hero, Building } from '../engine/types';
 import type { Synergy } from '../engine/synergies';
 import { SYNERGY_DEFINITIONS } from '../engine/synergies';
 
@@ -13,9 +13,11 @@ interface HeroListProps {
     heroes: Hero[];
     actions: any;
     activeSynergies?: Synergy[];
+    buildings?: Building[];
+    heroBonds?: Record<string, { xp: number, level: number, type: 'comrades' | 'rivals' | 'soulmates' }>;
 }
 
-export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSynergies = [] }) => {
+export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSynergies = [], buildings = [], heroBonds = {} }) => {
     const [viewingHero, setViewingHero] = useState<Hero | null>(null);
     // Update 74
 
@@ -52,7 +54,15 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
     return (
         <div className="flex-1 bg-gray-800 p-2 overflow-y-auto no-scrollbar grid grid-cols-2 md:grid-cols-3 gap-2 border-t-4 border-gray-600">
 
-            <HeroDetailModal isOpen={!!viewingHero} onClose={() => setViewingHero(null)} hero={viewingHero} actions={actions} />
+            <HeroDetailModal
+                isOpen={!!viewingHero}
+                onClose={() => setViewingHero(null)}
+                hero={viewingHero ? heroes.find(h => h.id === viewingHero.id) || viewingHero : null}
+                actions={actions}
+                buildings={buildings}
+                heroBonds={heroBonds}
+                heroes={heroes}
+            />
 
             {heroes.map(hero => {
                 const contributions = getContributingSynergies(hero);
@@ -61,8 +71,9 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                     <div key={hero.id} className={`relative p-2 rounded border-2 flex flex-col gap-1 transition-all 
                         ${!hero.unlocked ? 'border-gray-700 bg-gray-900 group/locked' :
                             hero.isDead ? 'border-red-900 bg-red-950 opacity-70' :
-                                hero.isAwakened ? 'border-yellow-500 bg-gray-700 shadow-[inset_0_0_15px_rgba(234,179,8,0.2)] hover:bg-gray-600' :
-                                    'border-gray-600 bg-gray-700 hover:bg-gray-600'
+                            hero.isMutated ? 'border-red-600 bg-red-950/30 shadow-[inset_0_0_15px_rgba(220,38,38,0.3)] animate-pulse hover:bg-gray-600' :
+                            hero.isAwakened ? 'border-yellow-500 bg-gray-700 shadow-[inset_0_0_15px_rgba(234,179,8,0.2)] hover:bg-gray-600' :
+                            'border-gray-600 bg-gray-700 hover:bg-gray-600'
                         }`}>
                         {!hero.unlocked && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/locked:opacity-100 transition-opacity z-10 rounded">
@@ -90,6 +101,11 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                             <ShieldAlert size={10} className={(hero.fatigue || 0) >= 80 ? 'text-red-500 animate-pulse' : 'text-yellow-500'} />
                                         )}
                                         {hero.isAwakened && <Zap size={10} className="text-yellow-400 animate-pulse" />}
+                                        {hero.isMutated && (
+                                            <span className="text-[8px] bg-red-900 text-red-300 border border-red-600 px-1 rounded font-bold animate-pulse">
+                                                💀 CORROMPIDO
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

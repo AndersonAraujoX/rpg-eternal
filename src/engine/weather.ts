@@ -78,3 +78,98 @@ export const getRandomWeather = (): WeatherType => {
     const others = keys.filter(k => k !== 'Clear');
     return others[Math.floor(Math.random() * others.length)];
 };
+
+// ─── Sistema de Ciclo Dia / Noite ────────────────────────────────────────────
+export type DayNightPhase = 'dawn' | 'day' | 'dusk' | 'night';
+
+export interface DayNightEffect {
+    phase: DayNightPhase;
+    name: string;
+    icon: string;
+    description: string;
+    /** Multiplicador de ouro coletado (1 = neutro) */
+    goldMultiplier: number;
+    /** Multiplicador de XP dos heróis */
+    xpMultiplier: number;
+    /** Multiplicador de dano geral */
+    damageMultiplier: number;
+    /** Bônus extra para heróis dark/light */
+    elementBonus: Partial<Record<ElementType, number>>;
+}
+
+export const DAY_NIGHT_DATA: Record<DayNightPhase, DayNightEffect> = {
+    dawn: {
+        phase: 'dawn',
+        name: 'Amanhecer',
+        icon: '🌅',
+        description: 'O sol nasce. Heróis recuperam energia e XP extra.',
+        goldMultiplier: 1.0,
+        xpMultiplier: 1.3,
+        damageMultiplier: 1.0,
+        elementBonus: { light: 1.2 },
+    },
+    day: {
+        phase: 'day',
+        name: 'Dia',
+        icon: '☀️',
+        description: 'Plena luz do sol. Mineração e recursos fluem com mais eficiência.',
+        goldMultiplier: 1.25,
+        xpMultiplier: 1.0,
+        damageMultiplier: 1.0,
+        elementBonus: { fire: 1.1, light: 1.1 },
+    },
+    dusk: {
+        phase: 'dusk',
+        name: 'Entardecer',
+        icon: '🌇',
+        description: 'A luz diminui. A magia começa a se intensificar.',
+        goldMultiplier: 1.0,
+        xpMultiplier: 1.0,
+        damageMultiplier: 1.15,
+        elementBonus: { dark: 1.2, fire: 1.1 },
+    },
+    night: {
+        phase: 'night',
+        name: 'Noite',
+        icon: '🌙',
+        description: 'As trevas dominam. Monstros ficam mais fortes, mas recompensas dobram.',
+        goldMultiplier: 2.0,
+        xpMultiplier: 1.5,
+        damageMultiplier: 1.3,
+        elementBonus: { dark: 1.5, water: 1.1, light: 0.7 },
+    },
+};
+
+/** Duração de cada fase em segundos (total = 20 min de ciclo) */
+export const DAY_NIGHT_DURATION: Record<DayNightPhase, number> = {
+    dawn: 120,   // 2 min
+    day: 480,    // 8 min
+    dusk: 120,   // 2 min
+    night: 480,  // 8 min
+};
+
+const CYCLE_TOTAL = Object.values(DAY_NIGHT_DURATION).reduce((a, b) => a + b, 0); // 1200s
+
+/** Retorna a fase atual com base no timestamp (epoch seconds) */
+export const getDayNightPhase = (nowSeconds: number): DayNightPhase => {
+    const t = nowSeconds % CYCLE_TOTAL;
+    const phases: DayNightPhase[] = ['dawn', 'day', 'dusk', 'night'];
+    let elapsed = 0;
+    for (const phase of phases) {
+        elapsed += DAY_NIGHT_DURATION[phase];
+        if (t < elapsed) return phase;
+    }
+    return 'night';
+};
+
+/** Segundos restantes na fase atual */
+export const getDayNightSecondsLeft = (nowSeconds: number): number => {
+    const t = nowSeconds % CYCLE_TOTAL;
+    const phases: DayNightPhase[] = ['dawn', 'day', 'dusk', 'night'];
+    let elapsed = 0;
+    for (const phase of phases) {
+        elapsed += DAY_NIGHT_DURATION[phase];
+        if (t < elapsed) return elapsed - t;
+    }
+    return CYCLE_TOTAL - t;
+};

@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
+import { INITIAL_GARDEN } from '../engine/garden';
 
 export interface PersistenceProps {
     heroes: Hero[];
@@ -87,6 +88,12 @@ export interface PersistenceProps {
     setWeather: React.Dispatch<React.SetStateAction<any>>;
     prestigeNodes: Record<string, number>;
     setPrestigeNodes: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+    monuments: (string | null)[];
+    setMonuments: React.Dispatch<React.SetStateAction<(string | null)[]>>;
+    gardenPlots: GardenPlot[];
+    setGardenPlots: React.Dispatch<React.SetStateAction<GardenPlot[]>>;
+    runes: Rune[];
+    setRunes: React.Dispatch<React.SetStateAction<Rune[]>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -116,7 +123,11 @@ export const usePersistence = (props: PersistenceProps) => {
         setSpaceship,
         setFormations,
         setWeather,
-        setPrestigeNodes
+        setPrestigeNodes,
+        setMonuments,
+        setGardenPlots,
+        runes,
+        setRunes
     } = props;
 
 
@@ -136,19 +147,33 @@ export const usePersistence = (props: PersistenceProps) => {
                         return {
                             ...initH, // Get latest static data (stats, skills)
                             ...savedH, // Overwrite with saved progress (level, unlocked, equipment)
-                            // Deep merge specific objects if needed, but usually spread is enough.
-                            // Ensure element/assignment are backfilled if missing in save
                             element: savedH.element || initH.element,
-                            assignment: savedH.assignment || 'combat',
-                            // gambits: savedH.gambits || initH.gambits,
-                            // insanity: (savedH as any).corruption ? 50 : (savedH.insanity || 0),
+                            assignment: savedH.assignment || 'none',
+                            insanity: savedH.insanity ?? initH.insanity ?? 0,
+                            fatigue: savedH.fatigue ?? initH.fatigue ?? 0,
+                            isAwakened: savedH.isAwakened ?? initH.isAwakened ?? false,
+                            awakeningTitle: savedH.awakeningTitle || initH.awakeningTitle || '',
+                            awakenedAt: savedH.awakenedAt || initH.awakenedAt,
+                            isMutated: savedH.isMutated ?? initH.isMutated ?? false,
+                            mutationType: savedH.mutationType || initH.mutationType,
+                            curses: savedH.curses || initH.curses || []
                         };
                     }
                     return initH; // New hero added to game, not in save
                 });
 
                 // 2. Preserve Dynamic Heroes (Miners) - those not in INITIAL_HEROES
-                const dynamicHeroes = savedHeroes.filter((h: Hero) => !INITIAL_HEROES.some(initH => initH.id === h.id));
+                const dynamicHeroes = savedHeroes
+                    .filter((h: Hero) => !INITIAL_HEROES.some(initH => initH.id === h.id))
+                    .map((savedH: any) => ({
+                        ...savedH,
+                        insanity: savedH.insanity ?? 0,
+                        fatigue: savedH.fatigue ?? 0,
+                        isAwakened: savedH.isAwakened ?? false,
+                        awakeningTitle: savedH.awakeningTitle || '',
+                        isMutated: savedH.isMutated ?? false,
+                        curses: savedH.curses || []
+                    }));
 
                 const updatedHeroes = [...staticHeroes, ...dynamicHeroes];
 
@@ -236,6 +261,19 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.formations) setFormations(state.formations);
                 if (state.weather) setWeather(state.weather);
                 if (state.prestigeNodes) setPrestigeNodes(state.prestigeNodes);
+                if (state.teamMorale !== undefined) (props as any).setTeamMorale(state.teamMorale);
+                else (props as any).setTeamMorale(100);
+                if (state.heroBonds) (props as any).setHeroBonds(state.heroBonds);
+                if (state.monuments) setMonuments(state.monuments);
+                else setMonuments([null, null, null]);
+                if (state.patronDeity !== undefined) (props as any).setPatronDeity(state.patronDeity);
+                if (state.deityLevel !== undefined) (props as any).setDeityLevel(state.deityLevel);
+                if (state.deityFavor !== undefined) (props as any).setDeityFavor(state.deityFavor);
+                if (state.deityEnergy !== undefined) (props as any).setDeityEnergy(state.deityEnergy);
+                if (state.gardenPlots) setGardenPlots(state.gardenPlots);
+                else setGardenPlots(INITIAL_GARDEN);
+                if (state.runes) setRunes(state.runes);
+                else setRunes([]);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -267,7 +305,7 @@ export const usePersistence = (props: PersistenceProps) => {
                         if (miners.length > 0) {
                             const oreGain = Math.floor(miners.length * secondsOffline * 0.5);
                             setResources(r => ({ ...r, copper: r.copper + oreGain }));
-                            logMsg += `\\nMiners found ${oreGain} Copper.`;
+                            logMsg += `\nMiners found ${oreGain} Copper.`;
                         }
                         if (combatants.length > 0) {
                             const kills = Math.floor((secondsOffline / 5) * (combatants.length / 6));
@@ -276,7 +314,7 @@ export const usePersistence = (props: PersistenceProps) => {
                             if (kills > 0) {
                                 setSouls(p => p + gainedSouls);
                                 setGold(p => p + gainedGold);
-                                logMsg += `\\nKilled ${kills} Monsters.\\nGained ${gainedSouls} Souls & ${gainedGold} Gold.`;
+                                logMsg += `\nKilled ${kills} Monsters.\nGained ${gainedSouls} Souls & ${gainedGold} Gold.`;
                             }
                         }
                         setOfflineGains(logMsg);
@@ -305,11 +343,15 @@ export const usePersistence = (props: PersistenceProps) => {
                 assignment: h.assignment,
                 stats: h.stats,
                 statPoints: h.statPoints,
-                // equipment: h.equipment,
-                // gambits: h.gambits,
                 element: h.element,
-                // insanity: h.insanity,
-                // fatigue: h.fatigue,
+                insanity: h.insanity || 0,
+                fatigue: h.fatigue || 0,
+                isAwakened: h.isAwakened || false,
+                awakeningTitle: h.awakeningTitle || '',
+                awakenedAt: h.awakenedAt,
+                isMutated: h.isMutated || false,
+                mutationType: h.mutationType,
+                curses: h.curses || []
             }));
 
             // Compactar itens: salvar apenas os 50 melhores
@@ -332,7 +374,16 @@ export const usePersistence = (props: PersistenceProps) => {
                 dailyQuests: p.dailyQuests, dailyLoginClaimed: p.dailyLoginClaimed, lastDailyReset: p.lastDailyReset,
                 territories: p.territories, spaceship: p.spaceship, formations: p.formations, weather: p.weather,
                 prestigeNodes: p.prestigeNodes,
+                teamMorale: (p as any).teamMorale,
+                heroBonds: (p as any).heroBonds,
+                monuments: p.monuments,
+                patronDeity: (p as any).patronDeity,
+                deityLevel: (p as any).deityLevel,
+                deityFavor: (p as any).deityFavor,
+                deityEnergy: (p as any).deityEnergy,
+                gardenPlots: p.gardenPlots,
                 items: compactItems,
+                runes: p.runes,
                 lastSaveTime: Date.now()
             };
 

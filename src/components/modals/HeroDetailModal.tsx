@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Hero, GameActions, Stats } from '../../engine/types';
+import type { Hero, GameActions, Stats, Building } from '../../engine/types';
 import { X, Sword, Shield, Zap, Heart, Wind, Flame, Droplets, Leaf } from 'lucide-react';
 
 interface HeroDetailModalProps {
@@ -7,9 +7,12 @@ interface HeroDetailModalProps {
     onClose: () => void;
     hero: Hero | null;
     actions: GameActions;
+    buildings?: Building[];
+    heroBonds?: Record<string, { xp: number, level: number, type: 'comrades' | 'rivals' | 'soulmates' }>;
+    heroes?: Hero[];
 }
 
-export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClose, hero, actions }) => {
+export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClose, hero, actions, buildings = [], heroBonds = {}, heroes = [] }) => {
     const [isEditingName, setIsEditingName] = React.useState(false);
     const [newName, setNewName] = React.useState('');
 
@@ -140,6 +143,47 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
 
                 </div>
 
+                {/* Curses Section */}
+                {hero.curses && hero.curses.length > 0 && (
+                    <div className="mb-6 bg-red-950/20 border border-red-900/30 p-3 rounded-lg relative z-10">
+                        <h4 className="text-xs font-bold text-red-400 mb-2 uppercase tracking-wide flex items-center gap-1">💀 Maldições Ativas</h4>
+                        <div className="flex flex-col gap-2">
+                            {hero.curses.map(curse => {
+                                const curseNames: Record<string, string> = {
+                                    blood: 'Maldição do Sangue 🩸',
+                                    evil: 'Olho Maligno 👁️',
+                                    abyss: 'Correntes do Abismo ⛓️'
+                                };
+                                const curseDescs: Record<string, string> = {
+                                    blood: 'Perde 1% HP por segundo, mas tem dano dobrado em combate.',
+                                    evil: '+20% chance de drop de itens, com 30% chance de virar Lendário.',
+                                    abyss: 'Não pode morrer, mas fica preso em combate para sempre.'
+                                };
+                                const canRemove = (buildings || []).find(b => b.id === 'curse_sanctuary' && b.level > 0);
+                                return (
+                                    <div key={curse} className="bg-slate-900 border border-red-900/50 p-2 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full text-xs">
+                                        <div>
+                                            <div className="font-bold text-red-200">{curseNames[curse] || curse}</div>
+                                            <div className="text-[10px] text-slate-400">{curseDescs[curse] || ''}</div>
+                                        </div>
+                                        {canRemove ? (
+                                            <button
+                                                onClick={() => actions.removeCurse(hero.id, curse)}
+                                                className="bg-amber-900/60 hover:bg-amber-800 text-amber-200 px-2 py-1 rounded border border-amber-700 text-[10px] self-start sm:self-auto transition-colors font-bold uppercase"
+                                                title="Purificar maldição no Santuário por 50k Ouro"
+                                            >
+                                                Purificar (50k 💰)
+                                            </button>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-500 italic">Requer Santuário na Vila</span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Stats Section */}
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
@@ -202,6 +246,66 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                             )}
                         </div>
                     </div>
+                </div>
+
+                {/* Bonds Section */}
+                <div className="mt-6 bg-gray-800/30 p-4 rounded-lg border border-gray-700 relative z-10">
+                    <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-1 uppercase tracking-wider">💑 Vínculos de Amizade</h3>
+                    {(() => {
+                        const heroBondsList = Object.entries(heroBonds || {})
+                            .filter(([key]) => key.includes(hero.id))
+                            .map(([key, bond]) => {
+                                const otherId = key.split('-').find(id => id !== hero.id);
+                                const otherHero = (heroes || []).find(h => h.id === otherId);
+                                return { bond, otherHero };
+                            })
+                            .filter(b => b.otherHero);
+
+                        if (heroBondsList.length === 0) {
+                            return <div className="text-center text-slate-500 text-xs py-2 italic">Este herói ainda não desenvolveu vínculos com outros combatentes. Coloque-os para lutar juntos no combate!</div>;
+                        }
+
+                        return (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                {heroBondsList.map(({ bond, otherHero }) => {
+                                    if (!otherHero) return null;
+                                    const bondNames = {
+                                        comrades: 'Camaradas 🤝',
+                                        rivals: 'Rivais 💔',
+                                        soulmates: 'Almas Gêmeas 💕'
+                                    };
+                                    const bondDescs = {
+                                        comrades: '+15% de dano se ambos estiverem vivos.',
+                                        rivals: '+20% de ganho de XP quando lutam juntos.',
+                                        soulmates: '+50% de dano se o parceiro cair em combate.'
+                                    };
+                                    const maxXP = bond.level >= 3 ? 1000 : bond.level === 2 ? 300 : 100;
+                                    const xpPercent = Math.min(100, (bond.xp / maxXP) * 100);
+
+                                    return (
+                                        <div key={otherHero.id} className="bg-slate-900 border border-gray-700 p-2 rounded flex items-center gap-3 hover:border-pink-500/30 transition-colors">
+                                            <div className="text-2xl bg-gray-850 p-1 rounded border border-gray-700 select-none">{otherHero.emoji}</div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between font-bold text-slate-200">
+                                                    <span className="truncate">{otherHero.name}</span>
+                                                    <span className="text-pink-400 font-bold font-mono">Nvl {bond.level}</span>
+                                                </div>
+                                                <div className="text-[10px] text-pink-300 font-bold">{bondNames[bond.type] || bond.type}</div>
+                                                <div className="text-[9px] text-slate-400 truncate mb-1">{bondDescs[bond.type]}</div>
+                                                {bond.level < 3 ? (
+                                                    <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden border border-gray-700">
+                                                        <div className="bg-pink-500 h-full transition-all duration-300 shadow-[0_0_8px_rgba(236,72,153,0.5)]" style={{ width: `${xpPercent}%` }} />
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[9px] text-pink-400 font-bold uppercase tracking-widest animate-pulse">✨ VÍNCULO MÁXIMO ✨</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
         </div>

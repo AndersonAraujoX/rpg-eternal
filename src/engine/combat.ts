@@ -2,7 +2,7 @@ import type { Hero, Boss, Pet, ConstellationNode, Talent, Artifact, MonsterCard,
 import type { Synergy } from './synergies';
 import { checkActiveCombos, type ComboDefinition } from './combos';
 import { type TowerMutator } from './mutators';
-import { type WeatherType, WEATHER_DATA } from './weather';
+import { type WeatherType, WEATHER_DATA, getDayNightPhase, DAY_NIGHT_DATA } from './weather';
 
 export const getElementalMult = (atkEl: string, defEl: string) => {
     if (atkEl === 'neutral' || defEl === 'neutral') return 1;
@@ -103,14 +103,16 @@ export const processCombatTurn = (
     riftRestriction?: 'no_heal' | 'phys_immune' | 'magic_immune' | 'no_ult' | 'time_crunch',
     mutator?: TowerMutator,
     weather?: WeatherType,
-    divinity: number = 0
+    divinity: number = 0,
+    bonds?: Record<string, { xp: number; level: number; type: string }>,
+    monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number }
 ) => {
     let totalDmg = 0;
     let crits = 0;
     const events: CombatEvent[] = [];
-
+ 
     // Extract Synergy Effects
-    const lifeSteal = activeSynergies.find(s => s.type === 'vampirism')?.value || 0;
+    const lifeSteal = (activeSynergies.find(s => s.type === 'vampirism')?.value || 0) + (monumentEffects?.lifesteal || 0);
     const cdReduction = activeSynergies.find(s => s.type === 'cd_reduction')?.value || 0;
     const critDmgBonus = activeSynergies.find(s => s.type === 'crit_dmg')?.value || 0;
     const attackSpeedBonus = activeSynergies.find(s => s.type === 'attackSpeed')?.value || 0;
@@ -178,8 +180,23 @@ export const processCombatTurn = (
             stats.magic = Math.floor(stats.magic * multiplier);
             stats.speed = Math.floor(stats.speed * multiplier);
         }
-
+ 
+        // Apply Monument Bonuses
+        if (monumentEffects) {
+            stats.defense = Math.floor(stats.defense * monumentEffects.defense);
+            stats.speed = Math.floor(stats.speed * monumentEffects.speed);
+            stats.maxHp = Math.floor(stats.maxHp * monumentEffects.maxHp);
+        }
+ 
         let hp = h.stats.hp;
+
+        // Maldição do Sangue: perde 1% HP por tick
+        if (h.curses?.includes('blood') && !h.isDead) {
+            hp = Math.max(1, hp - Math.floor(stats.maxHp * 0.01));
+            if (Math.random() < 0.1) {
+                events.push({ id: `bloodcurse-${h.id}-${Date.now()}`, type: 'status', text: '🩸 Sangramento', x: 50, y: 50, value: 0 });
+            }
+        }
 
         // Phase 91: Insanity System
         let insanityGain = 0;
@@ -202,14 +219,67 @@ export const processCombatTurn = (
             }
         }
 
+        let activeDamageMult = effectiveDamageMult;
         if (newInsanity >= 100) {
-            effectiveDamageMult *= 0.5;
+            activeDamageMult *= 0.5;
         }
 
-        let baseDmg = stats.attack * effectiveDamageMult * getElementalMult(h.element, boss.element);
+        // Camaradas: +15% dano
+        let comradesActive = false;
+        const otherLivingCombatants = heroes.filter(oth => oth.id !== h.id && oth.assignment === 'combat' && !oth.isDead);
+        otherLivingCombatants.forEach(oth => {
+            const key = [h.id, oth.id].sort().join('-');
+            const bond = bonds?.[key];
+            if (bond && bond.level >= 3 && bond.type === 'comrades') {
+                comradesActive = true;
+            }
+        });
+        if (comradesActive) activeDamageMult *= 1.15;
+
+        // Almas Gêmeas: +50% dano se o parceiro estiver caído
+        let soulmateBerserk = false;
+        const otherDeadCombatants = heroes.filter(oth => oth.id !== h.id && oth.assignment === 'combat' && oth.isDead);
+        otherDeadCombatants.forEach(oth => {
+            const key = [h.id, oth.id].sort().join('-');
+            const bond = bonds?.[key];
+            if (bond && bond.level >= 3 && bond.type === 'soulmates') {
+                soulmateBerserk = true;
+            }
+        });
+        if (soulmateBerserk) {
+            activeDamageMult *= 1.5;
+            if (Math.random() < 0.1) {
+                events.push({ id: `soulmate-berserk-${h.id}-${Date.now()}`, type: 'status', text: '💕 FÚRIA ALMA GÊMEA', x: 50, y: 50, value: 0 });
+            }
+        }
+
+        // Maldição do Sangue: dano dobrado
+        if (h.curses?.includes('blood')) {
+            activeDamageMult *= 2;
+        }
+
+        let baseDmg = stats.attack * activeDamageMult * getElementalMult(h.element, boss.element);
 
         if (weather && WEATHER_DATA[weather]?.elementModifiers[h.element]) {
             baseDmg *= WEATHER_DATA[weather].elementModifiers[h.element]!;
+        }
+
+        // 🌙 Bônus do Ciclo Dia/Noite
+        const dayNightPhase = getDayNightPhase(Math.floor(Date.now() / 1000));
+        const dayNightEffect = DAY_NIGHT_DATA[dayNightPhase];
+        baseDmg *= dayNightEffect.damageMultiplier;
+        // Bônus elemental do ciclo (ex: dark +50% à noite)
+        if (dayNightEffect.elementBonus[h.element]) {
+            baseDmg *= dayNightEffect.elementBonus[h.element]!;
+        }
+
+        // 🧬 Mutação Berserk: +40% dano, mas pode atacar aliados
+        if (h.isMutated) {
+            baseDmg *= 1.4;
+            if (Math.random() < 0.15) {
+                attackAlly = true;
+                events.push({ id: `mutation-${h.id}-${Date.now()}`, type: 'damage', text: '☠️ FRENESI!', element: 'dark', x: 50, y: 50, value: 0 });
+            }
         }
 
         if (skipTurn || attackAlly) {
@@ -244,8 +314,8 @@ export const processCombatTurn = (
                         if (processedSkill.effectType === 'heal' && riftRestriction === 'no_heal') canCast = false;
 
                         if (canCast) {
-                            if (processedSkill.effectType === 'damage') {
-                                let rawSkillDmg = (stats.attack * effectiveDamageMult) * processedSkill.value;
+                             if (processedSkill.effectType === 'damage') {
+                                let rawSkillDmg = (stats.attack * activeDamageMult) * processedSkill.value;
 
                                 if (processedSkill.element) {
                                     rawSkillDmg *= getElementalMult(processedSkill.element, boss.element);
@@ -316,7 +386,11 @@ export const processCombatTurn = (
 
         if (!boss.isDead && !h.isDead && Math.random() < attackChance) {
             const bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
-            hp = Math.max(0, hp - bossDmg);
+            let nextHp = hp - bossDmg;
+            if (h.curses?.includes('abyss')) {
+                nextHp = Math.max(1, nextHp); // Correntes do Abismo: não morre
+            }
+            hp = Math.max(0, nextHp);
             if (hp <= 0) {
                 events.push({ id: `death-${h.id}-${Date.now()}`, type: 'status', text: 'FALLEN', x: 50, y: 50 });
             } else {
@@ -324,7 +398,20 @@ export const processCombatTurn = (
             }
         }
 
-        return { ...h, insanity: newInsanity, stats: { ...h.stats, hp }, skills: h.skills, isDead: hp <= 0 };
+        // 🧬 Auto-corrupção ao atingir insanidade 100
+        const shouldMutate = newInsanity >= 100 && !h.isMutated;
+        const MUTATION_TYPES: Hero['mutationType'][] = ['berserk', 'shadow', 'arcane', 'cursed'];
+        const randomMutation = MUTATION_TYPES[Math.floor(Math.random() * MUTATION_TYPES.length)];
+
+        return {
+            ...h,
+            insanity: newInsanity,
+            isMutated: h.isMutated || shouldMutate,
+            mutationType: shouldMutate ? randomMutation : h.mutationType,
+            stats: { ...h.stats, hp },
+            skills: h.skills,
+            isDead: hp <= 0
+        };
     });
 
     // Final pass to apply heals (Referential stability: only clone if changed)

@@ -195,5 +195,44 @@ export const INITIAL_BUILDINGS: Building[] = [
         effectValue: 0.15,
         currency: 'gold',
         emoji: '🏭'
+    },
+    {
+        id: 'curse_sanctuary',
+        name: 'Santuário de Maldições',
+        description: 'Santuário sagrado para purificar as maldições dos seus heróis.',
+        level: 0,
+        maxLevel: 1,
+        cost: 20000,
+        costScaling: 1.0,
+        bonus: 'Desbloqueia Purificação',
+        effectValue: 1,
+        currency: 'gold',
+        emoji: '⛪'
+    },
+    {
+        id: 'altar_deities',
+        name: 'Altar dos Deuses',
+        description: 'Preste lealdade a um deus padroeiro e ganhe poderosos buffs e magias automáticas de combate.',
+        level: 0,
+        maxLevel: 1,
+        cost: 25000,
+        costScaling: 1.0,
+        bonus: 'Desbloqueia Deuses Padroeiros',
+        effectValue: 1,
+        currency: 'gold',
+        emoji: '⛪'
+    },
+    {
+        id: 'pantheon',
+        name: 'Panteão da Eternidade',
+        description: 'Consagre estátuas dos seus heróis despertados para obter bônus de equipe.',
+        level: 0,
+        maxLevel: 1,
+        cost: 30000,
+        costScaling: 1.0,
+        bonus: 'Desbloqueia Monumentos',
+        effectValue: 1,
+        currency: 'gold',
+        emoji: '🏛️'
     }
 ];
