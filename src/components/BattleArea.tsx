@@ -124,12 +124,31 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {isTower && (
                 <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent z-0"></div>
             )}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full flex gap-2 z-10 opacity-80 pointer-events-none">
+            <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-3 z-10 opacity-90 pointer-events-none">
                 {activeCombatHeroes.map(h => (
-                    <div key={h.id} className="text-2xl transition-all duration-500 animate-pulse" title={h.name}>
+                    <div key={h.id} className="text-3xl transition-all duration-500 animate-pulse drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]" title={h.name}>
                         {h.emoji}
                     </div>
                 ))}
+            </div>
+
+            {/* Companion Pets Row */}
+            <div className="absolute top-[52%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-2.5 z-10 opacity-85 pointer-events-none">
+                {pets && [...pets].sort((a, b) => b.level - a.level).slice(0, 5).map((pet, idx) => (
+                    <div
+                        key={pet.id}
+                        className="text-xl animate-bounce drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                        style={{ animationDelay: `${idx * 0.2}s`, animationDuration: '1.8s' }}
+                        title={pet.name}
+                    >
+                        {pet.emoji}
+                    </div>
+                ))}
+                {pets && pets.length > 5 && (
+                    <span className="text-[8px] font-black text-amber-400 bg-black/60 border border-amber-900/40 px-1 py-0.5 rounded shadow-sm self-end">
+                        +{pets.length - 5}
+                    </span>
+                )}
             </div>
 
             {/* Pet Rendering */}
@@ -195,7 +214,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                         className={`text-6xl md:text-8xl filter drop-shadow-2xl transition-transform cursor-pointer hover:scale-110 active:scale-90 select-none ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''} ${isTower ? 'sepia-[0.5] brightness-125' : ''} ${voidActive ? 'animate-bounce drop-shadow-[0_0_20px_purple] scale-125' : ''}`}
                         onClick={() => actions.manualAttack && actions.manualAttack()}
                     >
-                        {isTower ? '🏰' : boss.emoji}
+                        {boss.emoji}
                     </div>
                     <div className="text-white opacity-50" title={`Elemento: ${boss.element}`}>{getElementIcon(boss.element)}</div>
                     {/* Status Icons based on recent events or state */}
@@ -253,33 +272,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                 </div>
             </div>
 
-            {/* Pet */}
-            {/* Pets List */}
-            <div className="absolute top-1/2 left-2 transform -translate-y-1/2 flex flex-col gap-2 z-20 max-h-[80%] overflow-y-auto overflow-x-hidden w-24 scrollbar-hide">
-                {pets && [...pets].sort((a, b) => b.level - a.level).map(pet => (
-                    <div key={pet.id} className="flex flex-col items-center opacity-90 group relative">
-                        <div className="text-3xl filter drop-shadow hover:scale-110 transition-transform cursor-pointer animate-bounce" title={`Nvl ${pet.level} ${pet.name}`}>
-                            {pet.emoji}
-                        </div>
-                        {/* Hover Details */}
-                        <div className="hidden group-hover:flex absolute left-full top-0 ml-2 bg-black bg-opacity-90 p-2 rounded border border-yellow-500 flex-col z-50 whitespace-nowrap">
-                            <span className="font-bold text-yellow-400">{pet.name} (Nvl {pet.level})</span>
-                            <span className="text-xs text-gray-300">{pet.bonus}</span>
-                        </div>
 
-                        <div className="flex flex-col items-center bg-black bg-opacity-50 p-1 rounded backdrop-blur-sm mt-1 w-full">
-                            <span className="text-[8px] text-orange-300 font-bold mb-0.5">Nvl {pet.level}</span>
-                            <div className="w-10 h-1 bg-gray-700 rounded-full overflow-hidden mb-1">
-                                <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${(pet.xp / pet.maxXp) * 100}%` }}></div>
-                            </div>
-                            <div className="flex gap-1 opacity-100 transition-opacity">
-                                <button onClick={() => actions.feedPet('gold', pet.id)} className="w-4 h-4 bg-yellow-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-yellow-500" title="Alimentar com 100 de Ouro" disabled={false}>$</button>
-                                <button onClick={() => actions.feedPet('souls', pet.id)} className="w-4 h-4 bg-purple-600 rounded flex items-center justify-center text-[6px] text-white hover:bg-purple-500" title="Alimentar com 10 Almas">A</button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
         </div>
     );
 };

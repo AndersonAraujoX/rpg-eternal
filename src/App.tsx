@@ -46,6 +46,7 @@ import { BreedingModal } from './components/modals/BreedingModal'; // Phase 46
 import { GuildWarModal } from './components/modals/GuildWarModal'; // Phase 47
 import { TownModal } from './components/modals/TownModal'; // Phase 53
 import { MuseumModal } from './components/modals/MuseumModal';
+import { PetList } from './components/PetList';
 import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
 import { WorldBossModal } from './components/modals/WorldBossModal'; // Phase 6
 import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
@@ -68,7 +69,7 @@ function App() {
   const {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
-    ultimateCharge, raidActive, tower, guild, voidMatter, voidActive, voidTimer, worldBossCooldownUntil,
+    ultimateCharge, raidActive, tower, towerBoss, guild, voidMatter, voidActive, voidTimer, worldBossCooldownUntil,
     arenaRank, glory, quests, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
     victory,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
@@ -155,6 +156,7 @@ function App() {
   const [showRoguelike, setShowRoguelike] = useState(false);
   const [showBackrooms, setShowBackrooms] = useState(false);
   const [showJourney, setShowJourney] = useState(false);
+  const [bottomTab, setBottomTab] = useState<'heroes' | 'pets'>('heroes');
 
   const [importString, setImportString] = useState('');
 
@@ -284,19 +286,47 @@ function App() {
         />
 
         <BattleArea
-          boss={boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
+          boss={tower.active ? towerBoss : boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
           ultimateCharge={ultimateCharge} pets={pets} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps} partyPower={partyPower}
           combatEvents={combatEvents}
           synergies={synergies}
           bossTimer={bossTimer}
+          tower={tower}
         />
-        <HeroList
-          heroes={heroes}
-          activeSynergies={synergies}
-          actions={{ ...actions, formations, saveFormation, loadFormation, deleteFormation }}
-          buildings={buildings}
-          heroBonds={heroBonds}
-        />
+        <div className="flex-1 flex flex-col min-h-0 bg-gray-800 border-t-4 border-gray-600">
+          <div className="flex border-b border-gray-700 bg-gray-900/40 p-1 gap-1">
+            <button
+              onClick={() => setBottomTab('heroes')}
+              className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 ${bottomTab === 'heroes' ? 'bg-amber-600 text-stone-950 font-black shadow-md' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'}`}
+            >
+              👥 Heróis ({heroes.filter(h => h.unlocked).length}/{heroes.length})
+            </button>
+            <button
+              onClick={() => setBottomTab('pets')}
+              className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 ${bottomTab === 'pets' ? 'bg-amber-600 text-stone-950 font-black shadow-md' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'}`}
+            >
+              🐾 Mascotes ({pets.length})
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {bottomTab === 'heroes' ? (
+              <HeroList
+                heroes={heroes}
+                activeSynergies={synergies}
+                actions={{ ...actions, formations, saveFormation, loadFormation, deleteFormation }}
+                buildings={buildings}
+                heroBonds={heroBonds}
+              />
+            ) : (
+              <PetList
+                pets={pets}
+                actions={actions}
+                gold={gold}
+                souls={souls}
+              />
+            )}
+          </div>
+        </div>
 
 
         <GameLog logs={logs} onShowHistory={() => setShowLog(true)} />
@@ -444,6 +474,9 @@ function App() {
         invokeWeather={invokeWeather}
         resources={resources}
         openBackrooms={() => { setShowBackrooms(true); setShowTown(false); }}
+        openGuild={() => { setShowGuild(true); setShowTown(false); }}
+        openPetSpace={() => { setShowPetSpace(true); setShowTown(false); }}
+        setBuildings={setBuildings}
       />
       <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}

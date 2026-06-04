@@ -346,7 +346,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Row 1: Stats & Resources */}
             <div className="flex flex-wrap justify-between items-center text-xs text-yellow-400 gap-2">
                 <div className="flex items-center gap-2">
-                    <div className="bg-gray-800 px-2 py-1 rounded border border-gray-600 text-white font-bold">NVL {boss.level}</div>
+                    <div className="bg-gray-800 px-2 py-1 rounded border border-gray-600 text-white font-bold">{tower.active ? `ANDAR ${tower.floor}` : `NVL ${boss.level}`}</div>
                     <button onClick={() => setShowShop(true)} className="btn-retro bg-purple-900 text-purple-200 px-2 py-1 rounded border border-purple-500 flex items-center gap-1 hover:bg-purple-800 min-w-[60px] justify-center"> <Ghost size={12} /> {formatNumber(souls)} </button>
                     <button onClick={() => setShowTavern(true)} className="btn-retro bg-amber-700 text-amber-100 px-2 py-1 rounded border border-amber-500 flex items-center gap-1 hover:bg-amber-600 min-w-[60px] justify-center"> <Coins size={12} /> {formatNumber(gold)} </button>
                     {divinity > 0 && <button onClick={() => setShowStars(true)} className="btn-retro bg-cyan-900 text-cyan-200 px-2 py-1 rounded border border-cyan-500 flex items-center gap-1 hover:bg-cyan-800"><Crown size={12} /> {formatNumber(divinity)}</button>}

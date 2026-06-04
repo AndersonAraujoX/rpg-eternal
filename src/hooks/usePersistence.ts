@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot, ElementType } from '../engine/types';
-import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS } from '../engine/initialData';
+import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS, INITIAL_BOSS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GARDEN } from '../engine/garden';
 import type { BackroomsExplorer, BackroomsOutpost, BackroomsResources } from '../engine/backrooms';
@@ -253,7 +253,13 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.keys) setKeys(state.keys);
                 if (state.resources) setResources(state.resources);
                 if (state.tower) setTower(state.tower);
-                if (state.towerBoss) setTowerBoss(state.towerBoss);
+                if (state.towerBoss) {
+                     const loadedBoss = { ...state.towerBoss };
+                     if (loadedBoss.emoji === '🏰') {
+                         loadedBoss.emoji = INITIAL_BOSS.emoji;
+                     }
+                     setTowerBoss(loadedBoss);
+                 }
                 if (state.guild) {
                     const loadedGuild = { ...state.guild };
                     if (!loadedGuild.monuments) loadedGuild.monuments = {};

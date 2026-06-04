@@ -36,6 +36,9 @@ interface TownModalProps {
     bossLevel?: number;
     voidAscensions?: number;
     openBackrooms?: () => void;
+    openGuild?: () => void;
+    openPetSpace?: () => void;
+    setBuildings?: React.Dispatch<React.SetStateAction<import('../../engine/types').Building[]>>;
 }
 
 export const TownModal: React.FC<TownModalProps> = ({
@@ -67,10 +70,56 @@ export const TownModal: React.FC<TownModalProps> = ({
     resources,
     bossLevel = 0,
     voidAscensions = 0,
-    openBackrooms
+    openBackrooms,
+    openGuild,
+    openPetSpace,
+    setBuildings
 }) => {
     const [viewMode, setViewMode] = useState<'overview' | 'construction' | 'pantheon' | 'deities'>('overview');
     const [activeSlotToSelect, setActiveSlotToSelect] = useState<number | null>(null);
+
+    // Layout States
+    const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+    const [clickedBuildingId, setClickedBuildingId] = useState<string | null>(null);
+    const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
+
+    const placeBuilding = (buildingId: string, x: number, y: number) => {
+        if (!setBuildings) return;
+        setBuildings(prev => prev.map(b => {
+            if (b.id === buildingId) {
+                return { ...b, x, y, placed: true };
+            }
+            return b;
+        }));
+        setSelectedBuildingId(null);
+    };
+
+    const removeBuilding = (buildingId: string) => {
+        if (!setBuildings) return;
+        setBuildings(prev => prev.map(b => {
+            if (b.id === buildingId) {
+                return { ...b, x: undefined, y: undefined, placed: false };
+            }
+            return b;
+        }));
+        setClickedBuildingId(null);
+    };
+
+    const getBuildingFeatureAction = (id: string) => {
+        if (id === 'industry' && openIndustry) return () => { openIndustry(); onClose(); };
+        if (id === 'forge_workshop' && openForge) return () => { openForge(); onClose(); };
+        if (id === 'fishing_dock' && openFishing) return () => { openFishing(); onClose(); };
+        if (id === 'alchemy_lab' && openAlchemy) return () => { openAlchemy(); onClose(); };
+        if (id === 'expedition_post' && openExpeditions) return () => { openExpeditions(); onClose(); };
+        if (id === 'mystic_garden' && openGarden) return () => { openGarden(); onClose(); };
+        if (id === 'rune_sanctuary' && openRunes) return () => { openRunes(); onClose(); };
+        if (id === 'altar_deities') return () => setViewMode('deities');
+        if (id === 'pantheon') return () => setViewMode('pantheon');
+        if (id === 'backrooms_manager' && openBackrooms) return () => { openBackrooms(); onClose(); };
+        if (id === 'guild_hall' && openGuild) return () => { openGuild(); onClose(); };
+        if (id === 'breeding_center' && openPetSpace) return () => { openPetSpace(); onClose(); };
+        return null;
+    };
 
     if (!isOpen) return null;
 
@@ -158,72 +207,294 @@ export const TownModal: React.FC<TownModalProps> = ({
                     </div>
                 </div>
 
+                {/* Navigation Tab Bar - Only visible if Town Hall is built */}
+                {buildings.find(b => b.id === 'town_hall' && b.level > 0) && (
+                    <div className="flex justify-center gap-3 mb-6 bg-stone-900/40 p-1.5 rounded-xl border border-stone-850/60 max-w-2xl mx-auto z-20">
+                        <button
+                            onClick={() => { setViewMode('overview'); setClickedBuildingId(null); setSelectedBuildingId(null); }}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 ${viewMode === 'overview' ? 'bg-amber-600 text-stone-950 font-black shadow-md' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'}`}
+                        >
+                            🗺️ Mapa da Vila
+                        </button>
+                        <button
+                            onClick={() => { setViewMode('construction'); setClickedBuildingId(null); setSelectedBuildingId(null); }}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 ${viewMode === 'construction' ? 'bg-amber-600 text-stone-950 font-black shadow-md' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'}`}
+                        >
+                            🔨 Construção
+                        </button>
+                        {buildings.find(b => b.id === 'pantheon' && b.level > 0) && (
+                            <button
+                                onClick={() => { setViewMode('pantheon'); setClickedBuildingId(null); setSelectedBuildingId(null); }}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 ${viewMode === 'pantheon' ? 'bg-amber-600 text-stone-950 font-black shadow-md' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'}`}
+                            >
+                                🏛️ Panteão
+                            </button>
+                        )}
+                        {buildings.find(b => b.id === 'altar_deities' && b.level > 0) && (
+                            <button
+                                onClick={() => { setViewMode('deities'); setClickedBuildingId(null); setSelectedBuildingId(null); }}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 ${viewMode === 'deities' ? 'bg-amber-600 text-stone-950 font-black shadow-md' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'}`}
+                            >
+                                ⛪ Altar dos Deuses
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {/* Content Section */}
                 {viewMode === 'overview' && (
-                    <div className="flex-1 flex items-center justify-center">
+                    <div className="flex-1 flex flex-col min-h-0">
                         {(() => {
                             const townHall = buildings.find(b => b.id === 'town_hall');
                             if (!townHall) return null;
-                            const isMax = townHall.level >= townHall.maxLevel;
-                            const canAfford = gold >= townHall.cost;
 
-                            return (
-                                <div className="max-w-md w-full relative group flex flex-col bg-stone-900/80 border-2 border-amber-600/50 rounded-2xl p-8 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
-                                    <div className="flex flex-col items-center text-center mb-8">
-                                        <div className="text-7xl p-6 rounded-2xl shadow-2xl border bg-amber-900/40 border-amber-500/50 mb-6 relative">
-                                            {townHall.emoji}
-                                            {townHall.level > 0 && (
-                                                <div className="absolute -bottom-3 -right-3 bg-amber-500 text-black text-sm font-black px-3 py-1 rounded-full border-2 border-stone-900">
-                                                    LVL {townHall.level}
+                            if (townHall.level === 0) {
+                                // If Town Hall is not constructed, show the locked / initial build screen
+                                const canAfford = gold >= townHall.cost;
+                                return (
+                                    <div className="flex-1 flex items-center justify-center">
+                                        <div className="max-w-md w-full relative group flex flex-col bg-stone-900/80 border-2 border-amber-600/50 rounded-2xl p-8 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                                            <div className="flex flex-col items-center text-center mb-8">
+                                                <div className="text-7xl p-6 rounded-2xl shadow-2xl border bg-amber-900/40 border-amber-500/50 mb-6 relative">
+                                                    {townHall.emoji}
                                                 </div>
-                                            )}
-                                        </div>
-                                        <h3 className="text-3xl font-black text-white mb-2">{townHall.name}</h3>
-                                        <p className="text-stone-400 text-sm leading-relaxed max-w-sm">{townHall.description}</p>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        {townHall.level > 0 ? (
-                                            <>
-                                                <div className="bg-black/60 rounded-xl p-4 border border-white/5 flex justify-between items-center text-sm">
-                                                    <span className="text-stone-400">Bônus de Ouro</span>
-                                                    <span className="text-green-400 font-bold bg-green-400/10 px-3 py-1 rounded-lg">
-                                                        +{(townHall.effectValue * townHall.level * 100).toFixed(0)}%
-                                                    </span>
-                                                </div>
-                                                <button
-                                                    onClick={() => setViewMode('construction')}
-                                                    className="w-full py-5 rounded-xl font-black uppercase tracking-widest text-lg flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-900/50 transition-all active:scale-95"
-                                                >
-                                                    <Hammer size={24} /> Gerenciar Cidade
-                                                </button>
-                                                {!isMax && (
-                                                    <button
-                                                        onClick={() => upgradeBuilding(townHall.id)}
-                                                        disabled={!canAfford}
-                                                        className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all shadow-md
-                                                            ${canAfford
-                                                                ? 'bg-stone-800 hover:bg-stone-700 text-amber-400 border border-amber-900/50'
-                                                                : 'bg-stone-900 text-stone-600 cursor-not-allowed border border-stone-800'
-                                                            }`}
-                                                    >
-                                                        Melhorar ({formatNumber(townHall.cost)})
-                                                    </button>
-                                                )}
-                                            </>
-                                        ) : (
+                                                <h3 className="text-3xl font-black text-white mb-2">{townHall.name}</h3>
+                                                <p className="text-stone-400 text-sm leading-relaxed max-w-sm">{townHall.description}</p>
+                                            </div>
                                             <button
                                                 onClick={() => upgradeBuilding(townHall.id)}
                                                 disabled={!canAfford}
                                                 className={`w-full py-6 rounded-2xl font-black uppercase tracking-widest text-xl flex items-center justify-center gap-4 transition-all shadow-[0_0_40px_rgba(0,0,0,0.5)]
                                                     ${canAfford
-                                                        ? 'bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-stone-900 shadow-amber-900/50 scale-105 hover:scale-[1.07]'
-                                                        : 'bg-stone-900/80 text-stone-600 cursor-not-allowed border border-stone-800'
+                                                        ? 'bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-stone-950 shadow-amber-900/50 scale-105 hover:scale-[1.07]'
+                                                        : 'bg-stone-900/80 text-stone-600 cursor-not-allowed border border-stone-850'
                                                     }`}
                                             >
                                                 <Hammer size={28} className={canAfford ? 'animate-bounce' : ''} />
                                                 CONSTRUIR ({formatNumber(townHall.cost)})
                                             </button>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // If Town Hall is constructed, show the town grid map
+                            const unplacedBuildings = buildings.filter(b => b.level > 0 && !b.placed);
+                            const clickedBuilding = clickedBuildingId ? buildings.find(b => b.id === clickedBuildingId) : null;
+                            const isSelected = selectedBuildingId !== null;
+
+                            return (
+                                <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-0">
+                                    {/* Left Area: Grid Map */}
+                                    <div className="flex-1 bg-stone-950/40 p-6 rounded-2xl border border-stone-900/60 shadow-inner flex flex-col items-center justify-center relative min-h-[300px] select-none">
+                                        <div className="absolute top-3 left-4 text-[10px] text-stone-500 font-bold uppercase tracking-wider font-mono">
+                                            🗺️ Mapa da Cidade (Grid 5x5)
+                                        </div>
+
+                                        {isSelected && (
+                                            <div className="absolute top-8 text-center text-xs text-green-400 font-bold animate-pulse z-20 bg-black/85 px-4 py-1.5 rounded-full border border-green-500/30">
+                                                Colocando: {buildings.find(b => b.id === selectedBuildingId)?.name}. Clique em um lote do grid!
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-5 gap-3 w-full max-w-[420px] aspect-square relative mt-4">
+                                            {Array.from({ length: 5 }).map((_, r) => (
+                                                Array.from({ length: 5 }).map((_, c) => {
+                                                    const building = buildings.find(b => b.placed && b.x === c && b.y === r);
+
+                                                    return (
+                                                        <div
+                                                            key={`${r}-${c}`}
+                                                            onClick={() => {
+                                                                if (selectedBuildingId) {
+                                                                    placeBuilding(selectedBuildingId, c, r);
+                                                                } else if (building) {
+                                                                    setClickedBuildingId(building.id);
+                                                                }
+                                                            }}
+                                                            className={`relative aspect-square rounded-xl border flex flex-col items-center justify-center transition-all duration-300 cursor-pointer select-none group
+                                                                ${building 
+                                                                    ? 'bg-gradient-to-br from-stone-900 to-stone-950 border-amber-600/30 hover:border-amber-400 shadow-md hover:scale-105 active:scale-95' 
+                                                                    : isSelected
+                                                                        ? 'bg-emerald-950/20 border-emerald-500/50 hover:bg-emerald-900/30 hover:border-emerald-400 border-dashed animate-pulse'
+                                                                        : 'bg-gradient-to-br from-emerald-950/10 to-stone-900/40 border-stone-850/40 hover:border-emerald-800/40 hover:bg-emerald-950/20'
+                                                                }`}
+                                                        >
+                                                            {building ? (
+                                                                <>
+                                                                    <span className="text-3xl filter drop-shadow group-hover:scale-110 transition-transform">{building.emoji}</span>
+                                                                    <span className="absolute -bottom-1 -right-1 bg-amber-500 text-stone-950 text-[9px] font-black px-1.5 py-0.5 rounded-md border border-stone-900 shadow-sm">
+                                                                        L{building.level}
+                                                                    </span>
+                                                                    {/* Hover tooltip for name */}
+                                                                    <div className="absolute bottom-full mb-2 bg-stone-950 border border-stone-800 text-[10px] text-white px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-30 shadow-xl pointer-events-none">
+                                                                        {building.name} (Lvl {building.level})
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center gap-1">
+                                                                    <span className="text-lg opacity-10 group-hover:opacity-40 transition-all select-none filter grayscale group-hover:grayscale-0">🌱</span>
+                                                                    <span className="text-[8px] text-stone-700 opacity-0 group-hover:opacity-60 transition-opacity font-mono">
+                                                                        {c},{r}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Right Area: Control Panel Sidebar */}
+                                    <div className="w-full md:w-80 bg-stone-900/60 border border-stone-850 p-5 rounded-2xl flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-none">
+                                        {clickedBuilding ? (
+                                            /* Details of a clicked building */
+                                            <div className="flex flex-col h-full justify-between gap-4">
+                                                <div className="space-y-4">
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="text-5xl p-3 bg-stone-950 rounded-xl border border-stone-800">{clickedBuilding.emoji}</div>
+                                                        <div className="text-left">
+                                                            <h4 className="text-lg font-black text-white">{clickedBuilding.name}</h4>
+                                                            <span className="inline-block bg-amber-500/10 text-amber-400 text-[10px] px-2.5 py-0.5 rounded-full font-black border border-amber-500/20">
+                                                                NÍVEL {clickedBuilding.level}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <p className="text-xs text-stone-400 text-left leading-relaxed">{clickedBuilding.description}</p>
+
+                                                    <div className="bg-black/40 p-3 rounded-xl border border-stone-850 space-y-2 text-left text-xs">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-stone-500">Efeito Atual:</span>
+                                                            <span className="text-green-400 font-bold">{(clickedBuilding.effectValue * clickedBuilding.level).toLocaleString()} ({clickedBuilding.bonus})</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-stone-500">Localização:</span>
+                                                            <span className="text-stone-300 font-mono">X: {clickedBuilding.x}, Y: {clickedBuilding.y}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col gap-2 mt-4">
+                                                    {/* Access direct building feature if map link is available */}
+                                                    {(() => {
+                                                        const btnAction = getBuildingFeatureAction(clickedBuilding.id);
+                                                        if (btnAction) {
+                                                            return (
+                                                                <button
+                                                                    onClick={btnAction}
+                                                                    className="w-full py-3 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 shadow-md shadow-amber-900/10 active:scale-95 transition-all"
+                                                                >
+                                                                    Acessar {clickedBuilding.name}
+                                                                </button>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+
+                                                    {/* Quick Upgrade Building */}
+                                                    {(() => {
+                                                        const isMax = clickedBuilding.level >= clickedBuilding.maxLevel;
+                                                        const canAfford = gold >= clickedBuilding.cost;
+                                                        return (
+                                                            <button
+                                                                onClick={() => { upgradeBuilding(clickedBuilding.id); }}
+                                                                disabled={isMax || !canAfford}
+                                                                className={`w-full py-3 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center transition-all
+                                                                    ${isMax 
+                                                                        ? 'bg-stone-850 text-stone-500 cursor-not-allowed border border-stone-700'
+                                                                        : canAfford
+                                                                            ? 'bg-stone-800 hover:bg-stone-700 text-amber-400 border border-amber-900/50 shadow-md active:scale-95'
+                                                                            : 'bg-stone-950/50 text-stone-600 cursor-not-allowed border border-stone-900'
+                                                                    }`}
+                                                            >
+                                                                {isMax ? 'Nível Máximo' : `Melhorar (${formatNumber(clickedBuilding.cost)} Ouro)`}
+                                                            </button>
+                                                        );
+                                                    })()}
+
+                                                    {/* Reposition Building */}
+                                                    <button
+                                                        onClick={() => removeBuilding(clickedBuilding.id)}
+                                                        className="w-full py-3 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center bg-stone-950/60 border border-stone-850 text-stone-400 hover:text-stone-200 transition-colors"
+                                                    >
+                                                        Mover Prédio
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => setClickedBuildingId(null)}
+                                                        className="w-full py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center text-stone-550 hover:text-stone-400 transition-colors"
+                                                    >
+                                                        Voltar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : selectedBuildingId ? (
+                                            /* Active placement mode instructions */
+                                            <div className="flex flex-col h-full justify-between text-left">
+                                                <div className="space-y-4">
+                                                    <h4 className="text-sm font-black text-green-400 uppercase tracking-widest">⚙️ Modo Posicionamento</h4>
+                                                    <p className="text-xs text-stone-400 leading-relaxed">
+                                                        Você selecionou **{buildings.find(b => b.id === selectedBuildingId)?.name}** para colocar no mapa.
+                                                    </p>
+                                                    <div className="bg-green-950/20 p-4 rounded-xl border border-green-500/30 text-xs text-green-300 leading-relaxed">
+                                                        💡 Clique em qualquer slot vazio do grid à esquerda para fixar a construção nessa coordenada.
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setSelectedBuildingId(null)}
+                                                    className="w-full py-3 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center bg-red-955/20 border border-red-900/40 text-red-400 hover:bg-red-950/30 transition-all mt-6"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            /* Sidebar showing unplaced buildings or general stats */
+                                            <div className="flex flex-col h-full justify-between text-left gap-4">
+                                                <div className="flex-1 flex flex-col min-h-0">
+                                                    <h4 className="text-xs font-bold uppercase text-stone-400 border-b border-stone-800 pb-2 mb-3">Prédios por Posicionar</h4>
+                                                    {unplacedBuildings.length === 0 ? (
+                                                        <div className="text-xs text-stone-555 italic py-6 text-center bg-black/20 rounded-xl border border-stone-900">
+                                                            Nenhum prédio aguardando posicionamento. Tudo em ordem na Vila!
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
+                                                            {unplacedBuildings.map(b => (
+                                                                <div key={b.id} className="bg-black/35 border border-stone-850 p-2.5 rounded-xl flex items-center justify-between gap-3 group hover:border-amber-600/30 transition-colors">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-2xl">{b.emoji}</span>
+                                                                        <div>
+                                                                            <div className="font-bold text-xs text-stone-200 group-hover:text-amber-400 transition-colors">{b.name}</div>
+                                                                            <span className="text-[9px] text-stone-500 font-semibold">Lvl {b.level}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => setSelectedBuildingId(b.id)}
+                                                                        className="bg-amber-650 hover:bg-amber-600 text-stone-950 font-black px-2.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-all"
+                                                                    >
+                                                                        Colocar
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="bg-stone-950/80 p-3.5 rounded-xl border border-stone-850/60 text-xs">
+                                                    <div className="font-bold text-amber-500 uppercase tracking-widest text-[9px] mb-2 font-mono">📊 Métricas da Vila</div>
+                                                    <div className="space-y-1.5 text-[11px] text-stone-400">
+                                                        <div className="flex justify-between">
+                                                            <span>Prédios Totais:</span>
+                                                            <span className="text-stone-200 font-bold">{buildings.filter(b => b.level > 0).length} / {buildings.length}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>Posicionados:</span>
+                                                            <span className="text-stone-200 font-bold">{buildings.filter(b => b.placed).length}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>

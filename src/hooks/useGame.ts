@@ -109,6 +109,16 @@ export const useGame = () => {
     const [deityLevel, setDeityLevel] = useState<number>(1);
     const [deityFavor, setDeityFavor] = useState<number>(0);
     const [deityEnergy, setDeityEnergy] = useState<number>(0);
+    const [elementalResonance, setElementalResonance] = useState<Record<string, number>>({
+        fire: 0, water: 0, earth: 0, wind: 0, light: 0, dark: 0, neutral: 0
+    });
+    const [elementalEssences, setElementalEssences] = useState<Record<string, number>>({
+        fire: 0, water: 0, earth: 0, wind: 0, light: 0, dark: 0, neutral: 0
+    });
+    const [ownedRelics, setOwnedRelics] = useState<string[]>([]);
+    const [equippedRelics, setEquippedRelics] = useState<string[]>([]);
+    const [bossRushWave, setBossRushWave] = useState<number>(1);
+    const [bossRushMaxWave, setBossRushMaxWave] = useState<number>(1);
     const [marketStock, setMarketStock] = useState<MarketItem[]>([]);
     const [marketTimer, setMarketTimer] = useState<number>(0);
     const [ultimateCharge, setUltimateCharge] = useState<number>(0);
@@ -470,7 +480,8 @@ export const useGame = () => {
             const now = Date.now();
             const timeDiff = (now - lastDpsUpdate.current) / 1000;
             if (timeDiff >= 1) {
-                setPartyDps(Math.round(damageAccumulator.current / timeDiff));
+                const currentDps = Math.round(damageAccumulator.current / timeDiff);
+                setPartyDps(prev => Math.round(prev * 0.7 + currentDps * 0.3));
                 damageAccumulator.current = 0;
                 lastDpsUpdate.current = now;
             }
@@ -1461,6 +1472,9 @@ export const useGame = () => {
                 // Track click stat
                 setGameStats(s => ({ ...s, clicks: (s.clicks || 0) + 1, totalDamageDealt: (s.totalDamageDealt || 0) + dmg }));
                 
+                // Add click damage to dps accumulator
+                damageAccumulator.current += dmg;
+                
                 // Deal damage (will be processed on next tick or instantly depending on HP)
                 if (world.tower.active) {
                     world.setTowerBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - dmg } }));
@@ -1832,6 +1846,14 @@ export const useGame = () => {
         teamMorale, setTeamMorale,
         heroBonds, setHeroBonds,
         monuments, setMonuments,
+        gardenPlots, setGardenPlots,
+        elementalResonance, setElementalResonance,
+        elementalEssences, setElementalEssences,
+        ownedRelics, setOwnedRelics,
+        equippedRelics, setEquippedRelics,
+        bossRushWave, setBossRushWave,
+        bossRushMaxWave, setBossRushMaxWave,
+        patronDeity, deityLevel, deityFavor, deityEnergy,
         emberFragments: roguelike.emberFragments,
         setEmberFragments: roguelike.setEmberFragments,
         roguelikeUpgrades: roguelike.roguelikeUpgrades,
@@ -1848,7 +1870,7 @@ export const useGame = () => {
     } as any);
 
     const result = useMemo(() => {
-        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy };
+        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave };
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
@@ -1866,6 +1888,7 @@ export const useGame = () => {
             dungeonActive: world.dungeonActive,
             dungeonTimer: world.dungeonTimer,
             tower: world.tower,
+            towerBoss: world.towerBoss,
             dungeonState: world.dungeonState,
             weather: world.weather,
             weatherTimer: world.weatherTimer,
@@ -1887,6 +1910,12 @@ export const useGame = () => {
             deityLevel,
             deityFavor,
             deityEnergy,
+            elementalResonance,
+            elementalEssences,
+            ownedRelics,
+            equippedRelics,
+            bossRushWave,
+            bossRushMaxWave,
             actions: ACTIONS,
             // Root actions for legacy compatibility
             ...ACTIONS,

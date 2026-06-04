@@ -521,6 +521,9 @@ export interface Building {
     currency: 'gold' | 'souls' | 'wood' | 'stone'; // Adding basic resource types if needed, but sticking to gold/souls for now or 'materials'
     // Simplified: Just Gold for now as per plan
     emoji: string;
+    x?: number;
+    y?: number;
+    placed?: boolean;
 }
 
 export const GUILDS: Guild[] = [
