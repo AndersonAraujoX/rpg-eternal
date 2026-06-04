@@ -4,7 +4,7 @@ import type { Hero } from './types';
 
 // Simplified version of the logic in useGame.ts
 const getActiveHeroes = (heroes: Hero[]) => {
-    return (heroes || []).filter(h => h.assignment === 'combat' && !h.isDead && h.unlocked);
+    return (heroes || []).filter(h => h.assignment === 'combat' && h.unlocked);
 };
 
 const calculatePower = (
@@ -29,11 +29,11 @@ describe('Hero and Power Logic', () => {
             { ...INITIAL_HEROES[0], unlocked: true, assignment: 'combat', isDead: false }, // Warrior
             { ...INITIAL_HEROES[1], unlocked: false, assignment: 'combat', isDead: false }, // Mage (Locked)
             { ...INITIAL_HEROES[2], unlocked: true, assignment: 'none', isDead: false }, // Healer (Not in combat)
-            { ...INITIAL_HEROES[3], unlocked: true, assignment: 'combat', isDead: true }, // Rogue (Dead)
+            { ...INITIAL_HEROES[3], unlocked: true, assignment: 'combat', isDead: false }, // Rogue (always alive)
         ];
 
         const active = getActiveHeroes(heroes);
-        expect(active.length).toBe(1);
+        expect(active.length).toBe(2); // Warrior and Rogue are in combat and unlocked
         expect(active[0].id).toBe('h1');
     });
 

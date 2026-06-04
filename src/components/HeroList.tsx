@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sword, Pickaxe, Heart, Shield, Zap, Brain, Skull, Flame, Droplets, ShieldAlert } from 'lucide-react';
+import { Sword, Pickaxe, Shield, Zap, Skull, Flame, Droplets, ShieldAlert } from 'lucide-react';
 import type { Hero, Building } from '../engine/types';
 import type { Synergy } from '../engine/synergies';
 import { SYNERGY_DEFINITIONS } from '../engine/synergies';
@@ -70,7 +70,6 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                 return (
                     <div key={hero.id} className={`relative p-2 rounded border-2 flex flex-col gap-1 transition-all 
                         ${!hero.unlocked ? 'border-gray-700 bg-gray-900 group/locked' :
-                            hero.isDead ? 'border-red-900 bg-red-950 opacity-70' :
                             hero.isMutated ? 'border-red-600 bg-red-950/30 shadow-[inset_0_0_15px_rgba(220,38,38,0.3)] animate-pulse hover:bg-gray-600' :
                             hero.isAwakened ? 'border-yellow-500 bg-gray-700 shadow-[inset_0_0_15px_rgba(234,179,8,0.2)] hover:bg-gray-600' :
                             'border-gray-600 bg-gray-700 hover:bg-gray-600'
@@ -90,7 +89,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                 <span className="text-xl" role="img" aria-label={hero.name}>{hero.emoji}</span>
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-1">
-                                        <span className={`text-xs font-bold ${hero.isDead ? 'text-red-500' : 'text-white'}`}>{hero.name}</span>
+                                        <span className="text-xs font-bold text-white">{hero.name}</span>
                                         {hero.statPoints > 0 && (
                                             <span className="bg-yellow-500 text-black text-[8px] px-1 rounded-full animate-bounce font-black">UP!</span>
                                         )}
@@ -126,15 +125,6 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                                     >
                                         <Skull size={10} />
                                     </button>
-                                    {hero.isDead && (
-                                        <button
-                                            onClick={() => actions.reviveHero(hero.id)}
-                                            className="p-1 rounded border bg-red-600 border-red-400 text-red-100 animate-pulse"
-                                            title="Reviver Herói - Custo: 5000 de Ouro"
-                                        >
-                                            <Heart size={10} />
-                                        </button>
-                                    )}
 
                                     <button
                                         onClick={() => setViewingHero(hero)}
@@ -160,16 +150,12 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
                         {
                             hero.unlocked && (
                                 <div className="flex flex-col gap-1 mt-1">
-                                    {/* HP Bar */}
-                                    <div className="w-full h-1.5 bg-gray-900 rounded-full overflow-hidden">
-                                        <div className={`h-full transition-all duration-300 ${hero.isDead ? 'bg-red-900' : 'bg-green-500'}`} style={{ width: `${(hero.stats.hp / hero.stats.maxHp) * 100}%` }}></div>
-                                    </div>
 
                                     <div className="grid grid-cols-2 gap-x-2 text-[9px] text-gray-300 mt-1">
                                         <div className="flex items-center gap-1"><Sword size={8} className="text-red-400" /> {hero.stats.attack}</div>
                                         <div className="flex items-center gap-1"><Shield size={8} className="text-yellow-400" /> {hero.stats.defense}</div>
                                         <div className="flex items-center gap-1"><Zap size={8} className="text-blue-400" /> {hero.stats.magic}</div>
-                                        <div className="flex items-center gap-1"><Heart size={8} className="text-pink-400" /> {Math.floor(hero.stats.hp)}</div>
+                                        <div className="flex items-center gap-1"><Zap size={8} className="text-green-400" /> {hero.stats.speed}</div>
                                     </div>
 
                                     {/* Synergy Contribution Badges */}

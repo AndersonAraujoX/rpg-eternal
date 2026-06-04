@@ -47,7 +47,6 @@ import { TownModal } from './components/modals/TownModal'; // Phase 53
 import { MuseumModal } from './components/modals/MuseumModal';
 import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
 import { WorldBossModal } from './components/modals/WorldBossModal'; // Phase 6
-import { JourneyModal } from './components/modals/JourneyModal';
 import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
 import { IndustryModal } from './components/modals/IndustryModal';
 
@@ -58,11 +57,6 @@ import { PortalResetModal } from './components/modals/PortalResetModal';
 import { PrestigeTreeModal } from './components/modals/PrestigeTreeModal';
 import { PetSpaceModal } from './components/modals/PetSpaceModal';
 import { WeatherOverlays } from './components/WeatherOverlays';
-
-import { BossRushModal } from './components/modals/BossRushModal';
-import { ElementalResonanceModal } from './components/modals/ElementalResonanceModal';
-import { RelicChamberModal } from './components/modals/RelicChamberModal';
-import { VoidInfusionModal } from './components/modals/VoidInfusionModal';
 
 import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
 
@@ -102,23 +96,17 @@ function App() {
     teamMorale, heroBonds, monuments, enshrineHero,
     patronDeity, deityLevel, deityFavor, deityEnergy, pledgeDeity, offerToDeity,
     runes, craftRune, socketRune, combineRunes, invokeWeather,
-    elementalResonance, elementalEssences, ownedRelics, equippedRelics,
-    bossRushActive, bossRushWave, bossRushMaxWave, bossRushBoss, bossRushCooldown
+    bossTimer,
   } = useGame();
 
 
   const [showShop, setShowShop] = useState(false);
   const [showTown, setShowTown] = useState(false); // Phase 53
-  const [showJourney, setShowJourney] = useState(false);
   const [showIndustry, setShowIndustry] = useState(false);
   const [showCardBattle, setShowCardBattle] = useState(false); // Phase 55
   const [showDailyRewards, setShowDailyRewards] = useState(false); // Phase 56
   const [showMarket, setShowMarket] = useState(false);
   const [showMastery, setShowMastery] = useState(false);
-  const [showBossRush, setShowBossRush] = useState(false);
-  const [showElementalResonance, setShowElementalResonance] = useState(false);
-  const [showVoidInfusion, setShowVoidInfusion] = useState(false);
-  const [showRelicChamber, setShowRelicChamber] = useState(false);
   const [showRiftModal, setShowRiftModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showPrestigeTree, setShowPrestigeTree] = useState(false);
@@ -275,12 +263,7 @@ function App() {
           townVisited={townVisited}
           voidAscensions={voidAscensions}
           buildings={buildings}
-          setShowJourney={setShowJourney}
           teamMorale={teamMorale}
-          setShowBossRush={setShowBossRush}
-          setShowElementalResonance={setShowElementalResonance}
-          setShowVoidInfusion={setShowVoidInfusion}
-          setShowRelicChamber={setShowRelicChamber}
         />
 
         <BattleArea
@@ -288,6 +271,7 @@ function App() {
           ultimateCharge={ultimateCharge} pets={pets} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps} partyPower={partyPower}
           combatEvents={combatEvents}
           synergies={synergies}
+          bossTimer={bossTimer}
         />
         <HeroList
           heroes={heroes}
@@ -442,8 +426,6 @@ function App() {
         divinity={divinity}
         invokeWeather={invokeWeather}
         resources={resources}
-        bossLevel={boss.level}
-        voidAscensions={voidAscensions}
       />
       <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
@@ -550,66 +532,6 @@ function App() {
         souls={souls}
         prestigeNodes={prestigeNodes}
         onBuyNode={actions.buyPrestigeNode}
-      />
-      <JourneyModal
-        isOpen={showJourney}
-        onClose={() => setShowJourney(false)}
-        state={{
-          bossLevel: boss.level,
-          highestFloor: tower.maxFloor || 1,
-          voidAscensions,
-          buildings,
-          outerSpaceUnlocked: !!outerSpaceUnlocked
-        }}
-      />
-
-      <BossRushModal
-        isOpen={showBossRush}
-        onClose={() => setShowBossRush(false)}
-        bossRushActive={bossRushActive}
-        bossRushWave={bossRushWave}
-        bossRushMaxWave={bossRushMaxWave}
-        bossRushBoss={bossRushBoss}
-        bossRushCooldown={bossRushCooldown}
-        actions={{
-          startBossRush: actions.startBossRush,
-          endBossRush: actions.endBossRush
-        }}
-      />
-
-      <ElementalResonanceModal
-        isOpen={showElementalResonance}
-        onClose={() => setShowElementalResonance(false)}
-        elementalResonance={elementalResonance}
-        elementalEssences={elementalEssences}
-        actions={{
-          upgradeResonance: actions.upgradeResonance
-        }}
-      />
-
-      <RelicChamberModal
-        isOpen={showRelicChamber}
-        onClose={() => setShowRelicChamber(false)}
-        ownedRelics={ownedRelics}
-        equippedRelics={equippedRelics}
-        gold={gold}
-        souls={souls}
-        voidMatter={voidMatter}
-        actions={{
-          buyRelic: actions.buyRelic,
-          equipRelic: actions.equipRelic,
-          unequipRelic: actions.unequipRelic
-        }}
-      />
-
-      <VoidInfusionModal
-        isOpen={showVoidInfusion}
-        onClose={() => setShowVoidInfusion(false)}
-        items={items}
-        voidMatter={voidMatter}
-        actions={{
-          infuseItemWithVoid: actions.infuseItemWithVoid
-        }}
       />
     </div>
   );

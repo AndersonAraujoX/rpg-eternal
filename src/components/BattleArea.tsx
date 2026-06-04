@@ -13,7 +13,7 @@ interface BattleAreaProps {
     pets: Pet[];
     actions: any;
     artifacts: Artifact[];
-    heroes: Hero[]; // Passed for hero effects or rendering behind boss
+    heroes: Hero[];
     synergies?: Synergy[];
     partyDps?: number;
     partyPower?: number;
@@ -21,6 +21,7 @@ interface BattleAreaProps {
     suggestions?: string[];
     tower?: { active: boolean; floor: number; maxFloor: number };
     voidActive?: boolean;
+    bossTimer?: number; // Countdown timer (seconds) to kill the boss
 }
 
 const getElementIcon = (el: string) => {
@@ -39,7 +40,7 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, heroes = [], partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [], tower, voidActive = false }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, heroes = [], partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [], tower, voidActive = false, bossTimer = 60 }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
     const [showSynergyTracker, setShowSynergyTracker] = React.useState(false);
     const [shake, setShake] = React.useState(false);
@@ -125,7 +126,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             )}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full flex gap-2 z-10 opacity-80 pointer-events-none">
                 {activeCombatHeroes.map(h => (
-                    <div key={h.id} className={`text-2xl transition-all duration-500 ${h.isDead ? 'opacity-50 sepia scale-90' : 'animate-pulse'}`} title={h.isDead ? `${h.name} (MACHUCADO - 50% DPS)` : h.name}>
+                    <div key={h.id} className="text-2xl transition-all duration-500 animate-pulse" title={h.name}>
                         {h.emoji}
                     </div>
                 ))}
@@ -212,6 +213,36 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                     <div className="h-full bg-red-600 transition-all duration-300" style={{ width: `${(boss.stats.hp / boss.stats.maxHp) * 100}%` }} />
                     <div className="absolute inset-0 flex items-center justify-center text-[8px] text-white z-10">{boss.stats.hp}/{boss.stats.maxHp}</div>
                 </div>
+
+                {/* Boss Timer — countdown bar + label */}
+                {!tower?.active && (
+                    <div className="w-48 mt-1">
+                        <div
+                            className={`w-full h-2 rounded-full overflow-hidden ${
+                                bossTimer <= 10 ? 'bg-red-900 shadow-[0_0_6px_rgba(239,68,68,0.8)]'
+                                : bossTimer <= 20 ? 'bg-orange-900'
+                                : 'bg-gray-700'
+                            }`}
+                        >
+                            <div
+                                className={`h-full transition-all duration-1000 ease-linear rounded-full ${
+                                    bossTimer <= 10 ? 'bg-red-500 animate-pulse'
+                                    : bossTimer <= 20 ? 'bg-orange-400'
+                                    : 'bg-cyan-500'
+                                }`}
+                                style={{ width: `${(bossTimer / 60) * 100}%` }}
+                            />
+                        </div>
+                        <div className={`flex justify-between items-center mt-0.5 ${
+                            bossTimer <= 10 ? 'text-red-400 font-bold' :
+                            bossTimer <= 20 ? 'text-orange-400' :
+                            'text-gray-400'
+                        } text-[9px]`}>
+                            <span className={bossTimer <= 10 ? 'animate-pulse' : ''}>⏱ {bossTimer}s</span>
+                            <span className="text-gray-500">matar em 60s</span>
+                        </div>
+                    </div>
+                )}
 
                 <div className="w-48 h-1 bg-gray-800 mt-1 relative rounded overflow-hidden">
                     <div className={`h-full transition-all duration-100 ${ultimateCharge >= 100 ? 'bg-cyan-400 animate-pulse' : 'bg-cyan-800'}`} style={{ width: `${ultimateCharge}%` }}></div>

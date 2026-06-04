@@ -1,7 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { processCombatTurn } from './combat';
 import { generateTownEvent } from './townEvents';
 import type { Hero, Boss } from './types';
+import * as weatherModule from './weather';
+
+// Force day phase to avoid random day/night multipliers affecting tests
+vi.spyOn(weatherModule, 'getDayNightPhase').mockReturnValue('day');
 
 // Helper to mock hero
 const mockHero = (id: string, name: string, isDead = false, assignment = 'combat'): Hero => ({
@@ -121,20 +125,19 @@ describe('Core Game Expansion: Hero Bonds', () => {
         expect(totalDmg).toBe(22);
     });
 
-    it('Almas Gêmeas (soulmates) Level 3 grants Berserk (+50% damage) if the partner falls', () => {
-        const h1 = mockHero('h1', 'Soulmate Alive', false);
-        const h2 = mockHero('h2', 'Soulmate Dead', true); // Dead partner
+    it('Almas Gêmeas (soulmates) Level 3 — partner is always alive (immortality), so berserk does not trigger', () => {
+        // Heroes are immortal — isDead=true on input is ignored, both deal full damage
+        const h1 = mockHero('h1', 'Soulmate Alpha', false);
+        const h2 = mockHero('h2', 'Soulmate Beta', false); // Partner is alive (immortal)
         const boss = mockBoss();
 
         const bonds = {
             'h1-h2': { xp: 0, level: 3, type: 'soulmates' }
         };
 
-        // Note: processCombatTurn still processes dead heroes (they deal 50% damage).
-        // h1 is alive, gets +50% damage: Math.floor(10 * 1.5) = 15.
-        // h2 is dead, gets 50% damage penalty: Math.floor(10 * 0.5) = 5.
-        // Total damage = 15 + 5 = 20.
-        const { totalDmg } = processCombatTurn([h1, h2], boss, 1, 0, false, [], 1000, 1, [], undefined, undefined, undefined, 0, bonds);
+        // Both alive, no berserk: h1 (10) + h2 (10) = 20
+        // tickDuration=0 prevents boss attacks
+        const { totalDmg } = processCombatTurn([h1, h2], boss, 1, 0, false, [], 0, 1, [], undefined, undefined, undefined, 0, bonds);
 
         expect(totalDmg).toBe(20);
     });

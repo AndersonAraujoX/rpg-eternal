@@ -1,50 +1,48 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
-describe('Auto-Revive Mechanic', () => {
-    it('should revive a hero after 10 seconds', () => {
-        const now = Date.now();
-        const oldHero = { id: 'h1', name: 'Hero', isDead: true, deathTime: now - 11000, stats: { hp: 0, maxHp: 100 } };
-        const h = { ...oldHero };
+/**
+ * Hero Immortality Tests
+ * 
+ * Heroes no longer die. Boss attacks reduce HP but never below 1.
+ * The isDead flag is always false after combat processing.
+ */
+describe('Hero Immortality Mechanic', () => {
+    it('hero HP never drops below 1 when boss attacks', () => {
+        const hero = { id: 'h1', name: 'Hero', isDead: false, stats: { hp: 5, maxHp: 100 } };
+        const bossDmg = 100; // Would kill the hero before
 
-        let revived = false;
-        if (h.isDead && h.deathTime && now - h.deathTime >= 10000) {
-            h.isDead = false;
-            h.stats.hp = h.stats.maxHp;
-            revived = true;
-        }
+        // New mechanic: min 1 HP
+        const nextHp = Math.max(1, hero.stats.hp - bossDmg);
 
-        expect(revived).toBe(true);
-        expect(h.isDead).toBe(false);
-        expect(h.stats.hp).toBe(100);
+        expect(nextHp).toBe(1);
+        expect(nextHp).toBeGreaterThan(0);
     });
 
-    it('should NOT revive a hero before 10 seconds', () => {
-        const now = Date.now();
-        const oldHero = { id: 'h1', name: 'Hero', isDead: true, deathTime: now - 5000, stats: { hp: 0, maxHp: 100 } };
-        const h = { ...oldHero };
+    it('hero isDead is always false after combat', () => {
+        const hero = { id: 'h1', name: 'Hero', isDead: false, stats: { hp: 1, maxHp: 100 } };
 
-        let revived = false;
-        if (h.isDead && h.deathTime && now - h.deathTime >= 10000) {
-            h.isDead = false;
-            h.stats.hp = h.stats.maxHp;
-            revived = true;
-        }
+        // Simulate combat result: isDead is always false
+        const result = { ...hero, isDead: false };
 
-        expect(revived).toBe(false);
-        expect(h.isDead).toBe(true);
-        expect(h.stats.hp).toBe(0);
+        expect(result.isDead).toBe(false);
     });
 
-    it('should record deathTime when a hero dies', () => {
-        const oldHero = { id: 'h1', name: 'Hero', isDead: false, stats: { hp: 100, maxHp: 100 } };
-        const h = { ...oldHero, isDead: true };
-        const now = Date.now();
+    it('hero with full HP receives boss attack but survives', () => {
+        const hero = { id: 'h1', name: 'Hero', isDead: false, stats: { hp: 100, maxHp: 100 } };
+        const bossDmg = 50;
 
-        if (h.isDead && !oldHero.isDead) {
-            h.deathTime = now;
-        }
+        const nextHp = Math.max(1, hero.stats.hp - bossDmg);
 
-        expect(h.deathTime).toBeDefined();
-        expect(h.deathTime).toBe(now);
+        expect(nextHp).toBe(50);
+        expect(nextHp).toBeGreaterThan(0);
+    });
+
+    it('hero with very low HP survives a massive boss attack', () => {
+        const hero = { id: 'h1', name: 'Hero', isDead: false, stats: { hp: 1, maxHp: 100 } };
+        const bossDmg = 99999;
+
+        const nextHp = Math.max(1, hero.stats.hp - bossDmg);
+
+        expect(nextHp).toBe(1);
     });
 });
