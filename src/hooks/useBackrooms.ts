@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
+import type { 
+    BackroomsExplorer, BackroomsOutpost, BackroomsResources 
+} from '../engine/backrooms';
 import { 
-    BackroomsExplorer, BackroomsOutpost, BackroomsResources, 
     createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS 
 } from '../engine/backrooms';
 

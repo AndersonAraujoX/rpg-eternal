@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot, ElementType } from '../engine/types';
 import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GARDEN } from '../engine/garden';

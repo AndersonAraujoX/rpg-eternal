@@ -113,7 +113,7 @@ export const VoidInfusionModal: React.FC<VoidInfusionModalProps> = ({
                                             </div>
                                             <div className="text-right">
                                                 <span className="text-green-400 font-mono text-xs font-bold">
-                                                    +{formatNumber(item.value)} {item.stat.toUpperCase()}
+                                                    +{formatNumber(item.value)} {item.stat?.toUpperCase() || ''}
                                                 </span>
                                             </div>
                                         </button>
@@ -135,7 +135,7 @@ export const VoidInfusionModal: React.FC<VoidInfusionModalProps> = ({
                                     <span className="text-[10px] text-purple-400 font-bold block uppercase tracking-wider">Item Selecionado</span>
                                     <h3 className="font-bold text-gray-200 text-base">{selectedItem.name}</h3>
                                     <p className="text-xs text-gray-400 mt-1">
-                                        Atributo Base: <span className="text-green-400 font-bold">+{selectedItem.value} {selectedItem.stat.toUpperCase()}</span>
+                                        Atributo Base: <span className="text-green-400 font-bold">+{selectedItem.value} {selectedItem.stat?.toUpperCase() || ''}</span>
                                     </p>
                                     {selectedItem.voidAffix && (
                                         <div className="mt-2.5 p-2 bg-purple-950/20 border border-purple-900/30 rounded text-xs text-purple-300">

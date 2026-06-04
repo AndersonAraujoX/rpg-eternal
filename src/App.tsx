@@ -22,6 +22,7 @@ import { TowerModal } from './components/modals/TowerModal';
 import { GuildModal } from './components/modals/GuildModal';
 import { VoidModal } from './components/modals/VoidModal';
 import { ArenaModal } from './components/modals/ArenaModal';
+import { JourneyModal } from './components/modals/JourneyModal';
 import { QuestModal } from './components/modals/QuestModal';
 import { RuneModal } from './components/modals/RuneModal';
 import { AchievementsModal } from './components/modals/AchievementsModal';
@@ -152,6 +153,7 @@ function App() {
   const [showMuseum, setShowMuseum] = useState(false); // Phase 49
   const [showRoguelike, setShowRoguelike] = useState(false);
   const [showBackrooms, setShowBackrooms] = useState(false);
+  const [showJourney, setShowJourney] = useState(false);
 
   const [importString, setImportString] = useState('');
 
@@ -276,6 +278,7 @@ function App() {
           teamMorale={teamMorale}
           setShowRoguelike={setShowRoguelike}
           setShowBackrooms={setShowBackrooms}
+          setShowJourney={setShowJourney}
         />
 
         <BattleArea
@@ -578,6 +581,18 @@ function App() {
           useAlmondWater,
           upgradeOutpost,
           craftGear
+        }}
+      />
+
+      <JourneyModal
+        isOpen={showJourney}
+        onClose={() => setShowJourney(false)}
+        state={{
+          bossLevel: boss.level,
+          highestFloor: tower.maxFloor || 1,
+          voidAscensions,
+          buildings,
+          outerSpaceUnlocked
         }}
       />
     </div>

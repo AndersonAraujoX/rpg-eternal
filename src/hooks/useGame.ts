@@ -1442,7 +1442,7 @@ export const useGame = () => {
                 addLog(`Relíquia Antiga instalada: ${relic.name}!`, 'success');
             }
         };
-        return baseActions as GameActions;
+        return baseActions as any as GameActions;
     }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, monuments]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)

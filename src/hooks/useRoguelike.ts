@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import type { 
+    RoguelikeClass, RoguelikeRunState, RoguelikeNode, RoguelikeUpgrade, RoguelikeRelic
+} from '../engine/roguelike';
 import { 
-    RoguelikeClass, RoguelikeRunState, RoguelikeNode, RoguelikeUpgrade, 
     ROGUELIKE_UPGRADES, RELICS_POOL, generateRoguelikeNodes, getStartingHero, 
-    getRandomRelic, getEnemyForNode, EVENTS_POOL, RoguelikeRelic 
+    getRandomRelic, getEnemyForNode, EVENTS_POOL
 } from '../engine/roguelike';
 
 export function useRoguelike() {
@@ -41,7 +43,7 @@ export function useRoguelike() {
         const nextNode = roguelikeRun.nodes[index];
         if (!nextNode) return;
 
-        let nextStatus = roguelikeRun.status;
+        let nextStatus: RoguelikeRunState['status'] = roguelikeRun.status;
         let combatState = null;
         let eventState = null;
         let updatedHero = roguelikeRun.hero ? { ...roguelikeRun.hero } : null;
