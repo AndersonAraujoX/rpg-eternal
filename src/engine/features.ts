@@ -283,6 +283,32 @@ export const FEATURES_LIST: FeatureDefinition[] = [
             const current = Math.min(220, state.highestFloor);
             return { current, max: 220, percentage: Math.floor((current / 220) * 100) };
         }
+    },
+    {
+        id: 'roguelike_mode',
+        name: 'Modo Roguelike',
+        description: 'Suba andares em uma masmorra gerada proceduralmente com relíquias temporárias.',
+        icon: '🌀',
+        unlockRequirementText: 'Atingir Nível de Chefe 15',
+        tab: 'combat',
+        checkUnlocked: (state) => state.bossLevel >= 15,
+        getProgress: (state) => {
+            const current = Math.min(15, state.bossLevel);
+            return { current, max: 15, percentage: Math.floor((current / 15) * 100) };
+        }
+    },
+    {
+        id: 'backrooms_manager',
+        name: 'Backrooms M.E.G.',
+        description: 'Gerencie uma equipe de exploradores nas salas liminares das Backrooms.',
+        icon: '🏢',
+        unlockRequirementText: 'Atingir Nível de Chefe 30',
+        tab: 'combat',
+        checkUnlocked: (state) => state.bossLevel >= 30,
+        getProgress: (state) => {
+            const current = Math.min(30, state.bossLevel);
+            return { current, max: 30, percentage: Math.floor((current / 30) * 100) };
+        }
     }
 ];
 

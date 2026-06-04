@@ -3,6 +3,7 @@ import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, Constellatio
 import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GARDEN } from '../engine/garden';
+import type { BackroomsExplorer, BackroomsOutpost, BackroomsResources } from '../engine/backrooms';
 
 export interface PersistenceProps {
     heroes: Hero[];
@@ -106,6 +107,16 @@ export interface PersistenceProps {
     setBossRushWave: React.Dispatch<React.SetStateAction<number>>;
     bossRushMaxWave: number;
     setBossRushMaxWave: React.Dispatch<React.SetStateAction<number>>;
+    emberFragments: number;
+    setEmberFragments: React.Dispatch<React.SetStateAction<number>>;
+    roguelikeUpgrades: Record<string, number>;
+    setRoguelikeUpgrades: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+    backroomsExplorers: BackroomsExplorer[];
+    setBackroomsExplorers: React.Dispatch<React.SetStateAction<BackroomsExplorer[]>>;
+    backroomsOutpost: BackroomsOutpost;
+    setBackroomsOutpost: React.Dispatch<React.SetStateAction<BackroomsOutpost>>;
+    backroomsResources: BackroomsResources;
+    setBackroomsResources: React.Dispatch<React.SetStateAction<BackroomsResources>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -151,7 +162,17 @@ export const usePersistence = (props: PersistenceProps) => {
         bossRushWave,
         setBossRushWave,
         bossRushMaxWave,
-        setBossRushMaxWave
+        setBossRushMaxWave,
+        emberFragments,
+        setEmberFragments,
+        roguelikeUpgrades,
+        setRoguelikeUpgrades,
+        backroomsExplorers,
+        setBackroomsExplorers,
+        backroomsOutpost,
+        setBackroomsOutpost,
+        backroomsResources,
+        setBackroomsResources
     } = props;
 
 
@@ -304,6 +325,11 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.equippedRelics) setEquippedRelics(state.equippedRelics);
                 if (state.bossRushWave) setBossRushWave(state.bossRushWave);
                 if (state.bossRushMaxWave) setBossRushMaxWave(state.bossRushMaxWave);
+                if (state.emberFragments !== undefined) setEmberFragments(state.emberFragments);
+                if (state.roguelikeUpgrades) setRoguelikeUpgrades(state.roguelikeUpgrades);
+                if (state.backroomsExplorers) setBackroomsExplorers(state.backroomsExplorers);
+                if (state.backroomsOutpost) setBackroomsOutpost(state.backroomsOutpost);
+                if (state.backroomsResources) setBackroomsResources(state.backroomsResources);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -420,6 +446,11 @@ export const usePersistence = (props: PersistenceProps) => {
                 equippedRelics: p.equippedRelics,
                 bossRushWave: p.bossRushWave,
                 bossRushMaxWave: p.bossRushMaxWave,
+                emberFragments: p.emberFragments,
+                roguelikeUpgrades: p.roguelikeUpgrades,
+                backroomsExplorers: p.backroomsExplorers,
+                backroomsOutpost: p.backroomsOutpost,
+                backroomsResources: p.backroomsResources,
                 lastSaveTime: Date.now()
             };
 

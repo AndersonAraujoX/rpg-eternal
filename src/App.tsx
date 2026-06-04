@@ -49,6 +49,8 @@ import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
 import { WorldBossModal } from './components/modals/WorldBossModal'; // Phase 6
 import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
 import { IndustryModal } from './components/modals/IndustryModal';
+import { RoguelikeModal } from './components/modals/RoguelikeModal';
+import { BackroomsManagerModal } from './components/modals/BackroomsManagerModal';
 
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
@@ -97,6 +99,12 @@ function App() {
     patronDeity, deityLevel, deityFavor, deityEnergy, pledgeDeity, offerToDeity,
     runes, craftRune, socketRune, combineRunes, invokeWeather,
     bossTimer,
+    roguelikeRun, emberFragments, roguelikeUpgrades, startRoguelikeRun, selectRoguelikeNode,
+    performRoguelikeCombatAction, resolveRoguelikeRest, resolveRoguelikeEventOption,
+    buyRoguelikeUpgrade, abandonRoguelikeRun,
+    backroomsExplorers, backroomsOutpost, backroomsResources, backroomsLogs,
+    recruitExplorer, sendExplorer, recallExplorer, restExplorer, useAlmondWater,
+    upgradeOutpost, craftGear,
   } = useGame();
 
 
@@ -142,6 +150,8 @@ function App() {
   const [showPetSpace, setShowPetSpace] = useState(false);
   const [showGuildWar, setShowGuildWar] = useState(false); // Phase 47
   const [showMuseum, setShowMuseum] = useState(false); // Phase 49
+  const [showRoguelike, setShowRoguelike] = useState(false);
+  const [showBackrooms, setShowBackrooms] = useState(false);
 
   const [importString, setImportString] = useState('');
 
@@ -261,9 +271,11 @@ function App() {
           setShowPrestigeTree={setShowPrestigeTree}
           setShowPetSpace={setShowPetSpace}
           townVisited={townVisited}
-          voidAscensions={voidAscensions}
+           voidAscensions={voidAscensions}
           buildings={buildings}
           teamMorale={teamMorale}
+          setShowRoguelike={setShowRoguelike}
+          setShowBackrooms={setShowBackrooms}
         />
 
         <BattleArea
@@ -532,6 +544,41 @@ function App() {
         souls={souls}
         prestigeNodes={prestigeNodes}
         onBuyNode={actions.buyPrestigeNode}
+      />
+
+      <RoguelikeModal
+        isOpen={showRoguelike}
+        onClose={() => setShowRoguelike(false)}
+        run={roguelikeRun}
+        emberFragments={emberFragments}
+        upgrades={roguelikeUpgrades}
+        actions={{
+          startRoguelikeRun,
+          selectRoguelikeNode: selectRoguelikeNode,
+          performRoguelikeCombatAction: performRoguelikeCombatAction,
+          resolveRoguelikeRest: resolveRoguelikeRest,
+          resolveRoguelikeEventOption: resolveRoguelikeEventOption,
+          buyRoguelikeUpgrade,
+          abandonRoguelikeRun
+        }}
+      />
+
+      <BackroomsManagerModal
+        isOpen={showBackrooms}
+        onClose={() => setShowBackrooms(false)}
+        explorers={backroomsExplorers}
+        outpost={backroomsOutpost}
+        resources={backroomsResources}
+        logs={backroomsLogs}
+        actions={{
+          recruitExplorer,
+          sendExplorer,
+          recallExplorer,
+          restExplorer,
+          useAlmondWater,
+          upgradeOutpost,
+          craftGear
+        }}
       />
     </div>
   );

@@ -31,6 +31,8 @@ import { PRESTIGE_CLASSES } from '../engine/classes';
 import { CLASS_TALENTS } from '../data/masteryData';
 import { PRESTIGE_NODES, getPrestigeNodeCost } from '../components/modals/PrestigeTreeModal';
 import { MONSTERS } from '../engine/bestiary';
+import { useRoguelike } from './useRoguelike';
+import { useBackrooms } from './useBackrooms';
 
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -153,6 +155,8 @@ export const useGame = () => {
     const petsState = usePets([], gold, souls, setGold, setSouls, addLog);
     const world = useWorld({ floor: 1, active: false, maxFloor: 1 }, { active: false, floor: 1, blessings: [], tempHeroes: [], maxFloor: 1 }, addLog);
     const galaxyState = useGalaxy(INITIAL_GALAXY, INITIAL_TERRITORIES, INITIAL_SPACESHIP, gold, setGold, addLog);
+    const roguelike = useRoguelike();
+    const backrooms = useBackrooms();
 
     const [glory, setGlory] = useState<number>(0);
     const [partyDps, setPartyDps] = useState(0);
@@ -1758,6 +1762,9 @@ export const useGame = () => {
                 });
             }
 
+            // Backrooms Simulation Tick
+            backrooms.processBackroomsTick(1);
+
             // Re-schedule
             loopRef.current = setTimeout(runTick, tick);
         };
@@ -1782,6 +1789,16 @@ export const useGame = () => {
         teamMorale, setTeamMorale,
         heroBonds, setHeroBonds,
         monuments, setMonuments,
+        emberFragments: roguelike.emberFragments,
+        setEmberFragments: roguelike.setEmberFragments,
+        roguelikeUpgrades: roguelike.roguelikeUpgrades,
+        setRoguelikeUpgrades: roguelike.setRoguelikeUpgrades,
+        backroomsExplorers: backrooms.backroomsExplorers,
+        setBackroomsExplorers: backrooms.setBackroomsExplorers,
+        backroomsOutpost: backrooms.backroomsOutpost,
+        setBackroomsOutpost: backrooms.setBackroomsOutpost,
+        backroomsResources: backrooms.backroomsResources,
+        setBackroomsResources: backrooms.setBackroomsResources,
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
@@ -1843,8 +1860,33 @@ export const useGame = () => {
             guildXpMult,
             setGameStats,
             bossTimer,
+
+            // Roguelike State & Actions
+            roguelikeRun: roguelike.roguelikeRun,
+            emberFragments: roguelike.emberFragments,
+            roguelikeUpgrades: roguelike.roguelikeUpgrades,
+            startRoguelikeRun: roguelike.startRoguelikeRun,
+            selectRoguelikeNode: roguelike.selectNode,
+            performRoguelikeCombatAction: roguelike.performCombatAction,
+            resolveRoguelikeRest: roguelike.resolveRest,
+            resolveRoguelikeEventOption: roguelike.resolveEventOption,
+            buyRoguelikeUpgrade: roguelike.buyRoguelikeUpgrade,
+            abandonRoguelikeRun: roguelike.abandonRoguelikeRun,
+
+            // Backrooms State & Actions
+            backroomsExplorers: backrooms.backroomsExplorers,
+            backroomsOutpost: backrooms.backroomsOutpost,
+            backroomsResources: backrooms.backroomsResources,
+            backroomsLogs: backrooms.backroomsLogs,
+            recruitExplorer: backrooms.recruitExplorer,
+            sendExplorer: backrooms.sendExplorer,
+            recallExplorer: backrooms.recallExplorer,
+            restExplorer: backrooms.restExplorer,
+            useAlmondWater: backrooms.useAlmondWater,
+            upgradeOutpost: backrooms.upgradeOutpost,
+            craftGear: backrooms.craftGear,
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs]);
 
     return result;
 };
