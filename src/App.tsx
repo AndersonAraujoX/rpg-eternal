@@ -59,6 +59,11 @@ import { PrestigeTreeModal } from './components/modals/PrestigeTreeModal';
 import { PetSpaceModal } from './components/modals/PetSpaceModal';
 import { WeatherOverlays } from './components/WeatherOverlays';
 
+import { BossRushModal } from './components/modals/BossRushModal';
+import { ElementalResonanceModal } from './components/modals/ElementalResonanceModal';
+import { RelicChamberModal } from './components/modals/RelicChamberModal';
+import { VoidInfusionModal } from './components/modals/VoidInfusionModal';
+
 import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
 
 function App() {
@@ -96,7 +101,9 @@ function App() {
     setSouls, setDivinity, setStarlight, setHeroes, setGameSpeed, portalConfig, setPortalConfig,
     teamMorale, heroBonds, monuments, enshrineHero,
     patronDeity, deityLevel, deityFavor, deityEnergy, pledgeDeity, offerToDeity,
-    runes, craftRune, socketRune, combineRunes, invokeWeather
+    runes, craftRune, socketRune, combineRunes, invokeWeather,
+    elementalResonance, elementalEssences, ownedRelics, equippedRelics,
+    bossRushActive, bossRushWave, bossRushMaxWave, bossRushBoss, bossRushCooldown
   } = useGame();
 
 
@@ -108,6 +115,10 @@ function App() {
   const [showDailyRewards, setShowDailyRewards] = useState(false); // Phase 56
   const [showMarket, setShowMarket] = useState(false);
   const [showMastery, setShowMastery] = useState(false);
+  const [showBossRush, setShowBossRush] = useState(false);
+  const [showElementalResonance, setShowElementalResonance] = useState(false);
+  const [showVoidInfusion, setShowVoidInfusion] = useState(false);
+  const [showRelicChamber, setShowRelicChamber] = useState(false);
   const [showRiftModal, setShowRiftModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showPrestigeTree, setShowPrestigeTree] = useState(false);
@@ -266,6 +277,10 @@ function App() {
           buildings={buildings}
           setShowJourney={setShowJourney}
           teamMorale={teamMorale}
+          setShowBossRush={setShowBossRush}
+          setShowElementalResonance={setShowElementalResonance}
+          setShowVoidInfusion={setShowVoidInfusion}
+          setShowRelicChamber={setShowRelicChamber}
         />
 
         <BattleArea
@@ -545,6 +560,55 @@ function App() {
           voidAscensions,
           buildings,
           outerSpaceUnlocked: !!outerSpaceUnlocked
+        }}
+      />
+
+      <BossRushModal
+        isOpen={showBossRush}
+        onClose={() => setShowBossRush(false)}
+        bossRushActive={bossRushActive}
+        bossRushWave={bossRushWave}
+        bossRushMaxWave={bossRushMaxWave}
+        bossRushBoss={bossRushBoss}
+        bossRushCooldown={bossRushCooldown}
+        actions={{
+          startBossRush: actions.startBossRush,
+          endBossRush: actions.endBossRush
+        }}
+      />
+
+      <ElementalResonanceModal
+        isOpen={showElementalResonance}
+        onClose={() => setShowElementalResonance(false)}
+        elementalResonance={elementalResonance}
+        elementalEssences={elementalEssences}
+        actions={{
+          upgradeResonance: actions.upgradeResonance
+        }}
+      />
+
+      <RelicChamberModal
+        isOpen={showRelicChamber}
+        onClose={() => setShowRelicChamber(false)}
+        ownedRelics={ownedRelics}
+        equippedRelics={equippedRelics}
+        gold={gold}
+        souls={souls}
+        voidMatter={voidMatter}
+        actions={{
+          buyRelic: actions.buyRelic,
+          equipRelic: actions.equipRelic,
+          unequipRelic: actions.unequipRelic
+        }}
+      />
+
+      <VoidInfusionModal
+        isOpen={showVoidInfusion}
+        onClose={() => setShowVoidInfusion(false)}
+        items={items}
+        voidMatter={voidMatter}
+        actions={{
+          infuseItemWithVoid: actions.infuseItemWithVoid
         }}
       />
     </div>

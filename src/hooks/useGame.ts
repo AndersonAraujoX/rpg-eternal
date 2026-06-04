@@ -32,6 +32,7 @@ import { CLASS_TALENTS } from '../data/masteryData';
 import { PRESTIGE_NODES, getPrestigeNodeCost } from '../components/modals/PrestigeTreeModal';
 import { MONSTERS } from '../engine/bestiary';
 import { FEATURES_LIST, getUnlocksState } from '../engine/features';
+import { CHAMBER_RELICS } from '../engine/relics';
 
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -109,6 +110,19 @@ export const useGame = () => {
     const [deityEnergy, setDeityEnergy] = useState<number>(0);
     const [marketStock, setMarketStock] = useState<MarketItem[]>([]);
     const [marketTimer, setMarketTimer] = useState<number>(0);
+    const [elementalResonance, setElementalResonance] = useState<Record<ElementType, number>>({
+        neutral: 0, fire: 0, water: 0, nature: 0, light: 0, dark: 0
+    });
+    const [elementalEssences, setElementalEssences] = useState<Record<ElementType, number>>({
+        neutral: 0, fire: 0, water: 0, nature: 0, light: 0, dark: 0
+    });
+    const [ownedRelics, setOwnedRelics] = useState<string[]>([]);
+    const [equippedRelics, setEquippedRelics] = useState<string[]>([]);
+    const [bossRushActive, setBossRushActive] = useState<boolean>(false);
+    const [bossRushWave, setBossRushWave] = useState<number>(0);
+    const [bossRushMaxWave, setBossRushMaxWave] = useState<number>(0);
+    const [bossRushCooldown, setBossRushCooldown] = useState<number>(0);
+    const [bossRushBoss, setBossRushBoss] = useState<Boss | null>(null);
     const [ultimateCharge, setUltimateCharge] = useState<number>(0);
     const [raidActive, setRaidActive] = useState(false);
     const [raidTimer, setRaidTimer] = useState(0);
@@ -349,8 +363,12 @@ export const useGame = () => {
         maxHp += totalHpVal * 0.002;
         lifesteal += totalLifestealVal * 0.001;
 
+        // Apply Relics
+        if (equippedRelics.includes('relic_chalice')) maxHp += 0.25;
+        if (equippedRelics.includes('relic_hourglass')) speed += 0.10;
+
         return { gold, attack, defense, speed, maxHp, lifesteal };
-    }, [monuments, heroes, patronDeity, deityLevel, items]);
+    }, [monuments, heroes, patronDeity, deityLevel, items, equippedRelics]);
 
 
     const petStats = useMemo(() => {
@@ -417,7 +435,8 @@ export const useGame = () => {
         artifactMultipliers,
         patronDeity, deityLevel, deityFavor, deityEnergy,
         divinity,
-        resources, items, runes
+        resources, items, runes,
+        elementalResonance, elementalEssences, ownedRelics, equippedRelics, bossRushActive, bossRushWave, bossRushMaxWave, bossRushCooldown, bossRushBoss
     });
 
     useEffect(() => {
@@ -430,9 +449,10 @@ export const useGame = () => {
             artifactMultipliers,
             patronDeity, deityLevel, deityFavor, deityEnergy,
             divinity,
-            resources, items, runes
+            resources, items, runes,
+            elementalResonance, elementalEssences, ownedRelics, equippedRelics, bossRushActive, bossRushWave, bossRushMaxWave, bossRushCooldown, bossRushBoss
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, elementalResonance, elementalEssences, ownedRelics, equippedRelics, bossRushActive, bossRushWave, bossRushMaxWave, bossRushCooldown, bossRushBoss]);
 
     // Side Effects
     useEffect(() => {
@@ -1213,7 +1233,14 @@ export const useGame = () => {
                 }));
             },
             manualFish: () => {
-                const res = processFishingAdvanced(1, (achievements.find(a => a.id === 'fi1')?.isUnlocked ? 0.1 : 0));
+                const luckBonus = achievements.find(a => a.id === 'fi1')?.isUnlocked ? 0.1 : 0;
+                let res = processFishingAdvanced(1, luckBonus);
+                if (!res.legendary && equippedRelics.includes('relic_golden_fish')) {
+                    const secondRes = processFishingAdvanced(1, luckBonus);
+                    if (secondRes.legendary) {
+                        res.legendary = true;
+                    }
+                }
                 if (res.fish > 0) setResources(r => ({ ...r, fish: r.fish + res.fish }));
                 if (res.legendary) {
                     setGameStats(s => ({ ...s, legendaryFishCount: (s.legendaryFishCount || 0) + 1 }));
@@ -1221,9 +1248,26 @@ export const useGame = () => {
                 }
             },
             brewPotion: (id: string) => {
-                const pot = POTIONS.find(p => p.id === id); if (pot && brewPotion(pot, resources).success) {
-                    setResources(r => { const n = { ...r }; (pot.cost as any[]).forEach(c => (n as any)[c.type] -= c.amount); return n; });
-                    setActivePotions(p => [...p, { id: pot.id, name: pot.name, effect: pot.effect, value: pot.value, endTime: Date.now() + pot.duration * 1000 }]);
+                const pot = POTIONS.find(p => p.id === id);
+                if (pot) {
+                    const discount = equippedRelics.includes('relic_alchemy_scroll') ? 0.8 : 1.0;
+                    const canBrew = pot.cost.every(c => {
+                        const actualCost = Math.floor(c.amount * discount);
+                        return (resources[c.type as keyof Resources] || 0) >= actualCost;
+                    });
+                    if (canBrew) {
+                        setResources(r => {
+                            const n = { ...r };
+                            pot.cost.forEach(c => {
+                                const actualCost = Math.floor(c.amount * discount);
+                                n[c.type as keyof Resources] -= actualCost;
+                            });
+                            return n;
+                        });
+                        setActivePotions(p => [...p, { id: pot.id, name: pot.name, effect: pot.effect, value: pot.value, endTime: Date.now() + pot.duration * 1000 }]);
+                    } else {
+                        addLog("Recursos insuficientes para a Poção!", "error");
+                    }
                 }
             },
             startExpedition: (e: Expedition) => { setHeroes(startExpedition(e, heroes)); setActiveExpeditions(p => [...p, e]); },
@@ -1462,19 +1506,148 @@ export const useGame = () => {
                     return { ...prev, relics: newRelics, prosperity: prev.prosperity + 10 };
                 });
                 addLog(`Relíquia Antiga instalada: ${relic.name}!`, 'success');
+            },
+            upgradeResonance: (element: ElementType) => {
+                const currentLevel = stateRef.current.elementalResonance[element] || 0;
+                const cost = Math.floor(10 * Math.pow(1.5, currentLevel));
+                const currentEssence = stateRef.current.elementalEssences[element] || 0;
+
+                if (currentEssence >= cost) {
+                    setElementalEssences(prev => ({ ...prev, [element]: prev[element] - cost }));
+                    setElementalResonance(prev => ({ ...prev, [element]: (prev[element] || 0) + 1 }));
+                    addLog(`🔮 Templo: Ressonância Elemental de ${element.toUpperCase()} subiu para o Nível ${currentLevel + 1}!`, 'success');
+                } else {
+                    addLog(`Essências de ${element.toUpperCase()} insuficientes! Requer: ${cost}`, 'error');
+                }
+            },
+            buyRelic: (relicId: string) => {
+                const relic = CHAMBER_RELICS.find(r => r.id === relicId);
+                if (!relic) return;
+                if (stateRef.current.ownedRelics?.includes(relicId)) return;
+
+                let canBuy = false;
+                if (relic.currency === 'gold' && stateRef.current.gold >= relic.cost) {
+                    setGold(g => g - relic.cost);
+                    canBuy = true;
+                } else if (relic.currency === 'souls' && stateRef.current.souls >= relic.cost) {
+                    setSouls(s => s - relic.cost);
+                    canBuy = true;
+                } else if (relic.currency === 'voidMatter' && stateRef.current.voidMatter >= relic.cost) {
+                    setVoidMatter(vm => vm - relic.cost);
+                    canBuy = true;
+                }
+
+                if (canBuy) {
+                    setOwnedRelics(prev => [...(prev || []), relicId]);
+                    addLog(`🏺 Câmara: Relíquia '${relic.name}' adquirida!`, 'success');
+                } else {
+                    addLog(`Recursos insuficientes para adquirir a relíquia!`, 'error');
+                }
+            },
+            equipRelic: (relicId: string, slotIndex: number) => {
+                if (!stateRef.current.ownedRelics?.includes(relicId)) return;
+                setEquippedRelics(prev => {
+                    const next = [...(prev || [])];
+                    const existingIndex = next.indexOf(relicId);
+                    if (existingIndex !== -1) {
+                        next[existingIndex] = '';
+                    }
+                    next[slotIndex] = relicId;
+                    return next.filter(Boolean);
+                });
+                addLog(`🏺 Câmara: Relíquia equipada no Slot ${slotIndex + 1}!`, 'success');
+            },
+            unequipRelic: (slotIndex: number) => {
+                setEquippedRelics(prev => {
+                    const next = [...(prev || [])];
+                    next.splice(slotIndex, 1);
+                    return next;
+                });
+                addLog(`🏺 Câmara: Relíquia desequipada do Slot ${slotIndex + 1}!`, 'info');
+            },
+            startBossRush: () => {
+                if (stateRef.current.bossRushActive) return;
+                if (stateRef.current.bossRushCooldown && Date.now() < stateRef.current.bossRushCooldown) {
+                    const secsLeft = Math.ceil((stateRef.current.bossRushCooldown - Date.now()) / 1000);
+                    addLog(`🏟️ Coliseu em recarga! Aguarde ${secsLeft}s.`, 'error');
+                    return;
+                }
+
+                setHeroes(prev => prev.map(h => h.assignment === 'combat' ? { ...h, stats: { ...h.stats, hp: h.stats.maxHp }, isDead: false } : h));
+                setBossRushActive(true);
+                setBossRushWave(1);
+
+                const nextBossData = getNextBoss(2);
+                setBossRushBoss({
+                    ...nextBossData,
+                    id: `bossrush-1`,
+                    level: 2,
+                    stats: {
+                        ...nextBossData.stats,
+                        maxHp: Math.floor(nextBossData.stats.maxHp * 1.5),
+                        hp: Math.floor(nextBossData.stats.maxHp * 1.5),
+                        attack: Math.floor(nextBossData.stats.attack * 1.2)
+                    }
+                });
+
+                addLog(`🏟️ Coliseu: O desafio começou! Onda 1: ${nextBossData.name}`, 'success');
+            },
+            endBossRush: (success: boolean) => {
+                setBossRushActive(false);
+                setBossRushBoss(null);
+                setBossRushCooldown(Date.now() + 60000);
+                addLog(`🏟️ Coliseu: Desafio finalizado.`, 'info');
+            },
+            infuseItemWithVoid: (itemId: string) => {
+                const item = stateRef.current.items.find(i => i.id === itemId);
+                if (!item) return;
+                if (stateRef.current.voidMatter < 50) {
+                    addLog("Matéria do Vazio insuficiente! Custo: 50", "error");
+                    return;
+                }
+
+                setVoidMatter(vm => vm - 50);
+
+                const VOID_AFFIXES: ItemAffix[] = [
+                    { id: 'v_abyssal_touch', name: 'Toque Abissal', stat: 'execute', value: 0.20 },
+                    { id: 'v_void_leech', name: 'Dreno de Vácuo', stat: 'lifesteal', value: 0.025 },
+                    { id: 'v_entropy', name: 'Entropia', stat: 'damage_boost', value: 0.20 },
+                    { id: 'v_quantum_phase', name: 'Dobra Espacial', stat: 'dodge', value: 0.12 },
+                    { id: 'v_dark_pact', name: 'Pacto Sombrio', stat: 'crit_damage', value: 0.35 }
+                ];
+
+                const rolledAffix = VOID_AFFIXES[Math.floor(Math.random() * VOID_AFFIXES.length)];
+
+                setItems(prev => prev.map(i => i.id === itemId ? {
+                    ...i,
+                    voidAffix: rolledAffix,
+                    name: i.name.includes('(Infundido)') ? i.name : `${i.name} (Infundido)`
+                } : i));
+
+                addLog(`🌌 O item ${item.name} foi infundido com o poder do Vazio: ${rolledAffix.name}!`, 'success');
             }
         };
         return baseActions as GameActions;
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, monuments]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, monuments, elementalResonance, elementalEssences, ownedRelics, equippedRelics, bossRushActive, bossRushWave, bossRushMaxWave, bossRushCooldown, bossRushBoss]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
         const runTick = () => {
-            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers } = stateRef.current;
+            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers, bossRushActive, bossRushWave, bossRushCooldown, bossRushBoss } = stateRef.current;
             if (activeHeroes.length === 0 && !world.tower.active) return;
 
+            // Check Boss Rush fail
+            const livingCombatants = stateRef.current.heroes.filter(h => h.assignment === 'combat' && !h.isDead);
+            if (bossRushActive && livingCombatants.length === 0) {
+                setBossRushActive(false);
+                setBossRushBoss(null);
+                setBossRushCooldown(Date.now() + 60000);
+                addLog(`🏟️ Coliseu: Todos os heróis caíram! Run finalizada na onda ${bossRushWave}.`, 'danger');
+                return;
+            }
+
             const isTower = world.tower.active;
-            let targetBoss = isTower ? world.towerBoss : boss;
+            let targetBoss = bossRushActive && bossRushBoss ? bossRushBoss : (isTower ? world.towerBoss : boss);
 
             // VOID BOSS EMOJI FIX
             if (voidActive && !isTower) {
@@ -1532,8 +1705,8 @@ export const useGame = () => {
             }
 
             const moraleDamageMult = 0.5 + (teamMorale / 100) * 0.6;
-            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * getMonumentMultipliers().attack;
-            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? ((world.towerBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
+            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult, elementalResonance, items) * artifactMultipliers.damage * moraleDamageMult * getMonumentMultipliers().attack;
+            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? ((world.towerBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers(), elementalResonance, items, equippedRelics);
 
             damageAccumulator.current += res.totalDmg;
 
@@ -1591,8 +1764,11 @@ export const useGame = () => {
             const townHallLevel = buildings.find(b => b.id === 'town_hall')?.level || 0;
             const townHallGoldMult = 1 + (townHallLevel * 0.05); // 5% per level
 
-            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * getMonumentMultipliers().gold;
-            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0));
+            const neutralRes = elementalResonance?.neutral || 0;
+            const resonanceMult = 1 + neutralRes * 0.015;
+
+            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * getMonumentMultipliers().gold * resonanceMult;
+            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0)) * resonanceMult;
 
             const moraleXpMult = 0.5 + (teamMorale / 100) * 0.7;
 
@@ -1601,6 +1777,13 @@ export const useGame = () => {
                 
                 // Aumenta a moral nas vitórias
                 setTeamMorale(prev => Math.min(100, prev + 5));
+
+                // Ganhar essências elementais
+                const bossEl = currentBoss.element || 'neutral';
+                setElementalEssences(prev => ({
+                    ...prev,
+                    [bossEl]: (prev[bossEl] || 0) + (isTower ? 1 : 5)
+                }));
 
                 const xpGain = Math.floor(currentBoss.level * 10 * finalXpMult * moraleXpMult);
                 const goldGain = Math.floor(currentBoss.level * 50 * finalGoldMult);
@@ -1615,17 +1798,47 @@ export const useGame = () => {
 
                 setMonsterKills(prev => ({ ...prev, [currentBoss.name]: (prev[currentBoss.name] || 0) + 1 }));
 
-                // Increase variety and level
-                const nextLevel = currentBoss.level + 1;
-                const nextBossData = getNextBoss(nextLevel);
+                if (bossRushActive && bossRushBoss) {
+                    const nextWave = bossRushWave + 1;
+                    setBossRushWave(nextWave);
+                    if (nextWave > bossRushMaxWave) setBossRushMaxWave(nextWave);
 
-                if (isTower) {
-                    world.setTower(p => ({ ...p, floor: p.floor + 1, maxFloor: Math.max(p.maxFloor, p.floor + 1) }));
-                    world.setTowerBoss({ ...nextBossData, id: `tower-${nextLevel}` });
-                    addLog(`Torre Andar ${world.tower.floor} Concluído! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
+                    if (nextWave % 5 === 0) {
+                        const rewardGold = nextWave * 200;
+                        const rewardSouls = nextWave * 10;
+                        const rewardVoid = Math.floor(nextWave / 5) * 5;
+                        setGold(g => g + rewardGold);
+                        setSouls(s => s + rewardSouls);
+                        setVoidMatter(vm => vm + rewardVoid);
+                        addLog(`🏟️ Coliseu: Baú da Onda ${nextWave} aberto! Ganhado +${rewardGold} Ouro, +${rewardSouls} Almas, +${rewardVoid} Matéria do Vazio`, 'success');
+                    }
+
+                    const nextBossData = getNextBoss(nextWave * 2);
+                    setBossRushBoss({
+                        ...nextBossData,
+                        id: `bossrush-${nextWave}`,
+                        level: nextWave * 2,
+                        stats: {
+                            ...nextBossData.stats,
+                            maxHp: Math.floor(nextBossData.stats.maxHp * 1.5),
+                            hp: Math.floor(nextBossData.stats.maxHp * 1.5),
+                            attack: Math.floor(nextBossData.stats.attack * 1.2)
+                        }
+                    });
+                    addLog(`🏟️ Coliseu: Onda ${nextWave} iniciada! Próximo oponente: ${nextBossData.name}`, 'info');
                 } else {
-                    setBoss(p => ({ ...p, ...nextBossData }));
-                    addLog(`Boss ${currentBoss.name} Derrotado! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
+                    // Increase variety and level
+                    const nextLevel = currentBoss.level + 1;
+                    const nextBossData = getNextBoss(nextLevel);
+
+                    if (isTower) {
+                        world.setTower(p => ({ ...p, floor: p.floor + 1, maxFloor: Math.max(p.maxFloor, p.floor + 1) }));
+                        world.setTowerBoss({ ...nextBossData, id: `tower-${nextLevel}` });
+                        addLog(`Torre Andar ${world.tower.floor} Concluído! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
+                    } else {
+                        setBoss(p => ({ ...p, ...nextBossData }));
+                        addLog(`Boss ${currentBoss.name} Derrotado! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
+                    }
                 }
 
                 // Award Class Mastery XP
@@ -1651,7 +1864,9 @@ export const useGame = () => {
                     });
                 });
             } else {
-                if (isTower) {
+                if (bossRushActive && bossRushBoss) {
+                    setBossRushBoss(p => p ? ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }) : null);
+                } else if (isTower) {
                     world.setTowerBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
                 } else {
                     setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
@@ -1697,7 +1912,10 @@ export const useGame = () => {
                     // Reduz moral na queda de heróis
                     if (h.isDead && !oldHero.isDead) {
                         h = { ...h, deathTime: now };
-                        setTeamMorale(prev => Math.max(0, prev - 10));
+                        setTeamMorale(prev => {
+                            const next = Math.max(0, prev - 10);
+                            return equippedRelics.includes('relic_insignia') ? Math.max(50, next) : next;
+                        });
                     }
 
                     // Auto-revive logic: 10 seconds (10000ms)
@@ -1817,6 +2035,8 @@ export const useGame = () => {
             monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, showCampfire,
             outerSpaceUnlocked, prestigeNodes, townVisited, portalConfig, guildQueue,
             arenaRank, glory, quests, theme, autoSellRarity, arenaOpponents,
+            elementalResonance, elementalEssences, ownedRelics, equippedRelics,
+            bossRushActive, bossRushWave, bossRushMaxWave, bossRushBoss, bossRushCooldown,
 
 
             // App.tsx State
@@ -1863,7 +2083,7 @@ export const useGame = () => {
             guildXpMult,
             setGameStats
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, elementalResonance, elementalEssences, ownedRelics, equippedRelics, bossRushActive, bossRushWave, bossRushMaxWave, bossRushBoss, bossRushCooldown]);
 
     return result;
 };

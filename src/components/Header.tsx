@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building as BuildingIcon, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock, ShieldAlert, Lock, PawPrint } from 'lucide-react';
+import { Ghost, Coins, Crown, Hammer, Briefcase, Castle, Building as BuildingIcon, Key, Skull, Volume2, VolumeX, Zap, Settings, Swords, Scroll, Gem, Trophy, HelpCircle, BookOpen, BarChart2, Anchor, FlaskConical, Map, Leaf, Home, Calendar, Flame, Clock, ShieldAlert, Lock, PawPrint, Sparkles } from 'lucide-react';
 import { formatNumber } from '../utils';
 import type { Boss, Resources, Tower, Guild, Building } from '../engine/types';
 import type { WeatherType } from '../engine/weather'; // Phase 48
@@ -68,6 +68,10 @@ interface HeaderProps {
     buildings?: Building[];
     setShowJourney: (v: boolean) => void;
     teamMorale?: number;
+    setShowBossRush?: (v: boolean) => void;
+    setShowElementalResonance?: (v: boolean) => void;
+    setShowVoidInfusion?: (v: boolean) => void;
+    setShowRelicChamber?: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -94,7 +98,11 @@ export const Header: React.FC<HeaderProps> = ({
     voidAscensions = 0,
     buildings = [],
     setShowJourney,
-    teamMorale = 100
+    teamMorale = 100,
+    setShowBossRush,
+    setShowElementalResonance,
+    setShowVoidInfusion,
+    setShowRelicChamber
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
 
@@ -183,6 +191,16 @@ export const Header: React.FC<HeaderProps> = ({
                     {!unlocks.world_boss && <Lock size={8} />}
                 </button>
             )}
+            {setShowBossRush && (
+                <button
+                    onClick={() => { if (unlocks.boss_rush) setShowBossRush(true); }}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.boss_rush ? 'bg-orange-950 text-orange-350 border-orange-500 hover:bg-orange-900' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={unlocks.boss_rush ? "Coliseu das Lendas (Boss Rush)" : "Bloqueado: Requer Chefe Nível 80"}
+                >
+                    <Swords size={12} /> {unlocks.boss_rush ? "Coliseu" : "???"}
+                    {!unlocks.boss_rush && <Lock size={8} />}
+                </button>
+            )}
 
             {/* Vazio e Fogueira removidos a pedido do usuário */}
             {/* Phase 47: Guild War */}
@@ -217,6 +235,26 @@ export const Header: React.FC<HeaderProps> = ({
                     <Gem size={12} /> {hasRunes ? "Runas" : "???"}
                     {!hasRunes && <Lock size={8} />}
                 </button>
+                {setShowElementalResonance && (
+                    <button
+                        onClick={() => { if (unlocks.elemental_resonance) setShowElementalResonance(true); }}
+                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.elemental_resonance ? 'bg-indigo-950 text-indigo-300 border-indigo-500 hover:bg-indigo-900' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                        title={unlocks.elemental_resonance ? "Templo Elemental (Ressonância)" : "Bloqueado: Requer Andar 150"}
+                    >
+                        <Sparkles size={12} /> {unlocks.elemental_resonance ? "Templo" : "???"}
+                        {!unlocks.elemental_resonance && <Lock size={8} />}
+                    </button>
+                )}
+                {setShowVoidInfusion && (
+                    <button
+                        onClick={() => { if (unlocks.void_infusion) setShowVoidInfusion(true); }}
+                        className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.void_infusion ? 'bg-purple-950 text-purple-300 border-purple-500 hover:bg-purple-900' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                        title={unlocks.void_infusion ? "Forja do Vazio (Infusão)" : "Bloqueado: Requer 3 Ascensões"}
+                    >
+                        <Zap size={12} /> {unlocks.void_infusion ? "Forja Vazio" : "???"}
+                        {!unlocks.void_infusion && <Lock size={8} />}
+                    </button>
+                )}
             </>
         );
     };
@@ -238,6 +276,16 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                     <Settings size={12} /> {unlocks.starlight ? "Auto" : "???"}
                     {!unlocks.starlight && <Lock size={8} />}
+                </button>
+            )}
+            {setShowRelicChamber && (
+                <button
+                    onClick={() => { if (unlocks.relic_chamber) setShowRelicChamber(true); }}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.relic_chamber ? 'bg-amber-950 text-amber-300 border-amber-500 hover:bg-amber-900' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={unlocks.relic_chamber ? "Câmara de Relíquias" : "Bloqueado: Requer Andar 220"}
+                >
+                    <BookOpen size={12} /> {unlocks.relic_chamber ? "Câmara" : "???"}
+                    {!unlocks.relic_chamber && <Lock size={8} />}
                 </button>
             )}
             <button onClick={() => setShowSettings(true)} className="btn-retro bg-gray-700 p-2 rounded hover:bg-gray-600"><Settings size={12} /></button>

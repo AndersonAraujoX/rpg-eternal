@@ -89,6 +89,7 @@ export interface Item {
     runes?: Rune[];
     prefix?: ItemAffix;
     suffix?: ItemAffix;
+    voidAffix?: ItemAffix;
     quality?: number;
     level?: number;
     xp?: number;
@@ -386,6 +387,17 @@ export interface TownState {
     stability: number;
     crime: number;
     relics: AncientRelic[];
+}
+
+export interface ChamberRelic {
+    id: string;
+    name: string;
+    description: string;
+    bonusType: 'gold_gain' | 'game_speed' | 'max_hp' | 'moral_lock' | 'dodge_chance' | 'alchemy_reduction' | 'double_fish';
+    bonusValue: number;
+    cost: number;
+    currency: 'gold' | 'souls' | 'voidMatter';
+    emoji: string;
 }
 
 
@@ -755,6 +767,14 @@ export interface GameActions {
     invokeWeather: (weather: WeatherType) => void;
     pledgeDeity: (deityId: string | null) => void;
     offerToDeity: (offeringType: 'souls' | 'divinity') => void;
+    // New Progression Systems
+    upgradeResonance: (element: ElementType) => void;
+    buyRelic: (relicId: string) => void;
+    equipRelic: (relicId: string, slotIndex: number) => void;
+    unequipRelic: (slotIndex: number) => void;
+    startBossRush: () => void;
+    endBossRush: (success: boolean) => void;
+    infuseItemWithVoid: (itemId: string) => void;
 }
 
 export interface WorldBoss extends Boss {

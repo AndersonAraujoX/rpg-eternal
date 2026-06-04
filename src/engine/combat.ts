@@ -1,4 +1,4 @@
-import type { Hero, Boss, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement, CombatEvent } from './types';
+import type { Hero, Boss, Pet, ConstellationNode, Talent, Artifact, MonsterCard, Achievement, CombatEvent, Item } from './types';
 import type { Synergy } from './synergies';
 import { checkActiveCombos, type ComboDefinition } from './combos';
 import { type TowerMutator } from './mutators';
@@ -38,7 +38,19 @@ export const calculateHeroPower = (hero: Hero): number => {
     return power;
 };
 
-export const calculateDamageMultiplier = (souls: number, talents: Talent[], constellations: ConstellationNode[], artifacts: Artifact[], _boss: Boss, cards: MonsterCard[], achievements: Achievement[] = [], pets: Pet[] = [], galaxyDamageMult: number = 0) => {
+export const calculateDamageMultiplier = (
+    souls: number,
+    talents: Talent[],
+    constellations: ConstellationNode[],
+    artifacts: Artifact[],
+    _boss: Boss,
+    cards: MonsterCard[],
+    achievements: Achievement[] = [],
+    pets: Pet[] = [],
+    galaxyDamageMult: number = 0,
+    elementalResonance?: Record<string, number>,
+    items: Item[] = []
+) => {
     const _talents = talents || [];
     const _constellations = constellations || [];
     const _artifacts = artifacts || [];
@@ -86,6 +98,19 @@ export const calculateDamageMultiplier = (souls: number, talents: Talent[], cons
     // Additive Galaxy Bonus
     totalBonus += galaxyDamageMult;
 
+    // Additive Elemental Resonance Fire and Light Bonus
+    if (elementalResonance) {
+        const fireLvl = elementalResonance.fire || 0;
+        const lightLvl = elementalResonance.light || 0;
+        totalBonus += (fireLvl * 0.01) + (lightLvl * 0.015);
+    }
+
+    // Additive Void Affix entropy bonus
+    if (items) {
+        const entropyCount = items.filter(i => i.voidAffix?.id === 'v_entropy').length;
+        totalBonus += entropyCount * 0.20;
+    }
+
     // Return final linear multiplier to prevent infinite scaling
     return 1 + totalBonus;
 };
@@ -105,39 +130,66 @@ export const processCombatTurn = (
     weather?: WeatherType,
     divinity: number = 0,
     bonds?: Record<string, { xp: number; level: number; type: string }>,
-    monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number }
+    monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number },
+    elementalResonance?: Record<string, number>,
+    items: Item[] = [],
+    equippedRelics: string[] = []
 ) => {
     let totalDmg = 0;
     let crits = 0;
     const events: CombatEvent[] = [];
+
+    // Extract Void Affixes
+    const activeVoidAffixes = items.map(i => i.voidAffix).filter(Boolean) as any[];
+    const hasAbyssalTouch = activeVoidAffixes.some(a => a.id === 'v_abyssal_touch');
+    const hasEntropy = activeVoidAffixes.some(a => a.id === 'v_entropy');
+    const voidLeechCount = activeVoidAffixes.filter(a => a.id === 'v_void_leech').length;
+    const quantumPhaseCount = activeVoidAffixes.filter(a => a.id === 'v_quantum_phase').length;
+    const darkPactCount = activeVoidAffixes.filter(a => a.id === 'v_dark_pact').length;
+
+    // Extract Elemental Resonance levels
+    const fireRes = elementalResonance?.fire || 0;
+    const waterRes = elementalResonance?.water || 0;
+    const natureRes = elementalResonance?.nature || 0;
+    const lightRes = elementalResonance?.light || 0;
+    const darkRes = elementalResonance?.dark || 0;
+
+    // Extract Relics
+    const hasVoidOrb = equippedRelics.includes('relic_void_orb');
+
+    // Execução Abissal
+    if (hasAbyssalTouch && !boss.isDead && boss.stats.hp > 0 && (boss.stats.hp / boss.stats.maxHp) <= 0.20 && Math.random() < 0.10) {
+        boss.stats.hp = 0;
+        events.push({
+            id: `execute-${Date.now()}-${Math.random()}`,
+            type: 'reaction',
+            text: '⚡ EXECUÇÃO ABISSAL!',
+            x: 50,
+            y: 40
+        });
+    }
  
     // Extract Synergy Effects
-    const lifeSteal = (activeSynergies.find(s => s.type === 'vampirism')?.value || 0) + (monumentEffects?.lifesteal || 0);
+    const lifeSteal = (activeSynergies.find(s => s.type === 'vampirism')?.value || 0) + (monumentEffects?.lifesteal || 0) + (voidLeechCount * 0.025) + (lightRes * 0.01);
     const cdReduction = activeSynergies.find(s => s.type === 'cd_reduction')?.value || 0;
-    const critDmgBonus = activeSynergies.find(s => s.type === 'crit_dmg')?.value || 0;
+    const critDmgBonus = (activeSynergies.find(s => s.type === 'crit_dmg')?.value || 0) + (darkPactCount * 0.35) + (darkRes * 0.02);
     const attackSpeedBonus = activeSynergies.find(s => s.type === 'attackSpeed')?.value || 0;
-    // const mitigation = (activeSynergies.find(s => s.type === 'mitigation')?.value || 0) + (mutator?.id === 'iron_wall' ? 0.5 : 0);
 
     // Elemental Reactions
     const burnEffect = activeSynergies.find(s => s.type === 'burn');
     const freezeEffect = activeSynergies.find(s => s.type === 'freeze');
 
-    // Apply Attack Speed logic: scale additively but cap the max impact 
-    // to prevent astronomical numbers or intervals hitting 0.
-    const cappedSpeedBonus = Math.min(attackSpeedBonus, 3.0); // Max +300% effective speed gain
+    // Apply Attack Speed logic
+    const cappedSpeedBonus = Math.min(attackSpeedBonus, 3.0);
     let effectiveDamageMult = damageMult * (1 + cappedSpeedBonus);
 
     // Burn Damage (DoT)
     if (burnEffect && !boss.isDead) {
-        // 5% Max HP per second implies 0.05 * (tickDuration / 1000)
-        // Cap burn to avoid instant cheese on huge bosses? No, % is fun.
-        // Let's cap at 100 * Hero Power to prevent 1-shotting raid bosses? 
         const burnDmg = Math.floor(boss.stats.maxHp * burnEffect.value * (tickDuration / 1000));
         const actualBurn = Math.max(1, burnDmg);
         totalDmg += actualBurn;
 
-        // Add Burn Event (throttled visually or just added)
-        if (Math.random() < 0.2) { // Don't spam particles every tick
+        if (Math.random() < 0.2) {
             events.push({
                 id: `burn-${Date.now()}-${Math.random()}`,
                 type: 'reaction',
@@ -151,7 +203,7 @@ export const processCombatTurn = (
     }
 
     if (freezeEffect) {
-        if (Math.random() < 0.05) { // Occasional freeze status
+        if (Math.random() < 0.05) {
             events.push({
                 id: `freeze-${Date.now()}-${Math.random()}`,
                 type: 'status',
@@ -167,7 +219,7 @@ export const processCombatTurn = (
 
     let updatedHeroes = heroes.map((h) => {
         if (h.assignment !== 'combat' || !h.unlocked) return h;
-        const deathPenalty = h.isDead ? 0.5 : 1; // Dead heroes deal 50% damage
+        const deathPenalty = h.isDead ? 0.5 : 1;
 
         let stats = { ...h.stats };
         // Apply Divinity
@@ -187,8 +239,23 @@ export const processCombatTurn = (
             stats.speed = Math.floor(stats.speed * monumentEffects.speed);
             stats.maxHp = Math.floor(stats.maxHp * monumentEffects.maxHp);
         }
+
+        // Apply Resonance & Relics
+        stats.maxHp = Math.floor(stats.maxHp * (1 + (waterRes * 0.015) + (equippedRelics.includes('relic_chalice') ? 0.25 : 0)));
+        stats.defense = Math.floor(stats.defense * (1 + (waterRes * 0.015)));
+        stats.speed = Math.floor(stats.speed * (1 + (natureRes * 0.02)));
+
+        if (darkPactCount > 0) {
+            stats.defense = Math.floor(stats.defense * Math.pow(0.88, darkPactCount));
+        }
  
         let hp = h.stats.hp;
+        if (hp > stats.maxHp) hp = stats.maxHp;
+
+        // Entropy HP drain
+        if (hasEntropy && !h.isDead && hp > 0) {
+            hp = Math.max(1, hp - Math.floor(stats.maxHp * 0.01 * (tickDuration / 1000)));
+        }
 
         // Maldição do Sangue: perde 1% HP por tick
         if (h.curses?.includes('blood') && !h.isDead) {
@@ -259,6 +326,7 @@ export const processCombatTurn = (
         }
 
         let baseDmg = stats.attack * activeDamageMult * getElementalMult(h.element, boss.element);
+        baseDmg *= (1 + fireRes * 0.015); // +1.5% damage per level of fire resonance
 
         if (weather && WEATHER_DATA[weather]?.elementModifiers[h.element]) {
             baseDmg *= WEATHER_DATA[weather].elementModifiers[h.element]!;
@@ -268,12 +336,11 @@ export const processCombatTurn = (
         const dayNightPhase = getDayNightPhase(Math.floor(Date.now() / 1000));
         const dayNightEffect = DAY_NIGHT_DATA[dayNightPhase];
         baseDmg *= dayNightEffect.damageMultiplier;
-        // Bônus elemental do ciclo (ex: dark +50% à noite)
         if (dayNightEffect.elementBonus[h.element]) {
             baseDmg *= dayNightEffect.elementBonus[h.element]!;
         }
 
-        // 🧬 Mutação Berserk: +40% dano, mas pode atacar aliados
+        // 🧬 Mutação Berserk
         if (h.isMutated) {
             baseDmg *= 1.4;
             if (Math.random() < 0.15) {
@@ -287,7 +354,6 @@ export const processCombatTurn = (
         }
 
         let skillDmg = 0;
-        // Active Skills Logic
         if (h.skills && !skipTurn && !attackAlly) {
             h.skills.forEach(s => {
                 if (s.type === 'active') {
@@ -331,7 +397,6 @@ export const processCombatTurn = (
 
                                 skillDmg += rawSkillDmg;
                             } else if (processedSkill.effectType === 'heal') {
-                                // HEAL LOGIC
                                 let targetHero = h;
                                 if (processedSkill.target === 'lowest_hp') {
                                     const allies = heroes.filter(a => a.unlocked && !a.isDead);
@@ -340,7 +405,8 @@ export const processCombatTurn = (
                                     }
                                 }
 
-                                const healAmount = stats.maxHp * processedSkill.value;
+                                let healAmount = stats.maxHp * processedSkill.value;
+                                healAmount *= (1 + (lightRes * 0.015));
                                 heroHeals[targetHero.id] = (heroHeals[targetHero.id] || 0) + healAmount;
                                 events.push({ id: `heal-${h.id}-${Date.now()}`, type: 'status', text: 'HEAL', value: healAmount, x: 50, y: 50 });
                             }
@@ -352,7 +418,8 @@ export const processCombatTurn = (
         }
 
         const critRoll = Math.random();
-        if (critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0)) {
+        const finalCritChance = critChance + (h.class === 'Rogue' ? 0.3 : 0) + (darkRes * 0.01);
+        if (critRoll < finalCritChance) {
             const critMult = 2 + critDmgBonus;
             baseDmg *= critMult;
             skillDmg *= critMult;
@@ -383,22 +450,27 @@ export const processCombatTurn = (
 
         // BOSS ATTACK LOGIC — only hits living heroes
         const attackChance = 0.3 * (tickDuration / 1000);
+        const dodgeChance = quantumPhaseCount * 0.12;
 
         if (!boss.isDead && !h.isDead && Math.random() < attackChance) {
-            const bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
-            let nextHp = hp - bossDmg;
-            if (h.curses?.includes('abyss')) {
-                nextHp = Math.max(1, nextHp); // Correntes do Abismo: não morre
-            }
-            hp = Math.max(0, nextHp);
-            if (hp <= 0) {
-                events.push({ id: `death-${h.id}-${Date.now()}`, type: 'status', text: 'FALLEN', x: 50, y: 50 });
+            if (Math.random() < dodgeChance) {
+                events.push({ id: `dodge-${h.id}-${Date.now()}`, type: 'status', text: 'EVADIDO 🌀', x: 50, y: 50 });
             } else {
-                events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `-${Math.floor(bossDmg)}`, x: 50, y: 50 });
+                let bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
+                if (hasVoidOrb) bossDmg = Math.floor(bossDmg * 0.88);
+                let nextHp = hp - bossDmg;
+                if (h.curses?.includes('abyss')) {
+                    nextHp = Math.max(1, nextHp);
+                }
+                hp = Math.max(0, nextHp);
+                if (hp <= 0) {
+                    events.push({ id: `death-${h.id}-${Date.now()}`, type: 'status', text: 'FALLEN', x: 50, y: 50 });
+                } else {
+                    events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `-${Math.floor(bossDmg)}`, x: 50, y: 50 });
+                }
             }
         }
 
-        // 🧬 Auto-corrupção ao atingir insanidade 100
         const shouldMutate = newInsanity >= 100 && !h.isMutated;
         const MUTATION_TYPES: Hero['mutationType'][] = ['berserk', 'shadow', 'arcane', 'cursed'];
         const randomMutation = MUTATION_TYPES[Math.floor(Math.random() * MUTATION_TYPES.length)];
@@ -414,22 +486,19 @@ export const processCombatTurn = (
         };
     });
 
-    // Final pass to apply heals (Referential stability: only clone if changed)
+    // Final pass to apply heals
     updatedHeroes = updatedHeroes.map((h, i) => {
         const heal = heroHeals[h.id];
-        const originalHero = heroes[i]; // Reference to initial input
+        const originalHero = heroes[i];
 
         if (heal) {
             const newHp = Math.min(h.stats.maxHp, h.stats.hp + heal);
-            // If even after heal/insanity/damage nothing changed significantly from the START of the turn
-            // we could return originalHero. But usually combat implies changes.
             return { ...h, isDead: newHp <= 0, stats: { ...h.stats, hp: newHp } };
         }
 
-        // Deep check: did insanity OR hp change from the HEROES array passed in?
         const hasDmg = h.stats.hp !== originalHero.stats.hp;
         const hasInsanity = h.insanity !== originalHero.insanity;
-        const hasSkillChange = h.skills !== originalHero.skills; // skills are mutated in-place sometimes in the loop above? No, let's be safe.
+        const hasSkillChange = h.skills !== originalHero.skills;
 
         if (!hasDmg && !hasInsanity && !hasSkillChange && h.isDead === originalHero.isDead) {
             return originalHero;

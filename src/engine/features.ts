@@ -231,6 +231,58 @@ export const FEATURES_LIST: FeatureDefinition[] = [
             const current = Math.min(2, state.voidAscensions);
             return { current, max: 2, percentage: Math.floor((current / 2) * 100) };
         }
+    },
+    {
+        id: 'boss_rush',
+        name: 'Coliseu das Lendas',
+        description: 'Desafie chefes consecutivos sem curar para obter recompensas extras.',
+        icon: '🏟️',
+        unlockRequirementText: 'Atingir Nível de Chefe 80',
+        tab: 'combat',
+        checkUnlocked: (state) => state.bossLevel >= 80,
+        getProgress: (state) => {
+            const current = Math.min(80, state.bossLevel);
+            return { current, max: 80, percentage: Math.floor((current / 80) * 100) };
+        }
+    },
+    {
+        id: 'elemental_resonance',
+        name: 'Templo Elemental',
+        description: 'Desbloqueie passivas elementais usando essências de monstros.',
+        icon: '🔮',
+        unlockRequirementText: 'Alcançar Andar 150 na Torre',
+        tab: 'skills',
+        checkUnlocked: (state) => state.highestFloor >= 150,
+        getProgress: (state) => {
+            const current = Math.min(150, state.highestFloor);
+            return { current, max: 150, percentage: Math.floor((current / 150) * 100) };
+        }
+    },
+    {
+        id: 'void_infusion',
+        name: 'Forja do Vazio (Infusão)',
+        description: 'Infundir equipamentos com Matéria do Vazio para obter atributos corrompidos.',
+        icon: '🌌',
+        unlockRequirementText: 'Realizar 3 Ascensões Divinas (Rebirths)',
+        tab: 'skills',
+        checkUnlocked: (state) => state.voidAscensions >= 3,
+        getProgress: (state) => {
+            const current = Math.min(3, state.voidAscensions);
+            return { current, max: 3, percentage: Math.floor((current / 3) * 100) };
+        }
+    },
+    {
+        id: 'relic_chamber',
+        name: 'Câmara de Relíquias',
+        description: 'Equipe artefatos antigos que alteram as regras do jogo.',
+        icon: '🏺',
+        unlockRequirementText: 'Alcançar Andar 220 na Torre',
+        tab: 'system',
+        checkUnlocked: (state) => state.highestFloor >= 220,
+        getProgress: (state) => {
+            const current = Math.min(220, state.highestFloor);
+            return { current, max: 220, percentage: Math.floor((current / 220) * 100) };
+        }
     }
 ];
 

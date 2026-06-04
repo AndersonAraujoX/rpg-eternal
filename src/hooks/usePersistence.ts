@@ -94,6 +94,18 @@ export interface PersistenceProps {
     setGardenPlots: React.Dispatch<React.SetStateAction<GardenPlot[]>>;
     runes: Rune[];
     setRunes: React.Dispatch<React.SetStateAction<Rune[]>>;
+    elementalResonance: Record<ElementType, number>;
+    setElementalResonance: React.Dispatch<React.SetStateAction<Record<ElementType, number>>>;
+    elementalEssences: Record<ElementType, number>;
+    setElementalEssences: React.Dispatch<React.SetStateAction<Record<ElementType, number>>>;
+    ownedRelics: string[];
+    setOwnedRelics: React.Dispatch<React.SetStateAction<string[]>>;
+    equippedRelics: string[];
+    setEquippedRelics: React.Dispatch<React.SetStateAction<string[]>>;
+    bossRushWave: number;
+    setBossRushWave: React.Dispatch<React.SetStateAction<number>>;
+    bossRushMaxWave: number;
+    setBossRushMaxWave: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -127,7 +139,19 @@ export const usePersistence = (props: PersistenceProps) => {
         setMonuments,
         setGardenPlots,
         runes,
-        setRunes
+        setRunes,
+        elementalResonance,
+        setElementalResonance,
+        elementalEssences,
+        setElementalEssences,
+        ownedRelics,
+        setOwnedRelics,
+        equippedRelics,
+        setEquippedRelics,
+        bossRushWave,
+        setBossRushWave,
+        bossRushMaxWave,
+        setBossRushMaxWave
     } = props;
 
 
@@ -274,6 +298,12 @@ export const usePersistence = (props: PersistenceProps) => {
                 else setGardenPlots(INITIAL_GARDEN);
                 if (state.runes) setRunes(state.runes);
                 else setRunes([]);
+                if (state.elementalResonance) setElementalResonance(state.elementalResonance);
+                if (state.elementalEssences) setElementalEssences(state.elementalEssences);
+                if (state.ownedRelics) setOwnedRelics(state.ownedRelics);
+                if (state.equippedRelics) setEquippedRelics(state.equippedRelics);
+                if (state.bossRushWave) setBossRushWave(state.bossRushWave);
+                if (state.bossRushMaxWave) setBossRushMaxWave(state.bossRushMaxWave);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -384,6 +414,12 @@ export const usePersistence = (props: PersistenceProps) => {
                 gardenPlots: p.gardenPlots,
                 items: compactItems,
                 runes: p.runes,
+                elementalResonance: p.elementalResonance,
+                elementalEssences: p.elementalEssences,
+                ownedRelics: p.ownedRelics,
+                equippedRelics: p.equippedRelics,
+                bossRushWave: p.bossRushWave,
+                bossRushMaxWave: p.bossRushMaxWave,
                 lastSaveTime: Date.now()
             };
 
