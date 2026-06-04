@@ -594,6 +594,14 @@ export const useGame = () => {
         return () => clearInterval(timer);
     }, [raidActive, voidActive, calculatedPartyPower]);
 
+    // Spaceship fuel & hull passive regeneration (every 5 seconds)
+    useEffect(() => {
+        const fuelTimer = setInterval(() => {
+            galaxyState.refuelShip();
+        }, 5000);
+        return () => clearInterval(fuelTimer);
+    }, []);
+
 
     const ACTIONS: GameActions = useMemo(() => {
         const baseActions = {
@@ -1196,7 +1204,24 @@ export const useGame = () => {
                 }
             },
             buyDarkGift: (cost: number, _e: string) => { if (voidMatter >= cost) setVoidMatter(v => v - cost); },
-            ascendToVoid: () => setVoidActive(true),
+            ascendToVoid: () => {
+                const currentFloor = world.tower.floor || 1;
+                if (currentFloor < 100) {
+                    addLog(`Ascensão bloqueada! Você precisa alcançar o Andar 100 da Torre. (Atual: ${currentFloor})`, 'error');
+                    return;
+                }
+                // Perform Void Ascension: reset progress, gain permanent power
+                setVoidAscensions(a => a + 1);
+                setDivinity(d => d + 1);
+                setSouls(0);
+                setGold(0);
+                setItems([]);
+                world.setTower(p => ({ ...p, floor: 1, active: false }));
+                setBoss(INITIAL_BOSS);
+                setHeroes(prev => prev.map(h => ({ ...h, level: 1 })));
+                addLog('🌌 ASCENSÃO DO VAZIO! Seu progresso foi reiniciado, mas você ganhou poder permanente! +1 Divindade, +1 Ascensão do Vazio.', 'achievement');
+                soundManager.playLevelUp();
+            },
             transmuteResources: (from: keyof Resources, to: keyof Resources, amount: number) => {
                 const res = transmuteResources(from, to, amount, resources);
                 if (res.success) {
