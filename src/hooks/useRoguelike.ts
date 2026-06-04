@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import type { 
-    RoguelikeClass, RoguelikeRunState, RoguelikeNode, RoguelikeUpgrade, RoguelikeRelic
+    RoguelikeClass, RoguelikeRunState, RoguelikeNode, RoguelikeUpgrade, RoguelikeRelic,
+    PlanetaryBiome, PlanetaryExpedition
 } from '../engine/roguelike';
 import { 
     ROGUELIKE_UPGRADES, RELICS_POOL, generateRoguelikeNodes, getStartingHero, 
-    getRandomRelic, getEnemyForNode, EVENTS_POOL
+    getRandomRelic, getEnemyForNode, EVENTS_POOL,
+    generatePlanetaryNodes, getPlanetaryEnemyForNode, getPlanetaryEvent,
+    getGalaxyBonusForRoguelike
 } from '../engine/roguelike';
 
 export function useRoguelike() {
@@ -18,7 +21,8 @@ export function useRoguelike() {
         relics: [],
         combatState: null,
         eventState: null,
-        status: 'none'
+        status: 'none',
+        planetaryExpedition: null
     });
 
     const startRoguelikeRun = (classType: RoguelikeClass) => {
@@ -32,7 +36,41 @@ export function useRoguelike() {
             relics: [],
             combatState: null,
             eventState: null,
-            status: 'exploring'
+            status: 'exploring',
+            planetaryExpedition: null
+        });
+    };
+
+    const startPlanetaryRun = (
+        classType: RoguelikeClass,
+        sectorId: string,
+        sectorName: string,
+        biome: PlanetaryBiome,
+        sectorLevel: number,
+        galaxySectors: { type: string; isOwned: boolean }[]
+    ) => {
+        const galaxyBonus = getGalaxyBonusForRoguelike(galaxySectors);
+        const hero = getStartingHero(classType, roguelikeUpgrades);
+        // Apply galaxy bonuses
+        hero.maxHp += galaxyBonus.bonusHp;
+        hero.hp += galaxyBonus.bonusHp;
+        hero.attack += galaxyBonus.bonusAtk;
+        hero.magic += galaxyBonus.bonusMag;
+        hero.defense += galaxyBonus.bonusDef;
+
+        const nodes = generatePlanetaryNodes(sectorLevel, biome);
+        const expedition: PlanetaryExpedition = { sectorId, sectorName, biome, sectorLevel };
+
+        setRoguelikeRun({
+            hero,
+            nodes,
+            currentNodeIndex: -1,
+            gold: 10,
+            relics: [],
+            combatState: null,
+            eventState: null,
+            status: 'exploring',
+            planetaryExpedition: expedition
         });
     };
 
@@ -52,7 +90,11 @@ export function useRoguelike() {
 
         if (nextNode.type === 'combat' || nextNode.type === 'elite' || nextNode.type === 'boss') {
             nextStatus = 'combat';
-            const enemy = getEnemyForNode(nextNode.type, index);
+            // Use planetary enemies if in a planetary expedition
+            const expedition = roguelikeRun.planetaryExpedition;
+            const enemy = expedition
+                ? getPlanetaryEnemyForNode(nextNode.type, index, expedition.biome, expedition.sectorLevel)
+                : getEnemyForNode(nextNode.type, index);
             combatState = {
                 enemy,
                 playerTurn: true,
@@ -62,7 +104,10 @@ export function useRoguelike() {
             };
         } else if (nextNode.type === 'event') {
             nextStatus = 'event';
-            const randomEvent = EVENTS_POOL[Math.floor(Math.random() * EVENTS_POOL.length)];
+            const expedition = roguelikeRun.planetaryExpedition;
+            const randomEvent = expedition
+                ? getPlanetaryEvent(expedition.biome)
+                : EVENTS_POOL[Math.floor(Math.random() * EVENTS_POOL.length)];
             eventState = {
                 title: randomEvent.title,
                 description: randomEvent.description,
@@ -371,7 +416,8 @@ export function useRoguelike() {
             relics: [],
             combatState: null,
             eventState: null,
-            status: 'none'
+            status: 'none',
+            planetaryExpedition: null
         });
     };
 
@@ -382,6 +428,7 @@ export function useRoguelike() {
         setRoguelikeUpgrades,
         roguelikeRun,
         startRoguelikeRun,
+        startPlanetaryRun,
         selectNode,
         performCombatAction,
         resolveRest,

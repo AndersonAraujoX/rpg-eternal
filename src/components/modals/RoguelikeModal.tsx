@@ -5,7 +5,7 @@ import {
 import type { 
     RoguelikeClass, RoguelikeRunState, RoguelikeUpgrade 
 } from '../../engine/roguelike';
-import { ROGUELIKE_UPGRADES, RELICS_POOL } from '../../engine/roguelike';
+import { ROGUELIKE_UPGRADES, RELICS_POOL, getPlanetaryRunRewards } from '../../engine/roguelike';
 
 interface RoguelikeModalProps {
     isOpen: boolean;
@@ -88,6 +88,25 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
 
                 {/* Body Content */}
                 <div className="p-4 flex flex-col gap-4 overflow-y-auto max-h-[80vh]">
+                    {run.planetaryExpedition && (
+                        <div className="bg-gradient-to-r from-indigo-950 via-purple-900 to-indigo-950 border border-purple-500/50 rounded-lg p-3 flex justify-between items-center shadow-[0_0_15px_rgba(139,92,246,0.2)] animate-pulse">
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-xl">🌌</span>
+                                <div>
+                                    <div className="text-xs font-black uppercase text-purple-200 tracking-wider">
+                                        Expedição Planetária Ativa
+                                    </div>
+                                    <div className="text-[11px] text-purple-300 font-bold">
+                                        {run.planetaryExpedition.sectorName} (Nível {run.planetaryExpedition.sectorLevel})
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-[9px] bg-black/45 border border-purple-500/30 rounded px-2 py-1 font-mono text-purple-300 flex flex-col gap-0.5">
+                                <div>🚀 Bioma: {run.planetaryExpedition.biome.toUpperCase()}</div>
+                                <div>Bônus de Setores Aplicados!</div>
+                            </div>
+                        </div>
+                    )}
                     
                     {/* STATUS: NONE (Setup Run) */}
                     {run.status === 'none' && (
@@ -456,19 +475,53 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                                 <p className="text-xs text-slate-350">Seu herói superou todas as intempéries e derrotou o Chefe do 10º Andar!</p>
                             </div>
                             
-                            <div className="bg-slate-900 border border-slate-700/60 p-4 rounded text-xs text-slate-300 flex flex-col gap-2 min-w-[240px] font-mono mt-2 shadow-inner">
-                                <div className="text-amber-400 font-bold border-b border-slate-800 pb-1 flex justify-between">
-                                    <span>Recompensa Coletada:</span>
+                            {run.planetaryExpedition ? (() => {
+                                const rewards = getPlanetaryRunRewards(
+                                    run.planetaryExpedition.sectorLevel,
+                                    run.planetaryExpedition.biome,
+                                    true
+                                );
+                                return (
+                                    <div className="bg-slate-900 border border-purple-500/30 p-4 rounded text-xs text-slate-350 flex flex-col gap-2 min-w-[260px] font-mono mt-2 shadow-inner">
+                                        <div className="text-purple-400 font-bold border-b border-slate-800 pb-1 flex justify-between">
+                                            <span>Recompensas da Expedição:</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>⛽ Combustível Recuperado:</span>
+                                            <span className="text-cyan-400 font-bold">+{rewards.fuelReward}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>🛡️ Reparo do Casco:</span>
+                                            <span className="text-green-400 font-bold">+{rewards.hullRepair}</span>
+                                        </div>
+                                        {rewards.emberBonus > 0 && (
+                                            <div className="flex justify-between">
+                                                <span>🔥 Bônus de Frags:</span>
+                                                <span className="text-orange-400 font-bold">+{rewards.emberBonus}</span>
+                                            </div>
+                                        )}
+                                        {rewards.shipUpgrade && (
+                                            <div className="text-center text-[10px] text-yellow-400 font-bold animate-bounce mt-1">
+                                                🚀 Melhoria de Motor Adquirida!
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })() : (
+                                <div className="bg-slate-900 border border-slate-700/60 p-4 rounded text-xs text-slate-300 flex flex-col gap-2 min-w-[240px] font-mono mt-2 shadow-inner">
+                                    <div className="text-amber-400 font-bold border-b border-slate-800 pb-1 flex justify-between">
+                                        <span>Recompensa Coletada:</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>🔥 Fragmentos de Brasa:</span>
+                                        <span className="text-orange-400 font-bold">+10 (+Incursão)</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-400 text-[10px]">
+                                        <span>Ouro coletado na run:</span>
+                                        <span>{run.gold} Ouro (descartado)</span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>🔥 Fragmentos de Brasa:</span>
-                                    <span className="text-orange-400 font-bold">+10 (+Incursão)</span>
-                                </div>
-                                <div className="flex justify-between text-slate-400 text-[10px]">
-                                    <span>Ouro coletado na run:</span>
-                                    <span>{run.gold} Ouro (descartado)</span>
-                                </div>
-                            </div>
+                            )}
 
                             <button
                                 onClick={actions.abandonRoguelikeRun}
@@ -487,6 +540,25 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                                 <h3 className="text-lg font-black text-red-400 uppercase tracking-widest">O Herói Tombou!</h3>
                                 <p className="text-xs text-slate-400">Você perdeu todas as vidas nas profundezas da Masmorra de Brasa.</p>
                             </div>
+
+                            {run.planetaryExpedition && (() => {
+                                const rewards = getPlanetaryRunRewards(
+                                    run.planetaryExpedition.sectorLevel,
+                                    run.planetaryExpedition.biome,
+                                    false
+                                );
+                                return (
+                                    <div className="bg-slate-900 border border-red-950 p-4 rounded text-xs text-slate-400 flex flex-col gap-1 min-w-[240px] font-mono mt-1">
+                                        <div className="text-red-400 font-bold border-b border-slate-800 pb-1">
+                                            Resgate da Nave Realizado:
+                                        </div>
+                                        <div className="flex justify-between text-[10px]">
+                                            <span>⛽ Combustível Recuperado:</span>
+                                            <span>+{rewards.fuelReward}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             <button
                                 onClick={actions.abandonRoguelikeRun}

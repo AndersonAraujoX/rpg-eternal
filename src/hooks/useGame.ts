@@ -32,6 +32,7 @@ import { CLASS_TALENTS } from '../data/masteryData';
 import { PRESTIGE_NODES, getPrestigeNodeCost } from '../components/modals/PrestigeTreeModal';
 import { MONSTERS } from '../engine/bestiary';
 import { useRoguelike } from './useRoguelike';
+import { getPlanetaryRunRewards } from '../engine/roguelike';
 import { useBackrooms } from './useBackrooms';
 import { BACKROOMS_RESEARCHES } from '../engine/backrooms';
 
@@ -1894,6 +1895,31 @@ export const useGame = () => {
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
+    const abandonRoguelikeRun = useCallback(() => {
+        const run = roguelike.roguelikeRun;
+        if (run.planetaryExpedition) {
+            const victory = run.status === 'victory';
+            const sectorLevel = run.planetaryExpedition.sectorLevel;
+            const biome = run.planetaryExpedition.biome;
+            const sectorName = run.planetaryExpedition.sectorName;
+
+            const rewards = getPlanetaryRunRewards(sectorLevel, biome, victory);
+            
+            galaxyState.rewardPlanetaryRun(rewards.fuelReward, rewards.hullRepair, rewards.shipUpgrade);
+            
+            if (rewards.emberBonus > 0) {
+                roguelike.setEmberFragments(prev => prev + rewards.emberBonus);
+            }
+
+            if (victory) {
+                addLog(`Expedição Planetária em ${sectorName} concluída com sucesso! Combustível +${rewards.fuelReward}, Casco +${rewards.hullRepair}, Frags +${rewards.emberBonus}`, 'achievement');
+            } else {
+                addLog(`Expedição Planetária em ${sectorName} falhou! Nave recuperada com combustível mínimo (+${rewards.fuelReward}).`, 'danger');
+            }
+        }
+        roguelike.abandonRoguelikeRun();
+    }, [roguelike.roguelikeRun, roguelike.abandonRoguelikeRun, roguelike.setEmberFragments, galaxyState.rewardPlanetaryRun, addLog]);
+
     const result = useMemo(() => {
         const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave };
         return {
@@ -1965,12 +1991,13 @@ export const useGame = () => {
             emberFragments: roguelike.emberFragments,
             roguelikeUpgrades: roguelike.roguelikeUpgrades,
             startRoguelikeRun: roguelike.startRoguelikeRun,
+            startPlanetaryRun: roguelike.startPlanetaryRun,
             selectRoguelikeNode: roguelike.selectNode,
             performRoguelikeCombatAction: roguelike.performCombatAction,
             resolveRoguelikeRest: roguelike.resolveRest,
             resolveRoguelikeEventOption: roguelike.resolveEventOption,
             buyRoguelikeUpgrade: roguelike.buyRoguelikeUpgrade,
-            abandonRoguelikeRun: roguelike.abandonRoguelikeRun,
+            abandonRoguelikeRun: abandonRoguelikeRun,
 
             // Backrooms State & Actions
             backroomsExplorers: backrooms.backroomsExplorers,
@@ -1987,7 +2014,7 @@ export const useGame = () => {
             backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
             researchTech,
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs]);
 
     return result;
 };

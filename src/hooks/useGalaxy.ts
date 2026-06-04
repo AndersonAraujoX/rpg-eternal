@@ -89,6 +89,25 @@ export const useGalaxy = (
     const galaxyRewards = calculateGalaxyIncome(galaxy);
     const galaxyBuffs = calculateGalaxyBuffs(galaxy);
 
+    // Reward from planetary expedition completion
+    const rewardPlanetaryRun = (fuelReward: number, hullRepair: number, shipUpgrade: boolean) => {
+        setSpaceship(prev => ({
+            ...prev,
+            fuel: Math.min(prev.maxFuel, prev.fuel + fuelReward),
+            hull: Math.min(prev.maxHull, prev.hull + hullRepair),
+            ...(shipUpgrade ? {
+                parts: {
+                    ...prev.parts,
+                    engine: prev.parts.engine + 1
+                },
+                level: prev.level + 1
+            } : {})
+        }));
+        if (shipUpgrade) {
+            addLog('🚀 Motor da nave melhorado automaticamente por conquistar uma Estrela!', 'achievement');
+        }
+    };
+
     return {
         galaxy, setGalaxy,
         territories, setTerritories,
@@ -97,6 +116,7 @@ export const useGalaxy = (
         attackTerritory,
         upgradeSpaceship,
         refuelShip,
+        rewardPlanetaryRun,
         galaxyRewards,
         galaxyBuffs
     };

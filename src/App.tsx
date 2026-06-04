@@ -101,7 +101,7 @@ function App() {
     patronDeity, deityLevel, deityFavor, deityEnergy, pledgeDeity, offerToDeity,
     runes, craftRune, socketRune, combineRunes, invokeWeather,
     bossTimer,
-    roguelikeRun, emberFragments, roguelikeUpgrades, startRoguelikeRun, selectRoguelikeNode,
+    roguelikeRun, emberFragments, roguelikeUpgrades, startRoguelikeRun, startPlanetaryRun, selectRoguelikeNode,
     performRoguelikeCombatAction, resolveRoguelikeRest, resolveRoguelikeEventOption,
     buyRoguelikeUpgrade, abandonRoguelikeRun,
     backroomsExplorers, backroomsOutpost, backroomsResources, backroomsLogs,
@@ -378,6 +378,11 @@ function App() {
         towerFloor={tower.floor}
         voidAscensions={voidAscensions}
         onAscend={actions.ascendToVoid}
+        onStartPlanetaryRun={(classType, sector) => {
+          startPlanetaryRun(classType, sector.id, sector.name, sector.type as any, sector.level, galaxy);
+          setShowGalaxy(false);
+          setShowRoguelike(true);
+        }}
       />
 
       {/* PHASE 41 Modals */}
