@@ -52,7 +52,7 @@ export const HeroList: React.FC<HeroListProps> = ({ heroes, actions, activeSyner
     };
 
     return (
-        <div className="flex-1 bg-gray-800 p-2 overflow-y-auto no-scrollbar grid grid-cols-2 md:grid-cols-3 gap-2 border-t-4 border-gray-600">
+        <div className="w-full bg-gray-800 p-2 grid grid-cols-2 md:grid-cols-3 gap-2">
 
             <HeroDetailModal
                 isOpen={!!viewingHero}

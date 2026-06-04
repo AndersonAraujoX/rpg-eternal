@@ -23,7 +23,7 @@ export const PetList: React.FC<PetListProps> = ({ pets, actions, gold, souls }) 
     }
 
     return (
-        <div className="flex-1 bg-gray-800 p-3 overflow-y-auto no-scrollbar grid grid-cols-2 md:grid-cols-3 gap-3 border-t-2 border-gray-700">
+        <div className="w-full bg-gray-800 p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
             {pets.map(pet => {
                 const xpPercent = Math.min(100, Math.floor((pet.xp / pet.maxXp) * 100));
 
