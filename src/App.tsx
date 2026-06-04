@@ -106,6 +106,7 @@ function App() {
     backroomsExplorers, backroomsOutpost, backroomsResources, backroomsLogs,
     recruitExplorer, sendExplorer, recallExplorer, restExplorer, useAlmondWater,
     upgradeOutpost, craftGear,
+    backroomsUnlockedTechs, researchTech
   } = useGame();
 
 
@@ -270,6 +271,7 @@ function App() {
           setShowWorldBoss={setShowWorldBoss}
           setShowDevTools={setShowDevTools}
           outerSpaceUnlocked={outerSpaceUnlocked}
+          riftsUnlocked={backroomsUnlockedTechs.includes('rift_tech')}
           setShowPrestigeTree={setShowPrestigeTree}
           setShowPetSpace={setShowPetSpace}
           townVisited={townVisited}
@@ -441,6 +443,7 @@ function App() {
         divinity={divinity}
         invokeWeather={invokeWeather}
         resources={resources}
+        openBackrooms={() => { setShowBackrooms(true); setShowTown(false); }}
       />
       <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
@@ -573,6 +576,7 @@ function App() {
         outpost={backroomsOutpost}
         resources={backroomsResources}
         logs={backroomsLogs}
+        unlockedTechs={backroomsUnlockedTechs}
         actions={{
           recruitExplorer,
           sendExplorer,
@@ -580,7 +584,8 @@ function App() {
           restExplorer,
           useAlmondWater,
           upgradeOutpost,
-          craftGear
+          craftGear,
+          researchTech
         }}
       />
 
@@ -592,7 +597,8 @@ function App() {
           highestFloor: tower.maxFloor || 1,
           voidAscensions,
           buildings,
-          outerSpaceUnlocked
+          outerSpaceUnlocked,
+          riftsUnlocked: backroomsUnlockedTechs.includes('rift_tech')
         }}
       />
     </div>

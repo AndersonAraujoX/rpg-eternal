@@ -74,6 +74,7 @@ interface HeaderProps {
     setShowRelicChamber?: (v: boolean) => void;
     setShowRoguelike?: (v: boolean) => void;
     setShowBackrooms?: (v: boolean) => void;
+    riftsUnlocked?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -106,7 +107,8 @@ export const Header: React.FC<HeaderProps> = ({
     setShowVoidInfusion,
     setShowRelicChamber,
     setShowRoguelike,
-    setShowBackrooms
+    setShowBackrooms,
+    riftsUnlocked
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'combat' | 'skills' | 'system'>('main');
 
@@ -115,7 +117,8 @@ export const Header: React.FC<HeaderProps> = ({
         highestFloor: tower.maxFloor || 1,
         voidAscensions: voidAscensions,
         buildings: buildings || [],
-        outerSpaceUnlocked: !!outerSpaceUnlocked
+        outerSpaceUnlocked: !!outerSpaceUnlocked,
+        riftsUnlocked: !!riftsUnlocked
     });
 
     // Button Groups
@@ -221,12 +224,13 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             {setShowBackrooms && (
                 <button
-                    onClick={() => { if (unlocks.backrooms_manager) setShowBackrooms(true); }}
-                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.backrooms_manager ? 'bg-amber-950 text-amber-350 border-amber-500 hover:bg-amber-900' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
-                    title={unlocks.backrooms_manager ? "Backrooms MEG (Manager)" : "Bloqueado: Requer Chefe Nível 30"}
+                    onClick={() => setShowBackrooms(true)}
+                    disabled={!buildings.find(b => b.id === 'backrooms_manager' && b.level > 0)}
+                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${buildings.find(b => b.id === 'backrooms_manager' && b.level > 0) ? 'bg-amber-950 text-amber-350 border-amber-500 hover:bg-amber-900' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    title={buildings.find(b => b.id === 'backrooms_manager' && b.level > 0) ? "Backrooms MEG (Manager)" : "Bloqueado: Requer Posto Avançado M.E.G. na Vila"}
                 >
-                    🏢 {unlocks.backrooms_manager ? "Backrooms" : "???"}
-                    {!unlocks.backrooms_manager && <Lock size={8} />}
+                    🏢 {buildings.find(b => b.id === 'backrooms_manager' && b.level > 0) ? "Backrooms" : "???"}
+                    {!buildings.find(b => b.id === 'backrooms_manager' && b.level > 0) && <Lock size={8} />}
                 </button>
             )}
         </>

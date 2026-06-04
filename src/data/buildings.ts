@@ -234,5 +234,18 @@ export const INITIAL_BUILDINGS: Building[] = [
         effectValue: 1,
         currency: 'gold',
         emoji: '🏛️'
+    },
+    {
+        id: 'backrooms_manager',
+        name: 'Posto Avançado M.E.G.',
+        description: 'Construa um laboratório e alojamento nas Backrooms. Permite recrutar exploradores para coletar recursos liminares.',
+        level: 0,
+        maxLevel: 1,
+        cost: 40000,
+        costScaling: 1.0,
+        bonus: 'Desbloqueia Exploração das Backrooms',
+        effectValue: 1,
+        currency: 'gold',
+        emoji: '🏢'
     }
 ];

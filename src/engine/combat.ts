@@ -86,8 +86,8 @@ export const calculateDamageMultiplier = (souls: number, talents: Talent[], cons
     // Additive Galaxy Bonus
     totalBonus += galaxyDamageMult;
 
-    // Return final linear multiplier to prevent infinite scaling
-    return 1 + totalBonus;
+    // Return final linear multiplier to prevent infinite scaling (and guarantee positive value)
+    return Math.max(0.1, 1 + totalBonus);
 };
 
 export const processCombatTurn = (
@@ -374,7 +374,7 @@ export const processCombatTurn = (
             }
         }
 
-        const heroDamageDealt = Math.floor(totalHeroAttack);
+        const heroDamageDealt = Math.max(0, Math.floor(totalHeroAttack));
         totalDmg += heroDamageDealt;
 
         if (heroDamageDealt > 0 && lifeSteal > 0) {
@@ -433,9 +433,9 @@ export const processCombatTurn = (
 
     if (pets && pets.length > 0) {
         pets.forEach(p => {
-            totalDmg += Math.floor(p.stats.attack * (boss.level * 0.5));
+            totalDmg += Math.max(0, Math.floor(p.stats.attack * (boss.level * 0.5)));
         });
     }
 
-    return { updatedHeroes, totalDmg, crits, events };
+    return { updatedHeroes, totalDmg: Math.max(0, totalDmg), crits, events };
 };

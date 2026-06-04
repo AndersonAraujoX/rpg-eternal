@@ -66,10 +66,11 @@ export const generateGuildWarMap = (partyPower: number): Territory[] => {
         });
     }
 
-    // Force first generated node to be neutral and easy
-    territories[0].owner = 'Neutral';
-    territories[0].difficulty = Math.floor(Math.max(500, partyPower * 0.2));
-    territories[0].name = 'Ponto de Desembarque';
+    // Force first generated land node to be neutral and easy
+    const firstLandIndex = numOceans;
+    territories[firstLandIndex].owner = 'Neutral';
+    territories[firstLandIndex].difficulty = Math.floor(Math.max(500, partyPower * 0.2));
+    territories[firstLandIndex].name = 'Ponto de Desembarque';
 
     return territories;
 };

@@ -33,6 +33,7 @@ import { PRESTIGE_NODES, getPrestigeNodeCost } from '../components/modals/Presti
 import { MONSTERS } from '../engine/bestiary';
 import { useRoguelike } from './useRoguelike';
 import { useBackrooms } from './useBackrooms';
+import { BACKROOMS_RESEARCHES } from '../engine/backrooms';
 
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -157,6 +158,35 @@ export const useGame = () => {
     const galaxyState = useGalaxy(INITIAL_GALAXY, INITIAL_TERRITORIES, INITIAL_SPACESHIP, gold, setGold, addLog);
     const roguelike = useRoguelike();
     const backrooms = useBackrooms();
+
+    const researchTech = useCallback((techId: string) => {
+        const tech = BACKROOMS_RESEARCHES.find(t => t.id === techId);
+        if (!tech) return;
+
+        const alreadyUnlocked = backrooms.backroomsUnlockedTechs.includes(techId);
+        const canAfford = 
+            backrooms.backroomsResources.scrap >= tech.cost.scrap &&
+            backrooms.backroomsResources.almondWater >= tech.cost.almondWater &&
+            backrooms.backroomsResources.anomalyParts >= tech.cost.anomalyParts;
+
+        backrooms.researchTech(techId);
+
+        if (!alreadyUnlocked && canAfford) {
+            if (techId === 'space_tech') {
+                setOuterSpaceUnlocked(true);
+                addLog("🚀 Motores de Dobra Espacial desenvolvidos! O Espaço Sideral foi desbloqueado!", "achievement");
+            }
+            if (techId === 'rift_tech') {
+                addLog("🌀 Estudos de Fendas Interdimensionais concluídos! As Fendas Temporais foram desbloqueadas!", "achievement");
+            }
+        }
+    }, [backrooms.backroomsUnlockedTechs, backrooms.backroomsResources, backrooms.researchTech, setOuterSpaceUnlocked, addLog]);
+
+    useEffect(() => {
+        if (backrooms.backroomsUnlockedTechs.includes('space_tech')) {
+            setOuterSpaceUnlocked(true);
+        }
+    }, [backrooms.backroomsUnlockedTechs]);
 
     const [glory, setGlory] = useState<number>(0);
     const [partyDps, setPartyDps] = useState(0);
@@ -637,7 +667,14 @@ export const useGame = () => {
             reviveHero: (id: string) => { setHeroes(p => p.map(h => h.id === id ? { ...h, isDead: false, stats: { ...h.stats, hp: h.stats.maxHp } } : h)); addLog("Hero revived!", "success"); },
             renameHero: (id: string, name: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, name } : h)),
             changeHeroEmoji: (id: string, e: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, emoji: e } : h)),
-            buyTalent: (id: string, _a?: number) => setTalents(p => p.map(t => (t.id === id && souls >= t.cost) ? (setSouls(s => s - t.cost), { ...t, level: t.level + 1, cost: Math.floor(t.cost * t.costScaling) }) : t)),
+            buyTalent: (id: string, _a?: number) => {
+                const talent = talents.find(t => t.id === id);
+                if (talent && souls >= talent.cost) {
+                    const cost = talent.cost;
+                    setSouls(s => Math.max(0, s - cost));
+                    setTalents(p => p.map(t => t.id === id ? { ...t, level: t.level + 1, cost: Math.floor(t.cost * t.costScaling) } : t));
+                }
+            },
             buyConstellation: (id: string) => {
                 const node = constellations.find(c => c.id === id);
                 if (node && divinity >= node.cost && node.level < node.maxLevel) {
@@ -671,7 +708,7 @@ export const useGame = () => {
             buyStarlightUpgrade: (id: string) => {
                 const u = STARLIGHT_UPGRADES.find(x => x.id === id); if (!u) return;
                 const cost = getStarlightUpgradeCost(u, starlightUpgrades[id] || 0);
-                if (starlight >= cost) { setStarlight(s => s - cost); setStarlightUpgrades(p => ({ ...p, [id]: (p[id] || 0) + 1 })); }
+                if (starlight >= cost) { setStarlight(s => Math.max(0, s - cost)); setStarlightUpgrades(p => ({ ...p, [id]: (p[id] || 0) + 1 })); }
             },
             enterTower: () => {
                 const wasActive = world.tower.active;
@@ -719,7 +756,7 @@ export const useGame = () => {
                 if (node && currentLevel < node.maxLevel) {
                     const cost = getPrestigeNodeCost(node, currentLevel);
                     if (souls >= cost) {
-                        setSouls(s => s - cost);
+                        setSouls(s => Math.max(0, s - cost));
                         setPrestigeNodes(p => ({ ...p, [nodeId]: currentLevel + 1 }));
                         addLog(`Poder Desbloqueado: ${node.name} Lv${currentLevel + 1}!`, 'success');
                     }
@@ -865,6 +902,12 @@ export const useGame = () => {
                 setOuterSpaceUnlocked(true);
                 addLog("O Espaço Externo foi desbloqueado! Galáxia e Forja Estelar agora estão disponíveis.", "achievement");
                 soundManager.playLevelUp();
+            },
+            researchTech: (techId: string) => {
+                backrooms.researchTech(techId);
+                if (techId === 'space_tech') {
+                    setOuterSpaceUnlocked(true);
+                }
             },
             breedPets: (p1: Pet, p2: Pet) => petsState.breedPets(p1, p2),
             feedPet: (type: 'gold' | 'souls', id?: string) => petsState.feedPet(type, id),
@@ -1799,6 +1842,8 @@ export const useGame = () => {
         setBackroomsOutpost: backrooms.setBackroomsOutpost,
         backroomsResources: backrooms.backroomsResources,
         setBackroomsResources: backrooms.setBackroomsResources,
+        backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
+        setBackroomsUnlockedTechs: backrooms.setBackroomsUnlockedTechs,
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
@@ -1885,6 +1930,8 @@ export const useGame = () => {
             useAlmondWater: backrooms.useAlmondWater,
             upgradeOutpost: backrooms.upgradeOutpost,
             craftGear: backrooms.craftGear,
+            backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
+            researchTech,
         };
     }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs]);
 

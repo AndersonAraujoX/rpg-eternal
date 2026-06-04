@@ -25,7 +25,7 @@ export const useGuild = (
 
     const contributeGuild = (amount: number) => {
         if (!guild || gold < amount) return;
-        setGold(g => g - amount);
+        setGold(g => Math.max(0, g - amount));
         setGuild(prev => {
             if (!prev) return null;
             const xpGain = amount / 10;
@@ -61,7 +61,7 @@ export const useGuild = (
 
         const cost = getMonumentCost(monument.baseCost, currentLevel, monument.costScaling);
         if (gold >= cost) {
-            setGold(g => g - cost);
+            setGold(g => Math.max(0, g - cost));
             setGuild(prev => ({
                 ...prev!,
                 monuments: {

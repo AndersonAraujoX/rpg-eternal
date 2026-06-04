@@ -117,6 +117,8 @@ export interface PersistenceProps {
     setBackroomsOutpost: React.Dispatch<React.SetStateAction<BackroomsOutpost>>;
     backroomsResources: BackroomsResources;
     setBackroomsResources: React.Dispatch<React.SetStateAction<BackroomsResources>>;
+    backroomsUnlockedTechs: string[];
+    setBackroomsUnlockedTechs: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -172,7 +174,9 @@ export const usePersistence = (props: PersistenceProps) => {
         backroomsOutpost,
         setBackroomsOutpost,
         backroomsResources,
-        setBackroomsResources
+        setBackroomsResources,
+        backroomsUnlockedTechs,
+        setBackroomsUnlockedTechs
     } = props;
 
 
@@ -330,6 +334,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.backroomsExplorers) setBackroomsExplorers(state.backroomsExplorers);
                 if (state.backroomsOutpost) setBackroomsOutpost(state.backroomsOutpost);
                 if (state.backroomsResources) setBackroomsResources(state.backroomsResources);
+                if (state.backroomsUnlockedTechs) setBackroomsUnlockedTechs(state.backroomsUnlockedTechs);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -451,6 +456,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 backroomsExplorers: p.backroomsExplorers,
                 backroomsOutpost: p.backroomsOutpost,
                 backroomsResources: p.backroomsResources,
+                backroomsUnlockedTechs: p.backroomsUnlockedTechs,
                 lastSaveTime: Date.now()
             };
 

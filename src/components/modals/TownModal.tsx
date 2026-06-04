@@ -35,6 +35,7 @@ interface TownModalProps {
     resources: import('../../engine/types').Resources;
     bossLevel?: number;
     voidAscensions?: number;
+    openBackrooms?: () => void;
 }
 
 export const TownModal: React.FC<TownModalProps> = ({
@@ -65,7 +66,8 @@ export const TownModal: React.FC<TownModalProps> = ({
     invokeWeather,
     resources,
     bossLevel = 0,
-    voidAscensions = 0
+    voidAscensions = 0,
+    openBackrooms
 }) => {
     const [viewMode, setViewMode] = useState<'overview' | 'construction' | 'pantheon' | 'deities'>('overview');
     const [activeSlotToSelect, setActiveSlotToSelect] = useState<number | null>(null);
@@ -344,6 +346,11 @@ export const TownModal: React.FC<TownModalProps> = ({
                                             {building.id === 'pantheon' && building.level > 0 && (
                                                 <button onClick={() => setViewMode('pantheon')} className="w-full mb-3 py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-900/50">
                                                     ACESSAR PANTEÃO
+                                                </button>
+                                            )}
+                                            {building.id === 'backrooms_manager' && building.level > 0 && openBackrooms && (
+                                                <button onClick={openBackrooms} className="w-full mb-3 py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all duration-300 shadow-xl bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white shadow-amber-900/30">
+                                                    ACESSAR BACKROOMS
                                                 </button>
                                             )}
                                             <button

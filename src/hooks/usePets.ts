@@ -42,8 +42,8 @@ export const usePets = (
         if (foodType === 'gold' && gold < cost) return;
         if (foodType === 'souls' && souls < cost) return;
 
-        if (foodType === 'gold') setGold(g => g - cost);
-        else setSouls(s => s - cost);
+        if (foodType === 'gold') setGold(g => Math.max(0, g - cost));
+        else setSouls(s => Math.max(0, s - cost));
 
         setPets(prev => prev.map(p => {
             if (p.id === targetPet.id) {

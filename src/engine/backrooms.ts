@@ -250,3 +250,32 @@ export function simulateBackroomsTick(
         newLogs
     };
 }
+
+export interface BackroomsResearch {
+    id: string;
+    name: string;
+    description: string;
+    cost: {
+        scrap: number;
+        almondWater: number;
+        anomalyParts: number;
+    };
+    effectText: string;
+}
+
+export const BACKROOMS_RESEARCHES: BackroomsResearch[] = [
+    {
+        id: 'rift_tech',
+        name: 'Estudos de Fendas Interdimensionais',
+        description: 'Pesquisa o tecido do espaço-tempo para abrir portais estáveis para as Fendas Temporais (Rifts).',
+        cost: { scrap: 30, almondWater: 1, anomalyParts: 3 },
+        effectText: 'Desbloqueia as Fendas Temporais'
+    },
+    {
+        id: 'space_tech',
+        name: 'Motores de Dobra Espacial',
+        description: 'Desenvolve sistemas de propulsão e escudos necessários para navegar pelo Espaço Sideral (Galáxia).',
+        cost: { scrap: 60, almondWater: 3, anomalyParts: 6 },
+        effectText: 'Desbloqueia o Espaço Sideral (Galáxia)'
+    }
+];

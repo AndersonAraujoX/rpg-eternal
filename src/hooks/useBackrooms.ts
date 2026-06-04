@@ -3,7 +3,7 @@ import type {
     BackroomsExplorer, BackroomsOutpost, BackroomsResources 
 } from '../engine/backrooms';
 import { 
-    createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS 
+    createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS, BACKROOMS_RESEARCHES 
 } from '../engine/backrooms';
 
 export function useBackrooms() {
@@ -48,6 +48,8 @@ export function useBackrooms() {
         almondWater: 3,
         anomalyParts: 0
     });
+
+    const [backroomsUnlockedTechs, setBackroomsUnlockedTechs] = useState<string[]>([]);
 
     const [backroomsLogs, setBackroomsLogs] = useState<string[]>([
         `[${new Date().toLocaleTimeString()}] Posto Avançado M.E.G. inicializado. Pronto para exploração.`
@@ -187,6 +189,32 @@ export function useBackrooms() {
         }
     };
 
+    const researchTech = (techId: string) => {
+        const tech = BACKROOMS_RESEARCHES.find(t => t.id === techId);
+        if (!tech) return;
+
+        if (backroomsUnlockedTechs.includes(techId)) {
+            addLog(`❌ Tecnologia ${tech.name} já foi pesquisada.`);
+            return;
+        }
+
+        if (
+            backroomsResources.scrap >= tech.cost.scrap &&
+            backroomsResources.almondWater >= tech.cost.almondWater &&
+            backroomsResources.anomalyParts >= tech.cost.anomalyParts
+        ) {
+            setBackroomsResources(prev => ({
+                scrap: Math.max(0, prev.scrap - tech.cost.scrap),
+                almondWater: Math.max(0, prev.almondWater - tech.cost.almondWater),
+                anomalyParts: Math.max(0, prev.anomalyParts - tech.cost.anomalyParts)
+            }));
+            setBackroomsUnlockedTechs(prev => [...prev, techId]);
+            addLog(`🔬 Tecnologia Pesquisada: ${tech.name}!`);
+        } else {
+            addLog(`❌ Recursos de pesquisa insuficientes para ${tech.name}.`);
+        }
+    };
+
     const processBackroomsTick = useCallback((deltaSeconds: number) => {
         setBackroomsExplorers(prevExplorers => {
             const { updatedExplorers, gainedResources, newLogs } = simulateBackroomsTick(
@@ -225,6 +253,8 @@ export function useBackrooms() {
         setBackroomsOutpost,
         backroomsResources,
         setBackroomsResources,
+        backroomsUnlockedTechs,
+        setBackroomsUnlockedTechs,
         backroomsLogs,
         setBackroomsLogs,
         recruitExplorer,
@@ -234,6 +264,7 @@ export function useBackrooms() {
         useAlmondWater,
         upgradeOutpost,
         craftGear,
+        researchTech,
         processBackroomsTick
     };
 }

@@ -6,6 +6,7 @@ export interface GameStateForUnlocks {
     voidAscensions: number;
     buildings: Building[];
     outerSpaceUnlocked: boolean;
+    riftsUnlocked?: boolean;
 }
 
 export interface FeatureDefinition {
@@ -172,10 +173,11 @@ export const FEATURES_LIST: FeatureDefinition[] = [
         name: 'Espaço Sideral (Galáxia)',
         description: 'Viaje no hiperespaço por setores, naves e forja estelar.',
         icon: '🪐',
-        unlockRequirementText: 'Atingir Nível de Chefe 100',
+        unlockRequirementText: 'Atingir Nível de Chefe 100 ou Pesquisa M.E.G.',
         tab: 'combat',
         checkUnlocked: (state) => state.bossLevel >= 100 || state.outerSpaceUnlocked,
         getProgress: (state) => {
+            if (state.outerSpaceUnlocked) return { current: 1, max: 1, percentage: 100 };
             const current = Math.min(100, state.bossLevel);
             return { current, max: 100, percentage: Math.floor((current / 100) * 100) };
         }
@@ -185,10 +187,11 @@ export const FEATURES_LIST: FeatureDefinition[] = [
         name: 'Fendas Temporais (Rifts)',
         description: 'Modo roguelike desafiador com bênçãos dinâmicas.',
         icon: '🌀',
-        unlockRequirementText: 'Alcançar Andar 120 na Torre',
+        unlockRequirementText: 'Alcançar Andar 120 na Torre ou Pesquisa M.E.G.',
         tab: 'combat',
-        checkUnlocked: (state) => state.highestFloor >= 120,
+        checkUnlocked: (state) => state.highestFloor >= 120 || state.riftsUnlocked === true,
         getProgress: (state) => {
+            if (state.riftsUnlocked) return { current: 1, max: 1, percentage: 100 };
             const current = Math.min(120, state.highestFloor);
             return { current, max: 120, percentage: Math.floor((current / 120) * 100) };
         }
