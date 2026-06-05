@@ -94,7 +94,7 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                                 <span className="text-xl">🌌</span>
                                 <div>
                                     <div className="text-xs font-black uppercase text-purple-200 tracking-wider">
-                                        Expedição Planetária Ativa
+                                        {run.status === 'none' ? 'Incursão Planetária Pendente' : 'Expedição Planetária Ativa'}
                                     </div>
                                     <div className="text-[11px] text-purple-300 font-bold">
                                         {run.planetaryExpedition.sectorName} (Nível {run.planetaryExpedition.sectorLevel})
@@ -103,7 +103,7 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                             </div>
                             <div className="text-[9px] bg-black/45 border border-purple-500/30 rounded px-2 py-1 font-mono text-purple-300 flex flex-col gap-0.5">
                                 <div>🚀 Bioma: {run.planetaryExpedition.biome.toUpperCase()}</div>
-                                <div>Bônus de Setores Aplicados!</div>
+                                <div>{run.status === 'none' ? 'Escolha sua classe para iniciar!' : 'Bônus de Setores Aplicados!'}</div>
                             </div>
                         </div>
                     )}
@@ -112,8 +112,16 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                     {run.status === 'none' && (
                         <div className="flex flex-col gap-5 py-2">
                             <div className="text-center flex flex-col gap-2">
-                                <h3 className="text-base font-bold text-slate-200">Prepare sua Incursão Roguelike</h3>
-                                <p className="text-xs text-slate-400 max-w-lg mx-auto">Escolha um herói inicial para adentrar na masmorra de 10 andares. Toda a progressão dentro da masmorra é temporária, mas os fragmentos de brasa coletados são permanentes!</p>
+                                <h3 className="text-base font-bold text-slate-200">
+                                    {run.planetaryExpedition 
+                                        ? `Prepare sua Incursão Planetária: ${run.planetaryExpedition.sectorName}` 
+                                        : 'Prepare sua Incursão Roguelike'}
+                                </h3>
+                                <p className="text-xs text-slate-400 max-w-lg mx-auto">
+                                    {run.planetaryExpedition 
+                                        ? `Escolha a classe do herói inicial para liderar a conquista deste planeta. O sucesso da incursão determinará se o setor será anexado ao império!`
+                                        : 'Escolha um herói inicial para adentrar na masmorra de 10 andares. Toda a progressão dentro da masmorra é temporária, mas os fragmentos de brasa coletados são permanentes!'}
+                                </p>
                             </div>
 
                             {/* Class Selection */}

@@ -2010,6 +2010,8 @@ export const useGame = () => {
             roguelikeUpgrades: roguelike.roguelikeUpgrades,
             startRoguelikeRun: roguelike.startRoguelikeRun,
             startPlanetaryRun: roguelike.startPlanetaryRun,
+            preparePlanetaryRun: roguelike.preparePlanetaryRun,
+            clearPlanetaryExpedition: roguelike.clearPlanetaryExpedition,
             selectRoguelikeNode: roguelike.selectNode,
             performRoguelikeCombatAction: roguelike.performCombatAction,
             resolveRoguelikeRest: roguelike.resolveRest,
@@ -2032,7 +2034,7 @@ export const useGame = () => {
             backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
             researchTech,
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs]);
 
     return result;
 };

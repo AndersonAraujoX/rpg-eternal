@@ -14,12 +14,12 @@ interface GalaxyModalProps {
     towerFloor: number;
     voidAscensions: number;
     onAscend: () => void;
-    onStartPlanetaryRun: (classType: 'warrior' | 'mage' | 'ranger' | 'rogue', sector: GalaxySector) => void;
+    onPreparePlanetaryRun: (sector: GalaxySector) => void;
 }
 
 export const GalaxyModal: React.FC<GalaxyModalProps> = ({
     isOpen, onClose, galaxy, onConquer, partyPower, starlightUpgrades, spaceship, onUpgradeShip,
-    towerFloor, voidAscensions, onAscend, onStartPlanetaryRun
+    towerFloor, voidAscensions, onAscend, onPreparePlanetaryRun
 }) => {
     const [selectedSector, setSelectedSector] = useState<GalaxySector | null>(null);
     const [view, setView] = useState<'map' | 'hangar' | 'void'>('map');
@@ -181,85 +181,27 @@ export const GalaxyModal: React.FC<GalaxyModalProps> = ({
 
                                     {!selectedSector.isOwned ? (
                                         canConquer(selectedSector) ? (
-                                            <div className="flex flex-col items-end gap-1.5 bg-gray-900/60 p-2 rounded border border-gray-700/50">
-                                                <div className="text-[10px] text-red-400 font-bold uppercase tracking-wider text-right w-full flex items-center gap-1 justify-end animate-pulse">
-                                                    ⚔️ Conquistar via Incursão (Roguelike)
-                                                </div>
-                                                <div className="flex gap-1.5">
-                                                    <button
-                                                        onClick={() => { onConquer(selectedSector.id); onStartPlanetaryRun('warrior', selectedSector); }}
-                                                        className="px-3 py-1.5 bg-orange-700 hover:bg-orange-600 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1"
-                                                        title="Iniciar conquista como Guerreiro"
-                                                    >
-                                                        ⚔️ Guerreiro
-                                                    </button>
-                                                    <button
-                                                        onClick={() => { onConquer(selectedSector.id); onStartPlanetaryRun('mage', selectedSector); }}
-                                                        className="px-3 py-1.5 bg-blue-700 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1"
-                                                        title="Iniciar conquista como Mago"
-                                                    >
-                                                        🪄 Mago
-                                                    </button>
-                                                    <button
-                                                        onClick={() => { onConquer(selectedSector.id); onStartPlanetaryRun('ranger', selectedSector); }}
-                                                        className="px-3 py-1.5 bg-green-700 hover:bg-green-600 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1"
-                                                        title="Iniciar conquista como Arqueiro"
-                                                    >
-                                                        🏹 Arqueiro
-                                                    </button>
-                                                    <button
-                                                        onClick={() => { onConquer(selectedSector.id); onStartPlanetaryRun('rogue', selectedSector); }}
-                                                        className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1"
-                                                        title="Iniciar conquista como Ladino"
-                                                    >
-                                                        🥷 Ladino
-                                                    </button>
-                                                </div>
-                                            </div>
+                                            <button
+                                                onClick={() => { onConquer(selectedSector.id); onPreparePlanetaryRun(selectedSector); }}
+                                                className="px-5 py-2.5 bg-red-700 hover:bg-red-600 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1.5 uppercase tracking-wider animate-pulse"
+                                            >
+                                                ⚔️ Iniciar Conquista (Roguelike)
+                                            </button>
                                         ) : (
                                             <button
                                                 disabled={true}
-                                                className="px-6 py-3 rounded font-bold bg-gray-800 text-gray-500 cursor-not-allowed whitespace-nowrap"
+                                                className="px-5 py-2.5 rounded text-xs font-bold bg-gray-800 text-gray-500 cursor-not-allowed whitespace-nowrap"
                                             >
                                                 {getConquerLabel(selectedSector)}
                                             </button>
                                         )
                                     ) : (
-                                         <div className="flex flex-col items-end gap-1.5 bg-gray-900/60 p-2 rounded border border-gray-700/50">
-                                             <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-right w-full">
-                                                 🌀 Explorar Planeta (Roguelike)
-                                             </div>
-                                             <div className="flex gap-1.5">
-                                                 <button
-                                                     onClick={() => onStartPlanetaryRun('warrior', selectedSector)}
-                                                     className="px-3 py-1.5 bg-orange-700 hover:bg-orange-600 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1"
-                                                     title="Iniciar expedição como Guerreiro"
-                                                 >
-                                                     ⚔️ Guerreiro
-                                                 </button>
-                                                 <button
-                                                     onClick={() => onStartPlanetaryRun('mage', selectedSector)}
-                                                     className="px-3 py-1.5 bg-blue-700 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1"
-                                                     title="Iniciar expedição como Mago"
-                                                 >
-                                                     🪄 Mago
-                                                 </button>
-                                                 <button
-                                                     onClick={() => onStartPlanetaryRun('ranger', selectedSector)}
-                                                     className="px-3 py-1.5 bg-green-700 hover:bg-green-600 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1"
-                                                     title="Iniciar expedição como Arqueiro"
-                                                 >
-                                                     🏹 Arqueiro
-                                                 </button>
-                                                 <button
-                                                     onClick={() => onStartPlanetaryRun('rogue', selectedSector)}
-                                                     className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1"
-                                                     title="Iniciar expedição como Ladino"
-                                                 >
-                                                     🥷 Ladino
-                                                 </button>
-                                             </div>
-                                         </div>
+                                        <button
+                                            onClick={() => onPreparePlanetaryRun(selectedSector)}
+                                            className="px-5 py-2.5 bg-blue-700 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1.5 uppercase tracking-wider"
+                                        >
+                                            🌀 Incursão Planetária (Roguelike)
+                                        </button>
                                     )}
                                 </div>
                             )}

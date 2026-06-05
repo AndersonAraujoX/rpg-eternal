@@ -101,7 +101,7 @@ function App() {
     patronDeity, deityLevel, deityFavor, deityEnergy, pledgeDeity, offerToDeity,
     runes, craftRune, socketRune, combineRunes, invokeWeather,
     bossTimer,
-    roguelikeRun, emberFragments, roguelikeUpgrades, startRoguelikeRun, startPlanetaryRun, selectRoguelikeNode,
+    roguelikeRun, emberFragments, roguelikeUpgrades, startRoguelikeRun, startPlanetaryRun, preparePlanetaryRun, clearPlanetaryExpedition, selectRoguelikeNode,
     performRoguelikeCombatAction, resolveRoguelikeRest, resolveRoguelikeEventOption,
     buyRoguelikeUpgrade, abandonRoguelikeRun,
     backroomsExplorers, backroomsOutpost, backroomsResources, backroomsLogs,
@@ -378,8 +378,8 @@ function App() {
         towerFloor={tower.floor}
         voidAscensions={voidAscensions}
         onAscend={actions.ascendToVoid}
-        onStartPlanetaryRun={(classType, sector) => {
-          startPlanetaryRun(classType, sector.id, sector.name, sector.type as any, sector.level, galaxy);
+        onPreparePlanetaryRun={(sector) => {
+          preparePlanetaryRun(sector.id, sector.name, sector.type as any, sector.level);
           setShowGalaxy(false);
           setShowRoguelike(true);
         }}
@@ -592,12 +592,30 @@ function App() {
 
       <RoguelikeModal
         isOpen={showRoguelike}
-        onClose={() => setShowRoguelike(false)}
+        onClose={() => {
+          if (roguelikeRun.status === 'none') {
+            clearPlanetaryExpedition();
+          }
+          setShowRoguelike(false);
+        }}
         run={roguelikeRun}
         emberFragments={emberFragments}
         upgrades={roguelikeUpgrades}
         actions={{
-          startRoguelikeRun,
+          startRoguelikeRun: (classType) => {
+            if (roguelikeRun.planetaryExpedition) {
+              startPlanetaryRun(
+                classType,
+                roguelikeRun.planetaryExpedition.sectorId,
+                roguelikeRun.planetaryExpedition.sectorName,
+                roguelikeRun.planetaryExpedition.biome,
+                roguelikeRun.planetaryExpedition.sectorLevel,
+                galaxy
+              );
+            } else {
+              startRoguelikeRun(classType);
+            }
+          },
           selectRoguelikeNode: selectRoguelikeNode,
           performRoguelikeCombatAction: performRoguelikeCombatAction,
           resolveRoguelikeRest: resolveRoguelikeRest,

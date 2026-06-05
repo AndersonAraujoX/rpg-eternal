@@ -74,6 +74,34 @@ export function useRoguelike() {
         });
     };
 
+    const preparePlanetaryRun = (
+        sectorId: string,
+        sectorName: string,
+        biome: PlanetaryBiome,
+        sectorLevel: number
+    ) => {
+        setRoguelikeRun({
+            hero: null,
+            nodes: [],
+            currentNodeIndex: -1,
+            gold: 0,
+            relics: [],
+            combatState: null,
+            eventState: null,
+            status: 'none',
+            planetaryExpedition: { sectorId, sectorName, biome, sectorLevel }
+        });
+    };
+
+    const clearPlanetaryExpedition = () => {
+        setRoguelikeRun(prev => {
+            if (prev.status === 'none') {
+                return { ...prev, planetaryExpedition: null };
+            }
+            return prev;
+        });
+    };
+
     const selectNode = (index: number) => {
         if (roguelikeRun.status !== 'exploring') return;
         if (index !== roguelikeRun.currentNodeIndex + 1) return;
@@ -468,6 +496,8 @@ export function useRoguelike() {
         roguelikeRun,
         startRoguelikeRun,
         startPlanetaryRun,
+        preparePlanetaryRun,
+        clearPlanetaryExpedition,
         selectNode,
         performCombatAction,
         resolveRest,
