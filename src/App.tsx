@@ -482,6 +482,8 @@ function App() {
         openGuild={() => { setShowGuild(true); setShowTown(false); }}
         openPetSpace={() => { setShowPetSpace(true); setShowTown(false); }}
         setBuildings={setBuildings}
+        bossLevel={boss.level}
+        voidAscensions={voidAscensions}
       />
       <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}

@@ -212,16 +212,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Vazio e Fogueira removidos a pedido do usuário */}
             {/* Phase 47: Guild War */}
             <button onClick={() => setShowGuildWar && setShowGuildWar(true)} className="btn-retro bg-orange-700 text-white px-2 py-1 rounded border border-orange-500 hover:bg-orange-600 flex items-center gap-1" title="Guerras de Guilda"> ⚔️ Guerra </button>
-            {setShowRoguelike && (
-                <button
-                    onClick={() => { if (unlocks.roguelike_mode) setShowRoguelike(true); }}
-                    className={`btn-retro px-2 py-1 rounded border flex items-center gap-1 transition-all ${unlocks.roguelike_mode ? 'bg-cyan-900 text-cyan-200 border-cyan-500 hover:bg-cyan-800' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
-                    title={unlocks.roguelike_mode ? "Masmorra de Brasa (Roguelike)" : "Bloqueado: Requer Chefe Nível 15"}
-                >
-                    🌀 {unlocks.roguelike_mode ? "Roguelike" : "???"}
-                    {!unlocks.roguelike_mode && <Lock size={8} />}
-                </button>
-            )}
+
             {setShowBackrooms && (
                 <button
                     onClick={() => setShowBackrooms(true)}
