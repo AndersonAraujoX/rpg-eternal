@@ -175,12 +175,22 @@ export function useRoguelike() {
         const effectiveDefense = hero.defense + defBonus;
         const effectiveMagic = hero.magic + magBonus;
 
+        // Calculate Critical Strike Chance
+        const critStrikeLvl = roguelikeUpgrades['crit_strike'] || 0;
+        let critChance = 0.10 + (critStrikeLvl * 0.05);
+        if (relics.some(r => r.id === 'clover')) critChance += 0.15;
+        if (hero.classType === 'rogue') critChance += 0.15;
+
         // Player turn
         if (action === 'attack') {
             const rawDmg = effectiveAttack;
-            const finalDmg = Math.max(1, rawDmg - combatState.enemy.defense);
+            const isCrit = Math.random() < critChance;
+            let finalDmg = Math.max(1, rawDmg - combatState.enemy.defense);
+            if (isCrit) {
+                finalDmg = Math.floor(finalDmg * 1.5);
+            }
             enemyHp = Math.max(0, enemyHp - finalDmg);
-            newLog.push(`Você atacou o ${combatState.enemy.name} causando ${finalDmg} de dano.`);
+            newLog.push(`Você atacou o ${combatState.enemy.name} causando ${finalDmg} de dano.${isCrit ? ' 💥 CRÍTICO!' : ''}`);
         } else if (action === 'defend') {
             const shieldGain = Math.floor(effectiveDefense * 2.0);
             playerShield += shieldGain;
@@ -189,9 +199,11 @@ export function useRoguelike() {
             if (hero.classType === 'mage') {
                 if (playerMp >= 12) {
                     playerMp -= 12;
-                    const finalDmg = Math.max(5, Math.floor(effectiveMagic * 2.2));
+                    const isCrit = Math.random() < critChance;
+                    let finalDmg = Math.max(5, Math.floor(effectiveMagic * 2.2));
+                    if (isCrit) finalDmg = Math.floor(finalDmg * 1.5);
                     enemyHp = Math.max(0, enemyHp - finalDmg);
-                    newLog.push(`Você lançou Bola de Fogo causando ${finalDmg} de dano elemental (-12 MP).`);
+                    newLog.push(`Você lançou Bola de Fogo causando ${finalDmg} de dano elemental (-12 MP).${isCrit ? ' 💥 CRÍTICO!' : ''}`);
                 } else {
                     newLog.push(`Mana insuficiente para lançar magia!`);
                     return;
@@ -199,9 +211,11 @@ export function useRoguelike() {
             } else if (hero.classType === 'warrior') {
                 if (playerMp >= 8) {
                     playerMp -= 8;
-                    const finalDmg = Math.max(3, Math.floor(effectiveAttack * 1.6));
+                    const isCrit = Math.random() < critChance;
+                    let finalDmg = Math.max(3, Math.floor(effectiveAttack * 1.6));
+                    if (isCrit) finalDmg = Math.floor(finalDmg * 1.5);
                     enemyHp = Math.max(0, enemyHp - finalDmg);
-                    newLog.push(`Você usou Golpe Trespassante causando ${finalDmg} de dano (-8 MP).`);
+                    newLog.push(`Você usou Golpe Trespassante causando ${finalDmg} de dano (-8 MP).${isCrit ? ' 💥 CRÍTICO!' : ''}`);
                 } else {
                     newLog.push(`Falta de foco (MP insuficiente) para técnica!`);
                     return;
@@ -209,12 +223,27 @@ export function useRoguelike() {
             } else if (hero.classType === 'ranger') {
                 if (playerMp >= 10) {
                     playerMp -= 10;
-                    const finalDmg = Math.max(2, Math.floor(effectiveAttack * 1.3));
+                    const isCrit = Math.random() < critChance;
+                    let finalDmg = Math.max(2, Math.floor(effectiveAttack * 1.3));
+                    if (isCrit) finalDmg = Math.floor(finalDmg * 1.5);
                     playerShield += Math.floor(hero.speed * 0.8);
                     enemyHp = Math.max(0, enemyHp - finalDmg);
-                    newLog.push(`Você usou Disparo Rápido causando ${finalDmg} de dano e ganhou escudo (-10 MP).`);
+                    newLog.push(`Você usou Disparo Rápido causando ${finalDmg} de dano e ganhou escudo (-10 MP).${isCrit ? ' 💥 CRÍTICO!' : ''}`);
                 } else {
                     newLog.push(`Foco insuficiente (MP) para disparo!`);
+                    return;
+                }
+            } else if (hero.classType === 'rogue') {
+                if (playerMp >= 10) {
+                    playerMp -= 10;
+                    const skillCritChance = critChance + 0.25;
+                    const isCrit = Math.random() < skillCritChance;
+                    let finalDmg = Math.max(4, Math.floor(effectiveAttack * 1.5));
+                    if (isCrit) finalDmg = Math.floor(finalDmg * 1.5);
+                    enemyHp = Math.max(0, enemyHp - finalDmg);
+                    newLog.push(`Você usou Apunhalada pelas Costas causando ${finalDmg} de dano (-10 MP).${isCrit ? ' 💥 CRÍTICO!' : ''}`);
+                } else {
+                    newLog.push(`Falta de energia (MP insuficiente) para apunhalar!`);
                     return;
                 }
             }
@@ -255,25 +284,34 @@ export function useRoguelike() {
             return;
         }
 
+        // Calculate Dodge (Esquiva) Chance
+        let dodgeChance = Math.min(0.40, (hero.speed / 100)) + (relics.some(r => r.id === 'ninja_hood') ? 0.10 : 0);
+        const isDodged = Math.random() < dodgeChance;
+
         // Enemy turn
         const rawEnemyDmg = combatState.enemy.attack;
         let finalEnemyDmg = Math.max(1, rawEnemyDmg - effectiveDefense);
         
-        if (playerShield > 0) {
-            if (playerShield >= finalEnemyDmg) {
-                playerShield -= finalEnemyDmg;
-                newLog.push(`O ${combatState.enemy.name} atacou, mas seu Escudo absorveu todo o dano.`);
-                finalEnemyDmg = 0;
-            } else {
-                finalEnemyDmg -= playerShield;
-                playerShield = 0;
-                newLog.push(`O ${combatState.enemy.name} atacou, quebrando seu Escudo.`);
+        if (isDodged) {
+            newLog.push(`💨 Você esquivou habilidosamente do ataque do ${combatState.enemy.name}! (0 Dano tomado)`);
+            finalEnemyDmg = 0;
+        } else {
+            if (playerShield > 0) {
+                if (playerShield >= finalEnemyDmg) {
+                    playerShield -= finalEnemyDmg;
+                    newLog.push(`O ${combatState.enemy.name} atacou, mas seu Escudo absorveu todo o dano.`);
+                    finalEnemyDmg = 0;
+                } else {
+                    finalEnemyDmg -= playerShield;
+                    playerShield = 0;
+                    newLog.push(`O ${combatState.enemy.name} atacou, quebrando seu Escudo.`);
+                }
             }
-        }
 
-        if (finalEnemyDmg > 0) {
-            playerHp = Math.max(0, playerHp - finalEnemyDmg);
-            newLog.push(`O ${combatState.enemy.name} atacou causando ${finalEnemyDmg} de dano.`);
+            if (finalEnemyDmg > 0) {
+                playerHp = Math.max(0, playerHp - finalEnemyDmg);
+                newLog.push(`O ${combatState.enemy.name} atacou causando ${finalEnemyDmg} de dano.`);
+            }
         }
 
         // Check if player dead
@@ -305,8 +343,9 @@ export function useRoguelike() {
             return;
         }
 
-        // Regenerate small amount of MP
-        playerMp = Math.min(hero.maxMp, playerMp + 2);
+        // Regenerate small amount of MP (with mana_stone check)
+        const hasManaStone = relics.some(r => r.id === 'mana_stone');
+        playerMp = Math.min(hero.maxMp, playerMp + 2 + (hasManaStone ? 3 : 0));
 
         setRoguelikeRun(prev => ({
             ...prev,

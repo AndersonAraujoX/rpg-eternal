@@ -117,7 +117,7 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                             </div>
 
                             {/* Class Selection */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 {/* Warrior */}
                                 <div className="bg-slate-800 border-2 border-slate-700 rounded-lg p-4 flex flex-col items-center text-center gap-3 hover:border-orange-500/50 hover:shadow-lg transition-all group">
                                     <span className="text-4xl group-hover:scale-110 transition-transform">⚔️</span>
@@ -174,6 +174,25 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                                         <Play size={12} /> Escolher
                                     </button>
                                 </div>
+
+                                {/* Rogue */}
+                                <div className="bg-slate-800 border-2 border-slate-700 rounded-lg p-4 flex flex-col items-center text-center gap-3 hover:border-yellow-500/50 hover:shadow-lg transition-all group">
+                                    <span className="text-4xl group-hover:scale-110 transition-transform">🥷</span>
+                                    <div className="flex flex-col gap-0.5">
+                                        <h4 className="text-sm font-bold text-yellow-500 uppercase">Ladino</h4>
+                                        <p className="text-[10px] text-slate-400">Veloz, evasivo & crítico fatal</p>
+                                    </div>
+                                    <div className="text-[10px] text-slate-300 w-full bg-slate-900/50 rounded py-2 px-1 flex flex-col gap-1 font-mono">
+                                        <div>❤️ HP: 55 | ⚡ SP: 16</div>
+                                        <div>⚔️ ATK: 10 | 🛡️ DEF: 3</div>
+                                    </div>
+                                    <button 
+                                        onClick={() => actions.startRoguelikeRun('rogue')}
+                                        className="w-full bg-yellow-600 hover:bg-yellow-550 text-white font-bold text-xs py-1.5 rounded flex items-center justify-center gap-1 transition-all"
+                                    >
+                                        <Play size={12} /> Escolher
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Upgrades */}
@@ -187,7 +206,7 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                             {/* Run Hero Stats Header */}
                             <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 flex flex-wrap justify-between items-center gap-3">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-2xl">{run.hero.classType === 'warrior' ? '⚔️' : run.hero.classType === 'mage' ? '🪄' : '🏹'}</span>
+                                    <span className="text-2xl">{run.hero.classType === 'warrior' ? '⚔️' : run.hero.classType === 'mage' ? '🪄' : run.hero.classType === 'ranger' ? '🏹' : '🥷'}</span>
                                     <div>
                                         <div className="text-xs font-bold uppercase text-slate-300">{run.hero.classType}</div>
                                         <div className="flex items-center gap-3 text-[11px] text-slate-400 font-mono mt-0.5">
@@ -283,7 +302,7 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-3xl">{run.hero.classType === 'warrior' ? '⚔️' : run.hero.classType === 'mage' ? '🪄' : '🏹'}</span>
+                                            <span className="text-3xl">{run.hero.classType === 'warrior' ? '⚔️' : run.hero.classType === 'mage' ? '🪄' : run.hero.classType === 'ranger' ? '🏹' : '🥷'}</span>
                                             <div>
                                                 <div className="text-xs font-bold uppercase text-slate-200">Você ({run.hero.classType})</div>
                                                 <div className="text-[10px] text-slate-400">Velocidade: {run.hero.speed}</div>
@@ -317,10 +336,12 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                                     </div>
 
                                     {/* Stats grid */}
-                                    <div className="grid grid-cols-3 gap-2 text-[9px] text-slate-350 bg-slate-900/40 p-2 rounded border border-slate-750 font-mono mt-1">
+                                    <div className="grid grid-cols-5 gap-1 text-[8px] text-slate-350 bg-slate-900/40 p-2 rounded border border-slate-750 font-mono mt-1">
                                         <div>🗡️ ATK: {run.hero.attack}</div>
                                         <div>🛡️ DEF: {run.hero.defense}</div>
                                         <div>🪄 MAG: {run.hero.magic}</div>
+                                        <div>💥 CRT: {Math.floor((0.10 + ((upgrades['crit_strike'] || 0) * 0.05) + (run.relics.some(r => r.id === 'clover') ? 0.15 : 0) + (run.hero.classType === 'rogue' ? 0.15 : 0)) * 100)}%</div>
+                                        <div>💨 EVD: {Math.floor((Math.min(0.40, (run.hero.speed / 100)) + (run.relics.some(r => r.id === 'ninja_hood') ? 0.10 : 0)) * 100)}%</div>
                                     </div>
                                 </div>
 
@@ -362,7 +383,7 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                             {/* Combat Log */}
                             <div className="bg-slate-950 border border-slate-800 rounded p-3 h-28 overflow-y-auto flex flex-col gap-1 font-mono text-[10px] text-slate-400">
                                 {run.combatState.log.map((logLine, idx) => (
-                                    <div key={idx} className={logLine.startsWith('Você') ? 'text-cyan-300' : logLine.startsWith('O') ? 'text-red-400' : 'text-slate-400'}>
+                                    <div key={idx} className={logLine.startsWith('Você') || logLine.startsWith('💥') || logLine.startsWith('💨') ? 'text-cyan-300' : logLine.startsWith('O') ? 'text-red-400' : 'text-slate-400'}>
                                         {logLine}
                                     </div>
                                 ))}
@@ -380,7 +401,7 @@ export const RoguelikeModal: React.FC<RoguelikeModalProps> = ({
                                     onClick={() => actions.performRoguelikeCombatAction('skill')}
                                     className="bg-blue-700 hover:bg-blue-650 border border-blue-500 font-bold text-xs py-2 rounded text-white shadow transition-all"
                                 >
-                                    🪄 Habilidade ({run.hero.classType === 'mage' ? 'Bola Fogo' : run.hero.classType === 'warrior' ? 'Golpe Trespassante' : 'Disparo Rápido'})
+                                    🪄 Habilidade ({run.hero.classType === 'mage' ? 'Bola Fogo' : run.hero.classType === 'warrior' ? 'Golpe Trespassante' : run.hero.classType === 'ranger' ? 'Disparo Rápido' : 'Apunhalada Costas'})
                                 </button>
                                 <button 
                                     onClick={() => actions.performRoguelikeCombatAction('defend')}

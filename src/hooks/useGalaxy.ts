@@ -15,6 +15,7 @@ export const useGalaxy = (
     const [territories, setTerritories] = useState<Territory[]>(initialTerritories);
     const [spaceship, setSpaceship] = useState<Spaceship>(initialSpaceship);
 
+
     const attackSector = (sectorId: string) => {
         const sector = galaxy.find(s => s.id === sectorId);
         if (!sector || sector.isOwned) return;
@@ -30,28 +31,8 @@ export const useGalaxy = (
             return;
         }
 
-        // Combat: use party power vs sector difficulty for a meaningful check
-        // The win chance scales from 0.3 (half power) up to 0.95 (3x power)
-        const powerRatio = Math.max(0, gold > 0 ? 1 : 1); // placeholder to keep gold reference
-        const winChance = Math.min(0.95, Math.max(0.3, 0.5 + (spaceship.level - sector.level) * 0.05));
-
-        const roll = Math.random();
-
         setSpaceship(prev => ({ ...prev, fuel: prev.fuel - fuelCost }));
-
-        if (roll < winChance) {
-            setGalaxy(prev => prev.map(s => s.id === sectorId ? { ...s, isOwned: true } : s));
-            addLog(`Vitória! ${sector.name} conquistado!`, 'achievement');
-            soundManager.playLevelUp();
-            // Reward Loot
-            const loot = sector.level * 1000;
-            setGold(g => g + loot);
-        } else {
-            const hullDmg = Math.min(10 + sector.level, spaceship.hull);
-            setSpaceship(prev => ({ ...prev, hull: Math.max(0, prev.hull - hullDmg) }));
-            addLog(`Derrota! Recuando de ${sector.name}. Casco -${hullDmg}`, 'danger');
-            soundManager.playHit();
-        }
+        addLog(`Nave saltou para o setor ${sector.name}! Iniciando missão de conquista.`, 'info');
     };
 
     const attackTerritory = (id: string) => {

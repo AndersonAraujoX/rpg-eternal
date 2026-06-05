@@ -1899,6 +1899,7 @@ export const useGame = () => {
         const run = roguelike.roguelikeRun;
         if (run.planetaryExpedition) {
             const victory = run.status === 'victory';
+            const sectorId = run.planetaryExpedition.sectorId;
             const sectorLevel = run.planetaryExpedition.sectorLevel;
             const biome = run.planetaryExpedition.biome;
             const sectorName = run.planetaryExpedition.sectorName;
@@ -1911,14 +1912,31 @@ export const useGame = () => {
                 roguelike.setEmberFragments(prev => prev + rewards.emberBonus);
             }
 
+            // Verify if the sector was already owned
+            const sector = galaxyState.galaxy.find(s => s.id === sectorId);
+            const wasAlreadyOwned = sector ? sector.isOwned : false;
+
             if (victory) {
                 addLog(`Expedição Planetária em ${sectorName} concluída com sucesso! Combustível +${rewards.fuelReward}, Casco +${rewards.hullRepair}, Frags +${rewards.emberBonus}`, 'achievement');
+                if (!wasAlreadyOwned) {
+                    galaxyState.setGalaxy(prev => prev.map(s => s.id === sectorId ? { ...s, isOwned: true } : s));
+                    soundManager.playLevelUp();
+                    const loot = sectorLevel * 1000;
+                    setGold(g => g + loot);
+                    addLog(`Setor ${sectorName} foi totalmente conquistado para o império! +${loot} Ouro.`, 'achievement');
+                }
             } else {
                 addLog(`Expedição Planetária em ${sectorName} falhou! Nave recuperada com combustível mínimo (+${rewards.fuelReward}).`, 'danger');
+                if (!wasAlreadyOwned) {
+                    const hullDmg = Math.min(10 + sectorLevel, galaxyState.spaceship.hull);
+                    galaxyState.setSpaceship(prev => ({ ...prev, hull: Math.max(0, prev.hull - hullDmg) }));
+                    addLog(`Derrota na incursão de conquista! Recuando com danos ao casco: -${hullDmg} HP.`, 'danger');
+                    soundManager.playHit();
+                }
             }
         }
         roguelike.abandonRoguelikeRun();
-    }, [roguelike.roguelikeRun, roguelike.abandonRoguelikeRun, roguelike.setEmberFragments, galaxyState.rewardPlanetaryRun, addLog]);
+    }, [roguelike.roguelikeRun, roguelike.abandonRoguelikeRun, roguelike.setEmberFragments, galaxyState.rewardPlanetaryRun, galaxyState.galaxy, galaxyState.setGalaxy, galaxyState.spaceship, galaxyState.setSpaceship, addLog, setGold]);
 
     const result = useMemo(() => {
         const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave };

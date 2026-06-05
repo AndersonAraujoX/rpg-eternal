@@ -1,4 +1,4 @@
-export type RoguelikeClass = 'warrior' | 'mage' | 'ranger';
+export type RoguelikeClass = 'warrior' | 'mage' | 'ranger' | 'rogue';
 
 export interface RoguelikeHero {
     classType: RoguelikeClass;
@@ -106,6 +106,14 @@ export const ROGUELIKE_UPGRADES: Omit<RoguelikeUpgrade, 'level'>[] = [
         maxLevel: 3,
         baseCost: 25,
         costScaling: 2.0
+    },
+    {
+        id: 'crit_strike',
+        name: 'Crítico Devastador',
+        description: '+5% de Chance de Acerto Crítico inicial',
+        maxLevel: 5,
+        baseCost: 20,
+        costScaling: 1.8
     }
 ];
 
@@ -115,7 +123,10 @@ export const RELICS_POOL: RoguelikeRelic[] = [
     { id: 'magic_wand', name: 'Varinha de Aprendiz', description: '+4 de Magia nas batalhas', emoji: '🪄' },
     { id: 'golden_coin', name: 'Moeda da Fortuna', description: 'Ganha +2 de ouro ao resolver nós de combate', emoji: '🪙' },
     { id: 'phoenix_feather', name: 'Pena de Fênix', description: 'Previne a derrota uma vez por run, recuperando 30% HP', emoji: '🪶' },
-    { id: 'life_ring', name: 'Anel da Vitalidade', description: '+15 HP Máximo', emoji: '💍' }
+    { id: 'life_ring', name: 'Anel da Vitalidade', description: '+15 HP Máximo', emoji: '💍' },
+    { id: 'clover', name: 'Trevo da Sorte', description: '+15% de Chance de Crítico nas batalhas', emoji: '🍀' },
+    { id: 'ninja_hood', name: 'Capuz Ninja', description: '+10% de Chance de Esquiva nas batalhas', emoji: '🥷' },
+    { id: 'mana_stone', name: 'Pedra de Mana', description: 'Regenera +3 MP extra no fim de cada turno de combate', emoji: '🧪' }
 ];
 
 export const ENEMIES_POOL: Record<RoguelikeNodeType, Omit<RoguelikeEnemy, 'hp' | 'maxHp'>[]> = {
@@ -241,6 +252,18 @@ export function getStartingHero(classType: RoguelikeClass, upgrades: Record<stri
                 defense: 4,
                 speed: 14,
                 magic: 6 + extraMag
+            };
+        case 'rogue':
+            return {
+                classType,
+                hp: 55 + extraHp,
+                maxHp: 55 + extraHp,
+                mp: 25,
+                maxMp: 25,
+                attack: 10 + extraAtk,
+                defense: 3,
+                speed: 16,
+                magic: 5 + extraMag
             };
     }
 }
