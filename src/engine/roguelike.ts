@@ -38,6 +38,15 @@ export interface RoguelikeEnemy {
     emoji: string;
 }
 
+export interface RoguelikeEvent {
+    title: string;
+    description: string;
+    options: {
+        text: string;
+        effect: 'heal' | 'gain_relic' | 'lose_hp_gain_relic' | 'gain_gold' | 'lose_gold_gain_relic' | 'nothing';
+    }[];
+}
+
 export interface RoguelikeRunState {
     hero: RoguelikeHero | null;
     nodes: RoguelikeNode[];
@@ -51,14 +60,7 @@ export interface RoguelikeRunState {
         enemyShield: number;
         log: string[];
     } | null;
-    eventState: {
-        title: string;
-        description: string;
-        options: {
-            text: string;
-            effect: 'heal' | 'gain_relic' | 'lose_hp_gain_relic' | 'gain_gold' | 'lose_gold_gain_relic' | 'nothing';
-        }[];
-    } | null;
+    eventState: RoguelikeEvent | null;
     status: 'none' | 'exploring' | 'combat' | 'event' | 'rest' | 'treasure' | 'victory' | 'defeat';
     // Planetary Expedition context (null = normal roguelike run)
     planetaryExpedition: PlanetaryExpedition | null;
@@ -148,7 +150,7 @@ export const ENEMIES_POOL: Record<RoguelikeNodeType, Omit<RoguelikeEnemy, 'hp' |
     treasure: []
 };
 
-export const EVENTS_POOL = [
+export const EVENTS_POOL: RoguelikeEvent[] = [
     {
         title: 'Fonte Misteriosa',
         description: 'Você encontra uma fonte borbulhando com uma água brilhante no meio das ruínas.',
@@ -363,7 +365,7 @@ const PLANETARY_ENEMIES: Record<PlanetaryBiome, Record<string, Omit<RoguelikeEne
     }
 };
 
-const PLANETARY_EVENTS: Record<PlanetaryBiome, typeof EVENTS_POOL> = {
+const PLANETARY_EVENTS: Record<PlanetaryBiome, RoguelikeEvent[]> = {
     planet: [
         {
             title: 'Ruínas Alienígenas',
