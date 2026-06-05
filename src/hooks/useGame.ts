@@ -47,6 +47,8 @@ import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
 import { WEATHER_DATA } from '../engine/weather';
 
 import { INITIAL_GARDEN } from '../engine/garden';
+import { generateInitialBots, tickFakePlayers, selectArenaOpponents } from '../engine/playerSimulation';
+import type { FakePlayer } from '../engine/playerSimulation';
 
 const getNextBoss = (level: number): Boss => {
     const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
@@ -136,6 +138,7 @@ export const useGame = () => {
     const [voidMatter, setVoidMatter] = useState<number>(0);
     const [voidAscensions, setVoidAscensions] = useState<number>(0);
     const [victory, setVictory] = useState(false);
+    const [fakePlayers, setFakePlayers] = useState<FakePlayer[]>(() => generateInitialBots(20));
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<import('../engine/types').Talent[]>([]);
     const [artifacts, setArtifacts] = useState<import('../engine/types').Artifact[]>(RARE_ARTIFACTS);
@@ -493,7 +496,8 @@ export const useGame = () => {
         divinity,
         resources, items, runes,
         tower: world.tower,
-        towerBoss: world.towerBoss
+        towerBoss: world.towerBoss,
+        fakePlayers
     });
 
     useEffect(() => {
@@ -508,9 +512,10 @@ export const useGame = () => {
             divinity,
             resources, items, runes,
             tower: world.tower,
-            towerBoss: world.towerBoss
+            towerBoss: world.towerBoss,
+            fakePlayers
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers]);
 
     // Side Effects
     useEffect(() => {
@@ -526,14 +531,14 @@ export const useGame = () => {
         return () => clearInterval(timer);
     }, [galaxyState.galaxyRewards]);
 
-    // FIX: Gerar oponentes da Arena automaticamente quando array está vazio
+    // FIX: Selecionar oponentes da Arena a partir dos bots simulados
     useEffect(() => {
-        if (arenaOpponents.length === 0) {
+        if (arenaOpponents.length === 0 && fakePlayers.length > 0) {
             const rank = arenaRank || 1000;
             const power = calculatedPartyPower || 100;
-            setArenaOpponents(generateInitialArenaBoard(power, rank));
+            setArenaOpponents(selectArenaOpponents(fakePlayers, power, rank));
         }
-    }, [arenaOpponents.length, arenaRank, calculatedPartyPower]);
+    }, [arenaOpponents.length, arenaRank, calculatedPartyPower, fakePlayers]);
 
     useEffect(() => {
         const dpsTimer = setInterval(() => {
@@ -905,7 +910,8 @@ export const useGame = () => {
                 const winChance = calculateWinChance(calculatedPartyPower, opponent.power);
                 const won = winChance > Math.random();
                 if (won) {
-                    setArenaRank(r => Math.max(1, r - 20));
+                    const nextRank = Math.max(1, arenaRank - 20);
+                    setArenaRank(nextRank);
                     const gloryGain = 10 + Math.floor(opponent.power / 50);
                     setGlory(g => g + gloryGain);
                     const goldReward = Math.floor(50 + opponent.power * 0.5);
@@ -921,16 +927,34 @@ export const useGame = () => {
                         addLog(`⚔️ ${opponent.name} aguarda na Fila de Recrutas até você virar Líder! +${gloryGain} Glória, +${goldReward} Ouro.`, 'achievement');
                     }
 
-                    // Grow remaining opponents + spawn replacement
-                    const replacement = spawnReplacementOpponent(calculatedPartyPower, arenaRank, opponent.power);
-                    setArenaOpponents(prev => [...applyVictoryGrowth(prev, opponent.id), replacement]);
+                    // Update bot stats and select new arena opponents
+                    setFakePlayers(prevBots => {
+                        const updatedBots = prevBots.map(b => {
+                            if (b.id === opponent.id) {
+                                return { ...b, power: Math.max(10, Math.floor(b.power * 0.95)) };
+                            }
+                            return b;
+                        });
+                        setArenaOpponents(selectArenaOpponents(updatedBots, calculatedPartyPower, nextRank));
+                        return updatedBots;
+                    });
 
                 } else {
-                    setArenaRank(r => Math.min(9999, r + 5));
+                    const nextRank = Math.min(9999, arenaRank + 5);
+                    setArenaRank(nextRank);
                     addLog(`Derrota na Arena contra ${opponent.name}... Continue treinando!`, 'danger');
-                    setArenaOpponents(prev => prev.map(op =>
-                        op.id !== opponent.id ? { ...op, power: Math.floor(op.power * 0.95) } : op
-                    ));
+                    
+                    // Update bot stats and select new arena opponents
+                    setFakePlayers(prevBots => {
+                        const updatedBots = prevBots.map(b => {
+                            if (b.id === opponent.id) {
+                                return { ...b, power: Math.floor(b.power * 1.05) + 10 };
+                            }
+                            return b;
+                        });
+                        setArenaOpponents(selectArenaOpponents(updatedBots, calculatedPartyPower, nextRank));
+                        return updatedBots;
+                    });
                 }
             },
             attackSector: (id: string) => galaxyState.attackSector(id),
@@ -2120,6 +2144,17 @@ export const useGame = () => {
                 }
             }
 
+            // Fake Players (Bots) Simulation Tick
+            const botsResult = tickFakePlayers(stateRef.current.fakePlayers, calculatedPartyPower);
+            if (botsResult.updatedBots) {
+                setFakePlayers(botsResult.updatedBots);
+            }
+            if (botsResult.logEntries && botsResult.logEntries.length > 0) {
+                botsResult.logEntries.forEach(log => {
+                    addLog(log.message, log.type as any);
+                });
+            }
+
             // Backrooms Simulation Tick
             backrooms.processBackroomsTick(1);
 
@@ -2171,6 +2206,8 @@ export const useGame = () => {
         setBackroomsFloor: backrooms.setBackroomsFloor,
         backroomsFloorProgress: backrooms.backroomsFloorProgress,
         setBackroomsFloorProgress: backrooms.setBackroomsFloorProgress,
+        fakePlayers,
+        setFakePlayers,
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
@@ -2229,6 +2266,7 @@ export const useGame = () => {
             monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, showCampfire,
             outerSpaceUnlocked, prestigeNodes, townVisited, portalConfig, guildQueue,
             arenaRank, glory, quests, theme, autoSellRarity, arenaOpponents,
+            fakePlayers, setFakePlayers,
 
 
             // App.tsx State
@@ -2316,7 +2354,7 @@ export const useGame = () => {
             backroomsFloorProgress: backrooms.backroomsFloorProgress,
             backroomsBossHp: backrooms.backroomsBossHp,
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers]);
 
     return result;
 };

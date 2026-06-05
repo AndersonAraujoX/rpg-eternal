@@ -4,6 +4,7 @@ import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS, INITIAL_BOSS 
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GARDEN } from '../engine/garden';
 import type { BackroomsExplorer, BackroomsOutpost, BackroomsResources } from '../engine/backrooms';
+import type { FakePlayer } from '../engine/playerSimulation';
 
 export interface PersistenceProps {
     heroes: Hero[];
@@ -123,6 +124,8 @@ export interface PersistenceProps {
     setBackroomsFloor: React.Dispatch<React.SetStateAction<number>>;
     backroomsFloorProgress: number;
     setBackroomsFloorProgress: React.Dispatch<React.SetStateAction<number>>;
+    fakePlayers: FakePlayer[];
+    setFakePlayers: React.Dispatch<React.SetStateAction<FakePlayer[]>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -184,7 +187,9 @@ export const usePersistence = (props: PersistenceProps) => {
         backroomsFloor,
         setBackroomsFloor,
         backroomsFloorProgress,
-        setBackroomsFloorProgress
+        setBackroomsFloorProgress,
+        fakePlayers,
+        setFakePlayers
     } = props;
 
 
@@ -363,6 +368,8 @@ export const usePersistence = (props: PersistenceProps) => {
                     });
                 }
 
+                if (state.fakePlayers) setFakePlayers(state.fakePlayers);
+
                 // World Boss state generally shouldn't be persisted if active, or maybe yes?
                 // For now, let's reset WB on reload to avoid bugs, or persist only fragments.
 
@@ -475,6 +482,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 backroomsUnlockedTechs: p.backroomsUnlockedTechs,
                 backroomsFloor: p.backroomsFloor,
                 backroomsFloorProgress: p.backroomsFloorProgress,
+                fakePlayers: p.fakePlayers,
                 lastSaveTime: Date.now()
             };
 

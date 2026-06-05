@@ -62,8 +62,6 @@ import { PrestigeTreeModal } from './components/modals/PrestigeTreeModal';
 import { PetSpaceModal } from './components/modals/PetSpaceModal';
 import { WeatherOverlays } from './components/WeatherOverlays';
 
-import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
-
 function App() {
   const industry = useIndustry();
   const {
@@ -108,7 +106,8 @@ function App() {
     recruitExplorer, sendExplorer, recallExplorer, restExplorer, useAlmondWater,
     upgradeOutpost, craftGear,
     backroomsUnlockedTechs, researchTech,
-    backroomsFloor, backroomsFloorProgress, backroomsBossHp
+    backroomsFloor, backroomsFloorProgress, backroomsBossHp,
+    fakePlayers
   } = useGame();
 
 
@@ -490,7 +489,7 @@ function App() {
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
 
-      <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={FAKE_LEADERBOARD} currentPower={partyPower} />
+      <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={fakePlayers} currentPower={partyPower} />
       {dungeonActive && (
         <DungeonModal
           dungeon={dungeonState}
