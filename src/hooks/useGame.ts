@@ -40,7 +40,8 @@ import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS,
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GALAXY } from '../engine/galaxy';
 import { generateInitialArenaBoard, calculateWinChance, applyVictoryGrowth, spawnReplacementOpponent } from '../engine/arena';
-import { INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege } from '../engine/guildWar';
+import { INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege, initGvGWar, simulateGvGTick, playerAttackTower } from '../engine/guildWar';
+import type { GvGWarState } from '../engine/guildWar';
 import { INITIAL_TOWN, INITIAL_MARKET_TREND } from '../engine/initialData';
 import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
 import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
@@ -139,6 +140,7 @@ export const useGame = () => {
     const [voidAscensions, setVoidAscensions] = useState<number>(0);
     const [victory, setVictory] = useState(false);
     const [fakePlayers, setFakePlayers] = useState<FakePlayer[]>(() => generateInitialBots(20));
+    const [gvgWarState, setGvgWarState] = useState<GvGWarState | null>(null);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<import('../engine/types').Talent[]>([]);
     const [artifacts, setArtifacts] = useState<import('../engine/types').Artifact[]>(RARE_ARTIFACTS);
@@ -223,7 +225,7 @@ export const useGame = () => {
         if (!tech) return;
 
         const alreadyUnlocked = backrooms.backroomsUnlockedTechs.includes(techId);
-        const canAfford = 
+        const canAfford =
             backrooms.backroomsResources.scrap >= tech.cost.scrap &&
             backrooms.backroomsResources.almondWater >= tech.cost.almondWater &&
             backrooms.backroomsResources.anomalyParts >= tech.cost.anomalyParts;
@@ -497,7 +499,8 @@ export const useGame = () => {
         resources, items, runes,
         tower: world.tower,
         towerBoss: world.towerBoss,
-        fakePlayers
+        fakePlayers,
+        gvgWarState
     });
 
     useEffect(() => {
@@ -513,9 +516,10 @@ export const useGame = () => {
             resources, items, runes,
             tower: world.tower,
             towerBoss: world.towerBoss,
-            fakePlayers
+            fakePlayers,
+            gvgWarState
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState]);
 
     // Side Effects
     useEffect(() => {
@@ -943,7 +947,7 @@ export const useGame = () => {
                     const nextRank = Math.min(9999, arenaRank + 5);
                     setArenaRank(nextRank);
                     addLog(`Derrota na Arena contra ${opponent.name}... Continue treinando!`, 'danger');
-                    
+
                     // Update bot stats and select new arena opponents
                     setFakePlayers(prevBots => {
                         const updatedBots = prevBots.map(b => {
@@ -1038,7 +1042,7 @@ export const useGame = () => {
                 if (stateRef.current.resources.mithril >= costMithril && stateRef.current.souls >= costSouls) {
                     setResources(r => ({ ...r, mithril: r.mithril - costMithril }));
                     setSouls(s => s - costSouls);
-                    
+
                     const rand = Math.random();
                     let rarity: import('../engine/types').ItemRarity = 'common';
                     let valMultiplier = 1;
@@ -1052,15 +1056,15 @@ export const useGame = () => {
                         rarity = 'rare';
                         valMultiplier = 2.5;
                     }
-                    
+
                     const statsPool: ('attack' | 'defense' | 'hp' | 'speed' | 'lifesteal')[] = ['attack', 'defense', 'hp', 'speed', 'lifesteal'];
                     const stat = statsPool[Math.floor(Math.random() * statsPool.length)];
-                    
+
                     let baseVal = Math.floor(Math.random() * 5) + 5;
                     let val = Math.floor(baseVal * valMultiplier);
                     if (stat === 'speed') val = Math.max(1, Math.floor(val * 0.2));
                     if (stat === 'lifesteal') val = Math.max(1, Math.floor(val * 0.1));
-                    
+
                     const statNameMap = {
                         attack: 'Força',
                         defense: 'Proteção',
@@ -1069,7 +1073,7 @@ export const useGame = () => {
                         lifesteal: 'Vampirismo'
                     };
                     const runeName = `Runa da ${statNameMap[stat]}`;
-                    
+
                     const emojiMap = {
                         attack: '⚔️',
                         defense: '🛡️',
@@ -1078,7 +1082,7 @@ export const useGame = () => {
                         lifesteal: '🩸'
                     };
                     const emoji = emojiMap[stat];
-                    
+
                     const newRune: import('../engine/types').Rune = {
                         id: `rune-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
                         name: runeName,
@@ -1088,7 +1092,7 @@ export const useGame = () => {
                         rarity,
                         description: `Aumenta ${stat} em +${val}`
                     };
-                    
+
                     setRunes(prev => [...prev, newRune]);
                     addLog(`🔮 Runa Criada: ${newRune.name} (${newRune.rarity.toUpperCase()}) +${newRune.value} ${newRune.stat}!`, 'success');
                 } else {
@@ -1098,20 +1102,20 @@ export const useGame = () => {
             socketRune: (itemId: string, runeId: string) => {
                 const item = stateRef.current.items.find(i => i.id === itemId);
                 const rune = stateRef.current.runes.find(r => r.id === runeId);
-                
+
                 if (!item || !rune) {
                     addLog('Item ou Runa não encontrados.', 'error');
                     return;
                 }
-                
+
                 const currentRunes = item.runes || [];
                 const maxSockets = item.sockets || 0;
-                
+
                 if (currentRunes.length >= maxSockets) {
                     addLog('Este item não possui engastes vazios disponíveis.', 'error');
                     return;
                 }
-                
+
                 setRunes(prev => prev.filter(r => r.id !== runeId));
                 setItems(prevItems => prevItems.map(i => {
                     if (i.id === itemId) {
@@ -1122,7 +1126,7 @@ export const useGame = () => {
                     }
                     return i;
                 }));
-                
+
                 addLog(`✨ Runa ${rune.name} engastada com sucesso no item ${item.name}!`, 'success');
             },
             combineRunes: (runeIds: string[]) => {
@@ -1135,17 +1139,17 @@ export const useGame = () => {
                     addLog('Algumas runas selecionadas não foram encontradas no inventário.', 'error');
                     return;
                 }
-                
+
                 const [r1, r2, r3] = runesToCombine;
                 if (r1.rarity !== r2.rarity || r2.rarity !== r3.rarity) {
                     addLog('Todas as 3 runas devem ser da mesma raridade para fundir.', 'error');
                     return;
                 }
-                
+
                 const currentRarity = r1.rarity;
                 let nextRarity: import('../engine/types').ItemRarity;
                 let valMultiplier = 1;
-                
+
                 if (currentRarity === 'common') {
                     nextRarity = 'rare';
                     valMultiplier = 2.5;
@@ -1168,16 +1172,16 @@ export const useGame = () => {
 
                 setSouls(s => s - costSouls);
                 setRunes(prev => prev.filter(r => !runeIds.includes(r.id)));
-                
+
                 // Roll new stats for fused rune
                 const statsPool: ('attack' | 'defense' | 'hp' | 'speed' | 'lifesteal')[] = ['attack', 'defense', 'hp', 'speed', 'lifesteal'];
                 const stat = statsPool[Math.floor(Math.random() * statsPool.length)];
-                
+
                 let baseVal = Math.floor(Math.random() * 5) + 5;
                 let val = Math.floor(baseVal * valMultiplier);
                 if (stat === 'speed') val = Math.max(1, Math.floor(val * 0.2));
                 if (stat === 'lifesteal') val = Math.max(1, Math.floor(val * 0.1));
-                
+
                 const statNameMap = {
                     attack: 'Força',
                     defense: 'Proteção',
@@ -1186,7 +1190,7 @@ export const useGame = () => {
                     lifesteal: 'Vampirismo'
                 };
                 const runeName = `Runa da ${statNameMap[stat]}`;
-                
+
                 const emojiMap = {
                     attack: '⚔️',
                     defense: '🛡️',
@@ -1195,7 +1199,7 @@ export const useGame = () => {
                     lifesteal: '🩸'
                 };
                 const emoji = emojiMap[stat];
-                
+
                 const newRune: import('../engine/types').Rune = {
                     id: `rune-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
                     name: runeName,
@@ -1205,7 +1209,7 @@ export const useGame = () => {
                     rarity: nextRarity,
                     description: `Aumenta ${stat} em +${val}`
                 };
-                
+
                 setRunes(prev => [...prev, newRune]);
                 addLog(`🔮 Fusão de Runas Concluída: ${newRune.name} (${newRune.rarity.toUpperCase()}) +${newRune.value} ${newRune.stat}!`, 'success');
             },
@@ -1217,15 +1221,15 @@ export const useGame = () => {
                 }
                 const herbCost = 10;
                 const soulsCost = 100;
-                
+
                 if (stateRef.current.resources.herbs < herbCost || stateRef.current.souls < soulsCost) {
                     addLog(`Recursos insuficientes. Requer ${herbCost} Ervas e ${soulsCost} Almas.`, 'error');
                     return;
                 }
-                
+
                 setResources(r => ({ ...r, herbs: r.herbs - herbCost }));
                 setSouls(s => s - soulsCost);
-                
+
                 world.setWeather(weatherType);
                 world.setWeatherTimer(300);
                 addLog(`⛪ Ritual do Clima realizado! O tempo mudou para: ${WEATHER_DATA[weatherType].name}!`, 'success');
@@ -1584,20 +1588,20 @@ export const useGame = () => {
             },
             manualAttack: () => {
                 const dmg = Math.max(1, Math.floor(calculatedPartyPower * 0.05)); // 5% of party power per click
-                
+
                 // Track click stat
                 setGameStats(s => ({ ...s, clicks: (s.clicks || 0) + 1, totalDamageDealt: (s.totalDamageDealt || 0) + dmg }));
-                
+
                 // Add click damage to dps accumulator
                 damageAccumulator.current += dmg;
-                
+
                 // Deal damage (will be processed on next tick or instantly depending on HP)
                 if (world.tower.active) {
                     world.setTowerBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - dmg } }));
                 } else {
                     setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - dmg } }));
                 }
-                
+
                 // Visual feedback sound (optional)
                 // soundManager.playHit();
             },
@@ -1665,7 +1669,7 @@ export const useGame = () => {
                             const id1 = livingCombatants[i].id;
                             const id2 = livingCombatants[j].id;
                             const key = [id1, id2].sort().join('-');
-                            
+
                             const current = next[key] || { xp: 0, level: 1, type: 'comrades' };
                             if (current.level >= 3) continue;
 
@@ -1773,7 +1777,7 @@ export const useGame = () => {
 
             if (res.totalDmg >= currentBoss.stats.hp) {
                 bossDefeated = true;
-                
+
                 // Aumenta a moral nas vitórias
                 setTeamMorale(prev => Math.min(100, prev + 5));
 
@@ -1967,7 +1971,7 @@ export const useGame = () => {
                     const fatigueDelta = h.assignment === 'combat' ? 0.1 : -1;
                     const prevFatigue = h.fatigue || 0;
                     const newFatigue = Math.max(0, Math.min(100, prevFatigue + fatigueDelta));
-                    
+
                     if (newFatigue !== prevFatigue) {
                         h = { ...h, fatigue: newFatigue };
                     }
@@ -2000,7 +2004,7 @@ export const useGame = () => {
                     return next;
                 });
             }
-            
+
             // Collect all stats updates including combat damage
             const statsDelta = (Object.keys(autoResult.stats).length > 0) || (res.totalDmg > 0);
             if (statsDelta) {
@@ -2009,12 +2013,12 @@ export const useGame = () => {
                     if (Object.keys(autoResult.stats).length > 0) {
                         nextStats = { ...nextStats, ...autoResult.stats };
                     }
-                    
+
                     // Track damage if we're attacking
                     if (res.totalDmg > 0) {
                         nextStats.totalDamageDealt = (nextStats.totalDamageDealt || 0) + res.totalDmg;
                     }
-                    
+
                     return nextStats;
                 });
             }
@@ -2067,7 +2071,7 @@ export const useGame = () => {
             if (stateRef.current.pets && stateRef.current.pets.length > 0) {
                 const currentGold = stateRef.current.gold - goldDeduction;
                 const currentSouls = stateRef.current.souls - soulsDeduction;
-                
+
                 // Prioritize feeding with gold if gold > 1000
                 if (currentGold > 1000) {
                     // Find pet with lowest level (and lowest XP to break ties)
@@ -2104,7 +2108,6 @@ export const useGame = () => {
                         }
                         return p;
                     }));
-                    addLog(`Alimentou ${lowestPet.name} automaticamente com Ouro!`, 'action');
                 } else if (currentSouls > 5000) {
                     // Feed with souls if gold is low but souls are high
                     let lowestPet = stateRef.current.pets[0];
@@ -2140,7 +2143,6 @@ export const useGame = () => {
                         }
                         return p;
                     }));
-                    addLog(`Alimentou ${lowestPet.name} automaticamente com Almas!`, 'action');
                 }
             }
 
@@ -2153,6 +2155,22 @@ export const useGame = () => {
                 botsResult.logEntries.forEach(log => {
                     addLog(log.message, log.type as any);
                 });
+            }
+            // GvG War Simulation Tick (every ~5 seconds)
+            if (stateRef.current.gvgWarState?.warActive) {
+                const gvgNow = Date.now();
+                const gvgLast = stateRef.current.gvgWarState.lastTickTime || 0;
+                if (gvgNow - gvgLast >= 5000) {
+                    const gvgResult = simulateGvGTick(stateRef.current.gvgWarState, stateRef.current.fakePlayers);
+                    setGvgWarState(gvgResult);
+                    // Send notable GvG logs to global game log
+                    const newGvgLogs = gvgResult.warLogs.filter(l => l.timestamp >= gvgLast);
+                    newGvgLogs.forEach(l => {
+                        if (l.type === 'achievement' || l.type === 'danger') {
+                            addLog(`[GvG] ${l.message}`, l.type as any);
+                        }
+                    });
+                }
             }
 
             // Backrooms Simulation Tick
@@ -2208,6 +2226,8 @@ export const useGame = () => {
         setBackroomsFloorProgress: backrooms.setBackroomsFloorProgress,
         fakePlayers,
         setFakePlayers,
+        gvgWarState,
+        setGvgWarState,
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
@@ -2221,9 +2241,9 @@ export const useGame = () => {
             const sectorName = run.planetaryExpedition.sectorName;
 
             const rewards = getPlanetaryRunRewards(sectorLevel, biome, victory);
-            
+
             galaxyState.rewardPlanetaryRun(rewards.fuelReward, rewards.hullRepair, rewards.shipUpgrade);
-            
+
             if (rewards.emberBonus > 0) {
                 roguelike.setEmberFragments(prev => prev + rewards.emberBonus);
             }
@@ -2267,6 +2287,22 @@ export const useGame = () => {
             outerSpaceUnlocked, prestigeNodes, townVisited, portalConfig, guildQueue,
             arenaRank, glory, quests, theme, autoSellRarity, arenaOpponents,
             fakePlayers, setFakePlayers,
+            gvgWarState,
+            startGvGWar: (guildName: string) => {
+                if (gvgWarState?.warActive) return;
+                const newWar = initGvGWar(partyPower, fakePlayers, guildName || 'Sua Guilda');
+                setGvgWarState(newWar);
+                addLog(`[GvG] ⚔️ Guerra de Guildas iniciada contra ${newWar.rivalGuildName}!`, 'achievement');
+            },
+            playerGvGAttack: (towerId: string) => {
+                if (!gvgWarState?.warActive) return;
+                const result = playerAttackTower(gvgWarState, towerId, partyPower);
+                setGvgWarState(result.updatedState);
+                const latestLog = result.updatedState.warLogs[0];
+                if (latestLog) {
+                    addLog(`[GvG] ${latestLog.message}`, latestLog.type as any);
+                }
+            },
 
 
             // App.tsx State

@@ -117,3 +117,330 @@ export const applyTerritoryUpgrade = (territory: Territory): Territory => {
         upgradeCost: upgradeCostForLevel(territory.upgradeCost, newLevel),
     };
 };
+
+// ═══════════════════════════════════════════════════════════════
+// GvG (Guilda vs Guilda) System
+// ═══════════════════════════════════════════════════════════════
+
+import type { FakePlayer } from './playerSimulation';
+
+export interface GvGWarLog {
+    message: string;
+    type: 'info' | 'success' | 'danger' | 'achievement';
+    timestamp: number;
+}
+
+export interface GvGTower {
+    id: string;
+    name: string;
+    defenderName: string;
+    defenderAvatar: string;
+    defenderPower: number;
+    maxHp: number;
+    hp: number;
+    destroyed: boolean;
+}
+
+export interface GvGWarState {
+    playerGuildName: string;
+    rivalGuildName: string;
+    playerScore: number;
+    rivalScore: number;
+    towers: GvGTower[];
+    playerAttacksLeft: number;
+    warLogs: GvGWarLog[];
+    tickCount: number;
+    warActive: boolean;
+    lastTickTime: number;
+    alliedBotIds: string[];
+    rivalBotIds: string[];
+}
+
+const GVG_TOWER_NAMES = [
+    'Torre da Perdição', 'Bastião Sombrio', 'Pilar de Obsidiana',
+    'Sentinela de Ferro', 'Cidadela do Crepúsculo'
+];
+
+const GVG_RIVAL_GUILDS = [
+    'Legião Carmesim', 'Pacto das Sombras', 'Ordem do Abismo',
+    'Clã dos Imortais', 'Aliança Negra', 'Guardiões do Caos',
+    'Irmandade Fantasma', 'Conselho das Trevas'
+];
+
+/**
+ * Initialize a new GvG war by partitioning the fake players into
+ * allied and rival pools and creating 5 defensive towers.
+ */
+export const initGvGWar = (
+    playerPower: number,
+    fakePlayers: FakePlayer[],
+    playerGuildName: string
+): GvGWarState => {
+    // Pick a rival guild name
+    const rivalGuildName = GVG_RIVAL_GUILDS[Math.floor(Math.random() * GVG_RIVAL_GUILDS.length)];
+
+    // Partition bots into allied and rival pools
+    const shuffled = [...fakePlayers].sort(() => Math.random() - 0.5);
+    const half = Math.ceil(shuffled.length / 2);
+    const alliedBots = shuffled.slice(0, half);
+    const rivalBots = shuffled.slice(half);
+
+    // Create 5 towers with rival defenders
+    const towers: GvGTower[] = GVG_TOWER_NAMES.map((name, idx) => {
+        // Pick a rival bot for each tower, cycle if fewer than 5 rivals
+        const defender = rivalBots[idx % rivalBots.length];
+        // Scale tower power around player power (60% to 140%)
+        const scaledPower = Math.floor(playerPower * (0.6 + Math.random() * 0.8));
+        const towerHp = Math.floor(scaledPower * 2) + 500;
+
+        return {
+            id: `gvg-tower-${idx}`,
+            name,
+            defenderName: defender?.name || `Rival_${idx}`,
+            defenderAvatar: defender?.avatar || '💀',
+            defenderPower: scaledPower,
+            maxHp: towerHp,
+            hp: towerHp,
+            destroyed: false
+        };
+    });
+
+    return {
+        playerGuildName,
+        rivalGuildName,
+        playerScore: 0,
+        rivalScore: 0,
+        towers,
+        playerAttacksLeft: 3,
+        warLogs: [{
+            message: `⚔️ Guerra iniciada: ${playerGuildName} vs ${rivalGuildName}!`,
+            type: 'achievement',
+            timestamp: Date.now()
+        }],
+        tickCount: 0,
+        warActive: true,
+        lastTickTime: Date.now(),
+        alliedBotIds: alliedBots.map(b => b.id),
+        rivalBotIds: rivalBots.map(b => b.id)
+    };
+};
+
+/**
+ * Calculate a simple combat win chance based on power ratio.
+ */
+const gvgWinChance = (attackerPower: number, defenderPower: number): number => {
+    const ratio = attackerPower / Math.max(1, defenderPower);
+    if (ratio >= 2) return 0.90;
+    if (ratio <= 0.5) return 0.10;
+    // Linear interpolation between 0.10 and 0.90
+    return 0.10 + (ratio - 0.5) * (0.80 / 1.5);
+};
+
+/**
+ * Run one tick of the GvG war simulation.
+ * An allied bot attacks a random standing tower.
+ * A rival bot attacks back (scoring points if successful).
+ */
+export const simulateGvGTick = (
+    state: GvGWarState,
+    fakePlayers: FakePlayer[]
+): GvGWarState => {
+    if (!state.warActive) return state;
+
+    const now = Date.now();
+    const newLogs: GvGWarLog[] = [];
+    let { playerScore, rivalScore, towers } = state;
+    towers = towers.map(t => ({ ...t })); // shallow clone
+
+    const standingTowers = towers.filter(t => !t.destroyed);
+    const alliedBots = fakePlayers.filter(b => state.alliedBotIds.includes(b.id));
+    const rivalBots = fakePlayers.filter(b => state.rivalBotIds.includes(b.id));
+
+    // === Allied bot attacks a random enemy tower ===
+    if (standingTowers.length > 0 && alliedBots.length > 0) {
+        const attacker = alliedBots[Math.floor(Math.random() * alliedBots.length)];
+        const targetIdx = Math.floor(Math.random() * standingTowers.length);
+        const target = standingTowers[targetIdx];
+
+        const won = Math.random() < gvgWinChance(attacker.power, target.defenderPower);
+
+        if (won) {
+            const damage = Math.floor(attacker.power * (0.3 + Math.random() * 0.4));
+            const towerRef = towers.find(t => t.id === target.id)!;
+            towerRef.hp = Math.max(0, towerRef.hp - damage);
+
+            if (towerRef.hp <= 0) {
+                towerRef.destroyed = true;
+                playerScore += 500;
+                newLogs.push({
+                    message: `🏰 ${attacker.name} destruiu a ${target.name}! +500 pts`,
+                    type: 'achievement',
+                    timestamp: now
+                });
+            } else {
+                playerScore += 50;
+                if (Math.random() < 0.3) {
+                    newLogs.push({
+                        message: `⚔️ ${attacker.name} atacou ${target.name} (-${damage} HP)`,
+                        type: 'success',
+                        timestamp: now
+                    });
+                }
+            }
+        } else {
+            rivalScore += 25;
+            if (Math.random() < 0.2) {
+                newLogs.push({
+                    message: `🛡️ ${target.defenderName} defendeu ${target.name} contra ${attacker.name}`,
+                    type: 'danger',
+                    timestamp: now
+                });
+            }
+        }
+    }
+
+    // === Rival bot counter-attack (scores points) ===
+    if (rivalBots.length > 0) {
+        const attacker = rivalBots[Math.floor(Math.random() * rivalBots.length)];
+        const defender = alliedBots.length > 0
+            ? alliedBots[Math.floor(Math.random() * alliedBots.length)]
+            : null;
+
+        const defPower = defender ? defender.power : 100;
+        const won = Math.random() < gvgWinChance(attacker.power, defPower);
+
+        if (won) {
+            rivalScore += 75;
+            if (Math.random() < 0.2) {
+                newLogs.push({
+                    message: `💥 ${attacker.name} (rival) venceu um confronto! +75 pts para ${state.rivalGuildName}`,
+                    type: 'danger',
+                    timestamp: now
+                });
+            }
+        } else {
+            playerScore += 30;
+        }
+    }
+
+    // Check if all towers destroyed -> war ends
+    const allDestroyed = towers.every(t => t.destroyed);
+    let warActive = state.warActive;
+
+    if (allDestroyed) {
+        warActive = false;
+        const isVictory = playerScore > rivalScore;
+        newLogs.push({
+            message: isVictory
+                ? `🏆 VITÓRIA! ${state.playerGuildName} venceu a guerra com ${playerScore} pts!`
+                : `💀 DERROTA! ${state.rivalGuildName} venceu com ${rivalScore} pts.`,
+            type: isVictory ? 'achievement' : 'danger',
+            timestamp: now
+        });
+    }
+
+    // Also end war after 60 ticks to prevent stalemates
+    const newTickCount = state.tickCount + 1;
+    if (newTickCount >= 60 && warActive) {
+        warActive = false;
+        const isVictory = playerScore > rivalScore;
+        newLogs.push({
+            message: isVictory
+                ? `🏆 Tempo esgotado! ${state.playerGuildName} vence por ${playerScore} a ${rivalScore}!`
+                : `💀 Tempo esgotado! ${state.rivalGuildName} vence por ${rivalScore} a ${playerScore}.`,
+            type: isVictory ? 'achievement' : 'danger',
+            timestamp: now
+        });
+    }
+
+    return {
+        ...state,
+        playerScore,
+        rivalScore,
+        towers,
+        warLogs: [...newLogs, ...state.warLogs].slice(0, 30),
+        tickCount: newTickCount,
+        warActive,
+        lastTickTime: now
+    };
+};
+
+/**
+ * Resolve a manual player attack against a specific tower.
+ * Awards bonus points on victory.
+ */
+export const playerAttackTower = (
+    state: GvGWarState,
+    towerId: string,
+    playerPower: number
+): { updatedState: GvGWarState; won: boolean; damage: number } => {
+    if (!state.warActive || state.playerAttacksLeft <= 0) {
+        return { updatedState: state, won: false, damage: 0 };
+    }
+
+    const towers = state.towers.map(t => ({ ...t }));
+    const tower = towers.find(t => t.id === towerId);
+
+    if (!tower || tower.destroyed) {
+        return { updatedState: state, won: false, damage: 0 };
+    }
+
+    const won = Math.random() < gvgWinChance(playerPower, tower.defenderPower);
+    const newLogs: GvGWarLog[] = [];
+    let { playerScore } = state;
+    let damage = 0;
+
+    if (won) {
+        damage = Math.floor(playerPower * (0.5 + Math.random() * 0.5));
+        tower.hp = Math.max(0, tower.hp - damage);
+
+        if (tower.hp <= 0) {
+            tower.destroyed = true;
+            playerScore += 1000; // Bonus for manual kill
+            newLogs.push({
+                message: `🔥 VOCÊ destruiu a ${tower.name}! +1000 pts bônus!`,
+                type: 'achievement',
+                timestamp: Date.now()
+            });
+        } else {
+            playerScore += 200; // Bonus for manual hit
+            newLogs.push({
+                message: `⚔️ Ataque manual em ${tower.name}! -${damage} HP, +200 pts`,
+                type: 'success',
+                timestamp: Date.now()
+            });
+        }
+    } else {
+        newLogs.push({
+            message: `🛡️ ${tower.defenderName} repeliu seu ataque em ${tower.name}!`,
+            type: 'danger',
+            timestamp: Date.now()
+        });
+    }
+
+    // Check if all towers destroyed
+    const allDestroyed = towers.every(t => t.destroyed);
+    let warActive = state.warActive;
+
+    if (allDestroyed) {
+        warActive = false;
+        newLogs.push({
+            message: `🏆 VITÓRIA TOTAL! Todas as torres caíram! ${state.playerGuildName} reina suprema!`,
+            type: 'achievement',
+            timestamp: Date.now()
+        });
+    }
+
+    return {
+        updatedState: {
+            ...state,
+            playerScore,
+            towers,
+            playerAttacksLeft: state.playerAttacksLeft - 1,
+            warLogs: [...newLogs, ...state.warLogs].slice(0, 30),
+            warActive
+        },
+        won,
+        damage
+    };
+};

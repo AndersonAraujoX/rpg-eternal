@@ -5,6 +5,7 @@ import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GARDEN } from '../engine/garden';
 import type { BackroomsExplorer, BackroomsOutpost, BackroomsResources } from '../engine/backrooms';
 import type { FakePlayer } from '../engine/playerSimulation';
+import type { GvGWarState } from '../engine/guildWar';
 
 export interface PersistenceProps {
     heroes: Hero[];
@@ -126,6 +127,8 @@ export interface PersistenceProps {
     setBackroomsFloorProgress: React.Dispatch<React.SetStateAction<number>>;
     fakePlayers: FakePlayer[];
     setFakePlayers: React.Dispatch<React.SetStateAction<FakePlayer[]>>;
+    gvgWarState: GvGWarState | null;
+    setGvgWarState: React.Dispatch<React.SetStateAction<GvGWarState | null>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -189,7 +192,8 @@ export const usePersistence = (props: PersistenceProps) => {
         backroomsFloorProgress,
         setBackroomsFloorProgress,
         fakePlayers,
-        setFakePlayers
+        setFakePlayers,
+        setGvgWarState
     } = props;
 
 
@@ -369,6 +373,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 }
 
                 if (state.fakePlayers) setFakePlayers(state.fakePlayers);
+                if (state.gvgWarState) setGvgWarState(state.gvgWarState);
 
                 // World Boss state generally shouldn't be persisted if active, or maybe yes?
                 // For now, let's reset WB on reload to avoid bugs, or persist only fragments.
@@ -483,6 +488,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 backroomsFloor: p.backroomsFloor,
                 backroomsFloorProgress: p.backroomsFloorProgress,
                 fakePlayers: p.fakePlayers,
+                gvgWarState: p.gvgWarState,
                 lastSaveTime: Date.now()
             };
 

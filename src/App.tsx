@@ -107,7 +107,8 @@ function App() {
     upgradeOutpost, craftGear,
     backroomsUnlockedTechs, researchTech,
     backroomsFloor, backroomsFloorProgress, backroomsBossHp,
-    fakePlayers
+    fakePlayers,
+    gvgWarState, startGvGWar, playerGvGAttack
   } = useGame();
 
 
@@ -447,7 +448,7 @@ function App() {
             actions.bombardTerritory(id, multiplier, weaponName);
           }
         };
-        return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} />;
+        return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} gvgWarState={gvgWarState} onStartGvG={() => startGvGWar(guild?.name || 'Sua Guilda')} onPlayerGvGAttack={playerGvGAttack} />;
       })()}
 
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
