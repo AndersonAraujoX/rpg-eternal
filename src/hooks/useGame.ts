@@ -1954,7 +1954,7 @@ export const useGame = () => {
         equippedRelics, setEquippedRelics,
         bossRushWave, setBossRushWave,
         bossRushMaxWave, setBossRushMaxWave,
-        patronDeity, deityLevel, deityFavor, deityEnergy,
+        patronDeity, setPatronDeity, deityLevel, setDeityLevel, deityFavor, setDeityFavor, deityEnergy, setDeityEnergy,
         emberFragments: roguelike.emberFragments,
         setEmberFragments: roguelike.setEmberFragments,
         roguelikeUpgrades: roguelike.roguelikeUpgrades,

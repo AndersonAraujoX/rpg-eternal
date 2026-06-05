@@ -225,7 +225,7 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                                     <div className="grid grid-cols-1 gap-3 max-h-[40vh] overflow-y-auto pr-1">
                                         {explorers.map(exp => {
                                             const isLost = exp.status === 'lost';
-                                            const lvlSelected = selectedLevelForExp[exp.id] || 'lvl_0';
+                                            const lvlSelected = selectedLevelForExp[exp.id] || (BACKROOMS_LEVELS[0]?.id || '');
 
                                             return (
                                                 <div 
