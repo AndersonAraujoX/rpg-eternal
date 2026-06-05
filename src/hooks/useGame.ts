@@ -446,7 +446,9 @@ export const useGame = () => {
         artifactMultipliers,
         patronDeity, deityLevel, deityFavor, deityEnergy,
         divinity,
-        resources, items, runes
+        resources, items, runes,
+        tower: world.tower,
+        towerBoss: world.towerBoss
     });
 
     useEffect(() => {
@@ -459,9 +461,11 @@ export const useGame = () => {
             artifactMultipliers,
             patronDeity, deityLevel, deityFavor, deityEnergy,
             divinity,
-            resources, items, runes
+            resources, items, runes,
+            tower: world.tower,
+            towerBoss: world.towerBoss
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss]);
 
     // Side Effects
     useEffect(() => {
@@ -1543,11 +1547,19 @@ export const useGame = () => {
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
         const runTick = () => {
-            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers } = stateRef.current;
-            if (activeHeroes.length === 0 && !world.tower.active) return;
+            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers, tower, towerBoss } = stateRef.current;
+            if (activeHeroes.length === 0 && !tower.active) return;
 
-            const isTower = world.tower.active;
-            let targetBoss = isTower ? world.towerBoss : boss;
+            const isTower = tower.active;
+            let targetBoss = isTower ? towerBoss : boss;
+
+            // Sync check: Ensure tower boss stats match the current floor, resolving loaded discrepancies.
+            if (isTower && towerBoss.level !== tower.floor) {
+                const correctedBoss = getNextBoss(tower.floor);
+                correctedBoss.id = `tower-${tower.floor}`;
+                world.setTowerBoss(correctedBoss);
+                targetBoss = correctedBoss;
+            }
 
             // VOID BOSS EMOJI FIX
             if (voidActive && !isTower) {
@@ -1619,7 +1631,7 @@ export const useGame = () => {
                     synergiesForCombat.push({ type: 'crit_dmg', value: 0.25 } as any);
                 }
             }
-            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? ((world.towerBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
+            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
 
             damageAccumulator.current += res.totalDmg;
 
@@ -1705,14 +1717,15 @@ export const useGame = () => {
                 setMonsterKills(prev => ({ ...prev, [currentBoss.name]: (prev[currentBoss.name] || 0) + 1 }));
 
                 // Increase variety and level
-                const nextLevel = currentBoss.level + 1;
-                const nextBossData = getNextBoss(nextLevel);
-
                 if (isTower) {
+                    const nextLevel = tower.floor + 1;
+                    const nextBossData = getNextBoss(nextLevel);
                     world.setTower(p => ({ ...p, floor: p.floor + 1, maxFloor: Math.max(p.maxFloor, p.floor + 1) }));
                     world.setTowerBoss({ ...nextBossData, id: `tower-${nextLevel}` });
-                    addLog(`Torre Andar ${world.tower.floor} Concluído! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
+                    addLog(`Torre Andar ${tower.floor} Concluído! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
                 } else {
+                    const nextLevel = currentBoss.level + 1;
+                    const nextBossData = getNextBoss(nextLevel);
                     setBoss(p => ({ ...p, ...nextBossData }));
                     addLog(`Boss ${currentBoss.name} Derrotado! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
                 }
