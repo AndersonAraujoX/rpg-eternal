@@ -1839,7 +1839,7 @@ export const useGame = () => {
                         const autoReviveSpeed = backrooms.backroomsUnlockedTechs.includes('silicon_network') ? 1.10 : 1.0;
                         const hpRecover = Math.floor(h.stats.maxHp * 0.10 * autoReviveSpeed);
                         const nextHp = Math.min(h.stats.maxHp, (h.stats.hp || 0) + hpRecover);
-                        let isDead = h.isDead;
+                        let isDead: boolean = h.isDead;
                         if (nextHp >= h.stats.maxHp) {
                             isDead = false;
                             addLog(`🛡️ Auto-Ressurreição: ${h.name} ressuscitou e está pronto para o combate!`, 'success');
