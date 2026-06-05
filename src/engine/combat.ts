@@ -129,11 +129,11 @@ export const processCombatTurn = (
 
     // Burn Damage (DoT)
     if (burnEffect && !boss.isDead) {
-        // 5% Max HP per second implies 0.05 * (tickDuration / 1000)
-        // Cap burn to avoid instant cheese on huge bosses? No, % is fun.
-        // Let's cap at 100 * Hero Power to prevent 1-shotting raid bosses? 
+        // Capped to prevent exponential scaling cheese on astronomical tower bosses.
         const burnDmg = Math.floor(boss.stats.maxHp * burnEffect.value * (tickDuration / 1000));
-        const actualBurn = Math.max(1, burnDmg);
+        const totalAtk = heroes.reduce((sum, h) => sum + (h.stats?.attack || 0), 0);
+        const cappedBurn = Math.min(burnDmg, totalAtk * 10);
+        const actualBurn = Math.max(1, cappedBurn);
         totalDmg += actualBurn;
 
         // Add Burn Event (throttled visually or just added)
@@ -352,7 +352,8 @@ export const processCombatTurn = (
         }
 
         const critRoll = Math.random();
-        if (critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0)) {
+        const isCrit = critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0);
+        if (isCrit) {
             const critMult = 2 + critDmgBonus;
             baseDmg *= critMult;
             skillDmg *= critMult;
@@ -377,6 +378,17 @@ export const processCombatTurn = (
         const heroDamageDealt = Math.max(0, Math.floor(totalHeroAttack));
         totalDmg += heroDamageDealt;
 
+        if (heroDamageDealt > 0) {
+            events.push({
+                id: `heroatk-${h.id}-${Date.now()}-${Math.random()}`,
+                type: 'damage',
+                text: `${heroDamageDealt}`,
+                isCrit,
+                x: 45 + (Math.random() * 20 - 10),
+                y: 45 + (Math.random() * 10 - 5)
+            });
+        }
+
         if (heroDamageDealt > 0 && lifeSteal > 0) {
             hp = Math.min(stats.maxHp, hp + (heroDamageDealt * lifeSteal));
         }
@@ -388,7 +400,7 @@ export const processCombatTurn = (
             const bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
             // Heroes are immortal — HP never drops below 1
             hp = Math.max(1, hp - bossDmg);
-            events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `-${Math.floor(bossDmg)}`, x: 50, y: 50 });
+            events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `${h.emoji} -${Math.floor(bossDmg)}`, x: 45 + (Math.random() * 10 - 5), y: 25 });
         }
 
         // 🧬 Auto-corrupção ao atingir insanidade 100

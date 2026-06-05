@@ -71,6 +71,51 @@ const getNextBoss = (level: number): Boss => {
     };
 };
 
+const autoAllocateHeroStats = (h: Hero): Hero => {
+    if (!h.statPoints || h.statPoints <= 0) return h;
+
+    const points = h.statPoints;
+    const stats = { ...h.stats };
+    const cls = h.class;
+
+    let cycle: (keyof Stats)[] = [];
+
+    if (['Warrior', 'Paladin', 'Templar'].includes(cls)) {
+        cycle = ['maxHp', 'defense', 'maxHp', 'defense', 'attack'];
+    } else if (['Mage', 'Sorcerer', 'Sage', 'Illusionist'].includes(cls)) {
+        cycle = ['magic', 'speed', 'magic', 'maxHp', 'magic'];
+    } else if (['Rogue', 'Ninja', 'Assassin', 'Ranger', 'Dragoon', 'Samurai', 'Berserker', 'hunter', 'Pirate'].includes(cls)) {
+        cycle = ['attack', 'speed', 'attack', 'maxHp', 'attack'];
+    } else if (['Warlock', 'Necromancer', 'Druid', 'Alchemist'].includes(cls)) {
+        cycle = ['magic', 'attack', 'maxHp', 'defense', 'magic'];
+    } else if (['Healer', 'cleric', 'Bard'].includes(cls)) {
+        cycle = ['maxHp', 'defense', 'speed', 'maxHp', 'magic'];
+    } else if (['Monk', 'Viking'].includes(cls)) {
+        cycle = ['maxHp', 'defense', 'speed', 'maxHp', 'attack'];
+    } else if (['Miner', 'Fisherman', 'Blacksmith', 'Engineer'].includes(cls)) {
+        cycle = ['attack', 'maxHp', 'defense', 'speed', 'attack'];
+    } else {
+        cycle = ['attack', 'maxHp', 'defense', 'speed', 'attack'];
+    }
+
+    for (let i = 0; i < points; i++) {
+        const stat = cycle[i % cycle.length];
+        stats[stat] = (stats[stat] || 0) + 1;
+        if (stat === 'maxHp') {
+            stats.hp = (stats.hp || 0) + 1;
+        }
+        if (stat === 'maxMp') {
+            stats.mp = (stats.mp || 0) + 1;
+        }
+    }
+
+    return {
+        ...h,
+        statPoints: 0,
+        stats
+    };
+};
+
 export const useGame = () => {
     // CORE STATE
     const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
@@ -503,6 +548,11 @@ export const useGame = () => {
         }, 1000);
         return () => clearInterval(dpsTimer);
     }, []);
+
+    useEffect(() => {
+        setPartyDps(0);
+        damageAccumulator.current = 0;
+    }, [boss.id, world.towerBoss.id, world.tower.active]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -1898,6 +1948,18 @@ export const useGame = () => {
                         h = { ...h, fatigue: newFatigue };
                     }
 
+                    // Auto-evolve if level >= 50 and prestige class is available
+                    if (h.level >= 50 && (PRESTIGE_CLASSES as any)[h.class]) {
+                        const nextClass = (PRESTIGE_CLASSES as any)[h.class];
+                        h = { ...h, class: nextClass, level: 1, xp: 0, maxXp: 100 };
+                        addLog(`🚀 Evolução Automática: ${h.name} evoluiu para ${nextClass}!`, 'success');
+                    }
+
+                    // Auto-allocate stat points
+                    if (h.statPoints > 0) {
+                        h = autoAllocateHeroStats(h);
+                    }
+
                     if (h !== oldHero) changed = true;
                     return h;
                 });
@@ -1931,6 +1993,131 @@ export const useGame = () => {
                     
                     return nextStats;
                 });
+            }
+
+            // Auto-awakening logic
+            let goldDeduction = 0;
+            let soulsDeduction = 0;
+            const awakenedHeroIds: string[] = [];
+
+            stateRef.current.heroes.forEach(h => {
+                if (h.unlocked && h.level >= 100 && !h.isAwakened) {
+                    const currentGold = stateRef.current.gold - goldDeduction;
+                    const currentSouls = stateRef.current.souls - soulsDeduction;
+                    if (currentGold >= 100000 && currentSouls >= 50000) {
+                        goldDeduction += 100000;
+                        soulsDeduction += 50000;
+                        awakenedHeroIds.push(h.id);
+                    }
+                }
+            });
+
+            if (awakenedHeroIds.length > 0) {
+                setGold(g => Math.max(0, g - goldDeduction));
+                setSouls(s => Math.max(0, s - soulsDeduction));
+                setHeroes(prev => prev.map(h => {
+                    if (awakenedHeroIds.includes(h.id)) {
+                        addLog(`☄️ LIMIT BREAK! ${h.name} alcançou o Despertar automaticamente! Seus atributos explodiram de poder!`, 'achievement');
+                        soundManager.playLevelUp();
+                        return {
+                            ...h,
+                            isAwakened: true,
+                            awakeningTitle: 'Desperto',
+                            awakenedAt: Date.now(),
+                            level: 100,
+                            stats: {
+                                ...h.stats,
+                                maxHp: Math.floor(h.stats.maxHp * 1.5),
+                                hp: Math.floor(h.stats.maxHp * 1.5),
+                                attack: Math.floor(h.stats.attack * 1.5),
+                                defense: Math.floor(h.stats.defense * 1.5),
+                                magic: Math.floor(h.stats.magic * 1.5)
+                            }
+                        };
+                    }
+                    return h;
+                }));
+            }
+
+            // Auto-feeding pets logic
+            if (stateRef.current.pets && stateRef.current.pets.length > 0) {
+                const currentGold = stateRef.current.gold - goldDeduction;
+                const currentSouls = stateRef.current.souls - soulsDeduction;
+                
+                // Prioritize feeding with gold if gold > 1000
+                if (currentGold > 1000) {
+                    // Find pet with lowest level (and lowest XP to break ties)
+                    let lowestPet = stateRef.current.pets[0];
+                    for (let i = 1; i < stateRef.current.pets.length; i++) {
+                        const p = stateRef.current.pets[i];
+                        if (p.level < lowestPet.level || (p.level === lowestPet.level && p.xp < lowestPet.xp)) {
+                            lowestPet = p;
+                        }
+                    }
+
+                    // Deduct gold
+                    setGold(g => Math.max(0, g - 100));
+
+                    // Upgrade pet
+                    petsState.setPets(prev => prev.map(p => {
+                        if (p.id === lowestPet.id) {
+                            let newXp = p.xp + 50;
+                            let newLevel = p.level;
+                            let newMaxXp = p.maxXp;
+                            const newStats = p.stats ? { ...p.stats } : { attack: 0, hp: 0, maxHp: 0, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 0 };
+
+                            while (newXp >= newMaxXp) {
+                                newLevel++;
+                                newXp -= newMaxXp;
+                                newMaxXp = Math.floor(newMaxXp * 1.5);
+                                newStats.attack = (newStats.attack || 0) + 1;
+                                newStats.maxHp = (newStats.maxHp || 0) + 5;
+                                newStats.hp = (newStats.hp || 0) + 5;
+                                newStats.defense = (newStats.defense || 0) + 1;
+                            }
+
+                            return { ...p, level: newLevel, xp: newXp, maxXp: newMaxXp, stats: newStats };
+                        }
+                        return p;
+                    }));
+                    addLog(`Alimentou ${lowestPet.name} automaticamente com Ouro!`, 'action');
+                } else if (currentSouls > 5000) {
+                    // Feed with souls if gold is low but souls are high
+                    let lowestPet = stateRef.current.pets[0];
+                    for (let i = 1; i < stateRef.current.pets.length; i++) {
+                        const p = stateRef.current.pets[i];
+                        if (p.level < lowestPet.level || (p.level === lowestPet.level && p.xp < lowestPet.xp)) {
+                            lowestPet = p;
+                        }
+                    }
+
+                    // Deduct souls
+                    setSouls(s => Math.max(0, s - 100));
+
+                    // Upgrade pet
+                    petsState.setPets(prev => prev.map(p => {
+                        if (p.id === lowestPet.id) {
+                            let newXp = p.xp + 150;
+                            let newLevel = p.level;
+                            let newMaxXp = p.maxXp;
+                            const newStats = p.stats ? { ...p.stats } : { attack: 0, hp: 0, maxHp: 0, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 0 };
+
+                            while (newXp >= newMaxXp) {
+                                newLevel++;
+                                newXp -= newMaxXp;
+                                newMaxXp = Math.floor(newMaxXp * 1.5);
+                                newStats.attack = (newStats.attack || 0) + 1;
+                                newStats.maxHp = (newStats.maxHp || 0) + 5;
+                                newStats.hp = (newStats.hp || 0) + 5;
+                                newStats.defense = (newStats.defense || 0) + 1;
+                            }
+
+                            return { ...p, level: newLevel, xp: newXp, maxXp: newMaxXp, stats: newStats };
+                        }
+                        return p;
+                    }));
+                    addLog(`Alimentou ${lowestPet.name} automaticamente com Almas!`, 'action');
+                }
             }
 
             // Backrooms Simulation Tick

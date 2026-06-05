@@ -74,11 +74,13 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
         if (last && last.id !== lastEventId.current) {
             lastEventId.current = last.id;
 
-            let color = 'text-white text-lg';
+            let color = 'text-white text-lg font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]';
             if (last.type === 'reaction') color = 'text-orange-500 font-extrabold text-2xl animate-bounce shadow-black drop-shadow-md';
             else if (last.type === 'status') color = 'text-cyan-400 font-bold text-xl shadow-black drop-shadow-sm';
-            else if (last.isCrit) color = 'text-yellow-400 font-bold text-xl';
+            else if (last.isCrit) color = 'text-yellow-400 font-black text-2xl animate-pulse shadow-black drop-shadow-md';
             else if (last.type === 'heal') color = 'text-green-400 font-bold text-lg';
+            else if (last.id?.startsWith('heroatk')) color = 'text-red-400 font-bold text-lg';
+            else if (last.id?.startsWith('bossatk')) color = 'text-red-600 font-medium text-base';
 
             const newParticle: Particle = {
                 id: last.id,

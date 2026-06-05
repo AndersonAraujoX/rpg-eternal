@@ -51,14 +51,19 @@ export const usePets = (
                 let newXp = p.xp + xpGain;
                 let newLevel = p.level;
                 let newMaxXp = p.maxXp;
+                const newStats = p.stats ? { ...p.stats } : { attack: 0, hp: 0, maxHp: 0, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 0 };
 
                 while (newXp >= newMaxXp) {
                     newLevel++;
                     newXp -= newMaxXp;
                     newMaxXp = Math.floor(newMaxXp * 1.5);
+                    newStats.attack = (newStats.attack || 0) + 1;
+                    newStats.maxHp = (newStats.maxHp || 0) + 5;
+                    newStats.hp = (newStats.hp || 0) + 5;
+                    newStats.defense = (newStats.defense || 0) + 1;
                 }
 
-                return { ...p, level: newLevel, xp: newXp, maxXp: newMaxXp };
+                return { ...p, level: newLevel, xp: newXp, maxXp: newMaxXp, stats: newStats };
             }
             return p;
         }));
