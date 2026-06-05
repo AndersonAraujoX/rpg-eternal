@@ -3,7 +3,7 @@ import type {
     BackroomsExplorer, BackroomsOutpost, BackroomsResources 
 } from '../engine/backrooms';
 import { 
-    createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS, BACKROOMS_RESEARCHES 
+    createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS, BACKROOMS_RESEARCHES, getTransitionBoss 
 } from '../engine/backrooms';
 
 export function useBackrooms() {
@@ -50,6 +50,9 @@ export function useBackrooms() {
     });
 
     const [backroomsUnlockedTechs, setBackroomsUnlockedTechs] = useState<string[]>([]);
+    const [backroomsFloor, setBackroomsFloor] = useState<number>(1);
+    const [backroomsFloorProgress, setBackroomsFloorProgress] = useState<number>(0);
+    const [backroomsBossHp, setBackroomsBossHp] = useState<number | null>(null);
 
     const [backroomsLogs, setBackroomsLogs] = useState<string[]>([
         `[${new Date().toLocaleTimeString()}] Posto Avançado M.E.G. inicializado. Pronto para exploração.`
@@ -217,13 +220,92 @@ export function useBackrooms() {
 
     const processBackroomsTick = useCallback((deltaSeconds: number) => {
         setBackroomsExplorers(prevExplorers => {
-            const { updatedExplorers, gainedResources, newLogs } = simulateBackroomsTick(
+            const isTransitionFloor = [15, 30, 45, 60, 75, 90, 100].includes(backroomsFloor);
+            
+            // If it is a transition floor and progress has reached 100%, and boss is not yet spawned, spawn the boss!
+            let activeBossHp = backroomsBossHp;
+            if (isTransitionFloor && backroomsFloorProgress >= 100 && activeBossHp === null) {
+                const boss = getTransitionBoss(backroomsFloor);
+                if (boss) {
+                    activeBossHp = boss.maxHp;
+                    setBackroomsBossHp(boss.maxHp);
+                    addLog(`💀 CHEFE APARECEU: ${boss.name} bloqueia a passagem no Andar ${backroomsFloor}! Derrote-o para prosseguir.`);
+                }
+            }
+
+            const { updatedExplorers, gainedResources, newLogs, progressGained, bossHpDamage } = simulateBackroomsTick(
                 prevExplorers,
                 backroomsOutpost,
                 backroomsResources,
                 [],
-                deltaSeconds
+                deltaSeconds,
+                backroomsFloor,
+                activeBossHp
             );
+
+            // Update boss HP if combat occurred
+            if (activeBossHp !== null && bossHpDamage > 0) {
+                const newBossHp = Math.max(0, activeBossHp - bossHpDamage);
+                setBackroomsBossHp(newBossHp);
+                
+                if (newBossHp <= 0) {
+                    const boss = getTransitionBoss(backroomsFloor);
+                    addLog(`🎉 VITÓRIA: ${boss ? boss.name : 'O Chefe'} foi derrotado! Passagem liberada.`);
+                    
+                    // Increment floor, reset progress
+                    setBackroomsFloor(f => Math.min(100, f + 1));
+                    setBackroomsFloorProgress(0);
+                    setBackroomsBossHp(null);
+                } else {
+                    activeBossHp = newBossHp;
+                }
+            }
+
+            // Update exploration progress if not at 100% on a transition floor
+            if (progressGained > 0) {
+                // If it's a transition floor, cap progress at 100
+                if (isTransitionFloor) {
+                    setBackroomsFloorProgress(prev => {
+                        const next = Math.min(100, prev + progressGained);
+                        if (next >= 100 && activeBossHp === null) {
+                            const boss = getTransitionBoss(backroomsFloor);
+                            if (boss) {
+                                setBackroomsBossHp(boss.maxHp);
+                                addLog(`💀 CHEFE APARECEU: ${boss.name} bloqueia a passagem no Andar ${backroomsFloor}! Derrote-o para prosseguir.`);
+                            }
+                        }
+                        return next;
+                    });
+                } else {
+                    // Normal floor: progress can cause floor level up
+                    setBackroomsFloorProgress(prev => {
+                        const next = prev + progressGained;
+                        if (next >= 100) {
+                            const floorsToGain = Math.floor(next / 100);
+                            const remainder = next % 100;
+                            
+                            setBackroomsFloor(f => {
+                                let targetFloor = f;
+                                for (let step = 0; step < floorsToGain; step++) {
+                                    if ([15, 30, 45, 60, 75, 90, 100].includes(targetFloor)) {
+                                        setBackroomsFloorProgress(100);
+                                        return targetFloor;
+                                    }
+                                    targetFloor = Math.min(100, targetFloor + 1);
+                                    if ([15, 30, 45, 60, 75, 90, 100].includes(targetFloor)) {
+                                        setBackroomsFloorProgress(0);
+                                        return targetFloor;
+                                    }
+                                }
+                                setBackroomsFloorProgress(remainder);
+                                return targetFloor;
+                            });
+                            return 0; 
+                        }
+                        return next;
+                    });
+                }
+            }
 
             // Add resources
             if (gainedResources.scrap || gainedResources.almondWater || gainedResources.anomalyParts) {
@@ -244,7 +326,7 @@ export function useBackrooms() {
 
             return updatedExplorers;
         });
-    }, [backroomsOutpost, backroomsResources]);
+    }, [backroomsFloor, backroomsFloorProgress, backroomsBossHp, backroomsOutpost, backroomsResources, addLog]);
 
     return {
         backroomsExplorers,
@@ -257,6 +339,12 @@ export function useBackrooms() {
         setBackroomsUnlockedTechs,
         backroomsLogs,
         setBackroomsLogs,
+        backroomsFloor,
+        setBackroomsFloor,
+        backroomsFloorProgress,
+        setBackroomsFloorProgress,
+        backroomsBossHp,
+        setBackroomsBossHp,
         recruitExplorer,
         sendExplorer,
         recallExplorer,

@@ -183,19 +183,23 @@ export const useGame = () => {
         backrooms.researchTech(techId);
 
         if (!alreadyUnlocked && canAfford) {
-            if (techId === 'space_tech') {
+            if (techId === 'space_warp' || techId === 'space_tech') {
                 setOuterSpaceUnlocked(true);
-                addLog("🚀 Motores de Dobra Espacial desenvolvidos! O Espaço Sideral foi desbloqueado!", "achievement");
+                addLog("🚀 Estudos de Dobra Espacial concluídos! O Espaço Sideral foi desbloqueado!", "achievement");
             }
-            if (techId === 'rift_tech') {
-                addLog("🌀 Estudos de Fendas Interdimensionais concluídos! As Fendas Temporais foram desbloqueadas!", "achievement");
+            if (techId === 'dimensional_singularity') {
+                setVictory(true);
+                addLog("🌀 Singularidade Inter-Dimensional ativada! Vitória dimensional suprema alcançada!", "achievement");
             }
         }
-    }, [backrooms.backroomsUnlockedTechs, backrooms.backroomsResources, backrooms.researchTech, setOuterSpaceUnlocked, addLog]);
+    }, [backrooms.backroomsUnlockedTechs, backrooms.backroomsResources, backrooms.researchTech, setOuterSpaceUnlocked, addLog, setVictory]);
 
     useEffect(() => {
-        if (backrooms.backroomsUnlockedTechs.includes('space_tech')) {
+        if (backrooms.backroomsUnlockedTechs.includes('space_tech') || backrooms.backroomsUnlockedTechs.includes('space_warp')) {
             setOuterSpaceUnlocked(true);
+        }
+        if (backrooms.backroomsUnlockedTechs.includes('dimensional_singularity')) {
+            setVictory(true);
         }
     }, [backrooms.backroomsUnlockedTechs]);
 
@@ -368,8 +372,14 @@ export const useGame = () => {
         maxHp += totalHpVal * 0.002;
         lifesteal += totalLifestealVal * 0.001;
 
+        // Fission Nuclear Tech (+20% HP and Attack)
+        if (backrooms.backroomsUnlockedTechs.includes('fission_nuclear')) {
+            attack *= 1.20;
+            maxHp *= 1.20;
+        }
+
         return { gold, attack, defense, speed, maxHp, lifesteal };
-    }, [monuments, heroes, patronDeity, deityLevel, items]);
+    }, [monuments, heroes, patronDeity, deityLevel, items, backrooms.backroomsUnlockedTechs]);
 
 
     const petStats = useMemo(() => {
@@ -750,7 +760,8 @@ export const useGame = () => {
             },
             triggerRebirth: () => {
                 const currentLevel = boss.level;
-                const soulsGained = Math.floor(currentLevel / 5) * (1 + (prestigeNodes['souls_1'] || 0) * 0.2);
+                const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
+                const soulsGained = Math.floor(Math.floor(currentLevel / 5) * (1 + (prestigeNodes['souls_1'] || 0) * 0.2) * cleanFusionMult);
                 setPortalConfig({
                     title: "PORTAL DE ASCENSÃO",
                     message: "Um portal de pura energia celestial se abre diante de você.",
@@ -760,7 +771,8 @@ export const useGame = () => {
                 });
             },
             confirmRebirth: () => {
-                const soulsGained = Math.floor(boss.level / 5) * (1 + (prestigeNodes['souls_1'] || 0) * 0.2);
+                const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
+                const soulsGained = Math.floor(Math.floor(boss.level / 5) * (1 + (prestigeNodes['souls_1'] || 0) * 0.2) * cleanFusionMult);
                 setSouls(s => s + soulsGained);
                 setHeroes(INITIAL_HEROES.map(h => ({ ...h, level: 1 + (prestigeNodes['legend_1'] || 0) * 2 })));
                 setGold(0);
@@ -1546,7 +1558,8 @@ export const useGame = () => {
                 };
             }
 
-            const tick = Math.max(100, (1000 / gameSpeed) * (1 - (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
+            const windmillsMult = backrooms.backroomsUnlockedTechs.includes('windmills') ? 1.05 : 1.0;
+            const tick = Math.max(100, (1000 / (gameSpeed * windmillsMult)) * (1 - (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
 
             if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);
 
@@ -1594,7 +1607,19 @@ export const useGame = () => {
 
             const moraleDamageMult = 0.5 + (teamMorale / 100) * 0.6;
             const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * getMonumentMultipliers().attack;
-            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? ((world.towerBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
+            const synergiesForCombat = [...activeSynergies];
+            if (backrooms.backroomsUnlockedTechs.includes('quantum_computing')) {
+                const existingIndex = synergiesForCombat.findIndex(s => s.type === 'crit_dmg');
+                if (existingIndex !== -1) {
+                    synergiesForCombat[existingIndex] = {
+                        ...synergiesForCombat[existingIndex],
+                        value: synergiesForCombat[existingIndex].value + 0.25
+                    };
+                } else {
+                    synergiesForCombat.push({ type: 'crit_dmg', value: 0.25 } as any);
+                }
+            }
+            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? ((world.towerBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
 
             damageAccumulator.current += res.totalDmg;
 
@@ -1652,8 +1677,11 @@ export const useGame = () => {
             const townHallLevel = buildings.find(b => b.id === 'town_hall')?.level || 0;
             const townHallGoldMult = 1 + (townHallLevel * 0.05); // 5% per level
 
-            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * getMonumentMultipliers().gold;
-            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0));
+            const steamEngineMult = backrooms.backroomsUnlockedTechs.includes('steam_engine') ? 1.15 : 1.0;
+            const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
+
+            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * getMonumentMultipliers().gold * steamEngineMult * cleanFusionMult;
+            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0)) * cleanFusionMult;
 
             const moraleXpMult = 0.5 + (teamMorale / 100) * 0.7;
 
@@ -1762,15 +1790,62 @@ export const useGame = () => {
 
             setHeroes(prev => {
                 const miners = (prev || []).filter(h => h.assignment === 'mine');
-                const mYield = processMining(miners);
-                if (mYield && ((mYield.copper || 0) > 0 || (mYield.iron || 0) > 0 || (mYield.mithril || 0) > 0)) {
-                    setResources(r => ({ ...r, copper: r.copper + (mYield.copper || 0), iron: r.iron + (mYield.iron || 0), mithril: r.mithril + (mYield.mithril || 0) }));
+                let mYield = processMining(miners);
+
+                // Passive extraction from vacuum_siphon
+                if (!mYield && backrooms.backroomsUnlockedTechs.includes('vacuum_siphon') && Math.random() < 0.15) {
+                    const roll = Math.random();
+                    if (roll < 0.10) {
+                        mYield = { mithril: 1 };
+                    } else if (roll < 0.40) {
+                        mYield = { iron: 1 };
+                    } else {
+                        mYield = { copper: 1 };
+                    }
+                }
+
+                if (mYield) {
+                    let copperGain = mYield.copper || 0;
+                    let ironGain = mYield.iron || 0;
+                    let mithrilGain = mYield.mithril || 0;
+
+                    if (backrooms.backroomsUnlockedTechs.includes('iron_metallurgy')) {
+                        if (copperGain > 0 && Math.random() < 0.15) copperGain++;
+                        if (ironGain > 0 && Math.random() < 0.15) ironGain++;
+                    }
+
+                    if (backrooms.backroomsUnlockedTechs.includes('large_mining')) {
+                        if (copperGain > 0 && Math.random() < 0.25) copperGain++;
+                        if (ironGain > 0 && Math.random() < 0.25) ironGain++;
+                        if (mithrilGain > 0 && Math.random() < 0.25) mithrilGain++;
+                    }
+
+                    if (copperGain > 0 || ironGain > 0 || mithrilGain > 0) {
+                        setResources(r => ({
+                            ...r,
+                            copper: r.copper + copperGain,
+                            iron: r.iron + ironGain,
+                            mithril: r.mithril + mithrilGain
+                        }));
+                    }
                 }
 
                 let changed = false;
                 const nextHeroes = prev.map(oldHero => {
                     const combatHero = res.updatedHeroes.find(h => h.id === oldHero.id);
                     let h = combatHero || oldHero;
+
+                    if (h.isDead) {
+                        const autoReviveSpeed = backrooms.backroomsUnlockedTechs.includes('silicon_network') ? 1.10 : 1.0;
+                        const hpRecover = Math.floor(h.stats.maxHp * 0.10 * autoReviveSpeed);
+                        const nextHp = Math.min(h.stats.maxHp, (h.stats.hp || 0) + hpRecover);
+                        let isDead = h.isDead;
+                        if (nextHp >= h.stats.maxHp) {
+                            isDead = false;
+                            addLog(`🛡️ Auto-Ressurreição: ${h.name} ressuscitou e está pronto para o combate!`, 'success');
+                        }
+                        h = { ...h, isDead, stats: { ...h.stats, hp: nextHp } };
+                    }
                     const now = Date.now();
 
                     if (bossDefeated && combatHero) {
@@ -1892,6 +1967,10 @@ export const useGame = () => {
         setBackroomsResources: backrooms.setBackroomsResources,
         backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
         setBackroomsUnlockedTechs: backrooms.setBackroomsUnlockedTechs,
+        backroomsFloor: backrooms.backroomsFloor,
+        setBackroomsFloor: backrooms.setBackroomsFloor,
+        backroomsFloorProgress: backrooms.backroomsFloorProgress,
+        setBackroomsFloorProgress: backrooms.setBackroomsFloorProgress,
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
@@ -2033,8 +2112,11 @@ export const useGame = () => {
             craftGear: backrooms.craftGear,
             backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
             researchTech,
+            backroomsFloor: backrooms.backroomsFloor,
+            backroomsFloorProgress: backrooms.backroomsFloorProgress,
+            backroomsBossHp: backrooms.backroomsBossHp,
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp]);
 
     return result;
 };

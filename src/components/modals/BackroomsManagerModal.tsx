@@ -5,7 +5,7 @@ import {
 import type { 
     BackroomsExplorer, BackroomsOutpost, BackroomsResources 
 } from '../../engine/backrooms';
-import { BACKROOMS_LEVELS, BACKROOMS_RESEARCHES } from '../../engine/backrooms';
+import { BACKROOMS_LEVELS, BACKROOMS_RESEARCHES, getTransitionBoss } from '../../engine/backrooms';
 
 interface BackroomsManagerModalProps {
     isOpen: boolean;
@@ -15,6 +15,9 @@ interface BackroomsManagerModalProps {
     resources: BackroomsResources;
     logs: string[];
     unlockedTechs?: string[];
+    floor: number;
+    floorProgress: number;
+    bossHp: number | null;
     actions: {
         recruitExplorer: () => void;
         sendExplorer: (explorerId: string, levelId: string) => void;
@@ -28,10 +31,11 @@ interface BackroomsManagerModalProps {
 }
 
 export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
-    isOpen, onClose, explorers, outpost, resources, logs, unlockedTechs, actions
+    isOpen, onClose, explorers, outpost, resources, logs, unlockedTechs, floor, floorProgress, bossHp, actions
 }) => {
     const [selectedLevelForExp, setSelectedLevelForExp] = useState<Record<string, string>>({});
     const [activeTab, setActiveTab] = useState<'exploradores' | 'pesquisa'>('exploradores');
+    const [selectedEra, setSelectedEra] = useState<string>('Era Medieval');
 
     const _unlockedTechs = unlockedTechs || [];
 
@@ -85,6 +89,63 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                         [02] PESQUISAS DE TECNOLOGIA (M.E.G. TECH TREE)
                     </button>
                 </div>
+
+                {/* Status Bar: Floor & Exploration Progress */}
+                <div className="bg-amber-950/20 px-4 py-2 border-b border-amber-850 flex flex-col sm:flex-row sm:items-center justify-between gap-2 z-10 text-[10px] md:text-xs font-mono">
+                    <div className="flex items-center gap-2">
+                        <span className="text-amber-400 font-bold uppercase">Progresso:</span>
+                        <span className="bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800 text-amber-300 font-bold">Andar {floor}/100</span>
+                    </div>
+                    <div className="flex-1 max-w-md flex items-center gap-2">
+                        <span className="text-[10px] text-amber-500 uppercase">Exploração:</span>
+                        <div className="flex-1 bg-amber-950/60 h-3 border border-amber-850 rounded overflow-hidden relative">
+                            <div 
+                                className="bg-amber-500 h-full transition-all duration-300"
+                                style={{ width: `${Math.min(100, floorProgress)}%` }}
+                            ></div>
+                            <span className="absolute inset-0 flex items-center justify-center text-[9px] text-amber-100 font-bold">{floorProgress.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                    
+                    {/* Environmental Hazards */}
+                    <div className="flex items-center gap-2 text-[10px]">
+                        {floor >= 31 && floor <= 75 && (
+                            <span className="text-red-500 animate-pulse font-bold bg-red-955/40 px-2 py-0.5 border border-red-900/60 rounded">
+                                ⚠️ PERIGO: AR TÓXICO (Requer Traje Nv. 2)
+                            </span>
+                        )}
+                        {floor >= 76 && (
+                            <span className="text-red-500 animate-pulse font-bold bg-red-955/40 px-2 py-0.5 border border-red-900/60 rounded">
+                                ⚠️ CRÍTICO: VÁCUO (Requer Traje Nv. 3)
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Boss Battle Conflict */}
+                {bossHp !== null && (
+                    <div className="bg-red-950/20 border-b border-red-850 p-3 flex flex-col gap-2 z-10 font-mono text-[10px] md:text-xs text-red-500">
+                        <div className="flex justify-between items-center font-bold">
+                            <span className="flex items-center gap-1.5">💀 CONFLITO ATIVO: Chefe de Transição</span>
+                            <span className="px-2 py-0.5 border border-red-800 bg-red-955/60 text-[9px] rounded uppercase">Combate Bloqueando Andar</span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div className="font-bold text-red-400">{getTransitionBoss(floor)?.name || 'Anomalia'}</div>
+                            <div className="flex-1 flex items-center gap-2">
+                                <span className="text-[10px]">HP:</span>
+                                <div className="flex-1 bg-red-950/60 h-3 border border-red-900/60 rounded overflow-hidden relative">
+                                    <div 
+                                        className="bg-red-700 h-full transition-all duration-300"
+                                        style={{ width: `${(bossHp / (getTransitionBoss(floor)?.maxHp || 100)) * 100}%` }}
+                                    ></div>
+                                    <span className="absolute inset-0 flex items-center justify-center text-[9px] text-red-100 font-bold">
+                                        {bossHp} / {getTransitionBoss(floor)?.maxHp || 100}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Body Content */}
                 {activeTab === 'exploradores' ? (
@@ -380,24 +441,52 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                             <span className="font-bold text-amber-400 uppercase">🔬 ARQUIVOS TECNOLÓGICOS DO M.E.G.</span>
                             <p className="mt-1">Use os recursos liminares coletados por seus exploradores (Sucatas, Peças de Anomalia e Água de Amêndoa) para realizar pesquisas críticas. Completar essas pesquisas abrirá novas rotas e desbloqueará recursos interdimensionais e espaciais globais no jogo.</p>
                         </div>
+
+                        {/* Era Tabs */}
+                        <div className="flex flex-wrap gap-1 border-b border-amber-900/60 pb-2 mb-2 z-10 text-[9px] md:text-[10px] font-bold">
+                            {['Era Medieval', 'Era Industrial & Vapor', 'Era Atômica & Digital', 'Era Quântica & Fusão', 'Era Espacial', 'Era Inter-Dimensional'].map(era => (
+                                <button
+                                    key={era}
+                                    onClick={() => setSelectedEra(era)}
+                                    className={`px-2 py-1 border transition-all ${
+                                        selectedEra === era
+                                            ? 'bg-amber-800 text-amber-100 border-amber-500 font-black'
+                                            : 'bg-transparent text-amber-650 border-amber-955/40 hover:border-amber-800'
+                                    }`}
+                                >
+                                    {era.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {BACKROOMS_RESEARCHES.map(tech => {
+                            {BACKROOMS_RESEARCHES.filter(tech => tech.era === selectedEra).map(tech => {
                                 const isUnlocked = _unlockedTechs.includes(tech.id);
+                                const isFloorLocked = floor < tech.minFloor;
                                 const canAfford = resources.scrap >= tech.cost.scrap &&
                                                   resources.almondWater >= tech.cost.almondWater &&
                                                   resources.anomalyParts >= tech.cost.anomalyParts;
                                 
                                 return (
-                                    <div key={tech.id} className="border-2 border-amber-800 bg-amber-950/5 p-4 rounded flex flex-col gap-3">
-                                        <div className="flex justify-between items-start border-b border-amber-800 pb-2">
-                                            <h3 className="text-sm font-bold uppercase text-amber-400">{tech.name}</h3>
+                                    <div key={tech.id} className={`border-2 p-4 rounded flex flex-col gap-3 transition-all ${
+                                        isUnlocked ? 'border-emerald-900/60 bg-emerald-950/5' :
+                                        isFloorLocked ? 'border-red-950 bg-red-950/5 opacity-55' : 'border-amber-800 bg-amber-950/5'
+                                    }`}>
+                                        <div className="flex justify-between items-start border-b border-amber-950/60 pb-2">
+                                            <div className="flex flex-col">
+                                                <h3 className={`text-sm font-bold uppercase ${isFloorLocked ? 'text-red-400' : 'text-amber-400'}`}>
+                                                    {tech.name}
+                                                </h3>
+                                                <span className="text-[8px] text-amber-650 mt-0.5">Requer Andar {tech.minFloor}</span>
+                                            </div>
                                             <span className={`text-[9px] uppercase px-2 py-0.5 border rounded font-bold ${
-                                                isUnlocked ? 'border-emerald-500 text-emerald-400' : 'border-amber-700 text-amber-600'
+                                                isUnlocked ? 'border-emerald-500 text-emerald-400 bg-emerald-950/40' :
+                                                isFloorLocked ? 'border-red-900 text-red-500 bg-red-950/40' : 'border-amber-700 text-amber-600 bg-amber-950/40'
                                             }`}>
-                                                {isUnlocked ? 'Pesquisado' : 'Disponível'}
+                                                {isUnlocked ? 'Pesquisado' : isFloorLocked ? 'Bloqueado' : 'Disponível'}
                                             </span>
                                         </div>
-                                        <p className="text-[11px] text-amber-600 leading-relaxed min-h-[44px]">{tech.description}</p>
+                                        <p className="text-[11px] text-amber-650 leading-relaxed min-h-[44px]">{tech.description}</p>
                                         <div className="bg-black/50 p-2.5 rounded border border-amber-900/60 text-[10px] text-amber-500 space-y-1">
                                             <div className="font-bold text-amber-400 uppercase text-[9px] tracking-wider mb-1">Efeito Global:</div>
                                             <div>⚡ {tech.effectText}</div>
@@ -406,14 +495,16 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                                         <div className="mt-auto pt-2 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
                                             {/* Cost indicators */}
                                             <div className="flex gap-3 text-[10px] font-bold">
-                                                <span className={`flex items-center gap-1 ${resources.scrap >= tech.cost.scrap ? 'text-amber-500' : 'text-red-800'}`}>🔧 {tech.cost.scrap}</span>
-                                                <span className={`flex items-center gap-1 ${resources.almondWater >= tech.cost.almondWater ? 'text-emerald-500' : 'text-red-800'}`}>🧴 {tech.cost.almondWater}</span>
-                                                <span className={`flex items-center gap-1 ${resources.anomalyParts >= tech.cost.anomalyParts ? 'text-purple-500' : 'text-red-800'}`}>🦠 {tech.cost.anomalyParts}</span>
+                                                <span className={`flex items-center gap-1 ${resources.scrap >= tech.cost.scrap ? 'text-amber-500' : 'text-red-850'}`}>🔧 {tech.cost.scrap}</span>
+                                                <span className={`flex items-center gap-1 ${resources.almondWater >= tech.cost.almondWater ? 'text-emerald-500' : 'text-red-850'}`}>🧴 {tech.cost.almondWater}</span>
+                                                <span className={`flex items-center gap-1 ${resources.anomalyParts >= tech.cost.anomalyParts ? 'text-purple-500' : 'text-red-850'}`}>🦠 {tech.cost.anomalyParts}</span>
                                             </div>
                                             
                                             {/* Action button */}
                                             {isUnlocked ? (
                                                 <span className="text-xs text-emerald-400 font-bold uppercase py-1.5 px-3 border border-emerald-500 rounded bg-emerald-950/20 text-center select-none">✔ Concluído</span>
+                                            ) : isFloorLocked ? (
+                                                <span className="text-xs text-red-500 font-bold uppercase py-1.5 px-3 border border-red-950 rounded bg-red-950/20 text-center select-none">🔒 Andar {tech.minFloor}</span>
                                             ) : (
                                                 <button
                                                     onClick={() => actions.researchTech && actions.researchTech(tech.id)}

@@ -119,6 +119,10 @@ export interface PersistenceProps {
     setBackroomsResources: React.Dispatch<React.SetStateAction<BackroomsResources>>;
     backroomsUnlockedTechs: string[];
     setBackroomsUnlockedTechs: React.Dispatch<React.SetStateAction<string[]>>;
+    backroomsFloor: number;
+    setBackroomsFloor: React.Dispatch<React.SetStateAction<number>>;
+    backroomsFloorProgress: number;
+    setBackroomsFloorProgress: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -176,7 +180,11 @@ export const usePersistence = (props: PersistenceProps) => {
         backroomsResources,
         setBackroomsResources,
         backroomsUnlockedTechs,
-        setBackroomsUnlockedTechs
+        setBackroomsUnlockedTechs,
+        backroomsFloor,
+        setBackroomsFloor,
+        backroomsFloorProgress,
+        setBackroomsFloorProgress
     } = props;
 
 
@@ -341,6 +349,8 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.backroomsOutpost) setBackroomsOutpost(state.backroomsOutpost);
                 if (state.backroomsResources) setBackroomsResources(state.backroomsResources);
                 if (state.backroomsUnlockedTechs) setBackroomsUnlockedTechs(state.backroomsUnlockedTechs);
+                if (typeof state.backroomsFloor === 'number') setBackroomsFloor(state.backroomsFloor);
+                if (typeof state.backroomsFloorProgress === 'number') setBackroomsFloorProgress(state.backroomsFloorProgress);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -463,6 +473,8 @@ export const usePersistence = (props: PersistenceProps) => {
                 backroomsOutpost: p.backroomsOutpost,
                 backroomsResources: p.backroomsResources,
                 backroomsUnlockedTechs: p.backroomsUnlockedTechs,
+                backroomsFloor: p.backroomsFloor,
+                backroomsFloorProgress: p.backroomsFloorProgress,
                 lastSaveTime: Date.now()
             };
 

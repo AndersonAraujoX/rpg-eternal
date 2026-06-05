@@ -107,7 +107,8 @@ function App() {
     backroomsExplorers, backroomsOutpost, backroomsResources, backroomsLogs,
     recruitExplorer, sendExplorer, recallExplorer, restExplorer, useAlmondWater,
     upgradeOutpost, craftGear,
-    backroomsUnlockedTechs, researchTech
+    backroomsUnlockedTechs, researchTech,
+    backroomsFloor, backroomsFloorProgress, backroomsBossHp
   } = useGame();
 
 
@@ -399,7 +400,7 @@ function App() {
 
       <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} />
 
-      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0} />
+      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0)} />
 
       <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} />
 
@@ -635,6 +636,9 @@ function App() {
         resources={backroomsResources}
         logs={backroomsLogs}
         unlockedTechs={backroomsUnlockedTechs}
+        floor={backroomsFloor}
+        floorProgress={backroomsFloorProgress}
+        bossHp={backroomsBossHp}
         actions={{
           recruitExplorer,
           sendExplorer,
