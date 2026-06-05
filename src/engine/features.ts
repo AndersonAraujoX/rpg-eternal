@@ -294,8 +294,11 @@ export const FEATURES_LIST: FeatureDefinition[] = [
         icon: '🌀',
         unlockRequirementText: 'Atingir Nível de Chefe 15',
         tab: 'combat',
-        checkUnlocked: (state) => state.bossLevel >= 15,
+        checkUnlocked: (state) => state.bossLevel >= 15 || state.outerSpaceUnlocked,
         getProgress: (state) => {
+            if (state.outerSpaceUnlocked) {
+                return { current: 15, max: 15, percentage: 100 };
+            }
             const current = Math.min(15, state.bossLevel);
             return { current, max: 15, percentage: Math.floor((current / 15) * 100) };
         }

@@ -190,7 +190,7 @@ export const DevToolsModal: React.FC<DevToolsModalProps> = ({
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             <button onClick={() => setOuterSpaceUnlocked(true)} className="bg-slate-800 hover:bg-slate-700 p-3 rounded border border-slate-700 text-xs transition-all">
-                                Unlock Outer Space
+                                Unlock Galaxy & Roguelike
                             </button>
                         </div>
                     </section>
