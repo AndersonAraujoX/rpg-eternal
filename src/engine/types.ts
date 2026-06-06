@@ -775,12 +775,12 @@ export interface GameActions {
     assignHero: (id: string) => void;
 
     // Phase 92: Town Events
-    interactWithEvent: (eventId: string, action: 'buy' | 'defend' | 'join', data?: any) => void;
+    interactWithEvent: (eventId: string, action: 'buy' | 'defend' | 'join', data?: { item?: Item }) => void;
     dismissEvent: () => void;
 
     // Formations
     saveFormation: (name: string) => void;
-    loadFormation: (formation: any) => void;
+    loadFormation: (id: string) => void;
     deleteFormation: (id: string) => void;
 
     // Phase 10: Meta-Progression

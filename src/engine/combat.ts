@@ -64,16 +64,33 @@ export const calculateDamageMultiplier = (souls: number, talents: Talent[], cons
     if (cScale) totalBonus += (cScale.level * cScale.valuePerLevel);
 
     // Additive Void Artifact Bonus
-    const hasVoidStone = _artifacts.some(a => a.id === 'a2');
+    let hasVoidStone = false;
+    for (let i = 0; i < _artifacts.length; i++) {
+        if (_artifacts[i].id === 'a2') {
+            hasVoidStone = true;
+            break;
+        }
+    }
     if (hasVoidStone) totalBonus += 0.5;
 
     // Additive Cards Bonus
-    const attackCards = _cards.filter(c => c.stat === 'attack');
-    totalBonus += attackCards.reduce((acc, c) => acc + (c.count * c.value), 0);
+    let cardsBonus = 0;
+    for (let i = 0; i < _cards.length; i++) {
+        const c = _cards[i];
+        if (c.stat === 'attack') {
+            cardsBonus += c.count * c.value;
+        }
+    }
+    totalBonus += cardsBonus;
 
     // Additive Achievements Bonus
-    const achievementBonus = _achievements.filter(a => a.isUnlocked).length * 0.01;
-    totalBonus += achievementBonus;
+    let achievementCount = 0;
+    for (let i = 0; i < _achievements.length; i++) {
+        if (_achievements[i].isUnlocked) {
+            achievementCount++;
+        }
+    }
+    totalBonus += achievementCount * 0.01;
 
     // Additive Pets Bonus (Dano Crítico e outros buffs viram dps aditivo)
     const petDamageBonus = _pets.reduce((acc, p) => {

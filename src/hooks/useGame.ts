@@ -210,6 +210,8 @@ export const useGame = () => {
 
     const damageAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
+    const bondXpAccumulatorRef = useRef<{ [key: string]: number }>({});
+    const bondTicksRef = useRef<number>(0);
 
     const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
         const newLog: LogEntry = { id: (Date.now() + Math.random()).toString(), message, type, timestamp: Date.now() };
@@ -269,16 +271,21 @@ export const useGame = () => {
 
     const [combatEvents, setCombatEvents] = useState<CombatEvent[]>([]);
 
-    const voidGuardian = useVoidGuardian(partyPower, addLog, (dmg) => {
+    const handleVoidGuardianFinish = useCallback((dmg: number) => {
         const rewards = calculateVoidGuardianRewards(dmg);
         setGold(g => g + rewards.gold);
         setSouls(s => s + rewards.souls);
-        if (dmg > (gameStats.voidGuardianHighestDamage || 0)) {
-            setGameStats(prev => ({ ...prev, voidGuardianHighestDamage: dmg }));
-        }
-    });
+        setGameStats(prev => {
+            if (dmg > (prev.voidGuardianHighestDamage || 0)) {
+                return { ...prev, voidGuardianHighestDamage: dmg };
+            }
+            return prev;
+        });
+    }, []);
 
-    const worldBossState = useWorldBoss(partyPower, gameStats, addLog, (rewards) => {
+    const voidGuardian = useVoidGuardian(partyPower, addLog, handleVoidGuardianFinish);
+
+    const handleWorldBossClaimed = useCallback((rewards: any) => {
         setGold(g => g + rewards.gold);
         setSouls(s => s + rewards.souls);
 
@@ -324,7 +331,6 @@ export const useGame = () => {
         }
 
         if (rewards.wonPet) {
-            // Import INITIAL_PETS later if possible, or just generate a fresh low level pet
             const randomPets = [
                 { id: `pet-${Date.now()}`, name: 'Cão Infernal', emoji: '🐕', level: 1, xp: 0, maxXp: 100, bonus: '+10% Dano Crítico' },
                 { id: `pet-${Date.now()}`, name: 'Corvo Sombrio', emoji: '🐦‍⬛', level: 1, xp: 0, maxXp: 100, bonus: '+20% Poder Sombrio' },
@@ -336,7 +342,9 @@ export const useGame = () => {
         }
 
         addLog(`Recompensas da Reide: ${formatNumber(rewards.gold)} Ouro, ${rewards.souls} Almas, ${rewards.guildXp} Guild XP, ${rewards.guildMembers} Novos Membros!`, 'achievement');
-    });
+    }, [addLog, guildState.setGuild, petsState.setPets]);
+
+    const worldBossState = useWorldBoss(partyPower, gameStats, addLog, handleWorldBossClaimed);
 
     const activeHeroes = useMemo(() => (heroes || []).filter(h => h.assignment === 'combat' && h.unlocked), [heroes]);
 
@@ -521,7 +529,36 @@ export const useGame = () => {
         gvgWarState,
         currentTutorialIndex,
         backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
-        backroomsFloor: backrooms.backroomsFloor
+        backroomsFloor: backrooms.backroomsFloor,
+        teamMorale,
+        prestigeNodes,
+        activeEvent,
+        town,
+        marketTrend,
+        arenaRank,
+        glory,
+        guildQueue,
+        arenaOpponents,
+        marketStock,
+        quests,
+        dailyQuests,
+        activePotions,
+        activeExpeditions,
+        theme,
+        autoSellRarity,
+        offlineGains,
+        voidActive,
+        voidTimer,
+        voidAscensions,
+        raidActive,
+        raidTimer,
+        dailyLoginClaimed,
+        townVisited,
+        partyPower,
+        monuments,
+        buildings,
+        voidMatter,
+        lastDailyReset
     });
 
     useEffect(() => {
@@ -541,9 +578,38 @@ export const useGame = () => {
             gvgWarState,
             currentTutorialIndex,
             backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
-            backroomsFloor: backrooms.backroomsFloor
+            backroomsFloor: backrooms.backroomsFloor,
+            teamMorale,
+            prestigeNodes,
+            activeEvent,
+            town,
+            marketTrend,
+            arenaRank,
+            glory,
+            guildQueue,
+            arenaOpponents,
+            marketStock,
+            quests,
+            dailyQuests,
+            activePotions,
+            activeExpeditions,
+            theme,
+            autoSellRarity,
+            offlineGains,
+            voidActive,
+            voidTimer,
+            voidAscensions,
+            raidActive,
+            raidTimer,
+            dailyLoginClaimed,
+            townVisited,
+            partyPower,
+            monuments,
+            buildings,
+            voidMatter,
+            lastDailyReset
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset]);
 
     // Side Effects
     useEffect(() => {
@@ -708,25 +774,25 @@ export const useGame = () => {
             spendStatPoint: (id: string, s: keyof Stats) => setHeroes(p => p.map(h => h.id === id && h.statPoints > 0 ? { ...h, statPoints: h.statPoints - 1, stats: { ...h.stats, [s]: (h.stats[s] || 0) + 1 } } : h)),
             recruitHero: (id: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, unlocked: true } : h)),
             buyHero: (id: string) => {
-                const h = heroes.find(x => x.id === id);
+                const h = stateRef.current.heroes.find(x => x.id === id);
                 const cost = 5000; // Fixed cost for direct recruitment
-                if (h && !h.unlocked && gold >= cost) {
+                if (h && !h.unlocked && stateRef.current.gold >= cost) {
                     setGold(g => g - cost);
                     setHeroes(p => p.map(curr => curr.id === id ? { ...curr, unlocked: true } : curr));
                     addLog(`Recrutou ${h.name} diretamente!`, 'success');
-                } else if (gold < cost) {
+                } else if (stateRef.current.gold < cost) {
                     addLog(`Ouro insuficiente para recrutar ${h?.name || 'herói'}. Precisa de ${cost}.`, 'error');
                 }
             },
             evolveHero: (id: string) => {
-                const h = heroes.find(x => x.id === id);
+                const h = stateRef.current.heroes.find(x => x.id === id);
                 if (h && h.level >= 50) setHeroes(p => p.map(curr => curr.id === id ? initOrUpdateHeroPassiveTree({ ...curr, class: (PRESTIGE_CLASSES as any)[h.class] || h.class, level: 1 }) : curr));
             },
             awakenHero: (id: string) => {
-                const h = heroes.find(x => x.id === id);
+                const h = stateRef.current.heroes.find(x => x.id === id);
                 const goldCost = 100000;
                 const soulsCost = 50000;
-                if (h && h.level >= 100 && !h.isAwakened && gold >= goldCost && souls >= soulsCost) {
+                if (h && h.level >= 100 && !h.isAwakened && stateRef.current.gold >= goldCost && stateRef.current.souls >= soulsCost) {
                     setGold(g => g - goldCost);
                     setSouls(s => s - soulsCost);
                     setHeroes(p => p.map(curr => curr.id === id ? initOrUpdateHeroPassiveTree({
@@ -747,7 +813,7 @@ export const useGame = () => {
                     addLog(`☄️ LIMIT BREAK! ${h.name} alcançou o Despertar! Seus atributos explodiram de poder!`, 'achievement');
                     soundManager.playLevelUp();
 
-                } else if (h && (gold < goldCost || souls < soulsCost)) {
+                } else if (h && (stateRef.current.gold < goldCost || stateRef.current.souls < soulsCost)) {
                     addLog(`Recursos insuficientes. O Despertar exige ${goldCost} Ouro e ${soulsCost} Almas.`, 'error');
                 } else if (h && h.level < 100) {
                     addLog(`Herói não está pronto. O Despertar exige Nível 100.`, 'info');
@@ -762,7 +828,7 @@ export const useGame = () => {
                 setHeroes(p => p.map(h => h.id === id ? { ...h, assignment: h.assignment === 'combat' ? 'none' : 'combat' } : h));
             },
             purifyHero: (id: string) => {
-                if (gold >= 1000) {
+                if (stateRef.current.gold >= 1000) {
                     setGold(g => g - 1000);
                     setHeroes(p => p.map(h => h.id === id ? { ...h, insanity: 0, isMutated: false, mutationType: undefined } : h));
                     addLog("Herói purificado! Insanidade e Corrupção removidas.", "success");
@@ -770,9 +836,9 @@ export const useGame = () => {
             },
             // Purifica a mutação sem resetar insanidade (custo maior)
             purifyMutation: (id: string) => {
-                const h = heroes.find(x => x.id === id);
+                const h = stateRef.current.heroes.find(x => x.id === id);
                 const cost = 25000;
-                if (h && h.isMutated && gold >= cost) {
+                if (h && h.isMutated && stateRef.current.gold >= cost) {
                     setGold(g => g - cost);
                     setHeroes(p => p.map(curr => curr.id === id ? { ...curr, isMutated: false, mutationType: undefined, insanity: Math.max(0, (curr.insanity || 0) - 40) } : curr));
                     addLog(`✨ ${h.name} foi purificado da Corrupção por ${cost} Ouro!`, 'success');
@@ -786,16 +852,16 @@ export const useGame = () => {
             renameHero: (id: string, name: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, name } : h)),
             changeHeroEmoji: (id: string, e: string) => setHeroes(p => p.map(h => h.id === id ? { ...h, emoji: e } : h)),
             buyTalent: (id: string, _a?: number) => {
-                const talent = talents.find(t => t.id === id);
-                if (talent && souls >= talent.cost) {
+                const talent = stateRef.current.talents.find(t => t.id === id);
+                if (talent && stateRef.current.souls >= talent.cost) {
                     const cost = talent.cost;
                     setSouls(s => Math.max(0, s - cost));
                     setTalents(p => p.map(t => t.id === id ? { ...t, level: t.level + 1, cost: Math.floor(t.cost * t.costScaling) } : t));
                 }
             },
             buyConstellation: (id: string) => {
-                const node = constellations.find(c => c.id === id);
-                if (node && divinity >= node.cost && node.level < node.maxLevel) {
+                const node = stateRef.current.constellations.find(c => c.id === id);
+                if (node && stateRef.current.divinity >= node.cost && node.level < node.maxLevel) {
                     setDivinity(d => d - node.cost);
                     setConstellations(p => p.map(c => c.id === id ? { ...c, level: c.level + 1 } : c));
                     addLog(`Benção Celestial: ${node.name} Nvl ${node.level + 1}!`, 'success');
@@ -807,7 +873,7 @@ export const useGame = () => {
                 if (art) addLog(`Relíquia Descoberta: ${art.name}!`, 'achievement');
             },
             buyClassTalent: (className: HeroClass, talentId: string) => {
-                const mastery = classMastery[className];
+                const mastery = stateRef.current.classMastery[className];
                 const talents = CLASS_TALENTS[className] || [];
                 const talent = talents.find(t => t.id === talentId);
 
@@ -825,12 +891,12 @@ export const useGame = () => {
             },
             buyStarlightUpgrade: (id: string) => {
                 const u = STARLIGHT_UPGRADES.find(x => x.id === id); if (!u) return;
-                const cost = getStarlightUpgradeCost(u, starlightUpgrades[id] || 0);
-                if (starlight >= cost) { setStarlight(s => Math.max(0, s - cost)); setStarlightUpgrades(p => ({ ...p, [id]: (p[id] || 0) + 1 })); }
+                const cost = getStarlightUpgradeCost(u, stateRef.current.starlightUpgrades[id] || 0);
+                if (stateRef.current.starlight >= cost) { setStarlight(s => Math.max(0, s - cost)); setStarlightUpgrades(p => ({ ...p, [id]: (p[id] || 0) + 1 })); }
             },
             enterTower: () => {
-                const wasActive = world.tower.active;
-                const currentFloor = world.tower.floor || 1;
+                const wasActive = stateRef.current.tower.active;
+                const currentFloor = stateRef.current.tower.floor || 1;
 
                 // Persistence FIX: Don't reset floor to 1 if we're entering.
                 // If exiting, keep the floor. If entering, keep the floor.
@@ -847,22 +913,22 @@ export const useGame = () => {
                 }
             },
             triggerRebirth: () => {
-                const currentLevel = boss.level;
-                const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
-                const soulsGained = Math.floor(Math.floor(currentLevel / 5) * (1 + (prestigeNodes['souls_1'] || 0) * 0.2) * cleanFusionMult);
+                const currentLevel = stateRef.current.boss.level;
+                const cleanFusionMult = stateRef.current.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
+                const soulsGained = Math.floor(Math.floor(currentLevel / 5) * (1 + (stateRef.current.prestigeNodes['souls_1'] || 0) * 0.2) * cleanFusionMult);
                 setPortalConfig({
                     title: "PORTAL DE ASCENSÃO",
                     message: "Um portal de pura energia celestial se abre diante de você.",
                     warning: "O Ouro e o progresso do Boss serão reiniciados, mas você ganhará Almas Celestiais.",
                     soulsGained,
-                    onConfirm: ACTIONS.confirmRebirth
+                    onConfirm: baseActions.confirmRebirth
                 });
             },
             confirmRebirth: () => {
-                const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
-                const soulsGained = Math.floor(Math.floor(boss.level / 5) * (1 + (prestigeNodes['souls_1'] || 0) * 0.2) * cleanFusionMult);
+                const cleanFusionMult = stateRef.current.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
+                const soulsGained = Math.floor(Math.floor(stateRef.current.boss.level / 5) * (1 + (stateRef.current.prestigeNodes['souls_1'] || 0) * 0.2) * cleanFusionMult);
                 setSouls(s => s + soulsGained);
-                setHeroes(INITIAL_HEROES.map(h => ({ ...h, level: 1 + (prestigeNodes['legend_1'] || 0) * 2 })));
+                setHeroes(INITIAL_HEROES.map(h => ({ ...h, level: 1 + (stateRef.current.prestigeNodes['legend_1'] || 0) * 2 })));
                 setGold(0);
                 setBoss(INITIAL_BOSS);
                 setItems([]);
@@ -872,10 +938,10 @@ export const useGame = () => {
             },
             buyPrestigeNode: (nodeId: string) => {
                 const node = PRESTIGE_NODES.find((n: any) => n.id === nodeId);
-                const currentLevel = prestigeNodes[nodeId] || 0;
+                const currentLevel = stateRef.current.prestigeNodes[nodeId] || 0;
                 if (node && currentLevel < node.maxLevel) {
                     const cost = getPrestigeNodeCost(node, currentLevel);
-                    if (souls >= cost) {
+                    if (stateRef.current.souls >= cost) {
                         setSouls(s => Math.max(0, s - cost));
                         setPrestigeNodes(p => ({ ...p, [nodeId]: currentLevel + 1 }));
                         addLog(`Poder Desbloqueado: ${node.name} Lv${currentLevel + 1}!`, 'success');
@@ -887,8 +953,8 @@ export const useGame = () => {
                 setTown(t => ({ ...t, prosperity: t.prosperity + 1 }));
             },
             prestigeTower: () => {
-                if (world.tower.maxFloor >= 20) {
-                    const gain = Math.floor(world.tower.maxFloor / 10);
+                if (stateRef.current.tower.maxFloor >= 20) {
+                    const gain = Math.floor(stateRef.current.tower.maxFloor / 10);
                     setPortalConfig({
                         title: "ASCENSÃO DA TORRE",
                         message: "A energia da torre converge para um novo começo.",
@@ -897,7 +963,7 @@ export const useGame = () => {
                             const deityMult = stateRef.current.patronDeity === 'aurelius' ? 1.15 + (stateRef.current.deityLevel - 1) * 0.05 : 1.0;
                             const finalGain = Math.floor(gain * deityMult);
                             setStarlight(s => s + finalGain);
-                            world.setTower({ floor: 1, maxFloor: world.tower.maxFloor, active: false });
+                            world.setTower({ floor: 1, maxFloor: stateRef.current.tower.maxFloor, active: false });
                             addLog(`Tower Ascended! Gained ${gain} Starlight.`, "achievement");
                             soundManager.playLevelUp();
                             setPortalConfig(null);
@@ -929,17 +995,17 @@ export const useGame = () => {
                 }
             },
             toggleRaid: () => {
-                if (!raidActive) {
+                if (!stateRef.current.raidActive) {
                     setRaidTimer(60);
                     addLog("Uma Reide começou!", "danger");
                 }
                 setRaidActive(p => !p);
             },
             fightArena: (opponent: ArenaOpponent) => {
-                const winChance = calculateWinChance(calculatedPartyPower, opponent.power);
+                const winChance = calculateWinChance(stateRef.current.partyPower, opponent.power);
                 const won = winChance > Math.random();
                 if (won) {
-                    const nextRank = Math.max(1, arenaRank - 20);
+                    const nextRank = Math.max(1, stateRef.current.arenaRank - 20);
                     setArenaRank(nextRank);
                     const gloryGain = 10 + Math.floor(opponent.power / 50);
                     setGlory(g => g + gloryGain);
@@ -947,7 +1013,7 @@ export const useGame = () => {
                     setGold(g => g + goldReward);
 
                     // Defeated fighter always joins guild (or waits in queue)
-                    const isLeader = guildState.guild && (guildState.guild.totalContribution || 0) >= 10000;
+                    const isLeader = stateRef.current.guild && (stateRef.current.guild.totalContribution || 0) >= 10000;
                     if (isLeader) {
                         guildState.setGuild((g: any) => g ? { ...g, xp: Math.min(g.xp + 500, g.maxXp), members: g.members + 1 } : g);
                         addLog(`⚔️ ${opponent.name} foi derrotado e juntou-se à sua Guilda! +500 XP. +${gloryGain} Glória, +${goldReward} Ouro.`, 'achievement');
@@ -964,12 +1030,12 @@ export const useGame = () => {
                             }
                             return b;
                         });
-                        setArenaOpponents(selectArenaOpponents(updatedBots, calculatedPartyPower, nextRank));
+                        setArenaOpponents(selectArenaOpponents(updatedBots, stateRef.current.partyPower, nextRank));
                         return updatedBots;
                     });
 
                 } else {
-                    const nextRank = Math.min(9999, arenaRank + 5);
+                    const nextRank = Math.min(9999, stateRef.current.arenaRank + 5);
                     setArenaRank(nextRank);
                     addLog(`Derrota na Arena contra ${opponent.name}... Continue treinando!`, 'danger');
 
@@ -981,20 +1047,20 @@ export const useGame = () => {
                             }
                             return b;
                         });
-                        setArenaOpponents(selectArenaOpponents(updatedBots, calculatedPartyPower, nextRank));
+                        setArenaOpponents(selectArenaOpponents(updatedBots, stateRef.current.partyPower, nextRank));
                         return updatedBots;
                     });
                 }
             },
             attackSector: (id: string) => galaxyState.attackSector(id),
             attackTerritory: (id: string) => {
-                const map = galaxyState.territories;
+                const map = stateRef.current.territories;
                 const t = map.find((x: any) => x.id === id);
                 if (!t || t.owner === 'player') return;
 
-                const success = simulateSiege(t, calculatedPartyPower);
+                const success = simulateSiege(t, stateRef.current.partyPower);
                 if (success) {
-                    const weatherBonus = (world.weather && WEATHER_DATA[world.weather]) ? WEATHER_DATA[world.weather].guildWarBonus : { stat: 'none', value: 0 };
+                    const weatherBonus = (stateRef.current.weather && WEATHER_DATA[stateRef.current.weather]) ? WEATHER_DATA[stateRef.current.weather].guildWarBonus : { stat: 'none', value: 0 };
 
                     let goldReward = t.difficulty * 2;
                     let xpReward = t.difficulty;
@@ -1012,10 +1078,10 @@ export const useGame = () => {
                 }
             },
             upgradeTerritory: (id: string) => {
-                const t = galaxyState.territories.find((t: any) => t.id === id);
+                const t = stateRef.current.territories.find((t: any) => t.id === id);
                 if (!t || t.owner !== 'player') return;
                 const cost = t.upgradeCost || 5000;
-                if (gold < cost) { addLog(`Ouro insuficiente! Precisa de ${cost} para melhorar ${t.name}.`, 'info'); return; }
+                if (stateRef.current.gold < cost) { addLog(`Ouro insuficiente! Precisa de ${cost} para melhorar ${t.name}.`, 'info'); return; }
                 setGold(g => g - cost);
                 galaxyState.setTerritories((prev: any[]) => prev.map((ter: any) =>
                     ter.id === id ? applyTerritoryUpgrade(ter) : ter
@@ -1023,7 +1089,7 @@ export const useGame = () => {
                 addLog(`✨ ${t.name} melhorado para Nível ${(t.level || 1) + 1}! Bônus aumentado.`, 'success');
             },
             bombardTerritory: (id: string, multiplier: number, weaponName: string) => {
-                const t = galaxyState.territories.find((t: any) => t.id === id);
+                const t = stateRef.current.territories.find((t: any) => t.id === id);
                 if (!t || t.owner === 'player') return;
 
                 galaxyState.setTerritories((prev: any[]) => prev.map((ter: any) =>
@@ -1033,7 +1099,7 @@ export const useGame = () => {
                 soundManager.playHit();
             },
             advanceGuildWarMap: () => {
-                const newMap = generateGuildWarMap(partyPower);
+                const newMap = generateGuildWarMap(stateRef.current.partyPower);
                 galaxyState.setTerritories(newMap);
                 addLog("O exército da guilda marchou para uma nova e perigosa fronteira!", "achievement");
             },
@@ -1048,8 +1114,55 @@ export const useGame = () => {
                     setOuterSpaceUnlocked(true);
                 }
             },
-            breedPets: (p1: Pet, p2: Pet) => petsState.breedPets(p1, p2),
-            feedPet: (type: 'gold' | 'souls', id?: string) => petsState.feedPet(type, id),
+            breedPets: (p1: Pet, p2: Pet) => {
+                const cost = 1000;
+                if (stateRef.current.gold < cost) {
+                    addLog(`Not enough gold to breed pets! Need ${cost} Gold.`, 'error');
+                    return;
+                }
+                setGold(g => g - cost);
+                const newPet = calculateBreedingResult(p1, p2);
+                petsState.setPets(prev => [...prev.filter(p => p.id !== p1.id && p.id !== p2.id), newPet]);
+                addLog(`Successfully fused ${p1.name} and ${p2.name} into ${newPet.name}!`, 'achievement');
+                soundManager.playLevelUp();
+            },
+            feedPet: (type: 'gold' | 'souls', id?: string) => {
+                const currentPets = stateRef.current.pets || [];
+                if (!id && currentPets.length === 0) return;
+                const targetPet = id ? currentPets.find(p => p.id === id) : currentPets[0];
+                if (!targetPet) return;
+                const cost = 100;
+                if (type === 'gold' && stateRef.current.gold < cost) return;
+                if (type === 'souls' && stateRef.current.souls < cost) return;
+
+                if (type === 'gold') setGold(g => Math.max(0, g - cost));
+                else setSouls(s => Math.max(0, s - cost));
+
+                petsState.setPets(prev => prev.map(p => {
+                    if (p.id === targetPet.id) {
+                        const xpGain = type === 'gold' ? 50 : 150;
+                        let newXp = p.xp + xpGain;
+                        let newLevel = p.level;
+                        let newMaxXp = p.maxXp;
+                        const newStats = p.stats ? { ...p.stats } : { attack: 0, hp: 0, maxHp: 0, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 0 };
+
+                        while (newXp >= newMaxXp) {
+                            newLevel++;
+                            newXp -= newMaxXp;
+                            newMaxXp = Math.floor(newMaxXp * 1.5);
+                            newStats.attack = (newStats.attack || 0) + 1;
+                            newStats.maxHp = (newStats.maxHp || 0) + 5;
+                            newStats.hp = (newStats.hp || 0) + 5;
+                            newStats.defense = (newStats.defense || 0) + 1;
+                        }
+
+                        return { ...p, level: newLevel, xp: newXp, maxXp: newMaxXp, stats: newStats };
+                    }
+                    return p;
+                }));
+
+                addLog(`Fed ${targetPet.name} with ${type}!`, 'action');
+            },
             winCardBattle: (_o: string, d: number) => setGold(g => g + d * 10),
             forgeUpgrade: (m: 'copper' | 'iron' | 'mithril') => {
                 const costMap = { copper: 100, iron: 50, mithril: 10 };
@@ -1260,7 +1373,7 @@ export const useGame = () => {
                 addLog(`⛪ Ritual do Clima realizado! O tempo mudou para: ${WEATHER_DATA[weatherType].name}!`, 'success');
             },
             craftStarForgedItem: (item: Item, gCost: number, fCost: number) => {
-                if (gold >= gCost && resources.starFragments >= fCost) {
+                if (stateRef.current.gold >= gCost && stateRef.current.resources.starFragments >= fCost) {
                     setGold(g => g - gCost); setResources(r => ({ ...r, starFragments: r.starFragments - fCost }));
                     setItems(p => [...p, item]); addLog(`Forged ${item.name}!`, 'achievement');
                 }
@@ -1268,7 +1381,7 @@ export const useGame = () => {
             joinGuild: (name: string) => guildState.joinGuild(name),
             contributeGuild: (amt: number) => guildState.contributeGuild(amt),
             summonTavernLine: (amount: number) => {
-                const res = simulateTavernSummon(amount, gold, gameStats.tavernPurchases || 0, heroes, artifacts, petsState.pets, 1, gameStats.heroPity || 0, gameStats.petPity || 0);
+                const res = simulateTavernSummon(amount, stateRef.current.gold, stateRef.current.gameStats.tavernPurchases || 0, stateRef.current.heroes, stateRef.current.artifacts, stateRef.current.pets, 1, stateRef.current.gameStats.heroPity || 0, stateRef.current.gameStats.petPity || 0);
                 if (res.success) {
                     setGold(g => g - res.cost);
                     setGameStats(s => ({
@@ -1287,25 +1400,25 @@ export const useGame = () => {
                 }
             },
             upgradeBuilding: (id: string) => {
-                const b = buildings.find(x => x.id === id); if (!b || gold < b.cost) return;
+                const b = stateRef.current.buildings.find(x => x.id === id); if (!b || stateRef.current.gold < b.cost) return;
                 setGold(g => g - b.cost); setBuildings(p => p.map(x => x.id === id ? { ...x, level: x.level + 1, cost: Math.floor(x.cost * x.costScaling) } : x));
             },
             upgradeSpaceship: (part: keyof import('../engine/types').Spaceship['parts']) => galaxyState.upgradeSpaceship(part),
             claimLoginReward: () => {
-                const r = LOGIN_REWARDS.find(x => x.day === (gameStats.loginStreak || 1)) || LOGIN_REWARDS[0];
+                const r = LOGIN_REWARDS.find(x => x.day === (stateRef.current.gameStats.loginStreak || 1)) || LOGIN_REWARDS[0];
                 if (r.type === 'gold') setGold(g => g + r.amount); setDailyLoginClaimed(true);
             },
             claimDailyQuest: (id: string) => setQuests(p => p.map(q => q.id === id && q.progress >= q.target ? { ...q, isClaimed: true } : q)),
-            checkDailies: () => { if (checkDailyReset(lastDailyReset)) { setLastDailyReset(Date.now()); setDailyQuests(generateDailyQuests()); setDailyLoginClaimed(false); } },
+            checkDailies: () => { if (checkDailyReset(stateRef.current.lastDailyReset)) { setLastDailyReset(Date.now()); setDailyQuests(generateDailyQuests()); setDailyLoginClaimed(false); } },
             enterVoid: () => {
-                if (!voidActive) {
+                if (!stateRef.current.voidActive) {
                     setVoidActive(true);
                     setVoidTimer(30);
                     addLog("Você mergulhou na Dimensão do Vazio...", "danger");
                 }
             },
             triggerAscension: () => {
-                if (souls >= 1000) {
+                if (stateRef.current.souls >= 1000) {
                     setPortalConfig({
                         title: "ASCENSÃO DIVINA",
                         message: "Seu poder acumulado transcende a mortalidade.",
@@ -1323,9 +1436,9 @@ export const useGame = () => {
                     addLog("Almas insuficientes para ascender.", "error");
                 }
             },
-            buyDarkGift: (cost: number, _e: string) => { if (voidMatter >= cost) setVoidMatter(v => v - cost); },
+            buyDarkGift: (cost: number, _e: string) => { if (stateRef.current.voidMatter >= cost) setVoidMatter(v => v - cost); },
             ascendToVoid: () => {
-                const currentFloor = world.tower.floor || 1;
+                const currentFloor = stateRef.current.tower.floor || 1;
                 if (currentFloor < 100) {
                     addLog(`Ascensão bloqueada! Você precisa alcançar o Andar 100 da Torre. (Atual: ${currentFloor})`, 'error');
                     return;
@@ -1343,7 +1456,7 @@ export const useGame = () => {
                 soundManager.playLevelUp();
             },
             transmuteResources: (from: keyof Resources, to: keyof Resources, amount: number) => {
-                const res = transmuteResources(from, to, amount, resources);
+                const res = transmuteResources(from, to, amount, stateRef.current.resources);
                 if (res.success) {
                     setResources(r => {
                         const next = { ...r };
@@ -1362,8 +1475,8 @@ export const useGame = () => {
             },
             useElixir: (heroId: string) => {
                 const elixir = ELIXIRS.ELIXIR_OF_ETERNITY;
-                const hero = heroes.find(h => h.id === heroId);
-                const hasResources = elixir.cost.every(c => (resources[c.type as keyof Resources] || 0) >= c.amount);
+                const hero = stateRef.current.heroes.find(h => h.id === heroId);
+                const hasResources = elixir.cost.every(c => (stateRef.current.resources[c.type as keyof Resources] || 0) >= c.amount);
 
                 if (hero && hasResources) {
                     setResources(r => {
@@ -1390,7 +1503,7 @@ export const useGame = () => {
                 }));
             },
             manualFish: () => {
-                const res = processFishingAdvanced(1, (achievements.find(a => a.id === 'fi1')?.isUnlocked ? 0.1 : 0));
+                const res = processFishingAdvanced(1, (stateRef.current.achievements.find(a => a.id === 'fi1')?.isUnlocked ? 0.1 : 0));
                 if (res.fish > 0) setResources(r => ({ ...r, fish: r.fish + res.fish }));
                 if (res.legendary) {
                     setGameStats(s => ({ ...s, legendaryFishCount: (s.legendaryFishCount || 0) + 1 }));
@@ -1398,15 +1511,15 @@ export const useGame = () => {
                 }
             },
             brewPotion: (id: string) => {
-                const pot = POTIONS.find(p => p.id === id); if (pot && brewPotion(pot, resources).success) {
+                const pot = POTIONS.find(p => p.id === id); if (pot && brewPotion(pot, stateRef.current.resources).success) {
                     setResources(r => { const n = { ...r }; (pot.cost as any[]).forEach(c => (n as any)[c.type] -= c.amount); return n; });
                     setActivePotions(p => [...p, { id: pot.id, name: pot.name, effect: pot.effect, value: pot.value, endTime: Date.now() + pot.duration * 1000 }]);
                 }
             },
-            startExpedition: (e: Expedition) => { setHeroes(startExpedition(e, heroes)); setActiveExpeditions(p => [...p, e]); },
+            startExpedition: (e: Expedition) => { setHeroes(startExpedition(e, stateRef.current.heroes)); setActiveExpeditions(p => [...p, e]); },
             startGuildExpedition: (e: Expedition) => {
-                if (validateGuildExpeditionTeam(e.heroIds, heroes)) {
-                    setHeroes(startExpedition(e, heroes));
+                if (validateGuildExpeditionTeam(e.heroIds, stateRef.current.heroes)) {
+                    setHeroes(startExpedition(e, stateRef.current.heroes));
                     setActiveExpeditions(p => [...p, { ...e, startTime: Date.now() }]);
                     addLog(`Expedição de Guilda ${e.name} iniciada!`, 'success');
                 } else {
@@ -1421,7 +1534,7 @@ export const useGame = () => {
             importSave: (s: string) => { try { localStorage.setItem('rpg_eternal_save_v6', atob(s)); window.location.reload(); } catch { alert("Invalid"); } },
             closeOfflineModal: () => setOfflineGains(null),
             claimQuest: (id: string) => setQuests(p => p.map(q => q.id === id && q.progress >= q.target ? { ...q, isClaimed: true } : q)),
-            buyMarketItem: (item: MarketItem) => { if (gold >= item.cost) { setGold(g => g - item.cost); setMarketStock(p => p.filter(i => i.id !== item.id)); } },
+            buyMarketItem: (item: MarketItem) => { if (stateRef.current.gold >= item.cost) { setGold(g => g - item.cost); setMarketStock(p => p.filter(i => i.id !== item.id)); } },
             enterRift: (rift: Rift) => world.enterRift(rift),
             exitRift: (success: boolean) => {
                 world.exitRift(success);
@@ -1443,7 +1556,26 @@ export const useGame = () => {
                 }
             },
             startRift: () => world.startRift(), selectBlessing: (b: RiftBlessing) => world.selectBlessing(b),
-            saveFormation: (n: string) => world.saveFormation(n, activeHeroes.map(h => h.id)), loadFormation: (f: any) => world.loadFormation(f.id), deleteFormation: (id: string) => world.deleteFormation(id),
+            saveFormation: (n: string) => world.saveFormation(n, activeHeroes.map(h => h.id)),
+            loadFormation: (id: string) => {
+                const formation = world.loadFormation(id);
+                if (formation) {
+                    setHeroes(prev => prev.map(h => {
+                        const inFormation = formation.heroIds.includes(h.id);
+                        if (inFormation) {
+                            return { ...h, assignment: 'combat' };
+                        } else if (h.assignment === 'combat') {
+                            if (h.curses?.includes('abyss')) {
+                                return h;
+                            }
+                            return { ...h, assignment: 'none' };
+                        }
+                        return h;
+                    }));
+                    addLog(`Formação carregada: ${formation.name}`, 'success');
+                }
+            },
+            deleteFormation: (id: string) => world.deleteFormation(id),
             upgradeMonument: (id: string) => guildState.upgradeMonument(id),
 
             attackWorldBoss: () => worldBossState.attackWorldBoss(), claimWorldBossReward: () => worldBossState.claimReward(),
@@ -1592,8 +1724,8 @@ export const useGame = () => {
             },
             dismissEvent: () => setActiveEvent(null),
             buyMasteryUpgrade: (type: keyof import('../engine/types').DungeonMastery) => {
-                const cost = (dungeonMastery[type] + 1) * 1000;
-                if (souls >= cost) { setSouls(s => s - cost); setDungeonMastery(prev => ({ ...prev, [type]: prev[type] + 1 })); }
+                const cost = (stateRef.current.dungeonMastery[type] + 1) * 1000;
+                if (stateRef.current.souls >= cost) { setSouls(s => s - cost); setDungeonMastery(prev => ({ ...prev, [type]: prev[type] + 1 })); }
             },
             assignHero: (id: string, assignment?: Hero['assignment']) => {
                 const h = stateRef.current.heroes.find(x => x.id === id);
@@ -1612,7 +1744,7 @@ export const useGame = () => {
                 }));
             },
             manualAttack: () => {
-                const dmg = Math.max(1, Math.floor(calculatedPartyPower * 0.05)); // 5% of party power per click
+                const dmg = Math.max(1, Math.floor(stateRef.current.partyPower * 0.05)); // 5% of party power per click
 
                 // Track click stat
                 setGameStats(s => ({ ...s, clicks: (s.clicks || 0) + 1, totalDamageDealt: (s.totalDamageDealt || 0) + dmg }));
@@ -1621,7 +1753,7 @@ export const useGame = () => {
                 damageAccumulator.current += dmg;
 
                 // Deal damage (will be processed on next tick or instantly depending on HP)
-                if (world.tower.active) {
+                if (stateRef.current.tower.active) {
                     world.setTowerBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - dmg } }));
                 } else {
                     setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - dmg } }));
@@ -1645,13 +1777,15 @@ export const useGame = () => {
             }
         };
         return baseActions as any as GameActions;
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, monuments]);
+    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
         const runTick = () => {
             const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers, tower, towerBoss } = stateRef.current;
             if (activeHeroes.length === 0 && !tower.active) return;
+
+            const monumentMults = getMonumentMultipliers();
 
             const isTower = tower.active;
             let targetBoss = isTower ? towerBoss : boss;
@@ -1681,47 +1815,78 @@ export const useGame = () => {
             // Passive recovery & campfire recovery of fatigue & team morale
             const campfireCount = stateRef.current.heroes.filter(h => h.assignment === 'campfire').length;
             const moraleRecovery = 0.1 + (campfireCount * 0.5);
-            setTeamMorale(prev => Math.min(100, prev + moraleRecovery));
+            if (stateRef.current.teamMorale < 100) {
+                setTeamMorale(prev => Math.min(100, prev + moraleRecovery));
+            }
 
             // Accumulate bond XP for combat partners
             const livingCombatants = stateRef.current.heroes.filter(h => h.assignment === 'combat');
             if (livingCombatants.length >= 2) {
-                setHeroBonds(prev => {
-                    const next = { ...prev };
-                    let updated = false;
-                    for (let i = 0; i < livingCombatants.length; i++) {
-                        for (let j = i + 1; j < livingCombatants.length; j++) {
-                            const id1 = livingCombatants[i].id;
-                            const id2 = livingCombatants[j].id;
-                            const key = [id1, id2].sort().join('-');
+                let anyLevelUp = false;
+                for (let i = 0; i < livingCombatants.length; i++) {
+                    for (let j = i + 1; j < livingCombatants.length; j++) {
+                        const id1 = livingCombatants[i].id;
+                        const id2 = livingCombatants[j].id;
+                        const key = [id1, id2].sort().join('-');
 
+                        const current = heroBonds[key] || { xp: 0, level: 1, type: 'comrades' };
+                        if (current.level >= 3) continue;
+
+                        bondXpAccumulatorRef.current[key] = (bondXpAccumulatorRef.current[key] || 0) + 1;
+                        const accumulatedXp = current.xp + bondXpAccumulatorRef.current[key];
+                        const maxXP = current.level === 2 ? 300 : 100;
+                        if (accumulatedXp >= maxXP) {
+                            anyLevelUp = true;
+                        }
+                    }
+                }
+
+                bondTicksRef.current += 1;
+
+                if (anyLevelUp || bondTicksRef.current >= 10) {
+                    setHeroBonds(prev => {
+                        const next = { ...prev };
+                        let updated = false;
+
+                        Object.entries(bondXpAccumulatorRef.current).forEach(([key, accumulatedXp]) => {
+                            if (accumulatedXp <= 0) return;
                             const current = next[key] || { xp: 0, level: 1, type: 'comrades' };
-                            if (current.level >= 3) continue;
+                            if (current.level >= 3) return;
 
-                            let nextXp = current.xp + 1;
+                            let nextXp = current.xp + accumulatedXp;
                             let nextLvl = current.level;
-                            const maxXP = nextLvl === 2 ? 300 : 100;
+                            let maxXP = nextLvl === 2 ? 300 : 100;
 
-                            if (nextXp >= maxXP) {
-                                nextXp = 0;
+                            while (nextXp >= maxXP && nextLvl < 3) {
+                                nextXp -= maxXP;
                                 nextLvl++;
                                 if (nextLvl === 2) {
                                     const types: ('comrades' | 'rivals' | 'soulmates')[] = ['comrades', 'rivals', 'soulmates'];
                                     current.type = types[Math.floor(Math.random() * types.length)];
                                 }
-                                addLog(`💞 O vínculo entre ${livingCombatants[i].name} e ${livingCombatants[j].name} subiu para o Nível ${nextLvl}!`, 'achievement');
+                                const [id1, id2] = key.split('-');
+                                const h1 = stateRef.current.heroes.find(h => h.id === id1);
+                                const h2 = stateRef.current.heroes.find(h => h.id === id2);
+                                const name1 = h1 ? h1.name : "Herói 1";
+                                const name2 = h2 ? h2.name : "Herói 2";
+                                addLog(`💞 O vínculo entre ${name1} e ${name2} subiu para o Nível ${nextLvl}!`, 'achievement');
+                                maxXP = nextLvl === 2 ? 300 : 100;
                             }
 
                             next[key] = { xp: nextXp, level: nextLvl, type: current.type };
                             updated = true;
-                        }
-                    }
-                    return updated ? next : prev;
-                });
+                        });
+
+                        return updated ? next : prev;
+                    });
+
+                    bondXpAccumulatorRef.current = {};
+                    bondTicksRef.current = 0;
+                }
             }
 
             const moraleDamageMult = 0.5 + (teamMorale / 100) * 0.6;
-            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * getMonumentMultipliers().attack;
+            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * monumentMults.attack;
             const synergiesForCombat = [...activeSynergies];
             if (backrooms.backroomsUnlockedTechs.includes('quantum_computing')) {
                 const existingIndex = synergiesForCombat.findIndex(s => s.type === 'crit_dmg');
@@ -1734,7 +1899,7 @@ export const useGame = () => {
                     synergiesForCombat.push({ type: 'crit_dmg', value: 0.25 } as any);
                 }
             }
-            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
+            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults);
 
             damageAccumulator.current += res.totalDmg;
 
@@ -1795,7 +1960,7 @@ export const useGame = () => {
             const steamEngineMult = backrooms.backroomsUnlockedTechs.includes('steam_engine') ? 1.15 : 1.0;
             const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
 
-            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * getMonumentMultipliers().gold * steamEngineMult * cleanFusionMult;
+            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * monumentMults.gold * steamEngineMult * cleanFusionMult;
             const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0)) * cleanFusionMult;
 
             const moraleXpMult = 0.5 + (teamMorale / 100) * 0.7;
@@ -1804,7 +1969,9 @@ export const useGame = () => {
                 bossDefeated = true;
 
                 // Aumenta a moral nas vitórias
-                setTeamMorale(prev => Math.min(100, prev + 5));
+                if (stateRef.current.teamMorale < 100) {
+                    setTeamMorale(prev => Math.min(100, prev + 5));
+                }
 
                 const xpGain = Math.floor(currentBoss.level * 10 * finalXpMult * moraleXpMult);
                 const goldGain = Math.floor(currentBoss.level * 50 * finalGoldMult);
@@ -1947,8 +2114,27 @@ export const useGame = () => {
                 }
 
                 let changed = false;
+                const combatHeroMap = new Map(res.updatedHeroes.map(h => [h.id, h]));
+                const combatHeroList = prev.filter(oth => oth.assignment === 'combat');
+                const rivalXpMults = new Map<string, number>();
+                if (bossDefeated) {
+                    combatHeroList.forEach(ch => {
+                        let mult = finalXpMult;
+                        combatHeroList.forEach(oth => {
+                            if (oth.id !== ch.id) {
+                                const key = ch.id < oth.id ? `${ch.id}-${oth.id}` : `${oth.id}-${ch.id}`;
+                                const bond = heroBonds[key];
+                                if (bond && bond.level >= 3 && bond.type === 'rivals') {
+                                    mult *= 1.2;
+                                }
+                            }
+                        });
+                        rivalXpMults.set(ch.id, mult);
+                    });
+                }
+
                 const nextHeroes = prev.map(oldHero => {
-                    const combatHero = res.updatedHeroes.find(h => h.id === oldHero.id);
+                    const combatHero = combatHeroMap.get(oldHero.id);
                     let h = combatHero || oldHero;
 
                     if (h.isDead) {
@@ -1966,15 +2152,7 @@ export const useGame = () => {
 
                     if (bossDefeated && combatHero) {
                         // Rivals bond: +20% XP
-                        let xpMult = finalXpMult;
-                        const otherActive = prev.filter(oth => oth.id !== h.id && oth.assignment === 'combat');
-                        otherActive.forEach(oth => {
-                            const key = [h.id, oth.id].sort().join('-');
-                            const bond = heroBonds[key];
-                            if (bond && bond.level >= 3 && bond.type === 'rivals') {
-                                xpMult *= 1.2;
-                            }
-                        });
+                        let xpMult = rivalXpMults.get(h.id) ?? finalXpMult;
 
                         const xpGain = Math.floor(currentBoss.level * 10 * xpMult * moraleXpMult);
                         let newXp = (h.xp || 0) + xpGain;
@@ -2304,8 +2482,8 @@ export const useGame = () => {
         setGvgWarState,
         currentTutorialIndex,
         setCurrentTutorialIndex,
-        arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
-    } as any);
+        arenaOpponents, setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
+    });
 
     const abandonRoguelikeRun = useCallback(() => {
         const run = roguelike.roguelikeRun;

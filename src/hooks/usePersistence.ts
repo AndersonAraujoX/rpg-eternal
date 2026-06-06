@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot, ElementType } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot, ElementType, Territory, Spaceship, Formation } from '../engine/types';
+import type { WeatherType } from '../engine/weather';
 import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS, INITIAL_BOSS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GARDEN } from '../engine/garden';
@@ -83,14 +84,28 @@ export interface PersistenceProps {
     setDailyLoginClaimed: React.Dispatch<React.SetStateAction<boolean>>;
     lastDailyReset: number;
     setLastDailyReset: React.Dispatch<React.SetStateAction<number>>;
-    territories: any[];
-    setTerritories: React.Dispatch<React.SetStateAction<any[]>>;
-    spaceship: any;
-    setSpaceship: React.Dispatch<React.SetStateAction<any>>;
-    formations: any[];
-    setFormations: React.Dispatch<React.SetStateAction<any[]>>;
-    weather: any;
-    setWeather: React.Dispatch<React.SetStateAction<any>>;
+    territories: Territory[];
+    setTerritories: React.Dispatch<React.SetStateAction<Territory[]>>;
+    spaceship: Spaceship;
+    setSpaceship: React.Dispatch<React.SetStateAction<Spaceship>>;
+    formations: Formation[];
+    setFormations: React.Dispatch<React.SetStateAction<Formation[]>>;
+    weather: WeatherType;
+    setWeather: React.Dispatch<React.SetStateAction<WeatherType>>;
+    teamMorale: number;
+    setTeamMorale: React.Dispatch<React.SetStateAction<number>>;
+    heroBonds: Record<string, { xp: number, level: number, type: 'comrades' | 'rivals' | 'soulmates' }>;
+    setHeroBonds: React.Dispatch<React.SetStateAction<Record<string, { xp: number, level: number, type: 'comrades' | 'rivals' | 'soulmates' }>>>;
+    patronDeity: string | null;
+    setPatronDeity: React.Dispatch<React.SetStateAction<string | null>>;
+    deityLevel: number;
+    setDeityLevel: React.Dispatch<React.SetStateAction<number>>;
+    deityFavor: number;
+    setDeityFavor: React.Dispatch<React.SetStateAction<number>>;
+    deityEnergy: number;
+    setDeityEnergy: React.Dispatch<React.SetStateAction<number>>;
+    outerSpaceUnlocked: boolean;
+    setOuterSpaceUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
     prestigeNodes: Record<string, number>;
     setPrestigeNodes: React.Dispatch<React.SetStateAction<Record<string, number>>>;
     monuments: (string | null)[];
@@ -197,7 +212,21 @@ export const usePersistence = (props: PersistenceProps) => {
         setFakePlayers,
         setGvgWarState,
         currentTutorialIndex,
-        setCurrentTutorialIndex
+        setCurrentTutorialIndex,
+        teamMorale,
+        setTeamMorale,
+        heroBonds,
+        setHeroBonds,
+        patronDeity,
+        setPatronDeity,
+        deityLevel,
+        setDeityLevel,
+        deityFavor,
+        setDeityFavor,
+        deityEnergy,
+        setDeityEnergy,
+        outerSpaceUnlocked,
+        setOuterSpaceUnlocked
     } = props;
 
 
@@ -235,7 +264,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 // 2. Preserve Dynamic Heroes (Miners) - those not in INITIAL_HEROES
                 const dynamicHeroes = savedHeroes
                     .filter((h: Hero) => !INITIAL_HEROES.some(initH => initH.id === h.id))
-                    .map((savedH: any) => ({
+                    .map((savedH: Partial<Hero> & { id: string }) => ({
                         ...savedH,
                         insanity: savedH.insanity ?? 0,
                         fatigue: savedH.fatigue ?? 0,
@@ -268,7 +297,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.constellations && state.constellations.length > 0) {
                     // Merge: preserve levels from save, but always include all INITIAL nodes
                     setConstellations(INITIAL_CONSTELLATIONS.map(initC => {
-                        const savedC = state.constellations.find((c: any) => c.id === initC.id);
+                        const savedC = state.constellations.find((c: Partial<ConstellationNode>) => c.id === initC.id);
                         return savedC ? { ...initC, level: savedC.level ?? initC.level } : initC;
                     }));
                 }
@@ -338,15 +367,16 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.formations) setFormations(state.formations);
                 if (state.weather) setWeather(state.weather);
                 if (state.prestigeNodes) setPrestigeNodes(state.prestigeNodes);
-                if (state.teamMorale !== undefined) (props as any).setTeamMorale(state.teamMorale);
-                else (props as any).setTeamMorale(100);
-                if (state.heroBonds) (props as any).setHeroBonds(state.heroBonds);
+                if (state.teamMorale !== undefined) setTeamMorale(state.teamMorale);
+                else setTeamMorale(100);
+                if (state.heroBonds) setHeroBonds(state.heroBonds);
                 if (state.monuments) setMonuments(state.monuments);
                 else setMonuments([null, null, null]);
-                if (state.patronDeity !== undefined) (props as any).setPatronDeity(state.patronDeity);
-                if (state.deityLevel !== undefined) (props as any).setDeityLevel(state.deityLevel);
-                if (state.deityFavor !== undefined) (props as any).setDeityFavor(state.deityFavor);
-                if (state.deityEnergy !== undefined) (props as any).setDeityEnergy(state.deityEnergy);
+                if (state.patronDeity !== undefined) setPatronDeity(state.patronDeity);
+                if (state.deityLevel !== undefined) setDeityLevel(state.deityLevel);
+                if (state.deityFavor !== undefined) setDeityFavor(state.deityFavor);
+                if (state.deityEnergy !== undefined) setDeityEnergy(state.deityEnergy);
+                if (state.outerSpaceUnlocked !== undefined) setOuterSpaceUnlocked(state.outerSpaceUnlocked);
                 if (state.gardenPlots) setGardenPlots(state.gardenPlots);
                 else setGardenPlots(INITIAL_GARDEN);
                 if (state.runes) setRunes(state.runes);
@@ -456,8 +486,8 @@ export const usePersistence = (props: PersistenceProps) => {
 
             // Filtrar monsterKills para economizar espaço
             const filteredKills: Record<string, number> = {};
-            Object.entries(p.monsterKills || {}).forEach(([id, count]: [string, any]) => {
-                if (typeof count === 'number' && count > 0) filteredKills[id] = count;
+            Object.entries(p.monsterKills || {}).forEach(([id, count]) => {
+                if (count > 0) filteredKills[id] = count;
             });
 
             const state = {
@@ -469,13 +499,14 @@ export const usePersistence = (props: PersistenceProps) => {
                 dailyQuests: p.dailyQuests, dailyLoginClaimed: p.dailyLoginClaimed, lastDailyReset: p.lastDailyReset,
                 territories: p.territories, spaceship: p.spaceship, formations: p.formations, weather: p.weather,
                 prestigeNodes: p.prestigeNodes,
-                teamMorale: (p as any).teamMorale,
-                heroBonds: (p as any).heroBonds,
+                teamMorale: p.teamMorale,
+                heroBonds: p.heroBonds,
                 monuments: p.monuments,
-                patronDeity: (p as any).patronDeity,
-                deityLevel: (p as any).deityLevel,
-                deityFavor: (p as any).deityFavor,
-                deityEnergy: (p as any).deityEnergy,
+                patronDeity: p.patronDeity,
+                deityLevel: p.deityLevel,
+                deityFavor: p.deityFavor,
+                deityEnergy: p.deityEnergy,
+                outerSpaceUnlocked: p.outerSpaceUnlocked,
                 gardenPlots: p.gardenPlots,
                 items: compactItems,
                 runes: p.runes,

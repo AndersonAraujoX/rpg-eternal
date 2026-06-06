@@ -9,34 +9,42 @@ export const useVoidGuardian = (
     const [challengeActive, setChallengeActive] = useState(false);
     const [timeLeft, setTimeLeft] = useState(60);
     const [accumulatedDamage, setAccumulatedDamage] = useState(0);
-    const timerRef = useRef<any>(null);
+
+    const stateRef = useRef({ partyPower, onFinish, accumulatedDamage });
+    useEffect(() => {
+        stateRef.current = { partyPower, onFinish, accumulatedDamage };
+    });
 
     const startChallenge = useCallback(() => {
-        if (challengeActive) return;
-        setChallengeActive(true);
-        setTimeLeft(60);
-        setAccumulatedDamage(0);
-        addLog("O Desafio do Guardião do Vazio começou! 60 segundos para causar o máximo de dano!", "danger");
-    }, [challengeActive, addLog]);
+        setChallengeActive(prev => {
+            if (prev) return prev;
+            setTimeLeft(60);
+            setAccumulatedDamage(0);
+            addLog("O Desafio do Guardião do Vazio começou! 60 segundos para causar o máximo de dano!", "danger");
+            return true;
+        });
+    }, [addLog]);
 
     useEffect(() => {
-        if (challengeActive && timeLeft > 0) {
-            timerRef.current = setInterval(() => {
-                setTimeLeft(prev => prev - 1);
-                // In a time trial, we accumulate party power as damage over time
-                setAccumulatedDamage(prev => prev + partyPower);
-            }, 1000);
-        } else if (timeLeft <= 0 && challengeActive) {
-            setChallengeActive(false);
-            if (timerRef.current) clearInterval(timerRef.current);
-            onFinish(accumulatedDamage);
-            addLog(`Desafio Concluído! Dano Total: ${accumulatedDamage.toLocaleString()}`, "achievement");
-        }
+        if (!challengeActive) return;
 
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
-    }, [challengeActive, timeLeft, partyPower, accumulatedDamage, addLog, onFinish]);
+        const interval = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    setChallengeActive(false);
+                    const finalDamage = stateRef.current.accumulatedDamage + stateRef.current.partyPower;
+                    stateRef.current.onFinish(finalDamage);
+                    addLog(`Desafio Concluído! Dano Total: ${finalDamage.toLocaleString()}`, "achievement");
+                    return 0;
+                }
+                setAccumulatedDamage(d => d + stateRef.current.partyPower);
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [challengeActive, addLog]);
 
     return {
         challengeActive,
