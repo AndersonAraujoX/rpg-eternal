@@ -24,6 +24,7 @@ import { startExpedition } from '../engine/expeditions';
 import { mysticReforge } from '../engine/starForge';
 import { processGlobalAutomation } from '../engine/automation';
 import { initOrUpdateHeroPassiveTree } from '../data/skillTreeData';
+import { calculateBreedingResult } from '../engine/breeding';
 
 import { generateTownEvent } from '../engine/townEvents';
 import { validateGuildExpeditionTeam } from '../engine/guildExpeditions';
@@ -558,7 +559,14 @@ export const useGame = () => {
         monuments,
         buildings,
         voidMatter,
-        lastDailyReset
+        lastDailyReset,
+        starlightUpgrades,
+        starlight,
+        guild: guildState.guild,
+        territories: galaxyState.territories,
+        weather: world.weather,
+        gameStats,
+        dungeonMastery
     });
 
     useEffect(() => {
@@ -607,9 +615,16 @@ export const useGame = () => {
             monuments,
             buildings,
             voidMatter,
-            lastDailyReset
+            lastDailyReset,
+            starlightUpgrades,
+            starlight,
+            guild: guildState.guild,
+            territories: galaxyState.territories,
+            weather: world.weather,
+            gameStats,
+            dungeonMastery
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery]);
 
     // Side Effects
     useEffect(() => {
