@@ -113,9 +113,13 @@ export const useWorldBoss = (
 
     return {
         worldBoss,
+        setWorldBoss,
         personalDamage,
+        setPersonalDamage,
         canClaim,
+        setCanClaim,
         cooldownUntil,
+        setCooldownUntil,
         attackWorldBoss,
         claimReward
     };

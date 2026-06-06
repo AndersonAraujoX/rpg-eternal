@@ -125,7 +125,8 @@ export const processCombatTurn = (
     weather?: WeatherType,
     divinity: number = 0,
     bonds?: Record<string, { xp: number; level: number; type: string }>,
-    monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number }
+    monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number },
+    equippedRelics: string[] = []
 ) => {
     let totalDmg = 0;
     let crits = 0;
@@ -409,7 +410,19 @@ export const processCombatTurn = (
             }
         }
 
-        const heroDamageDealt = Math.max(0, Math.floor(totalHeroAttack));
+        let heroDamageDealt = Math.max(0, Math.floor(totalHeroAttack));
+
+        // execute logic
+        const voidExecuteCount = activeSynergies.find(s => s.type === 'void_execute')?.value || 0;
+        if (voidExecuteCount > 0 && boss.stats.hp > 0 && (boss.stats.hp / boss.stats.maxHp) <= 0.20) {
+            const executeChance = 0.10 * voidExecuteCount;
+            if (Math.random() < executeChance) {
+                const remainingHp = boss.stats.hp;
+                heroDamageDealt += remainingHp;
+                events.push({ id: `execute-${h.id}-${Date.now()}`, type: 'reaction', text: 'EXECUÇÃO ABISSAL!', element: 'dark', x: 50, y: 35 });
+            }
+        }
+
         totalDmg += heroDamageDealt;
 
         if (heroDamageDealt > 0) {
@@ -431,14 +444,22 @@ export const processCombatTurn = (
         const attackChance = 0.3 * (tickDuration / 1000);
 
         if (!boss.isDead && Math.random() < attackChance) {
-            let bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
-            if (h.passiveSkillTree?.modifiers?.damageMitigation) {
-                bossDmg = Math.floor(bossDmg * (1 - h.passiveSkillTree.modifiers.damageMitigation));
+            const dodgeChance = activeSynergies.find(s => s.type === 'void_dodge')?.value || 0;
+            if (Math.random() < dodgeChance) {
+                events.push({ id: `dodge-${h.id}-${Date.now()}`, type: 'status', text: 'DESVIOU!', element: 'light', x: 45 + (Math.random() * 10 - 5), y: 25 });
+            } else {
+                let bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
+                if (h.passiveSkillTree?.modifiers?.damageMitigation) {
+                    bossDmg = Math.floor(bossDmg * (1 - h.passiveSkillTree.modifiers.damageMitigation));
+                }
+                if (equippedRelics.includes('relic_void_orb')) {
+                    bossDmg = Math.floor(bossDmg * 0.88);
+                }
+                bossDmg = Math.max(1, bossDmg);
+                // Heroes are immortal — HP never drops below 1
+                hp = Math.max(1, hp - bossDmg);
+                events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `${h.emoji} -${Math.floor(bossDmg)}`, x: 45 + (Math.random() * 10 - 5), y: 25 });
             }
-            bossDmg = Math.max(1, bossDmg);
-            // Heroes are immortal — HP never drops below 1
-            hp = Math.max(1, hp - bossDmg);
-            events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `${h.emoji} -${Math.floor(bossDmg)}`, x: 45 + (Math.random() * 10 - 5), y: 25 });
         }
 
 

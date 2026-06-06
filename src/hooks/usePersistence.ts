@@ -148,6 +148,36 @@ export interface PersistenceProps {
     setGvgWarState: React.Dispatch<React.SetStateAction<GvGWarState | null>>;
     currentTutorialIndex: number;
     setCurrentTutorialIndex: React.Dispatch<React.SetStateAction<number>>;
+    classMastery: Record<string, any>;
+    setClassMastery: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+    town: any;
+    setTown: React.Dispatch<React.SetStateAction<any>>;
+    townVisited: boolean;
+    setTownVisited: React.Dispatch<React.SetStateAction<boolean>>;
+    dungeonActive: boolean;
+    setDungeonActive: React.Dispatch<React.SetStateAction<boolean>>;
+    dungeonTimer: number;
+    setDungeonTimer: React.Dispatch<React.SetStateAction<number>>;
+    dungeonState: any;
+    setDungeonState: React.Dispatch<React.SetStateAction<any>>;
+    riftState: any;
+    setRiftState: React.Dispatch<React.SetStateAction<any>>;
+    riftTimer: number;
+    setRiftTimer: React.Dispatch<React.SetStateAction<number>>;
+    activeRift: any;
+    setActiveRift: React.Dispatch<React.SetStateAction<any>>;
+    worldBoss: any;
+    setWorldBoss: React.Dispatch<React.SetStateAction<any>>;
+    personalDamage: number;
+    setPersonalDamage: React.Dispatch<React.SetStateAction<number>>;
+    canClaim: boolean;
+    setCanClaim: React.Dispatch<React.SetStateAction<boolean>>;
+    cooldownUntil: number | null;
+    setCooldownUntil: React.Dispatch<React.SetStateAction<number | null>>;
+    marketStock: any[];
+    setMarketStock: React.Dispatch<React.SetStateAction<any[]>>;
+    marketTimer: number;
+    setMarketTimer: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -226,7 +256,37 @@ export const usePersistence = (props: PersistenceProps) => {
         deityEnergy,
         setDeityEnergy,
         outerSpaceUnlocked,
-        setOuterSpaceUnlocked
+        setOuterSpaceUnlocked,
+        classMastery,
+        setClassMastery,
+        town,
+        setTown,
+        townVisited,
+        setTownVisited,
+        dungeonActive,
+        setDungeonActive,
+        dungeonTimer,
+        setDungeonTimer,
+        dungeonState,
+        setDungeonState,
+        riftState,
+        setRiftState,
+        riftTimer,
+        setRiftTimer,
+        activeRift,
+        setActiveRift,
+        worldBoss,
+        setWorldBoss,
+        personalDamage,
+        setPersonalDamage,
+        canClaim,
+        setCanClaim,
+        cooldownUntil,
+        setCooldownUntil,
+        marketStock,
+        setMarketStock,
+        marketTimer,
+        setMarketTimer
     } = props;
 
 
@@ -411,11 +471,27 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.fakePlayers) setFakePlayers(state.fakePlayers);
                 if (state.gvgWarState) setGvgWarState(state.gvgWarState);
 
-                // World Boss state generally shouldn't be persisted if active, or maybe yes?
-                // For now, let's reset WB on reload to avoid bugs, or persist only fragments.
+                // Persistir estados da Vila, Masmorras, Fendas, World Boss e Mercado
+                if (state.classMastery) setClassMastery(state.classMastery);
+                if (state.town) setTown(state.town);
+                if (state.townVisited !== undefined) setTownVisited(state.townVisited);
+                if (state.dungeonActive !== undefined) setDungeonActive(state.dungeonActive);
+                if (state.dungeonTimer !== undefined) setDungeonTimer(state.dungeonTimer);
+                if (state.dungeonState) setDungeonState(state.dungeonState);
+                if (state.riftState) setRiftState(state.riftState);
+                if (state.riftTimer !== undefined) setRiftTimer(state.riftTimer);
+                if (state.activeRift) setActiveRift(state.activeRift);
+                if (state.worldBoss) setWorldBoss(state.worldBoss);
+                if (state.personalDamage !== undefined) setPersonalDamage(state.personalDamage);
+                if (state.canClaim !== undefined) setCanClaim(state.canClaim);
+                if (state.cooldownUntil !== undefined) setCooldownUntil(state.cooldownUntil);
+                if (state.marketStock) setMarketStock(state.marketStock);
+                if (state.marketTimer !== undefined) setMarketTimer(state.marketTimer);
 
                 setRaidActive(false);
-                setDungeonActive(false);
+                if (state.dungeonActive === undefined) {
+                    setDungeonActive(false);
+                }
 
                 // Offline Calc (omitted for brevity, assume unchanged logic)
                 if (state.lastSaveTime) {
@@ -527,6 +603,21 @@ export const usePersistence = (props: PersistenceProps) => {
                 fakePlayers: p.fakePlayers,
                 gvgWarState: p.gvgWarState,
                 currentTutorialIndex: p.currentTutorialIndex,
+                classMastery: p.classMastery,
+                town: p.town,
+                townVisited: p.townVisited,
+                dungeonActive: p.dungeonActive,
+                dungeonTimer: p.dungeonTimer,
+                dungeonState: p.dungeonState,
+                riftState: p.riftState,
+                riftTimer: p.riftTimer,
+                activeRift: p.activeRift,
+                worldBoss: p.worldBoss,
+                personalDamage: p.personalDamage,
+                canClaim: p.canClaim,
+                cooldownUntil: p.cooldownUntil,
+                marketStock: p.marketStock,
+                marketTimer: p.marketTimer,
                 lastSaveTime: Date.now()
             };
 

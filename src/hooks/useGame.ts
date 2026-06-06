@@ -48,6 +48,8 @@ import type { GvGWarState } from '../engine/guildWar';
 import { INITIAL_TOWN, INITIAL_MARKET_TREND } from '../engine/initialData';
 import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
 import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
+import { generateMarketStock } from '../engine/market';
+import { CHAMBER_RELICS } from '../engine/relics';
 import { WEATHER_DATA } from '../engine/weather';
 import { TUTORIAL_STEPS } from '../data/npcTutorial';
 
@@ -349,6 +351,51 @@ export const useGame = () => {
 
     const activeHeroes = useMemo(() => (heroes || []).filter(h => h.assignment === 'combat' && h.unlocked), [heroes]);
 
+    const activeHeroesWithBonusStats = useMemo(() => {
+        const itemStats = { attack: 0, maxHp: 0, defense: 0, magic: 0, speed: 0 };
+        items.forEach(item => {
+            if (item.stat && item.value) {
+                itemStats[item.stat as keyof typeof itemStats] = (itemStats[item.stat as keyof typeof itemStats] || 0) + item.value;
+            }
+            item.runes?.forEach(r => {
+                if (r.type && r.value) {
+                    itemStats[r.type as keyof typeof itemStats] = (itemStats[r.type as keyof typeof itemStats] || 0) + r.value;
+                }
+            });
+        });
+
+        const hasChalice = equippedRelics.includes('relic_chalice');
+        const voidCritDmgCount = items.filter(item => item.voidAffix?.id === 'void_crit_dmg').length;
+
+        return activeHeroes.map(h => {
+            let attack = (h.stats.attack || 0) + (itemStats.attack || 0);
+            let maxHp = (h.stats.maxHp || 0) + (itemStats.maxHp || 0);
+            let defense = (h.stats.defense || 0) + (itemStats.defense || 0);
+            let magic = (h.stats.magic || 0) + (itemStats.magic || 0);
+            let speed = (h.stats.speed || 0) + (itemStats.speed || 0);
+
+            if (hasChalice) {
+                maxHp = Math.floor(maxHp * 1.25);
+            }
+            if (voidCritDmgCount > 0) {
+                defense = Math.floor(defense * (1 - 0.12 * voidCritDmgCount));
+            }
+
+            return {
+                ...h,
+                stats: {
+                    ...h.stats,
+                    attack,
+                    maxHp,
+                    defense,
+                    magic,
+                    speed,
+                    hp: Math.min(maxHp, h.stats.hp ?? maxHp)
+                }
+            };
+        });
+    }, [activeHeroes, items, equippedRelics]);
+
     const prestigeAtkMult = useMemo(() => 1 + (prestigeNodes['atk_1'] || 0) * 0.1 + (prestigeNodes['atk_2'] || 0) * 0.05, [prestigeNodes]);
     const prestigeHpMult = useMemo(() => 1 + (prestigeNodes['hp_1'] || 0) * 0.1 + (prestigeNodes['hp_2'] || 0) * 0.1, [prestigeNodes]);
     const prestigeGoldMult = useMemo(() => 1 + (prestigeNodes['gold_1'] || 0) * 0.15 + (prestigeNodes['boss_1'] || 0) * 0.5, [prestigeNodes]);
@@ -361,9 +408,9 @@ export const useGame = () => {
     const guildGoldMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['statue_midas'] || 0) * 0.05) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'gold') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
     const guildXpMult = useMemo(() => (guildState.guild ? 1 + ((guildState.guild.monuments?.['shrine_wisdom'] || 0) * 0.03) : 1) + ((activeEvent?.type === 'festival' && activeEvent.buffType === 'xp') ? (activeEvent.buffValue || 0) : 0), [guildState.guild, activeEvent]);
 
-    const activeSynergies = useMemo(() => checkSynergies(activeHeroes.map(h => ({
+    const activeSynergies = useMemo(() => checkSynergies(activeHeroesWithBonusStats.map(h => ({
         ...h, stats: { ...h.stats, attack: Math.floor(h.stats.attack * guildAtkMult * prestigeAtkMult * (1 + galaxyBuffs.damageMult)), maxHp: Math.floor(h.stats.maxHp * guildHpMult * prestigeHpMult), hp: Math.floor(h.stats.hp * guildHpMult * prestigeHpMult) }
-    }))), [activeHeroes, guildAtkMult, guildHpMult, prestigeAtkMult, prestigeHpMult, galaxyBuffs.damageMult]);
+    }))), [activeHeroesWithBonusStats, guildAtkMult, guildHpMult, prestigeAtkMult, prestigeHpMult, galaxyBuffs.damageMult]);
 
     const getMonumentMultipliers = useCallback(() => {
         let gold = 1.0;
@@ -474,7 +521,7 @@ export const useGame = () => {
 
     const calculatedPartyPower = useMemo(() => {
         if (!heroes) return 0;
-        const baseStats = activeHeroes.reduce((sum, h) => {
+        const baseStats = activeHeroesWithBonusStats.reduce((sum, h) => {
             let attack = h.stats.attack || 0;
             let maxHp = h.stats.maxHp || 0;
             let magic = h.stats.magic || 0;
@@ -495,7 +542,7 @@ export const useGame = () => {
         const petsPower = petStats.attack + Math.floor(petStats.hp / 10) + petStats.magic + petStats.defense;
 
         return Math.floor((baseStats + petsPower) * totalAtkMult * armyMult * getMonumentMultipliers().attack);
-    }, [activeHeroes, petStats, totalAtkMult, armyMult, getMonumentMultipliers]);
+    }, [activeHeroesWithBonusStats, petStats, totalAtkMult, armyMult, getMonumentMultipliers]);
 
 
     const artifactMultipliers = useMemo(() => {
@@ -747,7 +794,14 @@ export const useGame = () => {
                 });
             }
 
-            setMarketTimer(prev => prev > 0 ? prev - 1 : 0);
+            // Market updates: regenerate stock when timer hits 0 or stock is empty
+            setMarketTimer(prev => {
+                if (prev <= 1 || stateRef.current.marketStock.length === 0) {
+                    setMarketStock(generateMarketStock());
+                    return 3600; // 1 hour
+                }
+                return prev - 1;
+            });
 
             if (worldBossState.worldBoss && !worldBossState.worldBoss.isDead) {
                 const passiveDmg = Math.floor(calculatedPartyPower * 0.05);
@@ -765,6 +819,9 @@ export const useGame = () => {
                 if (Date.now() >= prev.endTime) {
                     const nextTrend = generateRandomTrend(60);
                     addLog(`Economia da Cidade mudou para: ${nextTrend.name}!`, 'action');
+                    // Refresh market stock on trend change
+                    setMarketStock(generateMarketStock());
+                    setMarketTimer(3600);
                     return nextTrend;
                 }
                 return prev;
@@ -1518,16 +1575,37 @@ export const useGame = () => {
                 }));
             },
             manualFish: () => {
-                const res = processFishingAdvanced(1, (stateRef.current.achievements.find(a => a.id === 'fi1')?.isUnlocked ? 0.1 : 0));
+                const hasGoldenFish = stateRef.current.equippedRelics.includes('relic_golden_fish');
+                const bonus = (stateRef.current.achievements.find(a => a.id === 'fi1')?.isUnlocked ? 0.1 : 0);
+                const res = processFishingAdvanced(1, bonus);
                 if (res.fish > 0) setResources(r => ({ ...r, fish: r.fish + res.fish }));
-                if (res.legendary) {
+                
+                let isLegendary = res.legendary;
+                if (!isLegendary && hasGoldenFish && res.fish > 0) {
+                    if (Math.random() < 0.01 + (bonus / 10)) {
+                        isLegendary = true;
+                    }
+                }
+
+                if (isLegendary) {
                     setGameStats(s => ({ ...s, legendaryFishCount: (s.legendaryFishCount || 0) + 1 }));
                     addLog("🎣 Você pescou um PEIXE LENDÁRIO!", "achievement");
                 }
             },
             brewPotion: (id: string) => {
-                const pot = POTIONS.find(p => p.id === id); if (pot && brewPotion(pot, stateRef.current.resources).success) {
-                    setResources(r => { const n = { ...r }; (pot.cost as any[]).forEach(c => (n as any)[c.type] -= c.amount); return n; });
+                const pot = POTIONS.find(p => p.id === id); 
+                const hasScroll = stateRef.current.equippedRelics.includes('relic_alchemy_scroll');
+                const costMultiplier = hasScroll ? 0.8 : 1.0;
+
+                if (pot && brewPotion(pot, stateRef.current.resources, costMultiplier).success) {
+                    setResources(r => {
+                        const n = { ...r };
+                        (pot.cost as any[]).forEach(c => {
+                            const actualCost = Math.floor(c.amount * costMultiplier);
+                            (n as any)[c.type] -= actualCost;
+                        });
+                        return n;
+                    });
                     setActivePotions(p => [...p, { id: pot.id, name: pot.name, effect: pot.effect, value: pot.value, endTime: Date.now() + pot.duration * 1000 }]);
                 }
             },
@@ -1789,10 +1867,127 @@ export const useGame = () => {
                     return { ...prev, relics: newRelics, prosperity: prev.prosperity + 10 };
                 });
                 addLog(`Relíquia Antiga instalada: ${relic.name}!`, 'success');
+            },
+            buyRelic: (relicId: string) => {
+                const relic = CHAMBER_RELICS.find(r => r.id === relicId);
+                if (!relic) return;
+                if (stateRef.current.ownedRelics.includes(relicId)) return;
+
+                if (relic.currency === 'gold') {
+                    if (stateRef.current.gold >= relic.cost) {
+                        setGold(g => g - relic.cost);
+                    } else {
+                        addLog(`Gold insuficiente para comprar ${relic.name}!`, 'danger');
+                        return;
+                    }
+                } else if (relic.currency === 'souls') {
+                    if (stateRef.current.souls >= relic.cost) {
+                        setSouls(s => s - relic.cost);
+                    } else {
+                        addLog(`Almas insuficientes para comprar ${relic.name}!`, 'danger');
+                        return;
+                    }
+                } else if (relic.currency === 'voidMatter') {
+                    if (stateRef.current.voidMatter >= relic.cost) {
+                        setVoidMatter(v => v - relic.cost);
+                    } else {
+                        addLog(`Matéria do Vazio insuficiente para comprar ${relic.name}!`, 'danger');
+                        return;
+                    }
+                }
+
+                setOwnedRelics(prev => [...prev, relicId]);
+                addLog(`Relíquia desbloqueada: ${relic.name}!`, 'success');
+            },
+            equipRelic: (relicId: string, slotIndex: number) => {
+                if (!stateRef.current.ownedRelics.includes(relicId)) return;
+                setEquippedRelics(prev => {
+                    const next = [...prev];
+                    while (next.length <= slotIndex) {
+                        next.push('');
+                    }
+                    const existingIndex = next.indexOf(relicId);
+                    if (existingIndex !== -1) {
+                        next[existingIndex] = '';
+                    }
+                    next[slotIndex] = relicId;
+                    return next;
+                });
+                const relic = CHAMBER_RELICS.find(r => r.id === relicId);
+                addLog(`Relíquia equipada no Slot ${slotIndex + 1}: ${relic ? relic.name : relicId}`, 'success');
+            },
+            unequipRelic: (slotIndex: number) => {
+                setEquippedRelics(prev => {
+                    const next = [...prev];
+                    if (slotIndex < next.length) {
+                        const relicId = next[slotIndex];
+                        next[slotIndex] = '';
+                        const relic = CHAMBER_RELICS.find(r => r.id === relicId);
+                        addLog(`Relíquia removida do Slot ${slotIndex + 1}: ${relic ? relic.name : relicId}`, 'info');
+                    }
+                    return next;
+                });
+            },
+            upgradeResonance: (element: ElementType) => {
+                setElementalResonance(prevRes => {
+                    const level = prevRes[element] || 0;
+                    const cost = Math.floor(10 * Math.pow(1.5, level));
+                    const essence = elementalEssences[element] || 0;
+
+                    if (essence >= cost) {
+                        setElementalEssences(prevEss => ({
+                            ...prevEss,
+                            [element]: prevEss[element] - cost
+                        }));
+                        addLog(`🏛️ Ressonância Elemental de ${element} melhorada para Nível ${level + 1}!`, 'success');
+                        return {
+                            ...prevRes,
+                            [element]: level + 1
+                        };
+                    } else {
+                        addLog(`Essência de ${element} insuficiente!`, 'danger');
+                        return prevRes;
+                    }
+                });
+            },
+            startBossRush: () => {
+                addLog("Boss Rush não está disponível nesta versão.", "info");
+            },
+            infuseItemWithVoid: (itemId: string) => {
+                if (stateRef.current.voidMatter < 50) {
+                    addLog("Matéria do Vazio insuficiente!", "danger");
+                    return;
+                }
+                const affixes = [
+                    { id: 'void_execute', name: 'Toque Abissal', stat: 'execute', value: 0.1 },
+                    { id: 'void_lifesteal', name: 'Dreno de Vácuo', stat: 'lifesteal', value: 0.025 },
+                    { id: 'void_damage', name: 'Entropia', stat: 'damage', value: 0.2 },
+                    { id: 'void_dodge', name: 'Dobra Espacial', stat: 'dodge', value: 0.12 },
+                    { id: 'void_crit_dmg', name: 'Pacto Sombrio', stat: 'crit_dmg', value: 0.35 }
+                ];
+                const randomAffix = affixes[Math.floor(Math.random() * affixes.length)];
+                
+                setItems(prevItems => {
+                    const exists = prevItems.some(i => i.id === itemId);
+                    if (!exists) return prevItems;
+                    
+                    setVoidMatter(v => v - 50);
+                    
+                    return prevItems.map(item => {
+                        if (item.id === itemId) {
+                            addLog(`🌌 Item ${item.name} infundido com ${randomAffix.name}!`, 'achievement');
+                            return {
+                                ...item,
+                                voidAffix: randomAffix
+                            };
+                        }
+                        return item;
+                    });
+                });
             }
         };
         return baseActions as any as GameActions;
-    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains]);
+    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains, ownedRelics, equippedRelics, elementalResonance, elementalEssences, voidMatter]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
@@ -1823,7 +2018,9 @@ export const useGame = () => {
             }
 
             const windmillsMult = backrooms.backroomsUnlockedTechs.includes('windmills') ? 1.05 : 1.0;
-            const tick = Math.max(100, (1000 / (gameSpeed * windmillsMult)) * (1 - (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0)));
+            const effectiveGameSpeed = gameSpeed * (equippedRelics.includes('relic_hourglass') ? 1.10 : 1.0);
+            const attackSpeedBonusSum = (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0) + (elementalResonance.nature || 0) * 0.02;
+            const tick = Math.max(100, (1000 / (effectiveGameSpeed * windmillsMult)) * (1 - attackSpeedBonusSum));
 
             if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);
 
@@ -1900,8 +2097,27 @@ export const useGame = () => {
                 }
             }
 
+            const voidExecuteCount = items.filter(item => item.voidAffix?.id === 'void_execute').length;
+            const voidDodgeCount = items.filter(item => item.voidAffix?.id === 'void_dodge').length;
+            const voidLifestealCount = items.filter(item => item.voidAffix?.id === 'void_lifesteal').length;
+            const voidDamageCount = items.filter(item => item.voidAffix?.id === 'void_damage').length;
+
+            if (voidDamageCount > 0 && !targetBoss.isDead) {
+                setHeroes(prev => prev.map(h => {
+                    if (h.assignment === 'combat' && h.unlocked && !h.isDead) {
+                        const selfDmg = Math.max(1, Math.floor(h.stats.maxHp * 0.01 * voidDamageCount));
+                        const newHp = Math.max(1, (h.stats.hp ?? h.stats.maxHp) - selfDmg);
+                        return { ...h, stats: { ...h.stats, hp: newHp } };
+                    }
+                    return h;
+                }));
+            }
+
             const moraleDamageMult = 0.5 + (teamMorale / 100) * 0.6;
-            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * monumentMults.attack;
+            const fireResMult = 1 + (elementalResonance.fire || 0) * 0.025;
+            const entropyDmgMult = 1 + voidDamageCount * 0.20;
+            const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * monumentMults.attack * fireResMult * entropyDmgMult;
+            
             const synergiesForCombat = [...activeSynergies];
             if (backrooms.backroomsUnlockedTechs.includes('quantum_computing')) {
                 const existingIndex = synergiesForCombat.findIndex(s => s.type === 'crit_dmg');
@@ -1914,7 +2130,42 @@ export const useGame = () => {
                     synergiesForCombat.push({ type: 'crit_dmg', value: 0.25 } as any);
                 }
             }
-            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults);
+
+            // Nature speed resonance
+            const natureSpeed = (elementalResonance.nature || 0) * 0.02;
+            if (natureSpeed > 0) {
+                const idx = synergiesForCombat.findIndex(s => s.type === 'attackSpeed');
+                if (idx !== -1) synergiesForCombat[idx].value += natureSpeed;
+                else synergiesForCombat.push({ type: 'attackSpeed', value: natureSpeed } as any);
+            }
+
+            // Light lifesteal resonance + Void lifesteal
+            const lifestealBonus = (elementalResonance.light || 0) * 0.01 + voidLifestealCount * 0.025;
+            if (lifestealBonus > 0) {
+                const idx = synergiesForCombat.findIndex(s => s.type === 'vampirism');
+                if (idx !== -1) synergiesForCombat[idx].value += lifestealBonus;
+                else synergiesForCombat.push({ type: 'vampirism', value: lifestealBonus } as any);
+            }
+
+            // Dark crit damage resonance
+            const darkCritDmg = (elementalResonance.dark || 0) * 0.02;
+            if (darkCritDmg > 0) {
+                const idx = synergiesForCombat.findIndex(s => s.type === 'crit_dmg');
+                if (idx !== -1) synergiesForCombat[idx].value += darkCritDmg;
+                else synergiesForCombat.push({ type: 'crit_dmg', value: darkCritDmg } as any);
+            }
+
+            // Void dodge
+            if (voidDodgeCount > 0) {
+                synergiesForCombat.push({ type: 'void_dodge', value: voidDodgeCount * 0.12 } as any);
+            }
+
+            // Void execute
+            if (voidExecuteCount > 0) {
+                synergiesForCombat.push({ type: 'void_execute', value: voidExecuteCount } as any);
+            }
+
+            const res = processCombatTurn(activeHeroesWithBonusStats, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults, equippedRelics);
 
             damageAccumulator.current += res.totalDmg;
 
@@ -1924,8 +2175,8 @@ export const useGame = () => {
                     if (next >= 100) {
                         const level = stateRef.current.deityLevel;
                         if (stateRef.current.patronDeity === 'aurelius') {
-                            const avgAtk = activeHeroes.length > 0
-                                ? activeHeroes.reduce((sum, h) => sum + h.stats.attack, 0) / activeHeroes.length
+                            const avgAtk = activeHeroesWithBonusStats.length > 0
+                                ? activeHeroesWithBonusStats.reduce((sum, h) => sum + h.stats.attack, 0) / activeHeroesWithBonusStats.length
                                 : 20;
                             const activeSpellDmg = Math.floor(avgAtk * 50 * level);
                             damageAccumulator.current += activeSpellDmg;
@@ -1974,9 +2225,10 @@ export const useGame = () => {
 
             const steamEngineMult = backrooms.backroomsUnlockedTechs.includes('steam_engine') ? 1.15 : 1.0;
             const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
-
-            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * monumentMults.gold * steamEngineMult * cleanFusionMult;
-            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0)) * cleanFusionMult;
+            const resonanceGoldMult = 1 + (elementalResonance.neutral || 0) * 0.015;
+            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * monumentMults.gold * steamEngineMult * cleanFusionMult * resonanceGoldMult;
+            const resonanceXpMult = 1 + (elementalResonance.neutral || 0) * 0.015;
+            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0)) * cleanFusionMult * resonanceXpMult;
 
             const moraleXpMult = 0.5 + (teamMorale / 100) * 0.7;
 
@@ -2019,7 +2271,7 @@ export const useGame = () => {
                 setBossTimer(60);
 
                 // Award Class Mastery XP
-                const combatClasses = new Set(activeHeroes.map(h => h.class));
+                const combatClasses = new Set(activeHeroesWithBonusStats.map(h => h.class));
                 combatClasses.forEach(cls => {
                     const masteryXP = Math.floor(currentBoss.level * 2);
                     setClassMastery(prev => {
@@ -2219,7 +2471,7 @@ export const useGame = () => {
             });
 
             // Global Automation Processing
-            const autoResult = processGlobalAutomation(gameStats, resources, activeExpeditions);
+            const autoResult = processGlobalAutomation(gameStats, resources, activeExpeditions, equippedRelics);
             if (autoResult.resources && Object.values(autoResult.resources).some(v => v > 0)) {
                 setResources(prev => {
                     const next = { ...prev };
@@ -2497,7 +2749,22 @@ export const useGame = () => {
         setGvgWarState,
         currentTutorialIndex,
         setCurrentTutorialIndex,
-        arenaOpponents, setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
+        arenaOpponents, setArenaOpponents, setRaidActive, setOfflineGains,
+        classMastery, setClassMastery,
+        town, setTown,
+        townVisited, setTownVisited,
+        dungeonActive: world.dungeonActive, setDungeonActive: world.setDungeonActive,
+        dungeonTimer: world.dungeonTimer, setDungeonTimer: world.setDungeonTimer,
+        dungeonState: world.dungeonState, setDungeonState: world.setDungeonState,
+        riftState: world.riftState, setRiftState: world.setRiftState,
+        riftTimer: world.riftTimer, setRiftTimer: world.setRiftTimer,
+        activeRift: world.activeRift, setActiveRift: world.setActiveRift,
+        worldBoss: worldBossState.worldBoss, setWorldBoss: worldBossState.setWorldBoss,
+        personalDamage: worldBossState.personalDamage, setPersonalDamage: worldBossState.setPersonalDamage,
+        canClaim: worldBossState.canClaim, setCanClaim: worldBossState.setCanClaim,
+        cooldownUntil: worldBossState.cooldownUntil, setCooldownUntil: worldBossState.setCooldownUntil,
+        marketStock, setMarketStock,
+        marketTimer, setMarketTimer
     });
 
     const abandonRoguelikeRun = useCallback(() => {

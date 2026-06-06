@@ -61,6 +61,9 @@ import { PortalResetModal } from './components/modals/PortalResetModal';
 import { PrestigeTreeModal } from './components/modals/PrestigeTreeModal';
 import { PetSpaceModal } from './components/modals/PetSpaceModal';
 import { WeatherOverlays } from './components/WeatherOverlays';
+import { ElementalResonanceModal } from './components/modals/ElementalResonanceModal';
+import { RelicChamberModal } from './components/modals/RelicChamberModal';
+import { VoidInfusionModal } from './components/modals/VoidInfusionModal';
 
 function App() {
   const industry = useIndustry();
@@ -108,6 +111,7 @@ function App() {
     backroomsUnlockedTechs, researchTech,
     backroomsFloor, backroomsFloorProgress, backroomsBossHp,
     fakePlayers,
+    elementalResonance, elementalEssences, ownedRelics, equippedRelics,
     gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex
   } = useGame();
 
@@ -172,6 +176,9 @@ function App() {
   const [showRoguelike, setShowRoguelike] = useState(false);
   const [showBackrooms, setShowBackrooms] = useState(false);
   const [showJourney, setShowJourney] = useState(false);
+  const [showElementalResonance, setShowElementalResonance] = useState(false);
+  const [showRelicChamber, setShowRelicChamber] = useState(false);
+  const [showVoidInfusion, setShowVoidInfusion] = useState(false);
   const [bottomTab, setBottomTab] = useState<'heroes' | 'pets'>('heroes');
 
   const [importString, setImportString] = useState('');
@@ -308,6 +315,9 @@ function App() {
           setShowRoguelike={setShowRoguelike}
           setShowBackrooms={setShowBackrooms}
           setShowJourney={setShowJourney}
+          setShowElementalResonance={setShowElementalResonance}
+          setShowVoidInfusion={setShowVoidInfusion}
+          setShowRelicChamber={setShowRelicChamber}
         />
 
         <BattleArea
@@ -687,6 +697,33 @@ function App() {
           outerSpaceUnlocked,
           riftsUnlocked: backroomsUnlockedTechs.includes('rift_tech')
         }}
+      />
+
+      <ElementalResonanceModal
+        isOpen={showElementalResonance}
+        onClose={() => setShowElementalResonance(false)}
+        elementalResonance={elementalResonance}
+        elementalEssences={elementalEssences}
+        actions={actions}
+      />
+
+      <RelicChamberModal
+        isOpen={showRelicChamber}
+        onClose={() => setShowRelicChamber(false)}
+        ownedRelics={ownedRelics}
+        equippedRelics={equippedRelics}
+        gold={gold}
+        souls={souls}
+        voidMatter={voidMatter}
+        actions={actions}
+      />
+
+      <VoidInfusionModal
+        isOpen={showVoidInfusion}
+        onClose={() => setShowVoidInfusion(false)}
+        items={items}
+        voidMatter={voidMatter}
+        actions={actions}
       />
     </div>
   );
