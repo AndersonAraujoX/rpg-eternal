@@ -6,6 +6,8 @@ import { INITIAL_GARDEN } from '../engine/garden';
 import type { BackroomsExplorer, BackroomsOutpost, BackroomsResources } from '../engine/backrooms';
 import type { FakePlayer } from '../engine/playerSimulation';
 import type { GvGWarState } from '../engine/guildWar';
+import { initOrUpdateHeroPassiveTree } from '../data/skillTreeData';
+
 
 export interface PersistenceProps {
     heroes: Hero[];
@@ -129,6 +131,8 @@ export interface PersistenceProps {
     setFakePlayers: React.Dispatch<React.SetStateAction<FakePlayer[]>>;
     gvgWarState: GvGWarState | null;
     setGvgWarState: React.Dispatch<React.SetStateAction<GvGWarState | null>>;
+    currentTutorialIndex: number;
+    setCurrentTutorialIndex: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -187,13 +191,13 @@ export const usePersistence = (props: PersistenceProps) => {
         setBackroomsResources,
         backroomsUnlockedTechs,
         setBackroomsUnlockedTechs,
-        backroomsFloor,
         setBackroomsFloor,
-        backroomsFloorProgress,
         setBackroomsFloorProgress,
         fakePlayers,
         setFakePlayers,
-        setGvgWarState
+        setGvgWarState,
+        currentTutorialIndex,
+        setCurrentTutorialIndex
     } = props;
 
 
@@ -241,7 +245,8 @@ export const usePersistence = (props: PersistenceProps) => {
                         curses: savedH.curses || []
                     }));
 
-                const updatedHeroes = [...staticHeroes, ...dynamicHeroes];
+                const updatedHeroes = [...staticHeroes, ...dynamicHeroes].map(h => initOrUpdateHeroPassiveTree(h));
+
 
                 setHeroes(updatedHeroes);
                 setBoss({ ...state.boss, element: state.boss?.element || 'neutral' });
@@ -360,6 +365,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.backroomsUnlockedTechs) setBackroomsUnlockedTechs(state.backroomsUnlockedTechs);
                 if (typeof state.backroomsFloor === 'number') setBackroomsFloor(state.backroomsFloor);
                 if (typeof state.backroomsFloorProgress === 'number') setBackroomsFloorProgress(state.backroomsFloorProgress);
+                if (typeof state.currentTutorialIndex === 'number') setCurrentTutorialIndex(state.currentTutorialIndex);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -489,6 +495,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 backroomsFloorProgress: p.backroomsFloorProgress,
                 fakePlayers: p.fakePlayers,
                 gvgWarState: p.gvgWarState,
+                currentTutorialIndex: p.currentTutorialIndex,
                 lastSaveTime: Date.now()
             };
 

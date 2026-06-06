@@ -23,6 +23,8 @@ import { brewPotion, transmuteResources, ELIXIRS } from '../engine/alchemy';
 import { startExpedition } from '../engine/expeditions';
 import { mysticReforge } from '../engine/starForge';
 import { processGlobalAutomation } from '../engine/automation';
+import { initOrUpdateHeroPassiveTree } from '../data/skillTreeData';
+
 import { generateTownEvent } from '../engine/townEvents';
 import { validateGuildExpeditionTeam } from '../engine/guildExpeditions';
 import { useVoidGuardian } from './useVoidGuardian';
@@ -46,6 +48,7 @@ import { INITIAL_TOWN, INITIAL_MARKET_TREND } from '../engine/initialData';
 import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
 import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
 import { WEATHER_DATA } from '../engine/weather';
+import { TUTORIAL_STEPS } from '../data/npcTutorial';
 
 import { INITIAL_GARDEN } from '../engine/garden';
 import { generateInitialBots, tickFakePlayers, selectArenaOpponents } from '../engine/playerSimulation';
@@ -141,6 +144,7 @@ export const useGame = () => {
     const [victory, setVictory] = useState(false);
     const [fakePlayers, setFakePlayers] = useState<FakePlayer[]>(() => generateInitialBots(20));
     const [gvgWarState, setGvgWarState] = useState<GvGWarState | null>(null);
+    const [currentTutorialIndex, setCurrentTutorialIndex] = useState<number>(0);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<import('../engine/types').Talent[]>([]);
     const [artifacts, setArtifacts] = useState<import('../engine/types').Artifact[]>(RARE_ARTIFACTS);
@@ -462,7 +466,20 @@ export const useGame = () => {
     const calculatedPartyPower = useMemo(() => {
         if (!heroes) return 0;
         const baseStats = activeHeroes.reduce((sum, h) => {
-            const hPower = (h.stats.attack || 0) + Math.floor((h.stats.maxHp || 0) / 10) + (h.stats.magic || 0) + (h.stats.defense || 0);
+            let attack = h.stats.attack || 0;
+            let maxHp = h.stats.maxHp || 0;
+            let magic = h.stats.magic || 0;
+            let defense = h.stats.defense || 0;
+
+            if (h.passiveSkillTree?.modifiers) {
+                const mods = h.passiveSkillTree.modifiers;
+                attack = Math.floor(attack * mods.attackMult);
+                maxHp = Math.floor(maxHp * mods.hpMult);
+                magic = Math.floor(magic * mods.magicMult);
+                defense = Math.floor(defense * mods.defenseMult);
+            }
+
+            const hPower = attack + Math.floor(maxHp / 10) + magic + defense;
             return sum + hPower;
         }, 0);
 
@@ -470,6 +487,7 @@ export const useGame = () => {
 
         return Math.floor((baseStats + petsPower) * totalAtkMult * armyMult * getMonumentMultipliers().attack);
     }, [activeHeroes, petStats, totalAtkMult, armyMult, getMonumentMultipliers]);
+
 
     const artifactMultipliers = useMemo(() => {
         const mults = { gold: 1, xp: 1, damage: 1, defense: 1, speed: 1 };
@@ -500,7 +518,10 @@ export const useGame = () => {
         tower: world.tower,
         towerBoss: world.towerBoss,
         fakePlayers,
-        gvgWarState
+        gvgWarState,
+        currentTutorialIndex,
+        backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
+        backroomsFloor: backrooms.backroomsFloor
     });
 
     useEffect(() => {
@@ -517,9 +538,12 @@ export const useGame = () => {
             tower: world.tower,
             towerBoss: world.towerBoss,
             fakePlayers,
-            gvgWarState
+            gvgWarState,
+            currentTutorialIndex,
+            backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
+            backroomsFloor: backrooms.backroomsFloor
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor]);
 
     // Side Effects
     useEffect(() => {
@@ -696,7 +720,7 @@ export const useGame = () => {
             },
             evolveHero: (id: string) => {
                 const h = heroes.find(x => x.id === id);
-                if (h && h.level >= 50) setHeroes(p => p.map(curr => curr.id === id ? { ...curr, class: (PRESTIGE_CLASSES as any)[h.class] || h.class, level: 1 } : curr));
+                if (h && h.level >= 50) setHeroes(p => p.map(curr => curr.id === id ? initOrUpdateHeroPassiveTree({ ...curr, class: (PRESTIGE_CLASSES as any)[h.class] || h.class, level: 1 }) : curr));
             },
             awakenHero: (id: string) => {
                 const h = heroes.find(x => x.id === id);
@@ -705,7 +729,7 @@ export const useGame = () => {
                 if (h && h.level >= 100 && !h.isAwakened && gold >= goldCost && souls >= soulsCost) {
                     setGold(g => g - goldCost);
                     setSouls(s => s - soulsCost);
-                    setHeroes(p => p.map(curr => curr.id === id ? {
+                    setHeroes(p => p.map(curr => curr.id === id ? initOrUpdateHeroPassiveTree({
                         ...curr,
                         isAwakened: true,
                         awakeningTitle: 'Desperto',
@@ -719,9 +743,10 @@ export const useGame = () => {
                             defense: Math.floor(curr.stats.defense * 1.5),
                             magic: Math.floor(curr.stats.magic * 1.5)
                         }
-                    } : curr));
+                    }) : curr));
                     addLog(`☄️ LIMIT BREAK! ${h.name} alcançou o Despertar! Seus atributos explodiram de poder!`, 'achievement');
                     soundManager.playLevelUp();
+
                 } else if (h && (gold < goldCost || souls < soulsCost)) {
                     addLog(`Recursos insuficientes. O Despertar exige ${goldCost} Ouro e ${soulsCost} Almas.`, 'error');
                 } else if (h && h.level < 100) {
@@ -1988,9 +2013,14 @@ export const useGame = () => {
                         h = autoAllocateHeroStats(h);
                     }
 
+                    if (h.level !== oldHero.level || h.class !== oldHero.class || !h.passiveSkillTree) {
+                        h = initOrUpdateHeroPassiveTree(h);
+                    }
+
                     if (h !== oldHero) changed = true;
                     return h;
                 });
+
 
                 return changed ? nextHeroes : prev;
             });
@@ -2047,7 +2077,7 @@ export const useGame = () => {
                     if (awakenedHeroIds.includes(h.id)) {
                         addLog(`☄️ LIMIT BREAK! ${h.name} alcançou o Despertar automaticamente! Seus atributos explodiram de poder!`, 'achievement');
                         soundManager.playLevelUp();
-                        return {
+                        return initOrUpdateHeroPassiveTree({
                             ...h,
                             isAwakened: true,
                             awakeningTitle: 'Desperto',
@@ -2061,7 +2091,8 @@ export const useGame = () => {
                                 defense: Math.floor(h.stats.defense * 1.5),
                                 magic: Math.floor(h.stats.magic * 1.5)
                             }
-                        };
+                        });
+
                     }
                     return h;
                 }));
@@ -2176,6 +2207,49 @@ export const useGame = () => {
             // Backrooms Simulation Tick
             backrooms.processBackroomsTick(1);
 
+            // Tutorial progress check
+            const tutorialIdx = stateRef.current.currentTutorialIndex;
+            if (tutorialIdx !== undefined && tutorialIdx < TUTORIAL_STEPS.length) {
+                const currentStep = TUTORIAL_STEPS[tutorialIdx];
+                const fullState = {
+                    gold: stateRef.current.gold,
+                    buildings: stateRef.current.buildings,
+                    backroomsUnlockedTechs: stateRef.current.backroomsUnlockedTechs,
+                    backroomsFloor: stateRef.current.backroomsFloor
+                };
+
+                if (currentStep.checkCondition(fullState)) {
+                    // Apply rewards
+                    const reward = currentStep.reward;
+                    if (reward.gold) setGold(g => g + reward.gold!);
+                    if (reward.souls) setSouls(s => s + reward.souls!);
+                    
+                    if (reward.backroomsScrap || reward.almondWater || reward.anomalyParts) {
+                        backrooms.setBackroomsResources(prev => ({
+                            scrap: prev.scrap + (reward.backroomsScrap || 0),
+                            almondWater: prev.almondWater + (reward.almondWater || 0),
+                            anomalyParts: prev.anomalyParts + (reward.anomalyParts || 0)
+                        }));
+                    }
+
+                    // Apply unlocksFeature
+                    if (currentStep.unlocksFeature) {
+                        if (currentStep.unlocksFeature === 'backrooms_manager') {
+                            setBuildings(prev => prev.map(b => 
+                                b.id === 'backrooms_manager' && b.level === 0 ? { ...b, level: 1 } : b
+                            ));
+                            addLog("🏢 Posto Avançado M.E.G. foi estabelecido e a aba das Backrooms está desbloqueada!", "achievement");
+                        }
+                    }
+
+                    // Advance index
+                    setCurrentTutorialIndex(prevIdx => prevIdx + 1);
+
+                    // Log notification
+                    addLog(`📢 NPC ${currentStep.npcName}: Objetivo concluído! Recebeu recompensas.`, 'success');
+                }
+            }
+
             // Re-schedule
             loopRef.current = setTimeout(runTick, tick);
         };
@@ -2228,6 +2302,8 @@ export const useGame = () => {
         setFakePlayers,
         gvgWarState,
         setGvgWarState,
+        currentTutorialIndex,
+        setCurrentTutorialIndex,
         arenaOpponents, setVisible: () => { }, arenaStatus: '', setArenaOpponents, setRaidActive, setDungeonActive: world.setDungeonActive, setOfflineGains
     } as any);
 
@@ -2389,8 +2465,9 @@ export const useGame = () => {
             backroomsFloor: backrooms.backroomsFloor,
             backroomsFloorProgress: backrooms.backroomsFloorProgress,
             backroomsBossHp: backrooms.backroomsBossHp,
+            currentTutorialIndex,
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex]);
 
     return result;
 };

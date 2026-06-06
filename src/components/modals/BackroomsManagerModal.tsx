@@ -6,6 +6,7 @@ import type {
     BackroomsExplorer, BackroomsOutpost, BackroomsResources 
 } from '../../engine/backrooms';
 import { BACKROOMS_LEVELS, BACKROOMS_RESEARCHES, getTransitionBoss } from '../../engine/backrooms';
+import { NpcInstructorWidget } from '../NpcInstructorWidget';
 
 interface BackroomsManagerModalProps {
     isOpen: boolean;
@@ -28,10 +29,11 @@ interface BackroomsManagerModalProps {
         craftGear: (explorerId: string, gearType: 'flashlight' | 'suit' | 'tracker') => void;
         researchTech?: (techId: string) => void;
     };
+    currentTutorialIndex?: number;
 }
 
 export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
-    isOpen, onClose, explorers, outpost, resources, logs, unlockedTechs, floor, floorProgress, bossHp, actions
+    isOpen, onClose, explorers, outpost, resources, logs, unlockedTechs, floor, floorProgress, bossHp, actions, currentTutorialIndex
 }) => {
     const [selectedLevelForExp, setSelectedLevelForExp] = useState<Record<string, string>>({});
     const [activeTab, setActiveTab] = useState<'exploradores' | 'pesquisa'>('exploradores');
@@ -145,6 +147,11 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* NPC Instructor Tutorial Widget */}
+                {currentTutorialIndex !== undefined && (
+                    <NpcInstructorWidget currentTutorialIndex={currentTutorialIndex} />
                 )}
 
                 {/* Body Content */}

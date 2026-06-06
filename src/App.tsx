@@ -108,7 +108,7 @@ function App() {
     backroomsUnlockedTechs, researchTech,
     backroomsFloor, backroomsFloorProgress, backroomsBossHp,
     fakePlayers,
-    gvgWarState, startGvGWar, playerGvGAttack
+    gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex
   } = useGame();
 
 
@@ -631,6 +631,7 @@ function App() {
       <BackroomsManagerModal
         isOpen={showBackrooms}
         onClose={() => setShowBackrooms(false)}
+        currentTutorialIndex={currentTutorialIndex}
         explorers={backroomsExplorers}
         outpost={backroomsOutpost}
         resources={backroomsResources}

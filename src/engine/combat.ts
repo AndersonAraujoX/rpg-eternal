@@ -18,16 +18,19 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
 
 export const calculateHeroPower = (hero: Hero): number => {
     let stats = { ...hero.stats };
-    // Apply Divinity multiplier to base stats before equipment? Or after?
-    // Implementation Plan said "Global Multiplier". So after everything.
-    // Apply Divinity multiplier to base stats before equipment? Or after?
-    // Implementation Plan said "Global Multiplier". So after everything.
-    // const divMult = 1 + (divinity * 0.1); 
-
-
+    if (hero.passiveSkillTree?.modifiers) {
+        const mods = hero.passiveSkillTree.modifiers;
+        stats.attack = Math.floor(stats.attack * mods.attackMult);
+        stats.magic = Math.floor(stats.magic * mods.magicMult);
+        stats.hp = Math.floor(stats.hp * mods.hpMult);
+        stats.maxHp = Math.floor(stats.maxHp * mods.hpMult);
+        stats.defense = Math.floor(stats.defense * mods.defenseMult);
+        stats.speed = Math.floor(stats.speed * mods.speedMult);
+    }
 
     const baseScore = (stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2)) * 0.5;
     let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)));
+
 
     // Phase 80: Fatigue Penalty
     if (hero.fatigue) {
@@ -169,6 +172,16 @@ export const processCombatTurn = (
         if (h.assignment !== 'combat' || !h.unlocked) return h;
 
         let stats = { ...h.stats };
+        // Apply Passive Skill Tree modifiers
+        if (h.passiveSkillTree?.modifiers) {
+            const mods = h.passiveSkillTree.modifiers;
+            stats.attack = Math.floor(stats.attack * mods.attackMult);
+            stats.magic = Math.floor(stats.magic * mods.magicMult);
+            stats.maxHp = Math.floor(stats.maxHp * mods.hpMult);
+            stats.defense = Math.floor(stats.defense * mods.defenseMult);
+            stats.speed = Math.floor(stats.speed * mods.speedMult);
+        }
+
         // Apply Divinity
         if (divinity > 0) {
             const multiplier = 1 + (divinity * 0.1);
@@ -179,6 +192,7 @@ export const processCombatTurn = (
             stats.magic = Math.floor(stats.magic * multiplier);
             stats.speed = Math.floor(stats.speed * multiplier);
         }
+
  
         // Apply Monument Bonuses
         if (monumentEffects) {
@@ -352,13 +366,16 @@ export const processCombatTurn = (
         }
 
         const critRoll = Math.random();
-        const isCrit = critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0);
+        const passiveCritChance = h.passiveSkillTree?.modifiers?.critChanceBonus || 0;
+        const isCrit = critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0) + passiveCritChance;
         if (isCrit) {
-            const critMult = 2 + critDmgBonus;
+            const passiveCritDmg = h.passiveSkillTree?.modifiers?.critDamageBonus || 0;
+            const critMult = 2 + critDmgBonus + passiveCritDmg;
             baseDmg *= critMult;
             skillDmg *= critMult;
             crits++;
         }
+
 
         let totalHeroAttack = baseDmg + skillDmg;
 
@@ -397,11 +414,16 @@ export const processCombatTurn = (
         const attackChance = 0.3 * (tickDuration / 1000);
 
         if (!boss.isDead && Math.random() < attackChance) {
-            const bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
+            let bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
+            if (h.passiveSkillTree?.modifiers?.damageMitigation) {
+                bossDmg = Math.floor(bossDmg * (1 - h.passiveSkillTree.modifiers.damageMitigation));
+            }
+            bossDmg = Math.max(1, bossDmg);
             // Heroes are immortal — HP never drops below 1
             hp = Math.max(1, hp - bossDmg);
             events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `${h.emoji} -${Math.floor(bossDmg)}`, x: 45 + (Math.random() * 10 - 5), y: 25 });
         }
+
 
         // 🧬 Auto-corrupção ao atingir insanidade 100
         const shouldMutate = newInsanity >= 100 && !h.isMutated;

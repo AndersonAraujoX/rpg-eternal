@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Hero, GameActions, Stats, Building } from '../../engine/types';
 import { X, Sword, Shield, Zap, Heart, Wind, Flame, Droplets, Leaf } from 'lucide-react';
+import { MILESTONES, getClassPriority } from '../../data/skillTreeData';
+
 
 interface HeroDetailModalProps {
     isOpen: boolean;
@@ -248,8 +250,183 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
                     </div>
                 </div>
 
+                {/* Passive Skill Tree Section */}
+                <div className="mt-6 bg-gray-800/40 p-5 rounded-lg border border-gray-700 relative z-10">
+
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
+                        <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-200 flex items-center gap-2 uppercase tracking-wider">
+                            🌳 Árvore de Habilidades Passivas (Auto)
+                        </h3>
+                        <span className="text-[10px] bg-yellow-950/40 text-yellow-300 px-2 py-0.5 rounded border border-yellow-600/30 font-bold uppercase tracking-wider self-start sm:self-auto">
+                            Prioridade: {(() => {
+                                const priority = getClassPriority(hero.class);
+                                if (priority === 'offensive') return '⚔️ Ofensiva';
+                                if (priority === 'defensive') return '🛡️ Defensiva';
+                                return '🧪 Utilitária / Backrooms';
+                            })()}
+                        </span>
+                    </div>
+
+                    <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+                        Este herói aloca automaticamente 1 ponto de habilidade passiva por nível (limite no nível 100) seguindo a afinidade de sua classe. Marcos medieval-anômalos são ativados em níveis específicos.
+                    </p>
+
+                    {/* Progress Bars for Paths */}
+                    {hero.passiveSkillTree ? (
+                        <div className="space-y-3 mb-6 bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                            <div>
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-red-400 font-semibold flex items-center gap-1">⚔️ Caminho Ofensivo</span>
+                                    <span className="text-gray-400 font-mono">{hero.passiveSkillTree.offensivePoints} pts</span>
+                                </div>
+                                <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 transition-all duration-500"
+                                        style={{ width: `${Math.min(100, (hero.passiveSkillTree.offensivePoints / 99) * 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-emerald-400 font-semibold flex items-center gap-1">🛡️ Caminho Defensivo</span>
+                                    <span className="text-gray-400 font-mono">{hero.passiveSkillTree.defensivePoints} pts</span>
+                                </div>
+                                <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-emerald-600 via-green-500 to-teal-400 transition-all duration-500"
+                                        style={{ width: `${Math.min(100, (hero.passiveSkillTree.defensivePoints / 99) * 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-purple-400 font-semibold flex items-center gap-1">🧪 Caminho Utilitário / Anômalo</span>
+                                    <span className="text-gray-400 font-mono">{hero.passiveSkillTree.utilityPoints} pts</span>
+                                </div>
+                                <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
+                                        style={{ width: `${Math.min(100, (hero.passiveSkillTree.utilityPoints / 99) * 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center text-xs text-gray-500 py-3 italic">Inicializando árvore de habilidades...</div>
+                    )}
+
+                    {/* Milestone Nodes Web / Timeline */}
+                    <div className="mb-6">
+                        <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wide mb-4">Marcos de Nível e Sinergia dos Backrooms</h4>
+                        <div className="relative flex items-center justify-between px-4 py-2 bg-gray-950 rounded-lg border border-gray-800 overflow-visible">
+                            {/* Horizontal Line behind nodes */}
+                            <div className="absolute left-6 right-6 h-1 bg-gray-800 z-0"></div>
+                            {/* Horizontal Progress Line */}
+                            <div 
+                                className="absolute left-6 h-1 bg-gradient-to-r from-amber-500 to-yellow-300 z-0 transition-all duration-500"
+                                style={{
+                                    width: `${Math.min(100, Math.max(0, ((hero.level - 10) / 90) * 100))}%`,
+                                    maxWidth: 'calc(100% - 3rem)'
+                                }}
+                            ></div>
+
+                            {MILESTONES.map((milestone) => {
+                                const isUnlocked = hero.level >= milestone.level;
+                                return (
+                                    <div key={milestone.level} className="relative z-10 flex flex-col items-center group">
+                                        {/* Node Circle */}
+                                        <div
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-[10px] select-none transition-all duration-300 border-2 cursor-help
+                                                ${isUnlocked 
+                                                    ? 'bg-yellow-950/80 border-yellow-400 text-yellow-300 shadow-[0_0_15px_rgba(234,179,8,0.6)]' 
+                                                    : 'bg-gray-900 border-gray-800 text-gray-500'
+                                                }`}
+                                            title={`${milestone.name} (Lvl ${milestone.level}): ${milestone.description}`}
+                                        >
+                                            {milestone.level}
+                                        </div>
+
+                                        <span className={`text-[8px] mt-1.5 font-bold truncate max-w-[65px] ${isUnlocked ? 'text-yellow-400' : 'text-gray-500'}`}>
+                                            {milestone.name.split(' ')[0]}
+                                        </span>
+
+                                        {/* Hover Tooltip Card */}
+                                        <div className="absolute bottom-full mb-3 hidden group-hover:flex flex-col bg-gray-900/95 border border-yellow-500/50 p-3 rounded-lg shadow-2xl w-60 z-30 pointer-events-none text-left backdrop-blur-md">
+                                            <div className="flex justify-between items-center border-b border-gray-700 pb-1 mb-1.5">
+                                                <span className="text-xs font-bold text-yellow-300">{milestone.name}</span>
+                                                <span className={`text-[8px] px-1 rounded font-mono ${isUnlocked ? 'bg-green-950 text-green-300' : 'bg-red-950 text-red-300'}`}>
+                                                    {isUnlocked ? 'DESBLOQUEADO' : 'BLOQUEADO'}
+                                                </span>
+                                            </div>
+                                            <div className="text-[10px] text-gray-300 leading-relaxed mb-1 font-bold">
+                                                {milestone.brief}
+                                            </div>
+                                            <div className="text-[9px] text-gray-400 leading-relaxed">
+                                                {milestone.description}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Cumulative Modifiers Box */}
+                    {hero.passiveSkillTree?.modifiers && (
+                        <div className="bg-gray-900/40 p-4 rounded-lg border border-gray-800">
+                            <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wide mb-3">Bônus Passivos Cumulativos Ativos</h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-[11px]">
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Atq. Mult:</span>
+                                    <span className="font-mono text-red-400 font-bold">+{Math.round((hero.passiveSkillTree.modifiers.attackMult - 1.0) * 100)}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Mag. Mult:</span>
+                                    <span className="font-mono text-purple-400 font-bold">+{Math.round((hero.passiveSkillTree.modifiers.magicMult - 1.0) * 100)}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Vida Mult:</span>
+                                    <span className="font-mono text-green-400 font-bold">+{Math.round((hero.passiveSkillTree.modifiers.hpMult - 1.0) * 100)}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Def. Mult:</span>
+                                    <span className="font-mono text-yellow-400 font-bold">+{Math.round((hero.passiveSkillTree.modifiers.defenseMult - 1.0) * 100)}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Vel. Mult:</span>
+                                    <span className="font-mono text-cyan-400 font-bold">+{Math.round((hero.passiveSkillTree.modifiers.speedMult - 1.0) * 100)}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Chance Crít:</span>
+                                    <span className="font-mono text-orange-400 font-bold">+{Math.round(hero.passiveSkillTree.modifiers.critChanceBonus * 1000) / 10}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Dano Crít:</span>
+                                    <span className="font-mono text-red-500 font-bold">+{Math.round(hero.passiveSkillTree.modifiers.critDamageBonus * 100)}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Mitigação:</span>
+                                    <span className="font-mono text-teal-400 font-bold">+{Math.round(hero.passiveSkillTree.modifiers.damageMitigation * 100)}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800">
+                                    <span className="text-gray-400">Res. Insan.:</span>
+                                    <span className="font-mono text-fuchsia-400 font-bold">+{Math.round(hero.passiveSkillTree.modifiers.insanityResistance * 100)}%</span>
+                                </div>
+                                <div className="flex justify-between bg-gray-950/50 p-2 rounded border border-gray-800 col-span-2 sm:col-span-1">
+                                    <span className="text-gray-400">Expedição:</span>
+                                    <span className="font-mono text-amber-400 font-bold">+{Math.round(hero.passiveSkillTree.modifiers.expeditionSpeedBonus * 100)}%</span>
+                                </div>
+
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 {/* Bonds Section */}
                 <div className="mt-6 bg-gray-800/30 p-4 rounded-lg border border-gray-700 relative z-10">
+
                     <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-1 uppercase tracking-wider">💑 Vínculos de Amizade</h3>
                     {(() => {
                         const heroBondsList = Object.entries(heroBonds || {})

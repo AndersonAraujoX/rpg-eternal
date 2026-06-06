@@ -417,6 +417,15 @@ export interface BackroomsResearch {
 export const BACKROOMS_RESEARCHES: BackroomsResearch[] = [
     // Era 1: Medieval
     {
+        id: 'alchemical_distill',
+        name: 'Destilação Alquímica',
+        description: 'Desenvolve métodos industriais para purificar Almond Water em escala laboratorial.',
+        cost: { scrap: 20, almondWater: 1, anomalyParts: 0 },
+        effectText: '+15% Recuperação de sanidade da Almond Water',
+        minFloor: 1,
+        era: 'Era Medieval'
+    },
+    {
         id: 'cult_rotation',
         name: 'Rotação de Culturas',
         description: 'Implementa técnicas de rodízio de plantio nas fazendas e canteiros terrestres.',

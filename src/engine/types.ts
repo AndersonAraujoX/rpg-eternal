@@ -268,6 +268,29 @@ export interface Skill {
 // Force Rebuild
 export type HeroClass = 'Warrior' | 'Mage' | 'Healer' | 'Rogue' | 'Paladin' | 'Warlock' | 'Dragoon' | 'Sage' | 'Necromancer' | 'Miner' | 'Bard' | 'Monk' | 'Ranger' | 'Druid' | 'Berserker' | 'Sorcerer' | 'Templar' | 'Assassin' | 'Engineer' | 'Alchemist' | 'Illusionist' | 'Samurai' | 'Viking' | 'Ninja' | 'Pirate' | 'Fisherman' | 'Blacksmith' | 'hunter' | 'cleric';
 
+export interface PassiveSkillModifiers {
+    attackMult: number;     // e.g. 1.0 + X
+    magicMult: number;      // e.g. 1.0 + X
+    hpMult: number;         // e.g. 1.0 + X
+    defenseMult: number;    // e.g. 1.0 + X
+    speedMult: number;      // e.g. 1.0 + X
+    critChanceBonus: number; // e.g. +X (additive)
+    critDamageBonus: number; // e.g. +X (additive)
+    damageMitigation: number; // e.g. X (percentage damage reduction)
+    insanityResistance: number; // e.g. X (percentage insanity gain reduction)
+    expeditionSpeedBonus: number; // e.g. X (percentage expedition speed/power bonus)
+}
+
+export interface PassiveSkillTreeState {
+    level: number;
+    pointsSpent: number;
+    offensivePoints: number;
+    defensivePoints: number;
+    utilityPoints: number;
+    modifiers: PassiveSkillModifiers;
+    unlockedMilestones: number[];
+}
+
 export interface Hero extends Entity {
     id: string;
     name: string;
@@ -295,7 +318,9 @@ export interface Hero extends Entity {
     isMutated?: boolean;
     mutationType?: 'berserk' | 'shadow' | 'arcane' | 'cursed'; // Tipos de corrupção
     curses?: string[]; // Active curses: 'blood', 'evil', 'abyss'
+    passiveSkillTree?: PassiveSkillTreeState;
 }
+
 
 export interface GalaxySector {
     id: string;
