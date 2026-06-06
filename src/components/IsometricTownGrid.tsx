@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import type { Building } from '../engine/types';
-import { cartesianToIso, TILE_WIDTH, TILE_HEIGHT, getTileDecoration } from '../utils/isometric';
+import React, { useState, useEffect, useRef } from 'react';
+import type { Building, Hero } from '../engine/types';
+import { getTileDecoration } from '../utils/isometric';
 
 interface IsometricTownGridProps {
     buildings: Building[];
@@ -9,7 +9,34 @@ interface IsometricTownGridProps {
     placeBuilding: (buildingId: string, x: number, y: number) => void;
     onTileClick: (x: number, y: number) => void;
     onBuildingClick: (buildingId: string) => void;
+    heroes?: Hero[];
 }
+
+interface Walker {
+    id: string;
+    emoji: string;
+    name: string;
+    level: number;
+    x: number;
+    y: number;
+    targetX: number;
+    targetY: number;
+    isWaiting: boolean;
+    waitTimer: number;
+    flip: boolean;
+    bubbleText: string | null;
+    bubbleTimer: number;
+}
+
+const DIALOGUES = [
+    "A comida da taverna estava ótima!",
+    "Ouvi um zumbido estranho vindo do porão...",
+    "Preciso de mais ouro...",
+    "Hoje é um belo dia para treinar!",
+    "Aquela dungeon foi assustadora...",
+    "Será que tem monstros novos por perto?",
+    "Quem diria que a prefeitura ficaria tão bonita!"
+];
 
 export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
     buildings,
@@ -17,18 +44,136 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
     selectedBuildingId,
     placeBuilding,
     onTileClick,
-    onBuildingClick
+    onBuildingClick,
+    heroes = []
 }) => {
     const GRID_SIZE = 8;
+    const CELL_SIZE = 52; // px
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
-    // Calculate bounding size of the isometric area
-    const mapWidth = (GRID_SIZE + 2) * TILE_WIDTH;
-    const mapHeight = (GRID_SIZE + 2) * TILE_HEIGHT;
-    const centerOffset = mapWidth / 2;
-    const topOffset = TILE_HEIGHT;
+    // Walker state
+    const [walkers, setWalkers] = useState<Walker[]>([]);
+    const animationFrameId = useRef<number | null>(null);
+    const walkersRef = useRef<Walker[]>([]);
 
-    // Helper to check if a building overlaps a specific tile
+    // Get available heroes for walking
+    const availableHeroes = React.useMemo(() => {
+        let list = heroes.filter(h => h.unlocked && h.assignment !== 'combat');
+        if (list.length === 0) {
+            list = heroes.filter(h => h.unlocked);
+        }
+        return list.slice(0, 5);
+    }, [heroes]);
+
+    // Initialize walkers when available heroes list changes
+    useEffect(() => {
+        const initialWalkers = availableHeroes.map(h => {
+            const startX = Math.floor(Math.random() * GRID_SIZE);
+            const startY = Math.floor(Math.random() * GRID_SIZE);
+            return {
+                id: h.id,
+                emoji: h.emoji,
+                name: h.name,
+                level: h.level,
+                x: startX,
+                y: startY,
+                targetX: Math.floor(Math.random() * GRID_SIZE),
+                targetY: Math.floor(Math.random() * GRID_SIZE),
+                isWaiting: false,
+                waitTimer: 0,
+                flip: false,
+                bubbleText: null,
+                bubbleTimer: 0
+            };
+        });
+        setWalkers(initialWalkers);
+        walkersRef.current = initialWalkers;
+    }, [availableHeroes]);
+
+    // Animation loop for walkers
+    useEffect(() => {
+        const updateWalkers = () => {
+            let changed = false;
+            const updated = walkersRef.current.map(w => {
+                let { x, y, targetX, targetY, isWaiting, waitTimer, flip, bubbleText, bubbleTimer } = w;
+
+                // Handle speech bubble timer
+                if (bubbleTimer > 0) {
+                    bubbleTimer--;
+                    if (bubbleTimer <= 0) {
+                        bubbleText = null;
+                        changed = true;
+                    }
+                }
+
+                if (isWaiting) {
+                    waitTimer--;
+                    if (waitTimer <= 0) {
+                        isWaiting = false;
+                        // Choose new target coordinate
+                        targetX = Math.floor(Math.random() * GRID_SIZE);
+                        targetY = Math.floor(Math.random() * GRID_SIZE);
+                        flip = targetX < x;
+                        changed = true;
+                    }
+                } else {
+                    const dx = targetX - x;
+                    const dy = targetY - y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 0.05) {
+                        // Reached target waypoint
+                        x = targetX;
+                        y = targetY;
+                        isWaiting = true;
+                        waitTimer = 60 + Math.floor(Math.random() * 90); // wait for 2-5 seconds (at ~30fps)
+                        
+                        // Small chance to say something
+                        if (Math.random() < 0.2) {
+                            bubbleText = DIALOGUES[Math.floor(Math.random() * DIALOGUES.length)];
+                            bubbleTimer = 90; // bubble lasts ~3 seconds
+                        }
+                        changed = true;
+                    } else {
+                        // Move towards target
+                        const speed = 0.025; // units per frame
+                        x += (dx / distance) * speed;
+                        y += (dy / distance) * speed;
+                        flip = targetX < x;
+                        changed = true;
+                    }
+                }
+
+                return {
+                    ...w,
+                    x,
+                    y,
+                    targetX,
+                    targetY,
+                    isWaiting,
+                    waitTimer,
+                    flip,
+                    bubbleText,
+                    bubbleTimer
+                };
+            });
+
+            if (changed) {
+                setWalkers(updated);
+                walkersRef.current = updated;
+            }
+
+            animationFrameId.current = requestAnimationFrame(updateWalkers);
+        };
+
+        animationFrameId.current = requestAnimationFrame(updateWalkers);
+        return () => {
+            if (animationFrameId.current) {
+                cancelAnimationFrame(animationFrameId.current);
+            }
+        };
+    }, []);
+
     const getBuildingAt = (x: number, y: number): Building | undefined => {
         return buildings.find(b => {
             if (!b.placed || b.x === undefined || b.y === undefined) return false;
@@ -36,7 +181,6 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
         });
     };
 
-    // Helper to verify if a w x h building can be placed at x, y
     const canPlaceBuildingAt = (building: Building, targetX: number, targetY: number): boolean => {
         if (targetX + building.width > GRID_SIZE || targetY + building.height > GRID_SIZE) return false;
         for (let x = targetX; x < targetX + building.width; x++) {
@@ -48,272 +192,181 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
         return true;
     };
 
-    // Helper to identify if a tile is part of the cobblestone road path
     const isPathTile = (x: number, y: number): boolean => {
         return x === 3 || y === 4;
     };
 
     const placingBuilding = selectedBuildingId ? buildings.find(b => b.id === selectedBuildingId) : null;
 
-    // Prepare list of all renderable items sorted by depth (x + y)
-    // To ensure perfect rendering overlay, empty tiles, decorations, and buildings are interleaved.
-    const renderQueue: { 
-        type: 'tile' | 'decoration' | 'building'; 
-        x: number; 
-        y: number; 
-        key: string; 
-        depth: number; 
-        entity?: any;
-    }[] = [];
-
-    // Add base ground tiles
-    for (let r = 0; r < GRID_SIZE; r++) {
-        for (let c = 0; c < GRID_SIZE; c++) {
-            renderQueue.push({
-                type: 'tile',
-                x: c,
-                y: r,
-                key: `tile-${r}-${c}`,
-                depth: c + r
-            });
-
-            // Add pseudo-random natural decoration if tile has no building and is not a road/path
-            const building = getBuildingAt(c, r);
-            const decor = getTileDecoration(c, r);
-            if (!building && decor && !isPathTile(c, r)) {
-                renderQueue.push({
-                    type: 'decoration',
-                    x: c,
-                    y: r,
-                    key: `decor-${r}-${c}`,
-                    depth: c + r + 0.05,
-                    entity: decor
-                });
-            }
+    // Grid rendering logic
+    const cells = [];
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            cells.push({ x, y });
         }
     }
 
-    // Add placed buildings at their origin coordinates
-    buildings.filter(b => b.placed && b.x !== undefined && b.y !== undefined).forEach(b => {
-        renderQueue.push({
-            type: 'building',
-            x: b.x!,
-            y: b.y!,
-            key: `building-${b.id}`,
-            // Buildings occupy width x height, their visual front is at x + w - 1, y + h - 1.
-            depth: b.x! + b.y! + (b.width - 1) + (b.height - 1) + 0.1,
-            entity: b
-        });
-    });
-
-    // Sort render queue by depth
-    renderQueue.sort((a, b) => a.depth - b.depth);
-
     return (
         <div className="w-full flex flex-col items-center">
-            {/* Scrollable container for the large isometric map */}
-            <div className="w-full overflow-auto border border-stone-850/60 rounded-2xl bg-gradient-to-b from-sky-950/20 via-stone-950/80 to-stone-950 p-4 max-h-[60vh] custom-scrollbar">
-                
-                {/* Embedded SVG Gradients Definition */}
-                <svg width="0" height="0" className="absolute">
-                    <defs>
-                        <radialGradient id="grassGrad" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="#10b981" />
-                            <stop offset="100%" stopColor="#047857" />
-                        </radialGradient>
-                        <linearGradient id="pathGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#78716c" />
-                            <stop offset="100%" stopColor="#44403c" />
-                        </linearGradient>
-                        <linearGradient id="slabGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#a8a29e" />
-                            <stop offset="100%" stopColor="#57534e" />
-                        </linearGradient>
-                        <linearGradient id="placeValid" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                            <stop offset="100%" stopColor="#059669" stopOpacity="0.6" />
-                        </linearGradient>
-                        <linearGradient id="placeInvalid" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
-                            <stop offset="100%" stopColor="#b91c1c" stopOpacity="0.6" />
-                        </linearGradient>
-                    </defs>
-                </svg>
-
+            <div className="overflow-auto max-w-full p-4 bg-stone-955/65 border border-stone-850/80 rounded-2xl custom-scrollbar">
                 <div 
-                    className="relative select-none mx-auto"
-                    style={{ width: mapWidth, height: mapHeight }}
+                    className="relative bg-emerald-950/40 rounded-xl border-2 border-stone-800/80 overflow-hidden shadow-2xl select-none mx-auto"
+                    style={{
+                        width: `${GRID_SIZE * CELL_SIZE}px`,
+                        height: `${GRID_SIZE * CELL_SIZE}px`,
+                    }}
                 >
-                    {/* Render sorted queue */}
-                    {renderQueue.map(item => {
-                        const iso = cartesianToIso(item.x, item.y);
-                        const left = centerOffset + iso.x - TILE_WIDTH / 2;
-                        const top = topOffset + iso.y;
+                    {/* Render grid cells background */}
+                    {cells.map(({ x, y }) => {
+                        const isPath = isPathTile(x, y);
+                        const decor = getTileDecoration(x, y);
+                        const hasBuilding = !!getBuildingAt(x, y);
+                        const isHovered = hoveredTile?.x === x && hoveredTile?.y === y;
 
-                        if (item.type === 'tile') {
-                            const hasBuilding = !!getBuildingAt(item.x, item.y);
-                            const isHovered = hoveredTile?.x === item.x && hoveredTile?.y === item.y;
-                            const isRoad = isPathTile(item.x, item.y);
-                            
-                            // Highlight check when placing a building
-                            let fillStyle = isRoad ? 'url(#pathGrad)' : 'url(#grassGrad)';
-                            let strokeColor = isRoad ? '#57534e' : '#065f46';
-                            let strokeWidth = '1';
+                        // Calculate highlights for placing a building
+                        let cellBg = isPath ? 'bg-stone-750' : 'bg-emerald-900/10';
+                        let cellBorder = 'border-stone-900/30';
 
-                            if (placingBuilding && isHovered) {
-                                const isValid = canPlaceBuildingAt(placingBuilding, item.x, item.y);
-                                fillStyle = isValid ? 'url(#placeValid)' : 'url(#placeInvalid)';
-                                strokeColor = isValid ? '#34d399' : '#f87171';
-                                strokeWidth = '2';
-                            } else if (isHovered) {
-                                strokeColor = '#f59e0b';
-                                strokeWidth = '1.5';
-                            }
+                        if (placingBuilding && isHovered) {
+                            const isValid = canPlaceBuildingAt(placingBuilding, x, y);
+                            cellBg = isValid ? 'bg-green-500/35' : 'bg-red-500/35';
+                            cellBorder = isValid ? 'border-green-400' : 'border-red-400';
+                        } else if (isHovered) {
+                            cellBorder = 'border-amber-500 z-10';
+                        }
 
-                            return (
-                                <div
-                                    key={item.key}
-                                    className="absolute cursor-pointer transition-all duration-150"
-                                    style={{
-                                        left,
-                                        top,
-                                        width: TILE_WIDTH,
-                                        height: TILE_HEIGHT,
-                                        zIndex: Math.floor(item.depth * 10)
-                                    }}
-                                    onMouseEnter={() => setHoveredTile({ x: item.x, y: item.y })}
-                                    onMouseLeave={() => setHoveredTile(null)}
-                                    onClick={() => {
-                                        if (placingBuilding) {
-                                            if (canPlaceBuildingAt(placingBuilding, item.x, item.y)) {
-                                                placeBuilding(placingBuilding.id, item.x, item.y);
-                                            }
-                                        } else if (!hasBuilding) {
-                                            onTileClick(item.x, item.y);
+                        return (
+                            <div
+                                key={`cell-${x}-${y}`}
+                                className={`absolute border transition-all duration-155 flex items-center justify-center cursor-pointer ${cellBg} ${cellBorder}`}
+                                style={{
+                                    left: `${x * CELL_SIZE}px`,
+                                    top: `${y * CELL_SIZE}px`,
+                                    width: `${CELL_SIZE}px`,
+                                    height: `${CELL_SIZE}px`,
+                                }}
+                                onMouseEnter={() => setHoveredTile({ x, y })}
+                                onMouseLeave={() => setHoveredTile(null)}
+                                onClick={() => {
+                                    if (placingBuilding) {
+                                        if (canPlaceBuildingAt(placingBuilding, x, y)) {
+                                            placeBuilding(placingBuilding.id, x, y);
                                         }
-                                    }}
-                                >
-                                    <svg width={TILE_WIDTH} height={TILE_HEIGHT} viewBox="0 0 64 32">
-                                        <polygon 
-                                            points="32,0 64,16 32,32 0,16" 
-                                            fill={fillStyle} 
-                                            stroke={strokeColor} 
-                                            strokeWidth={strokeWidth}
-                                        />
-                                        {/* Subtle grass blades texturing on normal grass tiles */}
-                                        {!isRoad && !isHovered && (
-                                            <path d="M 28,12 L 30,8 M 30,8 L 33,13" stroke="#047857" strokeWidth="1" fill="none" opacity="0.6" />
-                                        )}
-                                    </svg>
-                                    
-                                    {/* Invisible test coordinates text so existing tests find them */}
-                                    <span className="sr-only opacity-0 absolute pointer-events-none select-none text-[1px]">{item.x},{item.y}</span>
-                                </div>
-                            );
-                        } else if (item.type === 'decoration') {
-                            const icon = item.entity as string;
-                            const isTree = icon === '🌲' || icon === '🌳';
-                            return (
-                                <div
-                                    key={item.key}
-                                    className="absolute pointer-events-none select-none flex items-center justify-center filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
-                                    style={{
-                                        left,
-                                        top: top - (isTree ? 16 : 4),
-                                        width: TILE_WIDTH,
-                                        height: TILE_HEIGHT,
-                                        zIndex: Math.floor(item.depth * 10),
-                                        fontSize: isTree ? '24px' : '14px'
-                                    }}
-                                >
-                                    {icon}
-                                </div>
-                            );
-                        } else {
-                            // Render Building
-                            const b = item.entity as Building;
-                            const w = b.width;
-                            const h = b.height;
-
-                            // Calculate footprint sizes
-                            const bWidth = (w + h) * (TILE_WIDTH / 2);
-                            const bHeight = (w + h) * (TILE_HEIGHT / 2);
-                            
-                            // Top corner position of the building origin x, y
-                            const bLeft = centerOffset + (b.x! - b.y! - h) * (TILE_WIDTH / 2);
-                            const bTop = topOffset + (b.x! + b.y!) * (TILE_HEIGHT / 2);
-
-                            // Create footprint polygon string locally within the building container
-                            const polyPoints = [
-                                `${h * (TILE_WIDTH / 2)},0`,
-                                `${(w + h) * (TILE_WIDTH / 2)},${w * (TILE_HEIGHT / 2)}`,
-                                `${w * (TILE_WIDTH / 2)},${(w + h) * (TILE_HEIGHT / 2)}`,
-                                `0,${h * (TILE_HEIGHT / 2)}`
-                            ].join(' ');
-
-                            return (
-                                <div
-                                    key={item.key}
-                                    className="absolute group transition-transform hover:-translate-y-1 duration-200 cursor-pointer"
-                                    style={{
-                                        left: bLeft,
-                                        top: bTop,
-                                        width: bWidth,
-                                        height: bHeight,
-                                        zIndex: Math.floor(item.depth * 10) + 1
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onBuildingClick(b.id);
-                                    }}
-                                >
-                                    {/* Footprint / Ground Slab - Masonry styled */}
-                                    <svg width={bWidth} height={bHeight} viewBox={`0 0 ${bWidth} ${bHeight}`} className="absolute top-0 left-0">
-                                        <polygon 
-                                            points={polyPoints} 
-                                            fill="url(#slabGrad)" 
-                                            stroke="#f59e0b" 
-                                            strokeWidth="1.5"
-                                            className="group-hover:stroke-amber-400 transition-colors shadow-2xl" 
-                                        />
-                                        {/* Brick grid lines inside the footprint for medieval details */}
-                                        <path 
-                                            d={`M ${bWidth / 2},0 L ${bWidth / 2},${bHeight}`} 
-                                            stroke="#44403c" 
-                                            strokeWidth="0.75" 
-                                            strokeDasharray="2,2" 
-                                            opacity="0.5" 
-                                        />
-                                    </svg>
-
-                                    {/* Side Props decorations (like fencing, barrels, bushes) around the base */}
-                                    <span className="absolute text-[10px] pointer-events-none left-1 bottom-1 filter drop-shadow opacity-75 group-hover:opacity-100 transition-opacity">📦</span>
-                                    <span className="absolute text-[10px] pointer-events-none right-1 bottom-1 filter drop-shadow opacity-75 group-hover:opacity-100 transition-opacity">🌿</span>
-
-                                    {/* Floating building graphic (large emoji & effect) */}
-                                    <div 
-                                        className="absolute w-12 h-12 flex items-center justify-center text-4xl select-none filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] group-hover:drop-shadow-[0_12px_24px_rgba(245,158,11,0.5)] transition-all duration-300"
-                                        style={{
-                                            left: `${bWidth / 2 - 24}px`,
-                                            top: `${bHeight / 2 - 36}px`,
-                                        }}
-                                    >
-                                        {b.emoji}
+                                    } else if (!hasBuilding) {
+                                        onTileClick(x, y);
+                                    }
+                                }}
+                            >
+                                {/* Path texturing / cobblestones */}
+                                {isPath && (
+                                    <div className="absolute inset-0.5 border border-stone-600/30 rounded bg-stone-700 flex flex-wrap gap-0.5 p-0.5 opacity-60">
+                                        <div className="w-1.5 h-1.5 bg-stone-600 rounded-sm"></div>
+                                        <div className="w-1.5 h-1.5 bg-stone-800 rounded-sm"></div>
+                                        <div className="w-1.5 h-1.5 bg-stone-600 rounded-sm"></div>
+                                        <div className="w-1.5 h-1.5 bg-stone-800 rounded-sm"></div>
                                     </div>
+                                )}
+
+                                {/* Nature decorations */}
+                                {!isPath && decor && !hasBuilding && (
+                                    <span className="text-sm opacity-50 filter drop-shadow">{decor}</span>
+                                )}
+
+                                {/* Coordinates for hidden tests */}
+                                <span className="sr-only opacity-0 absolute pointer-events-none select-none text-[1px]">{x},{y}</span>
+                            </div>
+                        );
+                    })}
+
+                    {/* Render placed buildings */}
+                    {buildings.filter(b => b.placed && b.x !== undefined && b.y !== undefined).map(b => {
+                        const bWidth = b.width * CELL_SIZE;
+                        const bHeight = b.height * CELL_SIZE;
+                        const bLeft = b.x! * CELL_SIZE;
+                        const bTop = b.y! * CELL_SIZE;
+
+                        return (
+                            <div
+                                key={`placed-${b.id}`}
+                                className="absolute p-0.5 group cursor-pointer transition-all duration-250 hover:scale-95"
+                                style={{
+                                    left: `${bLeft}px`,
+                                    top: `${bTop}px`,
+                                    width: `${bWidth}px`,
+                                    height: `${bHeight}px`,
+                                    zIndex: 20
+                                }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onBuildingClick(b.id);
+                                }}
+                            >
+                                <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 border-2 border-amber-600/50 rounded-xl flex flex-col items-center justify-center relative shadow-lg group-hover:border-amber-400 group-hover:shadow-[0_0_12px_rgba(245,158,11,0.3)] transition-all">
+                                    {/* Building Emoji */}
+                                    <span className="text-2xl filter drop-shadow select-none group-hover:scale-110 transition-transform duration-300">
+                                        {b.emoji}
+                                    </span>
 
                                     {/* Level Badge */}
-                                    <div 
-                                        className="absolute bg-gradient-to-r from-amber-600 to-amber-500 text-stone-950 text-[9px] font-black px-1.5 py-0.5 rounded border border-stone-900 shadow-md group-hover:scale-110 transition-transform"
-                                        style={{
-                                            left: `${bWidth / 2 - 10}px`,
-                                            top: `${bHeight / 2 + 4}px`
-                                        }}
-                                    >
+                                    <div className="absolute -bottom-1 bg-amber-600 text-stone-950 text-[8px] font-black px-1 py-0.5 rounded-md border border-stone-900 shadow-sm leading-none">
                                         L{b.level}
                                     </div>
+                                    
+                                    {/* Name indicator if large enough */}
+                                    {b.width >= 2 && (
+                                        <span className="absolute top-1 text-[7px] text-amber-400 font-bold uppercase tracking-wider px-1 text-center truncate max-w-full">
+                                            {b.name}
+                                        </span>
+                                    )}
                                 </div>
-                            );
-                        }
+                            </div>
+                        );
+                    })}
+
+                    {/* Ambient / Idle Characters (Town Walkers Layer) */}
+                    {walkers.map(w => {
+                        const posX = w.x * CELL_SIZE;
+                        const posY = w.y * CELL_SIZE;
+
+                        return (
+                            <div
+                                key={`walker-${w.id}`}
+                                className="absolute flex flex-col items-center pointer-events-none select-none transition-all duration-300 ease-linear z-30"
+                                style={{
+                                    left: `${posX}px`,
+                                    top: `${posY}px`,
+                                    width: `${CELL_SIZE}px`,
+                                    height: `${CELL_SIZE}px`,
+                                }}
+                            >
+                                {/* Tooltip / Badge for Hero Name & Level */}
+                                <div className="absolute -top-7 bg-stone-900/90 border border-amber-650/40 px-1 py-0.5 rounded shadow text-[7px] font-bold text-amber-400 flex flex-col items-center pointer-events-none whitespace-nowrap">
+                                    <span>{w.name}</span>
+                                    <span className="text-[6px] text-stone-400">Lvl {w.level}</span>
+                                </div>
+
+                                {/* Speech Bubble Overlay */}
+                                {w.bubbleText && (
+                                    <div className="absolute -top-16 bg-white border border-stone-300 text-stone-900 text-[8px] font-black px-2 py-1 rounded-lg shadow-md max-w-[120px] text-center leading-tight animate-bounce z-40">
+                                        {w.bubbleText}
+                                        <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-white border-r border-b border-stone-300 rotate-45"></div>
+                                    </div>
+                                )}
+
+                                {/* Animated Hero Sprite */}
+                                <div 
+                                    className={`text-2xl mt-1.5 transition-transform duration-300 flex items-center justify-center
+                                        ${w.isWaiting ? 'animate-pulse' : 'animate-bounce'}
+                                        ${w.flip ? 'scale-x-[-1]' : 'scale-x-[1]'}
+                                    `}
+                                    style={{
+                                        animationDuration: w.isWaiting ? '2s' : '0.6s'
+                                    }}
+                                >
+                                    {w.emoji}
+                                </div>
+                            </div>
+                        );
                     })}
                 </div>
             </div>

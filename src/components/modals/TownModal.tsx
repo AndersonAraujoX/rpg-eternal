@@ -289,7 +289,7 @@ export const TownModal: React.FC<TownModalProps> = ({
                                     {/* Left Area: Grid Map */}
                                     <div className="flex-1 min-w-0 bg-stone-950/40 p-6 rounded-2xl border border-stone-900/60 shadow-inner flex flex-col items-center justify-center relative min-h-[300px] select-none">
                                         <div className="absolute top-3 left-4 text-[10px] text-stone-500 font-bold uppercase tracking-wider font-mono">
-                                            🗺️ Grid de Construção Isométrica
+                                            🗺️ Grid de Construção 2D
                                         </div>
 
                                         {isSelected && (
@@ -310,6 +310,7 @@ export const TownModal: React.FC<TownModalProps> = ({
                                                 onBuildingClick={(buildingId) => {
                                                     setClickedBuildingId(buildingId);
                                                 }}
+                                                heroes={heroes}
                                             />
                                         </div>
                                     </div>
