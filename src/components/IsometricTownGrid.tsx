@@ -19,7 +19,7 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
     onTileClick,
     onBuildingClick
 }) => {
-    const GRID_SIZE = 10;
+    const GRID_SIZE = 8;
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
     // Calculate bounding size of the isometric area
@@ -87,9 +87,9 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
     return (
         <div className="w-full flex flex-col items-center">
             {/* Scrollable container for the large isometric map */}
-            <div className="w-full overflow-auto border border-stone-850/60 rounded-2xl bg-stone-950/70 p-4 max-h-[60vh] custom-scrollbar flex justify-center">
+            <div className="w-full overflow-auto border border-stone-850/60 rounded-2xl bg-stone-950/70 p-4 max-h-[60vh] custom-scrollbar">
                 <div 
-                    className="relative select-none"
+                    className="relative select-none mx-auto"
                     style={{ width: mapWidth, height: mapHeight }}
                 >
                     {/* Render sorted queue */}

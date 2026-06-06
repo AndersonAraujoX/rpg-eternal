@@ -315,7 +315,7 @@ export const TownModal: React.FC<TownModalProps> = ({
                                     </div>
 
                                     {/* Right Area: Control Panel Sidebar */}
-                                    <div className="w-full md:w-80 bg-stone-900/60 border border-stone-850 p-5 rounded-2xl flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-none">
+                                    <div className="w-full md:w-80 flex-shrink-0 bg-stone-900/60 border border-stone-850 p-5 rounded-2xl flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-none">
                                         {clickedBuilding ? (
                                             /* Details of a clicked building */
                                             <div className="flex flex-col h-full justify-between gap-4">
