@@ -325,7 +325,7 @@ export const simulateGvGTick = (
 
     // Check if all towers destroyed -> war ends
     const allDestroyed = towers.every(t => t.destroyed);
-    let warActive = state.warActive;
+    let warActive: boolean = state.warActive;
 
     if (allDestroyed) {
         warActive = false;
@@ -420,7 +420,7 @@ export const playerAttackTower = (
 
     // Check if all towers destroyed
     const allDestroyed = towers.every(t => t.destroyed);
-    let warActive = state.warActive;
+    let warActive: boolean = state.warActive;
 
     if (allDestroyed) {
         warActive = false;
