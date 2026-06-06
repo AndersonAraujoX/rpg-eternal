@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Building } from '../engine/types';
-import { cartesianToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric';
+import { cartesianToIso, TILE_WIDTH, TILE_HEIGHT, getTileDecoration } from '../utils/isometric';
 
 interface IsometricTownGridProps {
     buildings: Building[];
@@ -23,7 +23,6 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
     // Calculate bounding size of the isometric area
-    // Origin is at center, so we shift it to prevent clipping
     const mapWidth = (GRID_SIZE + 2) * TILE_WIDTH;
     const mapHeight = (GRID_SIZE + 2) * TILE_HEIGHT;
     const centerOffset = mapWidth / 2;
@@ -49,13 +48,25 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
         return true;
     };
 
+    // Helper to identify if a tile is part of the cobblestone road path
+    const isPathTile = (x: number, y: number): boolean => {
+        return x === 3 || y === 4;
+    };
+
     const placingBuilding = selectedBuildingId ? buildings.find(b => b.id === selectedBuildingId) : null;
 
     // Prepare list of all renderable items sorted by depth (x + y)
-    // To ensure perfect rendering overlay, empty tiles and buildings are interleaved.
-    const renderQueue: { type: 'tile' | 'building'; x: number; y: number; key: string; depth: number; entity?: any }[] = [];
+    // To ensure perfect rendering overlay, empty tiles, decorations, and buildings are interleaved.
+    const renderQueue: { 
+        type: 'tile' | 'decoration' | 'building'; 
+        x: number; 
+        y: number; 
+        key: string; 
+        depth: number; 
+        entity?: any;
+    }[] = [];
 
-    // Add all empty / base ground tiles
+    // Add base ground tiles
     for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
             renderQueue.push({
@@ -65,6 +76,20 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                 key: `tile-${r}-${c}`,
                 depth: c + r
             });
+
+            // Add pseudo-random natural decoration if tile has no building and is not a road/path
+            const building = getBuildingAt(c, r);
+            const decor = getTileDecoration(c, r);
+            if (!building && decor && !isPathTile(c, r)) {
+                renderQueue.push({
+                    type: 'decoration',
+                    x: c,
+                    y: r,
+                    key: `decor-${r}-${c}`,
+                    depth: c + r + 0.05,
+                    entity: decor
+                });
+            }
         }
     }
 
@@ -75,7 +100,7 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
             x: b.x!,
             y: b.y!,
             key: `building-${b.id}`,
-            // Buildings occupy width x height, their visual "front" is at x + w - 1, y + h - 1.
+            // Buildings occupy width x height, their visual front is at x + w - 1, y + h - 1.
             depth: b.x! + b.y! + (b.width - 1) + (b.height - 1) + 0.1,
             entity: b
         });
@@ -87,7 +112,34 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
     return (
         <div className="w-full flex flex-col items-center">
             {/* Scrollable container for the large isometric map */}
-            <div className="w-full overflow-auto border border-stone-850/60 rounded-2xl bg-stone-950/70 p-4 max-h-[60vh] custom-scrollbar">
+            <div className="w-full overflow-auto border border-stone-850/60 rounded-2xl bg-gradient-to-b from-sky-950/20 via-stone-950/80 to-stone-950 p-4 max-h-[60vh] custom-scrollbar">
+                
+                {/* Embedded SVG Gradients Definition */}
+                <svg width="0" height="0" className="absolute">
+                    <defs>
+                        <radialGradient id="grassGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#10b981" />
+                            <stop offset="100%" stopColor="#047857" />
+                        </radialGradient>
+                        <linearGradient id="pathGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#78716c" />
+                            <stop offset="100%" stopColor="#44403c" />
+                        </linearGradient>
+                        <linearGradient id="slabGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#a8a29e" />
+                            <stop offset="100%" stopColor="#57534e" />
+                        </linearGradient>
+                        <linearGradient id="placeValid" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
+                            <stop offset="100%" stopColor="#059669" stopOpacity="0.6" />
+                        </linearGradient>
+                        <linearGradient id="placeInvalid" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
+                            <stop offset="100%" stopColor="#b91c1c" stopOpacity="0.6" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+
                 <div 
                     className="relative select-none mx-auto"
                     style={{ width: mapWidth, height: mapHeight }}
@@ -101,16 +153,21 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                         if (item.type === 'tile') {
                             const hasBuilding = !!getBuildingAt(item.x, item.y);
                             const isHovered = hoveredTile?.x === item.x && hoveredTile?.y === item.y;
+                            const isRoad = isPathTile(item.x, item.y);
                             
                             // Highlight check when placing a building
-                            let tileColorClass = 'fill-emerald-950/15 stroke-stone-800/40 hover:fill-emerald-900/20';
+                            let fillStyle = isRoad ? 'url(#pathGrad)' : 'url(#grassGrad)';
+                            let strokeColor = isRoad ? '#57534e' : '#065f46';
+                            let strokeWidth = '1';
+
                             if (placingBuilding && isHovered) {
                                 const isValid = canPlaceBuildingAt(placingBuilding, item.x, item.y);
-                                tileColorClass = isValid 
-                                    ? 'fill-emerald-600/30 stroke-emerald-400' 
-                                    : 'fill-red-600/30 stroke-red-400';
+                                fillStyle = isValid ? 'url(#placeValid)' : 'url(#placeInvalid)';
+                                strokeColor = isValid ? '#34d399' : '#f87171';
+                                strokeWidth = '2';
                             } else if (isHovered) {
-                                tileColorClass = 'fill-emerald-850/40 stroke-amber-600/50';
+                                strokeColor = '#f59e0b';
+                                strokeWidth = '1.5';
                             }
 
                             return (
@@ -137,11 +194,39 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                                     }}
                                 >
                                     <svg width={TILE_WIDTH} height={TILE_HEIGHT} viewBox="0 0 64 32">
-                                        <polygon points="32,0 64,16 32,32 0,16" className={tileColorClass} />
+                                        <polygon 
+                                            points="32,0 64,16 32,32 0,16" 
+                                            fill={fillStyle} 
+                                            stroke={strokeColor} 
+                                            strokeWidth={strokeWidth}
+                                        />
+                                        {/* Subtle grass blades texturing on normal grass tiles */}
+                                        {!isRoad && !isHovered && (
+                                            <path d="M 28,12 L 30,8 M 30,8 L 33,13" stroke="#047857" strokeWidth="1" fill="none" opacity="0.6" />
+                                        )}
                                     </svg>
                                     
                                     {/* Invisible test coordinates text so existing tests find them */}
                                     <span className="sr-only opacity-0 absolute pointer-events-none select-none text-[1px]">{item.x},{item.y}</span>
+                                </div>
+                            );
+                        } else if (item.type === 'decoration') {
+                            const icon = item.entity as string;
+                            const isTree = icon === '🌲' || icon === '🌳';
+                            return (
+                                <div
+                                    key={item.key}
+                                    className="absolute pointer-events-none select-none flex items-center justify-center filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+                                    style={{
+                                        left,
+                                        top: top - (isTree ? 16 : 4),
+                                        width: TILE_WIDTH,
+                                        height: TILE_HEIGHT,
+                                        zIndex: Math.floor(item.depth * 10),
+                                        fontSize: isTree ? '24px' : '14px'
+                                    }}
+                                >
+                                    {icon}
                                 </div>
                             );
                         } else {
@@ -182,20 +267,35 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                                         onBuildingClick(b.id);
                                     }}
                                 >
-                                    {/* Footprint / Ground Slab */}
+                                    {/* Footprint / Ground Slab - Masonry styled */}
                                     <svg width={bWidth} height={bHeight} viewBox={`0 0 ${bWidth} ${bHeight}`} className="absolute top-0 left-0">
                                         <polygon 
                                             points={polyPoints} 
-                                            className="fill-stone-800/80 stroke-amber-600/40 group-hover:stroke-amber-400 group-hover:fill-stone-750 transition-colors shadow-2xl" 
+                                            fill="url(#slabGrad)" 
+                                            stroke="#f59e0b" 
+                                            strokeWidth="1.5"
+                                            className="group-hover:stroke-amber-400 transition-colors shadow-2xl" 
+                                        />
+                                        {/* Brick grid lines inside the footprint for medieval details */}
+                                        <path 
+                                            d={`M ${bWidth / 2},0 L ${bWidth / 2},${bHeight}`} 
+                                            stroke="#44403c" 
+                                            strokeWidth="0.75" 
+                                            strokeDasharray="2,2" 
+                                            opacity="0.5" 
                                         />
                                     </svg>
+
+                                    {/* Side Props decorations (like fencing, barrels, bushes) around the base */}
+                                    <span className="absolute text-[10px] pointer-events-none left-1 bottom-1 filter drop-shadow opacity-75 group-hover:opacity-100 transition-opacity">📦</span>
+                                    <span className="absolute text-[10px] pointer-events-none right-1 bottom-1 filter drop-shadow opacity-75 group-hover:opacity-100 transition-opacity">🌿</span>
 
                                     {/* Floating building graphic (large emoji & effect) */}
                                     <div 
                                         className="absolute w-12 h-12 flex items-center justify-center text-4xl select-none filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] group-hover:drop-shadow-[0_12px_24px_rgba(245,158,11,0.5)] transition-all duration-300"
                                         style={{
                                             left: `${bWidth / 2 - 24}px`,
-                                            top: `${bHeight / 2 - 32}px`,
+                                            top: `${bHeight / 2 - 36}px`,
                                         }}
                                     >
                                         {b.emoji}

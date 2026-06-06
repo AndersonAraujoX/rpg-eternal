@@ -108,9 +108,23 @@ function App() {
     backroomsUnlockedTechs, researchTech,
     backroomsFloor, backroomsFloorProgress, backroomsBossHp,
     fakePlayers,
-    gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex
   } = useGame();
 
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const baseWidth = 850;
+      const baseHeight = 880;
+      const wScale = window.innerWidth / baseWidth;
+      const hScale = (window.innerHeight - 16) / baseHeight;
+      const newScale = Math.min(wScale, hScale);
+      setScale(Math.max(0.4, Math.min(1.2, newScale)));
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [showShop, setShowShop] = useState(false);
   const [showTown, setShowTown] = useState(false); // Phase 53
@@ -246,7 +260,16 @@ function App() {
       <WeatherOverlays weather={weather} />
 
       {/* Game Container */}
-      <div className={`w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-opacity-95 border-4 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm transition-colors duration-500 ${themeClass}`}>
+      <div 
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+          width: '850px',
+          height: '880px',
+          flexShrink: 0
+        }}
+        className={`flex flex-col bg-opacity-95 border-4 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm transition-all duration-300 ${themeClass}`}
+      >
         {/* TOWN EVENT WIDGET */}
         {activeEvent && <TownEventWidget event={activeEvent} actions={actions} onDismiss={actions.dismissEvent} />}
 
