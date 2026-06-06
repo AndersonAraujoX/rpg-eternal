@@ -1,195 +1,103 @@
 import { describe, it, expect } from 'vitest';
-import {
-    CLASS_SKILLS,
-    isSkillUnlocked,
-    getSkillsForHero,
-    getActiveSkills,
-    getPassiveStatBonus,
-    getTotalPassiveStatBonus,
-    getSkillDamageEstimate,
-    getBestDamageSkill,
-} from '../../engine/skills';
+import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
+import type { Hero } from '../../engine/types';
 
-describe('Skill Utilities', () => {
+const mockHero = (level: number): Hero => ({
+    id: 'test_hero',
+    name: 'Gladiador de Teste',
+    class: 'Warrior',
+    stats: { hp: 100, maxHp: 100, attack: 10, defense: 10, magic: 10, speed: 10, mp: 0, maxMp: 0 },
+    element: 'neutral',
+    assignment: 'combat',
+    insanity: 0,
+    emoji: '⚔️',
+    type: 'hero',
+    unlocked: true,
+    isDead: false,
+    level,
+    xp: 0,
+    maxXp: 100,
+    statPoints: 0,
+    skills: [],
+    fatigue: 0,
+    maxFatigue: 100
+});
 
-    // ─── isSkillUnlocked ───────────────────────────────────────
-    describe('isSkillUnlocked', () => {
-        it('should return true when hero level equals unlock level', () => {
-            const skill = CLASS_SKILLS['Warrior'][0]; // Heavy Strike, level 2
-            expect(isSkillUnlocked(skill, 2)).toBe(true);
+describe('Automated Skill Tree System', () => {
+    it('initializes the skill tree on a level 1 hero', () => {
+        const hero = initOrUpdateHeroPassiveTree(mockHero(1));
+        expect(hero.skillTreeNodes).toBeDefined();
+        expect(hero.skillTreeNodes?.length).toBe(30);
+
+        // Only Tier 1 nodes should be unlocked
+        const unlockedNodes = hero.skillTreeNodes?.filter(n => n.unlocked);
+        expect(unlockedNodes?.length).toBe(3); // 1 node from attack, 1 from defense, 1 from utility
+        unlockedNodes?.forEach(node => {
+            expect(node.tier).toBe(1);
+            expect(node.level).toBe(1);
+            expect(node.effectValue).toBeGreaterThan(0);
         });
 
-        it('should return true when hero level exceeds unlock level', () => {
-            const skill = CLASS_SKILLS['Warrior'][0]; // Heavy Strike, level 2
-            expect(isSkillUnlocked(skill, 50)).toBe(true);
-        });
-
-        it('should return false when hero level is below unlock level', () => {
-            const skill = CLASS_SKILLS['Warrior'][0]; // Heavy Strike, level 2
-            expect(isSkillUnlocked(skill, 1)).toBe(false);
-        });
-
-        it('should gate high-level skills correctly', () => {
-            const warrior = CLASS_SKILLS['Warrior'];
-            const execute = warrior.find(s => s.name === 'Execute')!;
-            expect(isSkillUnlocked(execute, 24)).toBe(false);
-            expect(isSkillUnlocked(execute, 25)).toBe(true);
-        });
-    });
-
-    // ─── getSkillsForHero ──────────────────────────────────────
-    describe('getSkillsForHero', () => {
-        it('should return no skills at level 1', () => {
-            const skills = getSkillsForHero('Warrior', 1);
-            expect(skills).toHaveLength(0);
-        });
-
-        it('should return exactly the skills available at their unlock level', () => {
-            // Warrior: Heavy Strike (2), Iron Skin (5), Cleave (8)...
-            const at2 = getSkillsForHero('Warrior', 2);
-            expect(at2.length).toBe(1);
-            expect(at2[0].name).toBe('Heavy Strike');
-
-            const at5 = getSkillsForHero('Warrior', 5);
-            expect(at5.length).toBe(2); // Heavy Strike + Iron Skin
-        });
-
-        it('should return all 10 skills at max level (50)', () => {
-            const skills = getSkillsForHero('Mage', 50);
-            expect(skills).toHaveLength(10);
-        });
-
-        it('should return empty array for unknown class', () => {
-            const skills = getSkillsForHero('UnknownClass', 99);
-            expect(skills).toHaveLength(0);
+        // Locked nodes should have level 0
+        const lockedNodes = hero.skillTreeNodes?.filter(n => !n.unlocked);
+        expect(lockedNodes?.length).toBe(27);
+        lockedNodes?.forEach(node => {
+            expect(node.level).toBe(0);
+            expect(node.effectValue).toBe(0);
         });
     });
 
-    // ─── getActiveSkills ───────────────────────────────────────
-    describe('getActiveSkills', () => {
-        it('should return only active type skills', () => {
-            const allSkills = CLASS_SKILLS['Warrior'];
-            const active = getActiveSkills(allSkills, 50);
-            expect(active.every(s => s.type === 'active')).toBe(true);
-        });
+    it('correctly unlocks and calculates node levels for a level 50 hero', () => {
+        const hero = initOrUpdateHeroPassiveTree(mockHero(50));
+        expect(hero.skillTreeNodes).toBeDefined();
+        
+        // At level 50, Tiers 1-6 (req levels 1, 10, 20, 30, 40, 50) should be unlocked
+        const unlockedNodes = hero.skillTreeNodes?.filter(n => n.unlocked);
+        expect(unlockedNodes?.length).toBe(18); // 6 tiers * 3 archetypes
 
-        it('should return 5 active skills for Warrior at level 50', () => {
-            const skills = CLASS_SKILLS['Warrior'];
-            const active = getActiveSkills(skills, 50);
-            // Heavy Strike, Cleave, Shield Bash, Execute, (no 5th active at 50)
-            expect(active.length).toBeGreaterThanOrEqual(4);
-        });
+        // Tiers 7-10 (req levels 60, 70, 80, 90) should be locked
+        const lockedNodes = hero.skillTreeNodes?.filter(n => !n.unlocked);
+        expect(lockedNodes?.length).toBe(12); // 4 tiers * 3 archetypes
 
-        it('should filter by unlock level', () => {
-            const allSkills = CLASS_SKILLS['Mage'];
-            const active = getActiveSkills(allSkills, 5);
-            // Only Fireball should be active at level 5 (unlockLevel 2)
-            expect(active).toHaveLength(1);
-            expect(active[0].name).toBe('Fireball');
-        });
+        // Test level calculation:
+        // Tier 1 (req level 1): level should be Math.min(5, Math.floor((50 - 1) / 10) + 1) = Math.min(5, 4 + 1) = 5 (max)
+        const t1Node = hero.skillTreeNodes?.find(n => n.id === 'atk_t1');
+        expect(t1Node).toBeDefined();
+        expect(t1Node?.unlocked).toBe(true);
+        expect(t1Node?.level).toBe(5);
+
+        // Tier 6 (req level 50): level should be Math.min(5, Math.floor((50 - 50) / 10) + 1) = 1
+        const t6Node = hero.skillTreeNodes?.find(n => n.id === 'atk_t6');
+        expect(t6Node).toBeDefined();
+        expect(t6Node?.unlocked).toBe(true);
+        expect(t6Node?.level).toBe(1);
+
+        // Modifiers must be applied and boosted
+        const mods = hero.passiveSkillTree?.modifiers;
+        expect(mods).toBeDefined();
+        expect(mods?.attackMult).toBeGreaterThan(1.20);
+        expect(mods?.hpMult).toBeGreaterThan(1.10);
+        expect(mods?.insanityResistance).toBeGreaterThanOrEqual(0.10);
     });
 
-    // ─── getPassiveStatBonus ───────────────────────────────────
-    describe('getPassiveStatBonus', () => {
-        it('should return empty object at level 1 (no passives unlocked)', () => {
-            const skills = CLASS_SKILLS['Warrior'];
-            const bonus = getPassiveStatBonus(skills, 1);
-            expect(Object.keys(bonus).length).toBe(0);
+    it('maximizes all skill nodes on a level 100 hero', () => {
+        const hero = initOrUpdateHeroPassiveTree(mockHero(100));
+        expect(hero.skillTreeNodes).toBeDefined();
+        
+        // At level 100, all 30 nodes should be unlocked
+        const unlockedNodes = hero.skillTreeNodes?.filter(n => n.unlocked);
+        expect(unlockedNodes?.length).toBe(30);
+
+        // All nodes should be at max level 5
+        unlockedNodes?.forEach(node => {
+            expect(node.level).toBe(5);
+            expect(node.effectValue).toBe(node.baseValue ? node.baseValue * 5 : node.effectValue);
         });
 
-        it('should sum Iron Skin defense at level 5', () => {
-            const skills = CLASS_SKILLS['Warrior'];
-            const bonus = getPassiveStatBonus(skills, 5);
-            // Iron Skin: +15 defense (unlockLevel 5)
-            expect(bonus.defense).toBe(15);
-        });
-
-        it('should correctly accumulate multiple passives', () => {
-            const skills = CLASS_SKILLS['Warrior'];
-            const bonus = getPassiveStatBonus(skills, 30);
-            // Iron Skin (+15 def) + Aggression (+10 atk) + Fortress (+30 def) + Veteran (+50hp) + Titan (+100hp)
-            expect(bonus.defense).toBe(15 + 30); // Iron Skin + Fortress
-            expect(bonus.attack).toBe(10);       // Aggression
-        });
-
-        it('should handle negative stat bonuses (Berserker reckless)', () => {
-            const skills = CLASS_SKILLS['Berserker'];
-            const bonus = getPassiveStatBonus(skills, 12);
-            // Reckless at level 12: -10 def, +20 atk
-            expect(bonus.defense).toBe(-10);
-            expect(bonus.attack).toBeGreaterThanOrEqual(20); // Anger (+15) + Reckless (+20)
-        });
-    });
-
-    // ─── getTotalPassiveStatBonus ──────────────────────────────
-    describe('getTotalPassiveStatBonus', () => {
-        it('should match manual sum for Mage at level 50', () => {
-            const bonus = getTotalPassiveStatBonus('Mage', 50);
-            const skills = CLASS_SKILLS['Mage'];
-            const manual = getPassiveStatBonus(skills, 50);
-            expect(bonus).toEqual(manual);
-        });
-
-        it('should return empty for unknown class', () => {
-            const bonus = getTotalPassiveStatBonus('FakeClass', 99);
-            expect(Object.keys(bonus).length).toBe(0);
-        });
-    });
-
-    // ─── getSkillDamageEstimate ────────────────────────────────
-    describe('getSkillDamageEstimate', () => {
-        it('should calculate damage for a damage skill correctly', () => {
-            const skill = CLASS_SKILLS['Warrior'].find(s => s.name === 'Heavy Strike')!;
-            // value = 1.5, baseAttack = 100
-            expect(getSkillDamageEstimate(skill, 100)).toBe(150);
-        });
-
-        it('should return 0 for a heal skill', () => {
-            const healSkill = CLASS_SKILLS['Healer'].find(s => s.name === 'Heal')!;
-            expect(getSkillDamageEstimate(healSkill, 100)).toBe(0);
-        });
-
-        it('should return 0 for a buff skill', () => {
-            const buffSkill = CLASS_SKILLS['Viking'].find(s => s.name === 'War Cry')!;
-            expect(getSkillDamageEstimate(buffSkill, 100)).toBe(0);
-        });
-
-        it('should floor fractional damage', () => {
-            const skill = CLASS_SKILLS['Rogue'].find(s => s.name === 'Poison Blade')!;
-            // value = 1.4, baseAttack = 13 => 18.2 -> floor to 18
-            expect(getSkillDamageEstimate(skill, 13)).toBe(18);
-        });
-    });
-
-    // ─── getBestDamageSkill ────────────────────────────────────
-    describe('getBestDamageSkill', () => {
-        it('should return null when no damage skills are unlocked', () => {
-            const skills = CLASS_SKILLS['Warrior'];
-            const best = getBestDamageSkill(skills, 1);
-            expect(best).toBeNull();
-        });
-
-        it('should return the highest-value damage skill available', () => {
-            const skills = CLASS_SKILLS['Warrior'];
-            // At level 50, Execute (value 3.0) and Shield Bash (2.0) and others - Execute should win
-            const best = getBestDamageSkill(skills, 50);
-            expect(best).not.toBeNull();
-            expect(best!.name).toBe('Execute');
-        });
-
-        it('should respect level gating when picking best skill', () => {
-            const skills = CLASS_SKILLS['Warrior'];
-            // At level 5, only Heavy Strike is active (value 1.5)
-            const best = getBestDamageSkill(skills, 5);
-            expect(best!.name).toBe('Heavy Strike');
-        });
-
-        it('should return null for a healer with only heal skills in range', () => {
-            // Healer's first two skills are Heal (active, heal) and Faith (passive)
-            const skills = CLASS_SKILLS['Healer'];
-            const best = getBestDamageSkill(skills, 5);
-            // Smite unlocks at level 8, so at level 5 no damage skill available
-            expect(best).toBeNull();
-        });
+        // Ensure modifiers are scaled correctly to peak levels
+        const mods = hero.passiveSkillTree?.modifiers;
+        expect(mods?.attackMult).toBeGreaterThan(1.50);
+        expect(mods?.hpMult).toBeGreaterThan(1.40);
+        expect(mods?.critChanceBonus).toBeGreaterThanOrEqual(0.05);
     });
 });

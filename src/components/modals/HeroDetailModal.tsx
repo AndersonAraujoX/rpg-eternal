@@ -17,6 +17,88 @@ interface HeroDetailModalProps {
 export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClose, hero, actions, buildings = [], heroBonds = {}, heroes = [] }) => {
     const [isEditingName, setIsEditingName] = React.useState(false);
     const [newName, setNewName] = React.useState('');
+    const [treeTab, setTreeTab] = React.useState<'tree' | 'milestones'>('tree');
+
+    const renderPathNodes = (nodes: any[], themeColor: 'red' | 'green' | 'purple') => {
+        const colorClasses = {
+            red: {
+                activeBorder: 'border-red-900/60',
+                activeBg: 'bg-red-950/20',
+                activeText: 'text-red-400',
+                activeGlow: 'shadow-[0_0_8px_rgba(239,68,68,0.15)]'
+            },
+            green: {
+                activeBorder: 'border-emerald-900/60',
+                activeBg: 'bg-emerald-950/20',
+                activeText: 'text-emerald-400',
+                activeGlow: 'shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+            },
+            purple: {
+                activeBorder: 'border-purple-900/60',
+                activeBg: 'bg-purple-950/20',
+                activeText: 'text-purple-400',
+                activeGlow: 'shadow-[0_0_8px_rgba(168,85,247,0.15)]'
+            }
+        }[themeColor];
+
+        return nodes.map((node, index) => {
+            const isLast = index === nodes.length - 1;
+            const formattedVal = node.bonusType.endsWith('Mult') 
+                ? `+${Math.round(node.effectValue * 100)}%` 
+                : `+${Math.round(node.effectValue * 100) / 10}%`;
+
+            return (
+                <React.Fragment key={node.id}>
+                    <div 
+                        className={`w-full p-2 rounded-lg border text-[10px] flex flex-col text-left transition-all relative group/node
+                            ${node.unlocked 
+                                ? `${colorClasses.activeBorder} ${colorClasses.activeBg} ${colorClasses.activeGlow} opacity-100` 
+                                : 'border-gray-800 bg-gray-950/40 opacity-40 select-none'
+                            }`}
+                        title={`${node.name}: ${node.description}`}
+                    >
+                        <div className="flex justify-between items-start gap-1 font-bold mb-0.5">
+                            <span className={`font-black truncate max-w-[90px] ${node.unlocked ? colorClasses.activeText : 'text-gray-500'}`}>
+                                {node.name}
+                            </span>
+                            {node.unlocked ? (
+                                <span className="text-[7px] px-1 bg-black/60 rounded border border-gray-700 font-mono text-gray-400">
+                                    T{node.tier}
+                                </span>
+                            ) : (
+                                <span className="text-[6px] text-red-500 font-bold bg-red-950/20 border border-red-900/30 px-1 rounded flex items-center gap-0.5">
+                                    Lvl {node.requiredLevel}
+                                </span>
+                            )}
+                        </div>
+
+                        {node.unlocked ? (
+                            <>
+                                <div className="text-[8px] text-gray-400 leading-tight mb-1 truncate">
+                                    {node.description}
+                                </div>
+                                <div className="flex justify-between items-center mt-0.5">
+                                    <span className={`font-mono font-black ${colorClasses.activeText}`}>
+                                        {formattedVal}
+                                    </span>
+                                    <span className="text-[7px] text-gray-500 font-bold font-mono">
+                                        Nvl {node.level}/{node.maxLevel}
+                                    </span>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-[8px] text-gray-600 leading-tight italic flex items-center gap-1 py-0.5">
+                                🔒 Libera no Lvl {node.requiredLevel}
+                            </div>
+                        )}
+                    </div>
+                    {!isLast && (
+                        <div className={`w-0.5 h-2.5 ${node.unlocked && nodes[index + 1].unlocked ? 'bg-amber-500/60' : 'bg-gray-800'}`}></div>
+                    )}
+                </React.Fragment>
+            );
+        });
+    };
 
     if (!isOpen || !hero) return null;
 
@@ -255,123 +337,157 @@ export const HeroDetailModal: React.FC<HeroDetailModalProps> = ({ isOpen, onClos
 
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
                         <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-200 flex items-center gap-2 uppercase tracking-wider">
-                            🌳 Árvore de Habilidades Passivas (Auto)
+                            🌳 Habilidades Passivas (Auto)
                         </h3>
-                        <span className="text-[10px] bg-yellow-950/40 text-yellow-300 px-2 py-0.5 rounded border border-yellow-600/30 font-bold uppercase tracking-wider self-start sm:self-auto">
-                            Prioridade: {(() => {
-                                const priority = getClassPriority(hero.class);
-                                if (priority === 'offensive') return '⚔️ Ofensiva';
-                                if (priority === 'defensive') return '🛡️ Defensiva';
-                                return '🧪 Utilitária / Backrooms';
-                            })()}
-                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setTreeTab('tree')}
+                                className={`px-2.5 py-1 rounded text-xs font-bold uppercase transition-colors ${treeTab === 'tree' ? 'bg-amber-600 text-stone-950 shadow-md' : 'bg-gray-800 text-gray-450 hover:text-white border border-gray-700'}`}
+                            >
+                                🕸️ Árvore de Nós
+                            </button>
+                            <button
+                                onClick={() => setTreeTab('milestones')}
+                                className={`px-2.5 py-1 rounded text-xs font-bold uppercase transition-colors ${treeTab === 'milestones' ? 'bg-amber-600 text-stone-950 shadow-md' : 'bg-gray-800 text-gray-450 hover:text-white border border-gray-700'}`}
+                            >
+                                🗺️ Marcos & Stats
+                            </button>
+                        </div>
                     </div>
 
                     <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                        Este herói aloca automaticamente 1 ponto de habilidade passiva por nível (limite no nível 100) seguindo a afinidade de sua classe. Marcos medieval-anômalos são ativados em níveis específicos.
+                        Este herói aloca automaticamente habilidades passivas conforme passa de nível (limite no nível 100) seguindo a afinidade de sua classe.
                     </p>
 
-                    {/* Progress Bars for Paths */}
-                    {hero.passiveSkillTree ? (
-                        <div className="space-y-3 mb-6 bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-                            <div>
-                                <div className="flex justify-between text-xs mb-1">
-                                    <span className="text-red-400 font-semibold flex items-center gap-1">⚔️ Caminho Ofensivo</span>
-                                    <span className="text-gray-400 font-mono">{hero.passiveSkillTree.offensivePoints} pts</span>
-                                </div>
-                                <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 transition-all duration-500"
-                                        style={{ width: `${Math.min(100, (hero.passiveSkillTree.offensivePoints / 99) * 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex justify-between text-xs mb-1">
-                                    <span className="text-emerald-400 font-semibold flex items-center gap-1">🛡️ Caminho Defensivo</span>
-                                    <span className="text-gray-400 font-mono">{hero.passiveSkillTree.defensivePoints} pts</span>
-                                </div>
-                                <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-emerald-600 via-green-500 to-teal-400 transition-all duration-500"
-                                        style={{ width: `${Math.min(100, (hero.passiveSkillTree.defensivePoints / 99) * 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex justify-between text-xs mb-1">
-                                    <span className="text-purple-400 font-semibold flex items-center gap-1">🧪 Caminho Utilitário / Anômalo</span>
-                                    <span className="text-gray-400 font-mono">{hero.passiveSkillTree.utilityPoints} pts</span>
-                                </div>
-                                <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
-                                        style={{ width: `${Math.min(100, (hero.passiveSkillTree.utilityPoints / 99) * 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="text-center text-xs text-gray-500 py-3 italic">Inicializando árvore de habilidades...</div>
-                    )}
-
-                    {/* Milestone Nodes Web / Timeline */}
-                    <div className="mb-6">
-                        <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wide mb-4">Marcos de Nível e Sinergia dos Backrooms</h4>
-                        <div className="relative flex items-center justify-between px-4 py-2 bg-gray-950 rounded-lg border border-gray-800 overflow-visible">
-                            {/* Horizontal Line behind nodes */}
-                            <div className="absolute left-6 right-6 h-1 bg-gray-800 z-0"></div>
-                            {/* Horizontal Progress Line */}
-                            <div 
-                                className="absolute left-6 h-1 bg-gradient-to-r from-amber-500 to-yellow-300 z-0 transition-all duration-500"
-                                style={{
-                                    width: `${Math.min(100, Math.max(0, ((hero.level - 10) / 90) * 100))}%`,
-                                    maxWidth: 'calc(100% - 3rem)'
-                                }}
-                            ></div>
-
-                            {MILESTONES.map((milestone) => {
-                                const isUnlocked = hero.level >= milestone.level;
-                                return (
-                                    <div key={milestone.level} className="relative z-10 flex flex-col items-center group">
-                                        {/* Node Circle */}
-                                        <div
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-[10px] select-none transition-all duration-300 border-2 cursor-help
-                                                ${isUnlocked 
-                                                    ? 'bg-yellow-950/80 border-yellow-400 text-yellow-300 shadow-[0_0_15px_rgba(234,179,8,0.6)]' 
-                                                    : 'bg-gray-900 border-gray-800 text-gray-500'
-                                                }`}
-                                            title={`${milestone.name} (Lvl ${milestone.level}): ${milestone.description}`}
-                                        >
-                                            {milestone.level}
+                    {treeTab === 'milestones' ? (
+                        <>
+                            {/* Progress Bars for Paths */}
+                            {hero.passiveSkillTree ? (
+                                <div className="space-y-3 mb-6 bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-red-400 font-semibold flex items-center gap-1">⚔️ Caminho Ofensivo</span>
+                                            <span className="text-gray-400 font-mono">{hero.passiveSkillTree.offensivePoints} pts</span>
                                         </div>
-
-                                        <span className={`text-[8px] mt-1.5 font-bold truncate max-w-[65px] ${isUnlocked ? 'text-yellow-400' : 'text-gray-500'}`}>
-                                            {milestone.name.split(' ')[0]}
-                                        </span>
-
-                                        {/* Hover Tooltip Card */}
-                                        <div className="absolute bottom-full mb-3 hidden group-hover:flex flex-col bg-gray-900/95 border border-yellow-500/50 p-3 rounded-lg shadow-2xl w-60 z-30 pointer-events-none text-left backdrop-blur-md">
-                                            <div className="flex justify-between items-center border-b border-gray-700 pb-1 mb-1.5">
-                                                <span className="text-xs font-bold text-yellow-300">{milestone.name}</span>
-                                                <span className={`text-[8px] px-1 rounded font-mono ${isUnlocked ? 'bg-green-950 text-green-300' : 'bg-red-950 text-red-300'}`}>
-                                                    {isUnlocked ? 'DESBLOQUEADO' : 'BLOQUEADO'}
-                                                </span>
-                                            </div>
-                                            <div className="text-[10px] text-gray-300 leading-relaxed mb-1 font-bold">
-                                                {milestone.brief}
-                                            </div>
-                                            <div className="text-[9px] text-gray-400 leading-relaxed">
-                                                {milestone.description}
-                                            </div>
+                                        <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 transition-all duration-500"
+                                                style={{ width: `${Math.min(100, (hero.passiveSkillTree.offensivePoints / 99) * 100)}%` }}
+                                            ></div>
                                         </div>
                                     </div>
-                                );
-                            })}
+
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-emerald-400 font-semibold flex items-center gap-1">🛡️ Caminho Defensivo</span>
+                                            <span className="text-gray-400 font-mono">{hero.passiveSkillTree.defensivePoints} pts</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-emerald-600 via-green-500 to-teal-400 transition-all duration-500"
+                                                style={{ width: `${Math.min(100, (hero.passiveSkillTree.defensivePoints / 99) * 100)}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-purple-400 font-semibold flex items-center gap-1">🧪 Caminho Utilitário / Anômalo</span>
+                                            <span className="text-gray-400 font-mono">{hero.passiveSkillTree.utilityPoints} pts</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
+                                                style={{ width: `${Math.min(100, (hero.passiveSkillTree.utilityPoints / 99) * 100)}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center text-xs text-gray-500 py-3 italic">Inicializando árvore de habilidades...</div>
+                            )}
+
+                            {/* Milestone Nodes Web / Timeline */}
+                            <div className="mb-6">
+                                <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wide mb-4">Marcos de Nível e Sinergia dos Backrooms</h4>
+                                <div className="relative flex items-center justify-between px-4 py-2 bg-gray-950 rounded-lg border border-gray-800 overflow-visible">
+                                    {/* Horizontal Line behind nodes */}
+                                    <div className="absolute left-6 right-6 h-1 bg-gray-800 z-0"></div>
+                                    {/* Horizontal Progress Line */}
+                                    <div 
+                                        className="absolute left-6 h-1 bg-gradient-to-r from-amber-500 to-yellow-300 z-0 transition-all duration-500"
+                                        style={{
+                                            width: `${Math.min(100, Math.max(0, ((hero.level - 10) / 90) * 100))}%`,
+                                            maxWidth: 'calc(100% - 3rem)'
+                                        }}
+                                    ></div>
+
+                                    {MILESTONES.map((milestone) => {
+                                        const isUnlocked = hero.level >= milestone.level;
+                                        return (
+                                            <div key={milestone.level} className="relative z-10 flex flex-col items-center group">
+                                                {/* Node Circle */}
+                                                <div
+                                                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-[10px] select-none transition-all duration-300 border-2 cursor-help
+                                                        ${isUnlocked 
+                                                            ? 'bg-yellow-950/80 border-yellow-400 text-yellow-300 shadow-[0_0_15px_rgba(234,179,8,0.6)]' 
+                                                            : 'bg-gray-900 border-gray-800 text-gray-500'
+                                                        }`}
+                                                    title={`${milestone.name} (Lvl ${milestone.level}): ${milestone.description}`}
+                                                >
+                                                    {milestone.level}
+                                                </div>
+
+                                                <span className={`text-[8px] mt-1.5 font-bold truncate max-w-[65px] ${isUnlocked ? 'text-yellow-400' : 'text-gray-500'}`}>
+                                                    {milestone.name.split(' ')[0]}
+                                                </span>
+
+                                                {/* Hover Tooltip Card */}
+                                                <div className="absolute bottom-full mb-3 hidden group-hover:flex flex-col bg-gray-900/95 border border-yellow-500/50 p-3 rounded-lg shadow-2xl w-60 z-30 pointer-events-none text-left backdrop-blur-md">
+                                                    <div className="flex justify-between items-center border-b border-gray-700 pb-1 mb-1.5">
+                                                        <span className="text-xs font-bold text-yellow-300">{milestone.name}</span>
+                                                        <span className={`text-[8px] px-1 rounded font-mono ${isUnlocked ? 'bg-green-950 text-green-300' : 'bg-red-950 text-red-300'}`}>
+                                                            {isUnlocked ? 'DESBLOQUEADO' : 'BLOQUEADO'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-300 leading-relaxed mb-1 font-bold">
+                                                        {milestone.brief}
+                                                    </div>
+                                                    <div className="text-[9px] text-gray-400 leading-relaxed">
+                                                        {milestone.description}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="grid grid-cols-3 gap-3 overflow-x-auto py-2 mb-6 bg-gray-950/50 p-4 rounded-lg border border-gray-800 max-h-[350px] overflow-y-auto custom-scrollbar">
+                            {/* Column 1: Attack */}
+                            <div className="flex flex-col items-center gap-1 bg-stone-900/40 p-2 rounded-lg border border-red-950/20">
+                                <div className="text-center font-bold text-red-400 uppercase tracking-widest text-[9px] mb-2 border-b border-red-500/20 pb-1 w-full font-mono">
+                                    ⚔️ Ataque
+                                </div>
+                                {renderPathNodes((hero.skillTreeNodes || []).filter(n => n.archetype === 'attack').sort((a, b) => a.tier - b.tier), 'red')}
+                            </div>
+                            {/* Column 2: Defense */}
+                            <div className="flex flex-col items-center gap-1 bg-stone-900/40 p-2 rounded-lg border border-emerald-950/20">
+                                <div className="text-center font-bold text-emerald-400 uppercase tracking-widest text-[9px] mb-2 border-b border-emerald-500/20 pb-1 w-full font-mono">
+                                    🛡️ Defesa
+                                </div>
+                                {renderPathNodes((hero.skillTreeNodes || []).filter(n => n.archetype === 'defense').sort((a, b) => a.tier - b.tier), 'green')}
+                            </div>
+                            {/* Column 3: Utility */}
+                            <div className="flex flex-col items-center gap-1 bg-stone-900/40 p-2 rounded-lg border border-purple-955/20">
+                                <div className="text-center font-bold text-purple-400 uppercase tracking-widest text-[9px] mb-2 border-b border-purple-500/20 pb-1 w-full font-mono">
+                                    🧪 Suporte
+                                </div>
+                                {renderPathNodes((hero.skillTreeNodes || []).filter(n => n.archetype === 'utility').sort((a, b) => a.tier - b.tier), 'purple')}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Cumulative Modifiers Box */}
                     {hero.passiveSkillTree?.modifiers && (

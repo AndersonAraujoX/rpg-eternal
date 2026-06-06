@@ -1,4 +1,5 @@
 import type { Hero, Stats, PassiveSkillModifiers, PassiveSkillTreeState } from '../engine/types';
+import { updateHeroSkills } from '../engine/skills';
 
 export interface Milestone {
     level: number;
@@ -212,8 +213,8 @@ export const initOrUpdateHeroPassiveTree = (hero: Hero): Hero => {
         unlockedMilestones
     };
 
-    return {
+    return updateHeroSkills({
         ...hero,
         passiveSkillTree
-    };
+    });
 };

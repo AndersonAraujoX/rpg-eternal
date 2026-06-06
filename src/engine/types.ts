@@ -281,6 +281,20 @@ export interface PassiveSkillModifiers {
     expeditionSpeedBonus: number; // e.g. X (percentage expedition speed/power bonus)
 }
 
+export interface SkillTreeNode {
+    id: string;
+    name: string;
+    description: string;
+    requiredLevel: number;
+    archetype: 'attack' | 'defense' | 'utility';
+    tier: number; // 1 to 10
+    unlocked: boolean;
+    level: number;
+    maxLevel: number;
+    effectValue: number;
+    bonusType: 'attackMult' | 'magicMult' | 'hpMult' | 'defenseMult' | 'speedMult' | 'critChanceBonus' | 'critDamageBonus' | 'damageMitigation' | 'insanityResistance' | 'expeditionSpeedBonus';
+}
+
 export interface PassiveSkillTreeState {
     level: number;
     pointsSpent: number;
@@ -319,6 +333,7 @@ export interface Hero extends Entity {
     mutationType?: 'berserk' | 'shadow' | 'arcane' | 'cursed'; // Tipos de corrupção
     curses?: string[]; // Active curses: 'blood', 'evil', 'abyss'
     passiveSkillTree?: PassiveSkillTreeState;
+    skillTreeNodes?: SkillTreeNode[];
 }
 
 
