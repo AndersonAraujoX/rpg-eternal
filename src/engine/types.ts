@@ -549,6 +549,8 @@ export interface Building {
     x?: number;
     y?: number;
     placed?: boolean;
+    width: number;
+    height: number;
 }
 
 export const GUILDS: Guild[] = [
