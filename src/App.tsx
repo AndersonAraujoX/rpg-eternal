@@ -108,6 +108,7 @@ function App() {
     backroomsUnlockedTechs, researchTech,
     backroomsFloor, backroomsFloorProgress, backroomsBossHp,
     fakePlayers,
+    gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex
   } = useGame();
 
   const [scale, setScale] = useState(1);
