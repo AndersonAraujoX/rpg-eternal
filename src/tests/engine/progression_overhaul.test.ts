@@ -10,8 +10,6 @@ describe('Progression Overhaul', () => {
     it('should change boss variety on defeat', async () => {
         const { result } = renderHook(() => useGame());
 
-        // const initialBossName = result.current.boss.name; // Removed unused
-
         // Mock a boss defeat
         act(() => {
             // Trigger a massive damage turn or manually set HP to 0 in a mock way if possible
