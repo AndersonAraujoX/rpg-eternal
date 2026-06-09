@@ -1,6 +1,6 @@
 import type { Hero, ElementType } from './types';
 
-export type SynergyType = 'defense' | 'vampirism' | 'attackSpeed' | 'resources' | 'burn' | 'freeze' | 'blind' | 'cd_reduction' | 'crit_dmg' | 'mitigation';
+export type SynergyType = 'defense' | 'vampirism' | 'attackSpeed' | 'resources' | 'burn' | 'freeze' | 'blind' | 'cd_reduction' | 'crit_dmg' | 'mitigation' | 'void_execute' | 'void_dodge';
 
 export interface Synergy {
     id: string;

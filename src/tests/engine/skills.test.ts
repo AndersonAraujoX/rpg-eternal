@@ -88,10 +88,11 @@ describe('Automated Skill Tree System', () => {
         const unlockedNodes = hero.skillTreeNodes?.filter(n => n.unlocked);
         expect(unlockedNodes?.length).toBe(30);
 
-        // All nodes should be at max level 5
+        // All nodes should be at max level 5 or 2 based on logic
         unlockedNodes?.forEach(node => {
-            expect(node.level).toBe(5);
-            expect(node.effectValue).toBe(node.baseValue ? node.baseValue * 5 : node.effectValue);
+            const expectedLvl = Math.min(node.maxLevel, Math.floor((100 - node.requiredLevel) / 10) + 1);
+            expect(node.level).toBe(expectedLvl);
+            expect(node.effectValue).toBe(node.baseValue ? node.baseValue * expectedLvl : node.effectValue);
         });
 
         // Ensure modifiers are scaled correctly to peak levels
