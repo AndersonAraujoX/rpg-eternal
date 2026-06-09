@@ -42,7 +42,7 @@ import { BACKROOMS_RESEARCHES } from '../engine/backrooms';
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GALAXY } from '../engine/galaxy';
-import { generateInitialArenaBoard, calculateWinChance, applyVictoryGrowth, spawnReplacementOpponent } from '../engine/arena';
+import { calculateWinChance } from '../engine/arena';
 import { INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege, initGvGWar, simulateGvGTick, playerAttackTower } from '../engine/guildWar';
 import type { GvGWarState } from '../engine/guildWar';
 import { INITIAL_TOWN, INITIAL_MARKET_TREND } from '../engine/initialData';
@@ -691,14 +691,12 @@ export const useGame = () => {
         return () => clearInterval(timer);
     }, [galaxyState.galaxyRewards]);
 
-    // FIX: Selecionar oponentes da Arena a partir dos bots simulados
     useEffect(() => {
         if (arenaOpponents.length === 0 && fakePlayers.length > 0) {
-            const rank = arenaRank || 1000;
             const power = calculatedPartyPower || 100;
-            setArenaOpponents(selectArenaOpponents(fakePlayers, power, rank));
+            setArenaOpponents(selectArenaOpponents(fakePlayers, power));
         }
-    }, [arenaOpponents.length, arenaRank, calculatedPartyPower, fakePlayers]);
+    }, [arenaOpponents.length, calculatedPartyPower, fakePlayers]);
 
     useEffect(() => {
         const dpsTimer = setInterval(() => {
@@ -1106,7 +1104,7 @@ export const useGame = () => {
                             }
                             return b;
                         });
-                        setArenaOpponents(selectArenaOpponents(updatedBots, stateRef.current.partyPower, nextRank));
+                        setArenaOpponents(selectArenaOpponents(updatedBots, stateRef.current.partyPower));
                         return updatedBots;
                     });
 
@@ -1123,7 +1121,7 @@ export const useGame = () => {
                             }
                             return b;
                         });
-                        setArenaOpponents(selectArenaOpponents(updatedBots, stateRef.current.partyPower, nextRank));
+                        setArenaOpponents(selectArenaOpponents(updatedBots, stateRef.current.partyPower));
                         return updatedBots;
                     });
                 }
