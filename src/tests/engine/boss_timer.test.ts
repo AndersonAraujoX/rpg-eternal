@@ -44,8 +44,8 @@ describe('Boss Timer Mechanic', () => {
         const tick = 1.0;
         const newTimer = tickTimer(timer, tick);
 
-        let bossHp = bossHpBefore;
-        let respawned = false;
+        const bossHp = bossHpBefore;
+        const respawned = false;
         let timerReset = false;
 
         if (newTimer <= 0) {

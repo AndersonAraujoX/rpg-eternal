@@ -368,11 +368,11 @@ export const useGame = () => {
         const voidCritDmgCount = items.filter(item => item.voidAffix?.id === 'void_crit_dmg').length;
 
         return activeHeroes.map(h => {
-            let attack = (h.stats.attack || 0) + (itemStats.attack || 0);
+            const attack = (h.stats.attack || 0) + (itemStats.attack || 0);
             let maxHp = (h.stats.maxHp || 0) + (itemStats.maxHp || 0);
             let defense = (h.stats.defense || 0) + (itemStats.defense || 0);
-            let magic = (h.stats.magic || 0) + (itemStats.magic || 0);
-            let speed = (h.stats.speed || 0) + (itemStats.speed || 0);
+            const magic = (h.stats.magic || 0) + (itemStats.magic || 0);
+            const speed = (h.stats.speed || 0) + (itemStats.speed || 0);
 
             if (hasChalice) {
                 maxHp = Math.floor(maxHp * 1.25);
@@ -1274,7 +1274,7 @@ export const useGame = () => {
                     const statsPool: ('attack' | 'defense' | 'hp' | 'speed' | 'lifesteal')[] = ['attack', 'defense', 'hp', 'speed', 'lifesteal'];
                     const stat = statsPool[Math.floor(Math.random() * statsPool.length)];
 
-                    let baseVal = Math.floor(Math.random() * 5) + 5;
+                    const baseVal = Math.floor(Math.random() * 5) + 5;
                     let val = Math.floor(baseVal * valMultiplier);
                     if (stat === 'speed') val = Math.max(1, Math.floor(val * 0.2));
                     if (stat === 'lifesteal') val = Math.max(1, Math.floor(val * 0.1));
@@ -1391,7 +1391,7 @@ export const useGame = () => {
                 const statsPool: ('attack' | 'defense' | 'hp' | 'speed' | 'lifesteal')[] = ['attack', 'defense', 'hp', 'speed', 'lifesteal'];
                 const stat = statsPool[Math.floor(Math.random() * statsPool.length)];
 
-                let baseVal = Math.floor(Math.random() * 5) + 5;
+                const baseVal = Math.floor(Math.random() * 5) + 5;
                 let val = Math.floor(baseVal * valMultiplier);
                 if (stat === 'speed') val = Math.max(1, Math.floor(val * 0.2));
                 if (stat === 'lifesteal') val = Math.max(1, Math.floor(val * 0.1));
@@ -2221,7 +2221,7 @@ export const useGame = () => {
             else setUltimateCharge(p => Math.min(100, p + 5));
 
             let bossDefeated = false;
-            let currentBoss = { ...targetBoss };
+            const currentBoss = { ...targetBoss };
 
             // Apply Galaxy Gold/XP Buffs to the gains
             const townHallLevel = buildings.find(b => b.id === 'town_hall')?.level || 0;
@@ -2423,7 +2423,7 @@ export const useGame = () => {
 
                     if (bossDefeated && combatHero) {
                         // Rivals bond: +20% XP
-                        let xpMult = rivalXpMults.get(h.id) ?? finalXpMult;
+                        const xpMult = rivalXpMults.get(h.id) ?? finalXpMult;
 
                         const xpGain = Math.floor(currentBoss.level * 10 * xpMult * moraleXpMult);
                         let newXp = (h.xp || 0) + xpGain;

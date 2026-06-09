@@ -235,7 +235,7 @@ export function simulateBackroomsTick(
     };
 
     for (let i = 0; i < updatedExplorers.length; i++) {
-        let explorer = { ...updatedExplorers[i] };
+        const explorer = { ...updatedExplorers[i] };
 
         if (explorer.status === 'lost') {
             continue;

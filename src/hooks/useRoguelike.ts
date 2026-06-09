@@ -112,9 +112,9 @@ export function useRoguelike() {
         let nextStatus: RoguelikeRunState['status'] = roguelikeRun.status;
         let combatState = null;
         let eventState = null;
-        let updatedHero = roguelikeRun.hero ? { ...roguelikeRun.hero } : null;
-        let updatedRelics = [...roguelikeRun.relics];
-        let updatedGold = roguelikeRun.gold;
+        const updatedHero = roguelikeRun.hero ? { ...roguelikeRun.hero } : null;
+        const updatedRelics = [...roguelikeRun.relics];
+        const updatedGold = roguelikeRun.gold;
 
         if (nextNode.type === 'combat' || nextNode.type === 'elite' || nextNode.type === 'boss') {
             nextStatus = 'combat';
@@ -191,13 +191,13 @@ export function useRoguelike() {
         let playerMp = hero.mp;
         let playerShield = combatState.shield;
         let enemyHp = combatState.enemy.hp;
-        let enemyShield = combatState.enemyShield;
+        const enemyShield = combatState.enemyShield;
         const newLog = [...combatState.log];
 
         // Apply Relic Bonuses to Attack / Defense / Magic
-        let atkBonus = relics.some(r => r.id === 'rusty_sword') ? 3 : 0;
-        let defBonus = relics.some(r => r.id === 'iron_shield') ? 3 : 0;
-        let magBonus = relics.some(r => r.id === 'magic_wand') ? 4 : 0;
+        const atkBonus = relics.some(r => r.id === 'rusty_sword') ? 3 : 0;
+        const defBonus = relics.some(r => r.id === 'iron_shield') ? 3 : 0;
+        const magBonus = relics.some(r => r.id === 'magic_wand') ? 4 : 0;
 
         const effectiveAttack = hero.attack + atkBonus;
         const effectiveDefense = hero.defense + defBonus;
@@ -313,7 +313,7 @@ export function useRoguelike() {
         }
 
         // Calculate Dodge (Esquiva) Chance
-        let dodgeChance = Math.min(0.40, (hero.speed / 100)) + (relics.some(r => r.id === 'ninja_hood') ? 0.10 : 0);
+        const dodgeChance = Math.min(0.40, (hero.speed / 100)) + (relics.some(r => r.id === 'ninja_hood') ? 0.10 : 0);
         const isDodged = Math.random() < dodgeChance;
 
         // Enemy turn
@@ -419,8 +419,8 @@ export function useRoguelike() {
         const option = eventState.options[optionIndex];
         if (!option) return;
 
-        let updatedHero = { ...hero };
-        let updatedRelics = [...relics];
+        const updatedHero = { ...hero };
+        const updatedRelics = [...relics];
         let updatedGold = gold;
         let runStatus: RoguelikeRunState['status'] = 'exploring';
 

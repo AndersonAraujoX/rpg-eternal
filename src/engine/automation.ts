@@ -17,7 +17,7 @@ export const processGlobalAutomation = (
 
     // Automation logic
     const _ignore = resources; // Just to satisfy lint if needed, or remove completely if confident
-    let updatedExpeditions = [..._expeditions];
+    const updatedExpeditions = [..._expeditions];
 
     // 1. Fishing Automation
     if (stats.automationActive?.fishing) {
