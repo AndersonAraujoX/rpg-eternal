@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import type { Hero } from '../../engine/types';
+import { getPassiveStatBonus } from '../../engine/skills';
+import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
     id: 'test_hero',
@@ -21,6 +22,106 @@ const mockHero = (level: number): Hero => ({
     skills: [],
     fatigue: 0,
     maxFatigue: 100
+});
+
+describe('getPassiveStatBonus', () => {
+    it('returns an empty object if an empty array of skills is provided', () => {
+        expect(getPassiveStatBonus([], 1)).toEqual({});
+    });
+
+    it('ignores active skills', () => {
+        const activeSkill: Skill = {
+            id: 'a1',
+            name: 'Active Skill',
+            description: '',
+            type: 'active',
+            effectType: 'damage',
+            target: 'enemy',
+            value: 10,
+            unlockLevel: 1,
+            cooldown: 0,
+            currentCooldown: 0
+        };
+        expect(getPassiveStatBonus([activeSkill], 10)).toEqual({});
+    });
+
+    it('ignores passive skills that are locked (hero level < unlockLevel)', () => {
+        const lockedPassiveSkill: Skill = {
+            id: 'p1',
+            name: 'Locked Passive',
+            description: '',
+            type: 'passive',
+            effectType: 'passive',
+            target: 'self',
+            value: 0,
+            unlockLevel: 15,
+            cooldown: 0,
+            currentCooldown: 0,
+            statBonus: { hp: 50 }
+        };
+        expect(getPassiveStatBonus([lockedPassiveSkill], 10)).toEqual({});
+    });
+
+    it('returns the sum of stat bonuses for unlocked passive skills', () => {
+        const p1: Skill = {
+            id: 'p1',
+            name: 'P1',
+            description: '',
+            type: 'passive',
+            effectType: 'passive',
+            target: 'self',
+            value: 0,
+            unlockLevel: 1,
+            cooldown: 0,
+            currentCooldown: 0,
+            statBonus: { hp: 50, attack: 10 }
+        };
+        const p2: Skill = {
+            id: 'p2',
+            name: 'P2',
+            description: '',
+            type: 'passive',
+            effectType: 'passive',
+            target: 'self',
+            value: 0,
+            unlockLevel: 5,
+            cooldown: 0,
+            currentCooldown: 0,
+            statBonus: { attack: 5, defense: 20 }
+        };
+        const active: Skill = {
+            id: 'a1',
+            name: 'A1',
+            description: '',
+            type: 'active',
+            effectType: 'damage',
+            target: 'enemy',
+            value: 10,
+            unlockLevel: 1,
+            cooldown: 0,
+            currentCooldown: 0
+        };
+        const locked: Skill = {
+            id: 'p3',
+            name: 'P3',
+            description: '',
+            type: 'passive',
+            effectType: 'passive',
+            target: 'self',
+            value: 0,
+            unlockLevel: 20,
+            cooldown: 0,
+            currentCooldown: 0,
+            statBonus: { speed: 100 }
+        };
+
+        const result = getPassiveStatBonus([p1, p2, active, locked], 10);
+        expect(result).toEqual({
+            hp: 50,
+            attack: 15,
+            defense: 20
+        });
+    });
 });
 
 describe('Automated Skill Tree System', () => {
