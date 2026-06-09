@@ -51,7 +51,7 @@ export const generateInitialBots = (count: number = 20): FakePlayer[] => {
         const avatar = BOT_AVATARS[Math.floor(Math.random() * BOT_AVATARS.length)];
 
         bots.push({
-            id: `bot-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            id: `bot-${i}-${crypto.randomUUID()}`,
             name,
             profile,
             power,
