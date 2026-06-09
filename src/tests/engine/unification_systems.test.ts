@@ -9,7 +9,7 @@ describe('Unification Systems: Relics, Resonance, Void Infusion & Stats Integrat
 
         // 1. Buy Relic (Cálice da Eternidade)
         act(() => {
-            result.current.actions.setGold(60000);
+            result.current.setGold(60000);
         });
         expect(result.current.gold).toBe(60000);
 
@@ -37,7 +37,7 @@ describe('Unification Systems: Relics, Resonance, Void Infusion & Stats Integrat
         const { result } = renderHook(() => useGame());
 
         act(() => {
-            result.current.actions.setElementalEssences({
+            result.current.setElementalEssences({
                 fire: 20, water: 0, earth: 0, wind: 0, light: 0, dark: 0, neutral: 0
             });
         });
@@ -64,8 +64,8 @@ describe('Unification Systems: Relics, Resonance, Void Infusion & Stats Integrat
         } as any;
 
         act(() => {
-            result.current.actions.setItems([testItem]);
-            result.current.actions.setVoidMatter(100);
+            result.current.setItems([testItem]);
+            result.current.setVoidMatter(100);
         });
 
         expect(result.current.voidMatter).toBe(100);

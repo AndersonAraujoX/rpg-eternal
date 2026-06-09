@@ -155,7 +155,6 @@ export interface PersistenceProps {
     townVisited: boolean;
     setTownVisited: React.Dispatch<React.SetStateAction<boolean>>;
     dungeonActive: boolean;
-    setDungeonActive: React.Dispatch<React.SetStateAction<boolean>>;
     dungeonTimer: number;
     setDungeonTimer: React.Dispatch<React.SetStateAction<number>>;
     dungeonState: any;
@@ -264,7 +263,6 @@ export const usePersistence = (props: PersistenceProps) => {
         townVisited,
         setTownVisited,
         dungeonActive,
-        setDungeonActive,
         dungeonTimer,
         setDungeonTimer,
         dungeonState,
