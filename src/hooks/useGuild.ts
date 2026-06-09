@@ -30,7 +30,7 @@ export const useGuild = (
             if (!prev) return null;
             const xpGain = amount / 10;
             const newXp = prev.xp + xpGain;
-            let finalGuild = { ...prev, xp: newXp, totalContribution: (prev.totalContribution || 0) + amount };
+            const finalGuild = { ...prev, xp: newXp, totalContribution: (prev.totalContribution || 0) + amount };
 
             if (newXp >= prev.maxXp) {
                 finalGuild.level += 1;

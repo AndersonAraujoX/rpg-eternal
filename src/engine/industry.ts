@@ -77,8 +77,8 @@ export const RECIPES: Recipe[] = [
 export function simulateIndustryTick(nodes: MachineNode[], inventory: Record<string, number>, deltaSeconds: number) {
     let powerGenerated = 0;
     let powerConsumed = 0;
-    let newInventory = { ...inventory };
-    let flowPerSecond: Record<string, number> = {}; // Tracks rate of change
+    const newInventory = { ...inventory };
+    const flowPerSecond: Record<string, number> = {}; // Tracks rate of change
 
     // 1. Calculate Power
     nodes.forEach(node => {

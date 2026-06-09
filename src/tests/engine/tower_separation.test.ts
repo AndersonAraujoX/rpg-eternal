@@ -6,7 +6,7 @@ describe('Tower of Eternity Separation', () => {
         const towerBoss = { name: 'Tower Guardian', level: 5, stats: { hp: 500 } };
 
         let towerFloor = 1;
-        let isTowerActive = true;
+        const isTowerActive = true;
 
         // Simulate a tick in Tower
         const damage = 600;
@@ -29,7 +29,7 @@ describe('Tower of Eternity Separation', () => {
 
         let towerFloor = 1;
         let normalBossLevel = 1;
-        let isTowerActive = false;
+        const isTowerActive = false;
 
         // Simulate a tick NOT in Tower
         const damage = 300;

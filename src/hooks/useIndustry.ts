@@ -11,21 +11,65 @@ export interface IndustryState {
 
 export function useIndustry() {
     const [state, setState] = useState<IndustryState>(() => {
+        const defaultState: IndustryState = {
+            inventory: { 'gold': 0 },
+            nodes: [],
+            unlockedTechs: []
+        };
+
         const saved = localStorage.getItem(INDUSTRY_SAVE_KEY);
         if (saved) {
             try {
-                return JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+
+                if (parsed && typeof parsed === 'object') {
+                    const safeState: IndustryState = { ...defaultState };
+
+                    // Validate inventory
+                    if (parsed.inventory && typeof parsed.inventory === 'object') {
+                        safeState.inventory = {};
+                        for (const [key, value] of Object.entries(parsed.inventory)) {
+                            if (typeof key === 'string' && typeof value === 'number') {
+                                safeState.inventory[key] = value;
+                            }
+                        }
+                        // Ensure gold exists
+                        if (typeof safeState.inventory['gold'] !== 'number') {
+                            safeState.inventory['gold'] = 0;
+                        }
+                    }
+
+                    // Validate nodes
+                    if (Array.isArray(parsed.nodes)) {
+                        safeState.nodes = parsed.nodes.filter(
+                            (node: any) =>
+                                node && typeof node === 'object' &&
+                                typeof node.id === 'string' &&
+                                typeof node.machineId === 'string' &&
+                                typeof node.recipeId === 'string' &&
+                                typeof node.count === 'number'
+                        ).map((node: any) => ({
+                            id: String(node.id),
+                            machineId: String(node.machineId),
+                            recipeId: String(node.recipeId),
+                            count: Number(node.count)
+                        }));
+                    }
+
+                    // Validate unlockedTechs
+                    if (Array.isArray(parsed.unlockedTechs)) {
+                        safeState.unlockedTechs = parsed.unlockedTechs
+                            .filter((tech: any) => typeof tech === 'string')
+                            .map(String);
+                    }
+
+                    return safeState;
+                }
             } catch (e) {
                 console.error("Failed to parse industry save", e);
             }
         }
-        return {
-            inventory: {
-                'gold': 0 // Starting resources if necessary
-            },
-            nodes: [],
-            unlockedTechs: []
-        };
+        return defaultState;
     });
 
     // To display real-time metrics in the UI

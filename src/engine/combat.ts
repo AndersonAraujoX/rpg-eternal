@@ -17,7 +17,7 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
 };
 
 export const calculateHeroPower = (hero: Hero): number => {
-    let stats = { ...hero.stats };
+    const stats = { ...hero.stats };
     if (hero.passiveSkillTree?.modifiers) {
         const mods = hero.passiveSkillTree.modifiers;
         stats.attack = Math.floor(stats.attack * mods.attackMult);
@@ -146,7 +146,7 @@ export const processCombatTurn = (
     // Apply Attack Speed logic: scale additively but cap the max impact 
     // to prevent astronomical numbers or intervals hitting 0.
     const cappedSpeedBonus = Math.min(attackSpeedBonus, 3.0); // Max +300% effective speed gain
-    let effectiveDamageMult = damageMult * (1 + cappedSpeedBonus);
+    const effectiveDamageMult = damageMult * (1 + cappedSpeedBonus);
 
     // Burn Damage (DoT)
     if (burnEffect && !boss.isDead) {
@@ -189,7 +189,7 @@ export const processCombatTurn = (
     let updatedHeroes = heroes.map((h) => {
         if (h.assignment !== 'combat' || !h.unlocked) return h;
 
-        let stats = { ...h.stats };
+        const stats = { ...h.stats };
         // Apply Passive Skill Tree modifiers
         if (h.passiveSkillTree?.modifiers) {
             const mods = h.passiveSkillTree.modifiers;
@@ -230,8 +230,8 @@ export const processCombatTurn = (
         }
 
         // Phase 91: Insanity System
-        let insanityGain = 0;
-        let newInsanity = Math.min(100, (h.insanity || 0) + insanityGain);
+        const insanityGain = 0;
+        const newInsanity = Math.min(100, (h.insanity || 0) + insanityGain);
 
         let skipTurn = false;
         let attackAlly = false;
@@ -335,7 +335,7 @@ export const processCombatTurn = (
                         let canCast = true;
                         if (isUltimate && riftRestriction === 'no_ult') canCast = false;
 
-                        let processedSkill = { ...s };
+                        const processedSkill = { ...s };
                         let isHealConverted = false;
                         if (processedSkill.effectType === 'heal' && mutator?.id === 'bloodthirst') {
                             processedSkill.effectType = 'damage';
