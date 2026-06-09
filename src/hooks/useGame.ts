@@ -976,7 +976,7 @@ export const useGame = () => {
 
                 // Persistence FIX: Don't reset floor to 1 if we're entering.
                 // If exiting, keep the floor. If entering, keep the floor.
-                world.setTower(p => ({ ...p, active: !p.active }));
+                world.setTower(p => ({ ...p, active: !p.active, floor: currentFloor }));
 
                 if (!wasActive) {
                     addLog(`Entrou na Torre da Eternidade! (Andar ${currentFloor})`, "danger");
