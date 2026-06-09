@@ -136,13 +136,13 @@ describe('Player Simulation Engine', () => {
     describe('selectArenaOpponents', () => {
         it('should return exactly 3 opponents', () => {
             const bots = generateInitialBots(10);
-            const opponents = selectArenaOpponents(bots, 1000, 50);
+            const opponents = selectArenaOpponents(bots, 1000);
             expect(opponents).toHaveLength(3);
         });
 
         it('should return unique opponents if enough bots exist', () => {
             const bots = generateInitialBots(5);
-            const opponents = selectArenaOpponents(bots, 1000, 50);
+            const opponents = selectArenaOpponents(bots, 1000);
             const ids = opponents.map(op => op.id);
             const uniqueIds = new Set(ids);
             expect(uniqueIds.size).toBe(3);
@@ -151,7 +151,7 @@ describe('Player Simulation Engine', () => {
         it('should calculate ranks correctly as dynamic leaderboard position', () => {
             const bots = generateInitialBots(10);
             const sortedBots = [...bots].sort((a, b) => b.power - a.power);
-            const opponents = selectArenaOpponents(bots, 1000, 50);
+            const opponents = selectArenaOpponents(bots, 1000);
 
             opponents.forEach(op => {
                 const expectedRank = sortedBots.findIndex(b => b.id === op.id) + 1;

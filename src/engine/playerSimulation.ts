@@ -165,8 +165,7 @@ export const tickFakePlayers = (
 
 export const selectArenaOpponents = (
     bots: FakePlayer[], 
-    playerPower: number, 
-    playerRank: number
+    playerPower: number
 ): import('./types').ArenaOpponent[] => {
     if (bots.length === 0) return [];
     
