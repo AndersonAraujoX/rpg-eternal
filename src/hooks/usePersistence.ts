@@ -293,7 +293,20 @@ export const usePersistence = (props: PersistenceProps) => {
         const saved = localStorage.getItem('rpg_eternal_save_v6');
         if (saved) {
             try {
-                const state = JSON.parse(saved);
+                const state = JSON.parse(saved, (key, value) => {
+                    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                        return undefined;
+                    }
+                    if (typeof value === 'string') {
+                        return value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    }
+                    return value;
+                });
+
+                if (typeof state !== 'object' || state === null || Array.isArray(state)) {
+                    throw new Error('Invalid save state');
+                }
+
                 // Merge loaded heroes with new props (element, assignment)
                 const savedHeroes = state.heroes || [];
 
