@@ -23,9 +23,8 @@ export const usePets = (
         setGold(g => g - cost);
         const newPet = calculateBreedingResult(parent1, parent2);
 
-        // Remove parents if it's a "Fusion" (Chimera) or keep them? 
-        // Existing logic in BreedingModal handles parent removal via setPets if needed,
-        // but let's centralize the basic "Add Pet" logic here.
+        // Fusion (Chimera) explicitly consumes the parents.
+        // The basic logic for consuming parents and adding the new pet is centralized here.
         setPets(prev => [...prev.filter(p => p.id !== parent1.id && p.id !== parent2.id), newPet]);
 
         addLog(`Successfully fused ${parent1.name} and ${parent2.name} into ${newPet.name}!`, 'achievement');
