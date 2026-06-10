@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import { getPassiveStatBonus } from '../../engine/skills';
+import { getPassiveStatBonus, getActiveSkills } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
@@ -22,6 +22,98 @@ const mockHero = (level: number): Hero => ({
     skills: [],
     fatigue: 0,
     maxFatigue: 100
+});
+
+describe('getActiveSkills', () => {
+    it('returns an empty array if an empty array of skills is provided', () => {
+        expect(getActiveSkills([], 10)).toEqual([]);
+    });
+
+    it('filters out passive skills', () => {
+        const passiveSkill: Skill = {
+            id: 'p1',
+            name: 'Passive Skill',
+            description: '',
+            type: 'passive',
+            effectType: 'passive',
+            target: 'self',
+            value: 0,
+            unlockLevel: 1,
+            cooldown: 0,
+            currentCooldown: 0
+        };
+        expect(getActiveSkills([passiveSkill], 10)).toEqual([]);
+    });
+
+    it('filters out active skills that are locked (hero level < unlockLevel)', () => {
+        const lockedActiveSkill: Skill = {
+            id: 'a1',
+            name: 'Locked Active',
+            description: '',
+            type: 'active',
+            effectType: 'damage',
+            target: 'enemy',
+            value: 10,
+            unlockLevel: 15,
+            cooldown: 0,
+            currentCooldown: 0
+        };
+        expect(getActiveSkills([lockedActiveSkill], 10)).toEqual([]);
+    });
+
+    it('returns only active skills that are unlocked at the given hero level', () => {
+        const active1: Skill = {
+            id: 'a1',
+            name: 'A1',
+            description: '',
+            type: 'active',
+            effectType: 'damage',
+            target: 'enemy',
+            value: 10,
+            unlockLevel: 1,
+            cooldown: 0,
+            currentCooldown: 0
+        };
+        const active2: Skill = {
+            id: 'a2',
+            name: 'A2',
+            description: '',
+            type: 'active',
+            effectType: 'damage',
+            target: 'enemy',
+            value: 20,
+            unlockLevel: 5,
+            cooldown: 0,
+            currentCooldown: 0
+        };
+        const passive: Skill = {
+            id: 'p1',
+            name: 'P1',
+            description: '',
+            type: 'passive',
+            effectType: 'passive',
+            target: 'self',
+            value: 0,
+            unlockLevel: 1,
+            cooldown: 0,
+            currentCooldown: 0
+        };
+        const locked: Skill = {
+            id: 'a3',
+            name: 'A3',
+            description: '',
+            type: 'active',
+            effectType: 'damage',
+            target: 'enemy',
+            value: 30,
+            unlockLevel: 20,
+            cooldown: 0,
+            currentCooldown: 0
+        };
+
+        const result = getActiveSkills([active1, active2, passive, locked], 10);
+        expect(result).toEqual([active1, active2]);
+    });
 });
 
 describe('getPassiveStatBonus', () => {
