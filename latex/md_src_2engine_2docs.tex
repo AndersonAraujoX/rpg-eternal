@@ -1,0 +1,61 @@
+\chapter{📁 Documentação Técnica\+: \texorpdfstring{$<$}{<}tt\texorpdfstring{$>$}{>}src/engine/\texorpdfstring{$<$}{<}/tt\texorpdfstring{$>$}{>}}
+\hypertarget{md_src_2engine_2docs}{}\label{md_src_2engine_2docs}\index{📁 Documentação Técnica: $<$tt$>$src/engine/$<$/tt$>$@{📁 Documentação Técnica: $<$tt$>$src/engine/$<$/tt$>$}}
+\label{md_src_2engine_2docs_autotoc_md8}%
+\Hypertarget{md_src_2engine_2docs_autotoc_md8}%
+ Esta pasta contém o núcleo de simulação, cálculos matemáticos, regras de negócio e mecânicas de jogo do RPG Eternal.\hypertarget{md_src_2engine_2docs_autotoc_md9}{}\doxysection{\texorpdfstring{📄 Arquivos e Responsabilidades}{📄 Arquivos e Responsabilidades}}\label{md_src_2engine_2docs_autotoc_md9}
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Arquivo   }&\cellcolor{\tableheadbgcolor}\textbf{ Propósito Principal   }&\cellcolor{\tableheadbgcolor}\textbf{ Funções e Recursos Relevantes    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Arquivo   }&\cellcolor{\tableheadbgcolor}\textbf{ Propósito Principal   }&\cellcolor{\tableheadbgcolor}\textbf{ Funções e Recursos Relevantes    }\\\cline{1-3}
+\endhead
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily achievements.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Gerencia a validação e liberação de conquistas.   &{\ttfamily check\+Achievements}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily alchemy.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Controla a criação e automação de poções.   &{\ttfamily brew\+Potion}, {\ttfamily relic\+\_\+alchemy\+\_\+scroll}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily arena.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Regula lutas e atualizações de ranques de arena contra bots.   &{\ttfamily fight\+Arena}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily automation.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Processamento de ticks offline e automatizadores.   &{\ttfamily process\+Offline\+Ticks}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily backrooms.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Gerencia o minijogo reativo das Backrooms.   &{\ttfamily Backrooms\+Manager}, recrutamento de exploradores    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily bestiary.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Fornece bônus de atributos com base nos cartões de monstros.   &{\ttfamily get\+Card\+Bonus}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily breeding.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Lógica de cruzamento de pets para gerar mutações de raridade.   &{\ttfamily breed\+Pets}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily card\+Battle.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Simulação do minijogo de cartas e combate turnado.   &{\ttfamily play\+Card\+Turn}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily classes.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Contém a definição das classes e coeficientes de atributos.   &{\ttfamily HERO\+\_\+\+CLASSES}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily combat.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Mecânica central de combate turnado e processamento de turnos.   &{\ttfamily process\+Combat\+Turn}, afixos do Vazio ({\ttfamily void\+\_\+dodge}, {\ttfamily void\+\_\+execute})    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily combos.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Lógica para execução de combos de habilidades de classe.   &{\ttfamily check\+Combos}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily dailies.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Prêmios de logins diários e verificação de missões ativas.   &{\ttfamily check\+Dailies}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily dungeon.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Estruturação de dungeons padrão, eventos de casas e navegação.   &{\ttfamily move\+Dungeon}, {\ttfamily handle\+Dungeon\+Event}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily expeditions.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Expedições de heróis ociosos em busca de fragmentos e caixas.   &{\ttfamily start\+Expedition}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily features.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Definição dos requisitos de desbloqueio das telas de jogo.   &{\ttfamily FEATURES\+\_\+\+LIST}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily fishing.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Sistema de pescaria, taxas de peixes normais e lendários.   &{\ttfamily manual\+Fish}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily galaxy.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Gerenciamento de setores galácticos e melhorias da nave.   &{\ttfamily upgrade\+Spaceship}, {\ttfamily attack\+Sector}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily garden.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Plantação, irrigação e colheita de plantas ociosas.   &{\ttfamily set\+Garden\+Plots}, {\ttfamily harvest\+Plot}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily guild.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Gestão de monumentos de guilda e taxas de contribuição.   &{\ttfamily enshrine\+Hero}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily guild\+War.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Guerra de Guilda (GvG) assíncrona contra bots inimigos.   &{\ttfamily simulate\+Gv\+GTick}, {\ttfamily player\+Attack\+Tower}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily industry.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Esteiras e máquinas de processamento da aba industrial.   &{\ttfamily process\+Tick}, criação de Catapulta/\+Canhão    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily initial\+Data.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Perfil inicial do jogador com inventário zerado.   &{\ttfamily INITIAL\+\_\+\+GAME\+\_\+\+STATE}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily items.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Gerador de itens, afixos aleatórios e forja do Vazio.   &{\ttfamily infuse\+Item\+With\+Void}, {\ttfamily craft\+Star\+Forged\+Item}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily loot.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Tabela de loot e chances de drop em baús.   &{\ttfamily roll\+Loot}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily market.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Gerenciamento de estoque e cronômetro do mercado financeiro.   &{\ttfamily market\+Stock}, {\ttfamily buy\+Market\+Item}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily player\+Simulation.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Gerador e simulador de bots (fake players) no ranking.   &{\ttfamily generate\+Fake\+Player}, {\ttfamily simulate\+Bot\+Progress}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily relics.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Compra e modificadores globais dos artefatos da câmara.   &{\ttfamily buy\+Relic}, {\ttfamily relic\+\_\+chalice}, {\ttfamily relic\+\_\+hourglass}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily rifts.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Entrada e temporizadores de fendas temporais.   &{\ttfamily start\+Rift}, {\ttfamily select\+Blessing}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily roguelike.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Lógica da jornada planetária roguelike baseada em nós.   &{\ttfamily start\+Planetary\+Run}, {\ttfamily resolve\+Roguelike\+Event\+Option}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily skills.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Habilidades ativas/passivas e alocação automática de skills.   &{\ttfamily CLASS\+\_\+\+SKILLS}, {\ttfamily auto\+Allocate\+Skill\+Points}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily synergies.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Bônus globais de alinhamento e classes.   &{\ttfamily active\+Synergies}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily town\+Events.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Eventos aleatórios dinâmicos na prefeitura.   &{\ttfamily trigger\+Town\+Event}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily weather.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Climas e bônus ambientais modificadores de tick.   &{\ttfamily invoke\+Weather}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily world\+Boss.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Chefes globais de invasão, danos acumulados e recompensas.   &{\ttfamily attack\+World\+Boss}, {\ttfamily claim\+World\+Boss\+Reward}   \\\cline{1-3}
+\end{longtabu}
+\hypertarget{md_src_2engine_2docs_autotoc_md10}{}\doxysection{\texorpdfstring{🛠️ Exemplo de Uso (\+Importação de Regras)}{🛠️ Exemplo de Uso (Importação de Regras)}}\label{md_src_2engine_2docs_autotoc_md10}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{import\ \{\ processCombatTurn\ \}\ from\ './engine/combat';}
+\DoxyCodeLine{import\ \{\ CLASS\_SKILLS\ \}\ from\ './engine/skills';}
+\DoxyCodeLine{}
+\DoxyCodeLine{//\ As\ mecânicas\ de\ combate\ utilizam\ o\ array\ estático\ de\ habilidades}
+\DoxyCodeLine{const\ skillsDisponiveis\ =\ CLASS\_SKILLS['Warrior'];}
+
+\end{DoxyCode}
+ 
