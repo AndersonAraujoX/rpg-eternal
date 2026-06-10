@@ -1,70 +1,130 @@
-import { describe, it, expect } from 'vitest';
-import { checkExpeditionCompletion } from '../../engine/expeditions';
-import type { Expedition } from '../../engine/types';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { startExpedition, checkExpeditionCompletion, claimExpeditionRewards } from '../../engine/expeditions';
+import type { Expedition, Hero } from '../../engine/types';
 
-describe('Expeditions - checkExpeditionCompletion', () => {
-    it('should return false if startTime is undefined', () => {
-        const exp: Expedition = {
-            id: 'exp1',
-            name: 'Test Expedition',
-            description: 'A test expedition',
-            duration: 60, // 60 seconds
-            difficulty: 1,
-            rewards: [],
-            heroIds: [],
-            startTime: undefined
-        };
-        expect(checkExpeditionCompletion(exp)).toBe(false);
+describe('expeditions', () => {
+    const mockHero1: Hero = {
+        id: 'hero1', name: 'Hero 1', class: 'Warrior', emoji: '⚔️', unlocked: true, isDead: false,
+        element: 'Fire', assignment: 'none', insanity: 0, level: 1, type: 'hero', stats: {
+            hp: 10, maxHp: 10, mp: 0, maxMp: 0, attack: 1, defense: 1, speed: 1, magic: 1
+        }
+    };
+
+    const mockHero2: Hero = {
+        id: 'hero2', name: 'Hero 2', class: 'Mage', emoji: '🧙', unlocked: true, isDead: false,
+        element: 'Water', assignment: 'none', insanity: 0, level: 1, type: 'hero', stats: {
+            hp: 10, maxHp: 10, mp: 0, maxMp: 0, attack: 1, defense: 1, speed: 1, magic: 1
+        }
+    };
+
+    describe('startExpedition', () => {
+        it('should change assignment to expedition for assigned heroes', () => {
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [], heroIds: ['hero1']
+            };
+            const heroes = [mockHero1, mockHero2];
+
+            const result = startExpedition(exp, heroes);
+
+            expect(result[0].id).toBe('hero1');
+            expect(result[0].assignment).toBe('expedition');
+            expect(result[1].id).toBe('hero2');
+            expect(result[1].assignment).toBe('none'); // Unchanged
+        });
+
+        it('should not change anything if no heroes match', () => {
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [], heroIds: ['hero3']
+            };
+            const heroes = [mockHero1, mockHero2];
+
+            const result = startExpedition(exp, heroes);
+
+            expect(result[0].assignment).toBe('none');
+            expect(result[1].assignment).toBe('none');
+        });
     });
 
-    it('should return false if current time is less than startTime + duration', () => {
-        const durationSeconds = 60;
-        const now = Date.now();
-        const exp: Expedition = {
-            id: 'exp1',
-            name: 'Test Expedition',
-            description: 'A test expedition',
-            duration: durationSeconds,
-            difficulty: 1,
-            rewards: [],
-            heroIds: [],
-            // Set start time such that it has only been running for half the duration
-            startTime: now - (durationSeconds * 1000) / 2
-        };
-        expect(checkExpeditionCompletion(exp)).toBe(false);
+    describe('checkExpeditionCompletion', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('should return false if expedition has no startTime', () => {
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [], heroIds: []
+            };
+
+            expect(checkExpeditionCompletion(exp)).toBe(false);
+        });
+
+        it('should return false if time elapsed is less than duration', () => {
+            const now = 1000000;
+            vi.setSystemTime(now);
+
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [], heroIds: [], startTime: now - 59000 // 59 seconds ago
+            };
+
+            expect(checkExpeditionCompletion(exp)).toBe(false);
+        });
+
+        it('should return true if time elapsed is greater than or equal to duration', () => {
+            const now = 1000000;
+            vi.setSystemTime(now);
+
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [], heroIds: [], startTime: now - 60000 // 60 seconds ago
+            };
+
+            expect(checkExpeditionCompletion(exp)).toBe(true);
+        });
     });
 
-    it('should return true if current time is equal to startTime + duration', () => {
-        const durationSeconds = 60;
-        const now = Date.now();
-        const exp: Expedition = {
-            id: 'exp1',
-            name: 'Test Expedition',
-            description: 'A test expedition',
-            duration: durationSeconds,
-            difficulty: 1,
-            rewards: [],
-            heroIds: [],
-            // Set start time exactly duration seconds ago
-            startTime: now - (durationSeconds * 1000)
-        };
-        expect(checkExpeditionCompletion(exp)).toBe(true);
-    });
+    describe('claimExpeditionRewards', () => {
+        it('should generate rewards within the specified min and max', () => {
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [
+                    { type: 'gold', min: 10, max: 20 },
+                    { type: 'xp', min: 5, max: 5 }
+                ], heroIds: []
+            };
 
-    it('should return true if current time is greater than startTime + duration', () => {
-        const durationSeconds = 60;
-        const now = Date.now();
-        const exp: Expedition = {
-            id: 'exp1',
-            name: 'Test Expedition',
-            description: 'A test expedition',
-            duration: durationSeconds,
-            difficulty: 1,
-            rewards: [],
-            heroIds: [],
-            // Set start time significantly before duration seconds ago
-            startTime: now - (durationSeconds * 1000) - 10000
-        };
-        expect(checkExpeditionCompletion(exp)).toBe(true);
+            const rewards = claimExpeditionRewards(exp);
+
+            expect(rewards.length).toBe(2);
+
+            const goldReward = rewards.find(r => r.type === 'gold');
+            expect(goldReward).toBeDefined();
+            expect(goldReward!.amount).toBeGreaterThanOrEqual(10);
+            expect(goldReward!.amount).toBeLessThanOrEqual(20);
+
+            const xpReward = rewards.find(r => r.type === 'xp');
+            expect(xpReward).toBeDefined();
+            expect(xpReward!.amount).toBe(5);
+        });
+
+        it('should not include rewards with 0 amount', () => {
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [
+                    { type: 'gold', min: 0, max: 0 }
+                ], heroIds: []
+            };
+
+            const rewards = claimExpeditionRewards(exp);
+
+            expect(rewards.length).toBe(0);
+        });
     });
 });
