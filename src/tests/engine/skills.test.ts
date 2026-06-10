@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import { getPassiveStatBonus, getActiveSkills } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
@@ -213,6 +213,56 @@ describe('getPassiveStatBonus', () => {
             attack: 15,
             defense: 20
         });
+    });
+});
+
+describe('getBestDamageSkill', () => {
+    it('returns null if no skills are provided', () => {
+        expect(getBestDamageSkill([], 1)).toBeNull();
+    });
+
+    it('returns null if only locked skills are provided', () => {
+        const lockedSkill: Skill = {
+            id: 'a1', name: 'Locked', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+        };
+        expect(getBestDamageSkill([lockedSkill], 1)).toBeNull();
+    });
+
+    it('returns null if no damage skills are unlocked', () => {
+        const healSkill: Skill = {
+            id: 'a1', name: 'Heal', description: '', type: 'active', effectType: 'heal',
+            target: 'ally', value: 10, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+        expect(getBestDamageSkill([healSkill], 1)).toBeNull();
+    });
+
+    it('returns the skill with the highest damage value', () => {
+        const lowDamage: Skill = {
+            id: 'a1', name: 'Low', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 1.5, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+        const highDamage: Skill = {
+            id: 'a2', name: 'High', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 3.0, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+        const mediumDamage: Skill = {
+            id: 'a3', name: 'Medium', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 2.0, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+        expect(getBestDamageSkill([lowDamage, highDamage, mediumDamage], 1)).toEqual(highDamage);
+    });
+
+    it('ignores locked high-damage skills and returns the best unlocked one', () => {
+        const unlockedSkill: Skill = {
+            id: 'a1', name: 'Unlocked', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 1.5, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+        const lockedHighDamage: Skill = {
+            id: 'a2', name: 'Locked High', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 5.0, unlockLevel: 10, cooldown: 0, currentCooldown: 0
+        };
+        expect(getBestDamageSkill([unlockedSkill, lockedHighDamage], 5)).toEqual(unlockedSkill);
     });
 });
 
