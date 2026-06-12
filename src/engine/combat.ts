@@ -184,7 +184,7 @@ export const processCombatTurn = (
         }
     }
 
-    const heroHeals: Record<string, number> = {};
+    const heroHeals = new Map<string, number>();
 
     let updatedHeroes = heroes.map((h) => {
         if (h.assignment !== 'combat' || !h.unlocked) return h;
@@ -373,7 +373,7 @@ export const processCombatTurn = (
                                 }
 
                                 const healAmount = stats.maxHp * processedSkill.value;
-                                heroHeals[targetHero.id] = (heroHeals[targetHero.id] || 0) + healAmount;
+                                heroHeals.set(targetHero.id, (heroHeals.get(targetHero.id) || 0) + healAmount);
                                 events.push({ id: `heal-${h.id}-${Date.now()}`, type: 'status', text: 'HEAL', value: healAmount, x: 50, y: 50 });
                             }
                             s.currentCooldown = s.cooldown;
@@ -481,7 +481,7 @@ export const processCombatTurn = (
 
     // Final pass to apply heals (Referential stability: only clone if changed)
     updatedHeroes = updatedHeroes.map((h, i) => {
-        const heal = heroHeals[h.id];
+        const heal = heroHeals.get(h.id);
         const originalHero = heroes[i]; // Reference to initial input
 
         if (heal) {
