@@ -3,51 +3,13 @@ import type {
     BackroomsExplorer, BackroomsOutpost, BackroomsResources 
 } from '../engine/backrooms';
 import { 
-    createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS, BACKROOMS_RESEARCHES, getTransitionBoss 
+    createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS, BACKROOMS_RESEARCHES, getTransitionBoss, INITIAL_BACKROOMS_EXPLORERS, INITIAL_BACKROOMS_OUTPOST, INITIAL_BACKROOMS_RESOURCES
 } from '../engine/backrooms';
 
 export function useBackrooms() {
-    const [backroomsExplorers, setBackroomsExplorers] = useState<BackroomsExplorer[]>([
-        // Start with 2 initial explorers
-        {
-            id: 'exp_init_1',
-            name: 'Robert "Scout" Chen',
-            classType: 'scout',
-            emoji: '🏃‍♂️',
-            hp: 100,
-            maxHp: 100,
-            sanity: 100,
-            maxSanity: 100,
-            status: 'idle',
-            assignedLevel: null,
-            equipment: { flashlight: 0, suit: 0, tracker: 0 }
-        },
-        {
-            id: 'exp_init_2',
-            name: 'Dr. Evelyn Carter',
-            classType: 'scientist',
-            emoji: '🥼',
-            hp: 100,
-            maxHp: 100,
-            sanity: 100,
-            maxSanity: 100,
-            status: 'idle',
-            assignedLevel: null,
-            equipment: { flashlight: 0, suit: 0, tracker: 0 }
-        }
-    ]);
-
-    const [backroomsOutpost, setBackroomsOutpost] = useState<BackroomsOutpost>({
-        refinery: 1,
-        quarters: 1,
-        sensors: 1
-    });
-
-    const [backroomsResources, setBackroomsResources] = useState<BackroomsResources>({
-        scrap: 10,
-        almondWater: 3,
-        anomalyParts: 0
-    });
+    const [backroomsExplorers, setBackroomsExplorers] = useState<BackroomsExplorer[]>(INITIAL_BACKROOMS_EXPLORERS);
+    const [backroomsOutpost, setBackroomsOutpost] = useState<BackroomsOutpost>(INITIAL_BACKROOMS_OUTPOST);
+    const [backroomsResources, setBackroomsResources] = useState<BackroomsResources>(INITIAL_BACKROOMS_RESOURCES);
 
     const [backroomsUnlockedTechs, setBackroomsUnlockedTechs] = useState<string[]>([]);
     const [backroomsFloor, setBackroomsFloor] = useState<number>(1);
