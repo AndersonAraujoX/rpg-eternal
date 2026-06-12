@@ -570,7 +570,7 @@ export const useGame = () => {
         artifactMultipliers,
         patronDeity, deityLevel, deityFavor, deityEnergy,
         divinity,
-        resources, items, runes,
+        resources, items, runes, elementalEssences, elementalResonance,
         tower: world.tower,
         towerBoss: world.towerBoss,
         fakePlayers,
@@ -628,7 +628,7 @@ export const useGame = () => {
             artifactMultipliers,
             patronDeity, deityLevel, deityFavor, deityEnergy,
             divinity,
-            resources, items, runes,
+            resources, items, runes, elementalEssences, elementalResonance,
             tower: world.tower,
             towerBoss: world.towerBoss,
             fakePlayers,
@@ -1931,26 +1931,23 @@ export const useGame = () => {
                 });
             },
             upgradeResonance: (element: ElementType) => {
-                setElementalResonance(prevRes => {
-                    const level = prevRes[element] || 0;
-                    const cost = Math.floor(10 * Math.pow(1.5, level));
-                    const essence = elementalEssences[element] || 0;
+                const level = stateRef.current.elementalResonance?.[element] || 0;
+                const cost = Math.floor(10 * Math.pow(1.5, level));
+                const essence = stateRef.current.elementalEssences?.[element] || 0;
 
-                    if (essence >= cost) {
-                        setElementalEssences(prevEss => ({
-                            ...prevEss,
-                            [element]: prevEss[element] - cost
-                        }));
-                        addLog(`🏛️ Ressonância Elemental de ${element} melhorada para Nível ${level + 1}!`, 'success');
-                        return {
-                            ...prevRes,
-                            [element]: level + 1
-                        };
-                    } else {
-                        addLog(`Essência de ${element} insuficiente!`, 'danger');
-                        return prevRes;
-                    }
-                });
+                if (essence >= cost) {
+                    setElementalEssences(prevEss => ({
+                        ...prevEss,
+                        [element]: prevEss[element] - cost
+                    }));
+                    setElementalResonance(prevRes => ({
+                        ...prevRes,
+                        [element]: level + 1
+                    }));
+                    addLog(`🏛️ Ressonância Elemental de ${element} melhorada para Nível ${level + 1}!`, 'success');
+                } else {
+                    addLog(`Essência de ${element} insuficiente!`, 'danger');
+                }
             },
             startBossRush: () => {
                 addLog("Boss Rush não está disponível nesta versão.", "info");

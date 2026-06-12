@@ -78,7 +78,7 @@ export function simulateIndustryTick(nodes: MachineNode[], inventory: Record<str
     let powerGenerated = 0;
     let powerConsumed = 0;
     const newInventory = { ...inventory };
-    const flowPerSecond: Record<string, number> = {}; // Tracks rate of change
+    const flowPerSecond = new Map<string, number>(); // Tracks rate of change
 
     // 1. Calculate Power
     nodes.forEach(node => {
@@ -127,16 +127,16 @@ export function simulateIndustryTick(nodes: MachineNode[], inventory: Record<str
         for (const [inputId, inputAmount] of Object.entries(recipe.inputs)) {
             const consumed = possibleCycles * inputAmount;
             newInventory[inputId] -= consumed;
-            flowPerSecond[inputId] = (flowPerSecond[inputId] || 0) - (consumed / deltaSeconds);
+            flowPerSecond.set(inputId, (flowPerSecond.get(inputId) || 0) - (consumed / deltaSeconds));
         }
 
         // Apply production
         for (const [outputId, outputAmount] of Object.entries(recipe.outputs)) {
             const produced = possibleCycles * outputAmount;
             newInventory[outputId] = (newInventory[outputId] || 0) + produced;
-            flowPerSecond[outputId] = (flowPerSecond[outputId] || 0) + (produced / deltaSeconds);
+            flowPerSecond.set(outputId, (flowPerSecond.get(outputId) || 0) + (produced / deltaSeconds));
         }
     });
 
-    return { newInventory, powerGenerated, powerConsumed, powerEfficiency, flowPerSecond };
+    return { newInventory, powerGenerated, powerConsumed, powerEfficiency, flowPerSecond: Object.fromEntries(flowPerSecond) };
 }

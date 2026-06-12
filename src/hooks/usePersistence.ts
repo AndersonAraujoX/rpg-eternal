@@ -150,8 +150,8 @@ export interface PersistenceProps {
     setCurrentTutorialIndex: React.Dispatch<React.SetStateAction<number>>;
     classMastery: Record<string, any>;
     setClassMastery: React.Dispatch<React.SetStateAction<Record<string, any>>>;
-    town: any;
-    setTown: React.Dispatch<React.SetStateAction<any>>;
+    town: import("../engine/types").TownState;
+    setTown: React.Dispatch<React.SetStateAction<import("../engine/types").TownState>>;
     townVisited: boolean;
     setTownVisited: React.Dispatch<React.SetStateAction<boolean>>;
     dungeonActive: boolean;

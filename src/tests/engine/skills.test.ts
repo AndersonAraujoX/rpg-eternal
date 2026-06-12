@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import { getPassiveStatBonus, getBestDamageSkill } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
