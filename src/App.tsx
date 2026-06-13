@@ -484,7 +484,7 @@ function App() {
             actions.bombardTerritory(id, multiplier, weaponName);
           }
         };
-        return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} gvgWarState={gvgWarState} onStartGvG={() => startGvGWar(guild?.name || 'Sua Guilda')} onPlayerGvGAttack={playerGvGAttack} />;
+        return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} gvgWarState={gvgWarState} onStartGvG={() => startGvGWar(guild?.name || 'Sua Guilda')} onPlayerGvGAttack={playerGvGAttack} patronDeity={patronDeity} activeEvent={activeEvent} />;
       })()}
 
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onAssignPet={(id, assign) => actions.assignPet && actions.assignPet(id, assign)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}

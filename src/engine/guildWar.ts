@@ -243,7 +243,8 @@ const gvgWinChance = (attackerPower: number, defenderPower: number): number => {
  */
 export const simulateGvGTick = (
     state: GvGWarState,
-    fakePlayers: FakePlayer[]
+    fakePlayers: FakePlayer[],
+    activeEvent?: any
 ): GvGWarState => {
     if (!state.warActive) return state;
 
@@ -262,10 +263,15 @@ export const simulateGvGTick = (
         const targetIdx = Math.floor(Math.random() * standingTowers.length);
         const target = standingTowers[targetIdx];
 
-        const won = Math.random() < gvgWinChance(attacker.power, target.defenderPower);
+        let attackerPower = attacker.power;
+        if (activeEvent?.type === 'festival') {
+            attackerPower = Math.floor(attackerPower * 1.15);
+        }
+
+        const won = Math.random() < gvgWinChance(attackerPower, target.defenderPower);
 
         if (won) {
-            const damage = Math.floor(attacker.power * (0.3 + Math.random() * 0.4));
+            const damage = Math.floor(attackerPower * (0.3 + Math.random() * 0.4));
             const towerRef = towers.find(t => t.id === target.id)!;
             towerRef.hp = Math.max(0, towerRef.hp - damage);
 
@@ -306,7 +312,10 @@ export const simulateGvGTick = (
             ? alliedBots[Math.floor(Math.random() * alliedBots.length)]
             : null;
 
-        const defPower = defender ? defender.power : 100;
+        let defPower = defender ? defender.power : 100;
+        if (activeEvent?.type === 'crisis' || activeEvent?.type === 'raid') {
+            defPower = Math.floor(defPower * 0.90);
+        }
         const won = Math.random() < gvgWinChance(attacker.power, defPower);
 
         if (won) {
@@ -372,7 +381,8 @@ export const simulateGvGTick = (
 export const playerAttackTower = (
     state: GvGWarState,
     towerId: string,
-    playerPower: number
+    playerPower: number,
+    activeEvent?: any
 ): { updatedState: GvGWarState; won: boolean; damage: number } => {
     if (!state.warActive || state.playerAttacksLeft <= 0) {
         return { updatedState: state, won: false, damage: 0 };
@@ -385,13 +395,18 @@ export const playerAttackTower = (
         return { updatedState: state, won: false, damage: 0 };
     }
 
-    const won = Math.random() < gvgWinChance(playerPower, tower.defenderPower);
+    let attackerPower = playerPower;
+    if (activeEvent?.type === 'festival') {
+        attackerPower = Math.floor(attackerPower * 1.15);
+    }
+
+    const won = Math.random() < gvgWinChance(attackerPower, tower.defenderPower);
     const newLogs: GvGWarLog[] = [];
     let { playerScore } = state;
     let damage = 0;
 
     if (won) {
-        damage = Math.floor(playerPower * (0.5 + Math.random() * 0.5));
+        damage = Math.floor(attackerPower * (0.5 + Math.random() * 0.5));
         tower.hp = Math.max(0, tower.hp - damage);
 
         if (tower.hp <= 0) {

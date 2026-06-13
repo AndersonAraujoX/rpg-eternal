@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Sword, Lock, Zap, Target, Heart, Activity } from 'lucide-react';
 import type { GvGWarState } from '../../engine/guildWar';
+import type { TownEvent } from '../../engine/types';
 import { formatNumber } from '../../utils';
 
 interface GuildWarGvGProps {
@@ -8,15 +9,66 @@ interface GuildWarGvGProps {
     gvgWarState?: GvGWarState | null;
     onStartGvG?: () => void;
     onPlayerGvGAttack?: (towerId: string) => void;
+    patronDeity?: string | null;
+    activeEvent?: TownEvent | null;
 }
 
 export function GuildWarGvG({
     isLeader,
     gvgWarState,
     onStartGvG,
-    onPlayerGvGAttack
+    onPlayerGvGAttack,
+    patronDeity,
+    activeEvent
 }: GuildWarGvGProps) {
     const gvgLogRef = useRef<HTMLDivElement>(null);
+
+    const modifiersPanel = (
+        <div className="bg-gray-950/65 border-b border-gray-800/80 p-3 flex flex-wrap gap-4 items-center justify-center shrink-0 text-xs select-none">
+            <div className="text-gray-400 font-bold uppercase tracking-wider text-[10px] mr-1 flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-orange-500" /> Influência Local & Panteão:
+            </div>
+            
+            {/* Aurelius Modifier */}
+            <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg border transition-all ${
+                patronDeity === 'aurelius' 
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-md shadow-amber-900/10' 
+                    : 'bg-gray-900/40 border-gray-800/40 text-gray-500'
+            }`}>
+                <span className="text-sm">☀️</span>
+                <div>
+                    <div className="font-bold">Aurelius Padroeiro</div>
+                    <div className="text-[10px] opacity-80">Bombardeio +20% Dano</div>
+                </div>
+            </div>
+
+            {/* Festival Modifier */}
+            <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg border transition-all ${
+                activeEvent?.type === 'festival'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 shadow-md shadow-emerald-900/10 animate-pulse'
+                    : 'bg-gray-900/40 border-gray-800/40 text-gray-500'
+            }`}>
+                <span className="text-sm">🎉</span>
+                <div>
+                    <div className="font-bold">Festival Ativo</div>
+                    <div className="text-[10px] opacity-80">Moral Tropas +15% Ataque</div>
+                </div>
+            </div>
+
+            {/* Crisis/Raid Modifier */}
+            <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg border transition-all ${
+                (activeEvent?.type === 'crisis' || activeEvent?.type === 'raid')
+                    ? 'bg-red-500/10 border-red-500/30 text-red-300 shadow-md shadow-red-900/10'
+                    : 'bg-gray-900/40 border-gray-800/40 text-gray-500'
+            }`}>
+                <span className="text-sm">🚨</span>
+                <div>
+                    <div className="font-bold">Vila sob Ataque</div>
+                    <div className="text-[10px] opacity-80">Torres -10% Defesa</div>
+                </div>
+            </div>
+        </div>
+    );
 
     if (!isLeader) {
         return (
@@ -34,35 +86,38 @@ export function GuildWarGvG({
         // Show start war screen or results
         const hasResults = gvgWarState && !gvgWarState.warActive;
         return (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-6">
-                {hasResults && gvgWarState && (
-                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 w-full max-w-md space-y-3">
-                        <h3 className="text-xl font-bold text-white">
-                            {gvgWarState.playerScore > gvgWarState.rivalScore ? '🏆 Última Guerra: Vitória!' : '💀 Última Guerra: Derrota'}
-                        </h3>
-                        <div className="flex justify-between items-center text-lg">
-                            <span className="text-green-400 font-bold">{gvgWarState.playerGuildName}</span>
-                            <span className="text-3xl font-black text-white">
-                                {gvgWarState.playerScore} <span className="text-gray-500 text-lg">vs</span> {gvgWarState.rivalScore}
-                            </span>
-                            <span className="text-red-400 font-bold">{gvgWarState.rivalGuildName}</span>
+            <div className="flex-1 flex flex-col overflow-hidden bg-gray-900">
+                {modifiersPanel}
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-6 overflow-y-auto">
+                    {hasResults && gvgWarState && (
+                        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 w-full max-w-md space-y-3">
+                            <h3 className="text-xl font-bold text-white">
+                                {gvgWarState.playerScore > gvgWarState.rivalScore ? '🏆 Última Guerra: Vitória!' : '💀 Última Guerra: Derrota'}
+                            </h3>
+                            <div className="flex justify-between items-center text-lg">
+                                <span className="text-green-400 font-bold">{gvgWarState.playerGuildName}</span>
+                                <span className="text-3xl font-black text-white">
+                                    {gvgWarState.playerScore} <span className="text-gray-500 text-lg">vs</span> {gvgWarState.rivalScore}
+                                </span>
+                                <span className="text-red-400 font-bold">{gvgWarState.rivalGuildName}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">Torres destruídas: {gvgWarState.towers.filter(t => t.destroyed).length}/5</div>
                         </div>
-                        <div className="text-xs text-gray-500">Torres destruídas: {gvgWarState.towers.filter(t => t.destroyed).length}/5</div>
+                    )}
+                    <div className="space-y-3">
+                        <Sword className="w-16 h-16 text-orange-500/50 mx-auto" />
+                        <h3 className="text-xl font-bold text-white">Guilda vs Guilda</h3>
+                        <p className="text-gray-400 max-w-sm text-sm">
+                            Inicie uma guerra contra uma guilda rival. Seus aliados bots lutarão automaticamente,
+                            mas você tem <span className="text-yellow-400 font-bold">3 ataques manuais</span> para causar dano bônus!
+                        </p>
+                        <button
+                            onClick={() => onStartGvG?.()}
+                            className="px-8 py-3 bg-gradient-to-r from-red-700 to-orange-600 hover:from-red-600 hover:to-orange-500 rounded-lg font-bold text-white text-lg shadow-lg shadow-red-900/40 transition-all hover:scale-105 flex items-center gap-2 mx-auto"
+                        >
+                            <Sword className="w-5 h-5" /> Iniciar Guerra
+                        </button>
                     </div>
-                )}
-                <div className="space-y-3">
-                    <Sword className="w-16 h-16 text-orange-500/50 mx-auto" />
-                    <h3 className="text-xl font-bold text-white">Guilda vs Guilda</h3>
-                    <p className="text-gray-400 max-w-sm text-sm">
-                        Inicie uma guerra contra uma guilda rival. Seus aliados bots lutarão automaticamente,
-                        mas você tem <span className="text-yellow-400 font-bold">3 ataques manuais</span> para causar dano bônus!
-                    </p>
-                    <button
-                        onClick={() => onStartGvG?.()}
-                        className="px-8 py-3 bg-gradient-to-r from-red-700 to-orange-600 hover:from-red-600 hover:to-orange-500 rounded-lg font-bold text-white text-lg shadow-lg shadow-red-900/40 transition-all hover:scale-105 flex items-center gap-2 mx-auto"
-                    >
-                        <Sword className="w-5 h-5" /> Iniciar Guerra
-                    </button>
                 </div>
             </div>
         );
@@ -74,7 +129,8 @@ export function GuildWarGvG({
     const towerDestroyedCount = gvgWarState.towers.filter(t => t.destroyed).length;
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden bg-gray-900">
+            {modifiersPanel}
             {/* Scoreboard */}
             <div className="p-4 border-b border-gray-800 shrink-0 space-y-3">
                 <div className="flex justify-between items-center">

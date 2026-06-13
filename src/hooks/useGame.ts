@@ -1168,8 +1168,15 @@ export const useGame = () => {
                 const t = stateRef.current.territories.find((t: any) => t.id === id);
                 if (!t || t.owner === 'player') return;
 
+                let actualMultiplier = multiplier;
+                if (stateRef.current.patronDeity === 'aurelius') {
+                    const normalDamage = 1 - multiplier;
+                    const boostedDamage = normalDamage * 1.20;
+                    actualMultiplier = Math.max(0, 1 - boostedDamage);
+                }
+
                 galaxyState.setTerritories((prev: any[]) => prev.map((ter: any) =>
-                    ter.id === id ? { ...ter, difficulty: Math.max(1, Math.floor(ter.difficulty * multiplier)) } : ter
+                    ter.id === id ? { ...ter, difficulty: Math.max(1, Math.floor(ter.difficulty * actualMultiplier)) } : ter
                 ));
                 addLog(`💥 ${weaponName} disparada! As defesas de ${t.name} desmoronaram e a dificuldade despencou!`, 'achievement');
                 soundManager.playHit();
@@ -2767,7 +2774,7 @@ export const useGame = () => {
                 const gvgNow = Date.now();
                 const gvgLast = stateRef.current.gvgWarState.lastTickTime || 0;
                 if (gvgNow - gvgLast >= 5000) {
-                    const gvgResult = simulateGvGTick(stateRef.current.gvgWarState, stateRef.current.fakePlayers);
+                    const gvgResult = simulateGvGTick(stateRef.current.gvgWarState, stateRef.current.fakePlayers, stateRef.current.activeEvent);
                     setGvgWarState(gvgResult);
                     // Send notable GvG logs to global game log
                     const newGvgLogs = gvgResult.warLogs.filter(l => l.timestamp >= gvgLast);
@@ -2941,7 +2948,7 @@ export const useGame = () => {
     }, [roguelike.roguelikeRun, roguelike.abandonRoguelikeRun, roguelike.setEmberFragments, galaxyState.rewardPlanetaryRun, galaxyState.galaxy, galaxyState.setGalaxy, galaxyState.spaceship, galaxyState.setSpaceship, addLog, setGold]);
 
     const result = useMemo(() => {
-        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave, setVoidMatter, setPets: petsState.setPets, setActiveExpeditions };
+        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave, setVoidMatter, setPets: petsState.setPets, setActiveExpeditions, setTerritories: galaxyState.setTerritories };
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
@@ -2962,7 +2969,7 @@ export const useGame = () => {
             },
             playerGvGAttack: (towerId: string) => {
                 if (!gvgWarState?.warActive) return;
-                const result = playerAttackTower(gvgWarState, towerId, partyPower);
+                const result = playerAttackTower(gvgWarState, towerId, partyPower, stateRef.current.activeEvent);
                 setGvgWarState(result.updatedState);
                 const latestLog = result.updatedState.warLogs[0];
                 if (latestLog) {

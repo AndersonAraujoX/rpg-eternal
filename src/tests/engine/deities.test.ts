@@ -106,4 +106,63 @@ describe('Panteão dos Deuses Padroeiros (Deities System)', () => {
         expect(result.current.deityFavor).toBe(0);
         expect(result.current.deityEnergy).toBe(0);
     });
+
+    it('should apply +20% GvG bombardment bonus when patron deity is Aurelius', () => {
+        const { result } = renderHook(() => useGame());
+
+        // Setup a mock territory
+        act(() => {
+            result.current.setTerritories([
+                {
+                    id: 'test-gw-1',
+                    name: 'Test Territory',
+                    description: 'Desc',
+                    owner: 'Neutral',
+                    difficulty: 1000,
+                    level: 1,
+                    upgradeCost: 1000,
+                    bonus: { type: 'damage', value: 0.1 },
+                    coordinates: { x: 0, y: 0 }
+                }
+            ]);
+        });
+
+        // 1. Without Aurelius:
+        act(() => {
+            // multiplier = 0.5 => 50% difficulty remaining. New difficulty should be 1000 * 0.5 = 500
+            result.current.bombardTerritory('test-gw-1', 0.5, 'Catapulta');
+        });
+
+        expect(result.current.territories.find((t: any) => t.id === 'test-gw-1')?.difficulty).toBe(500);
+
+        // Reset difficulty to 1000 for Aurelius test
+        act(() => {
+            result.current.setTerritories([
+                {
+                    id: 'test-gw-1',
+                    name: 'Test Territory',
+                    description: 'Desc',
+                    owner: 'Neutral',
+                    difficulty: 1000,
+                    level: 1,
+                    upgradeCost: 1000,
+                    bonus: { type: 'damage', value: 0.1 },
+                    coordinates: { x: 0, y: 0 }
+                }
+            ]);
+            result.current.pledgeDeity('aurelius');
+        });
+
+        // 2. With Aurelius:
+        act(() => {
+            // multiplier = 0.5.
+            // normalDamage = 1 - 0.5 = 0.5.
+            // boostedDamage = 0.5 * 1.20 = 0.6.
+            // actualMultiplier = 1 - 0.6 = 0.40.
+            // New difficulty should be 1000 * 0.40 = 400.
+            result.current.bombardTerritory('test-gw-1', 0.5, 'Catapulta');
+        });
+
+        expect(result.current.territories.find((t: any) => t.id === 'test-gw-1')?.difficulty).toBe(400);
+    });
 });

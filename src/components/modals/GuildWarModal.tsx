@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Sword, Map as MapIcon, Coins, Lock } from 'lucide-react';
-import type { Guild } from '../../engine/types';
+import type { Guild, TownEvent } from '../../engine/types';
 import type { Territory } from '../../engine/types';
 import type { GvGWarState } from '../../engine/guildWar';
 import { formatNumber } from '../../utils';
@@ -21,9 +21,11 @@ interface GuildWarModalProps {
     gvgWarState?: GvGWarState | null;
     onStartGvG?: () => void;
     onPlayerGvGAttack?: (towerId: string) => void;
+    patronDeity?: string | null;
+    activeEvent?: TownEvent | null;
 }
 
-export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, onAdvanceMap, partyPower, guild, gold, industryInventory = {}, onBombard, gvgWarState, onStartGvG, onPlayerGvGAttack }: GuildWarModalProps) {
+export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, onAdvanceMap, partyPower, guild, gold, industryInventory = {}, onBombard, gvgWarState, onStartGvG, onPlayerGvGAttack, patronDeity, activeEvent }: GuildWarModalProps) {
     const [activeTab, setActiveTab] = useState<'map' | 'gvg'>('map');
 
     const isLeader = guild !== null && (guild.totalContribution || 0) >= 10000;
@@ -91,6 +93,8 @@ export function GuildWarModal({ onClose, territories, onAttack, onUpgrade, onAdv
                         gvgWarState={gvgWarState}
                         onStartGvG={onStartGvG}
                         onPlayerGvGAttack={onPlayerGvGAttack}
+                        patronDeity={patronDeity}
+                        activeEvent={activeEvent}
                     />
                 ) : (
                     <>

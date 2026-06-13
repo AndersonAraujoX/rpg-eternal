@@ -203,28 +203,148 @@ describe('GvG War System', () => {
         });
     });
 
+    describe('GvG Event Modifiers', () => {
+        let war: GvGWarState;
+        let bots: FakePlayer[];
+
+        beforeEach(() => {
+            bots = createFakePlayers(20, 5000);
+            war = initGvGWar(5000, bots, 'TestGuild');
+            // Ensure towers are alive and have a defender power of 5000
+            war.towers = war.towers.map(t => ({ ...t, hp: 1000, maxHp: 1000, defenderPower: 5000, destroyed: false }));
+        });
+
+        it('should apply +15% power bonus during Festival in simulateGvGTick', () => {
+            const testBots = bots.map(b => ({ ...b, power: 2500 }));
+            
+            // 1. Without Festival (should fail)
+            let callCountNoFestival = 0;
+            const spyNoFestival = vi.spyOn(Math, 'random').mockImplementation(() => {
+                callCountNoFestival++;
+                if (callCountNoFestival === 1) return 0; // allied bot index 0
+                if (callCountNoFestival === 2) return 0; // target tower index 0
+                if (callCountNoFestival === 3) return 0.12; // allied win chance (fails as ratio is 0.5, win chance is 0.10)
+                if (callCountNoFestival === 4) return 0.9; // allied log check (fail)
+                if (callCountNoFestival === 5) return 0; // rival bot index 0
+                if (callCountNoFestival === 6) return 0; // defender bot index 0
+                if (callCountNoFestival === 7) return 0.99; // rival win chance (fails)
+                if (callCountNoFestival === 8) return 0.9; // rival log check (fail)
+                return 0.9;
+            });
+
+            const stateNoFestival = simulateGvGTick(war, testBots);
+            expect(stateNoFestival.playerScore).toBe(30); // successful defense points
+            spyNoFestival.mockRestore();
+
+            // 2. With Festival (should win)
+            const activeEvent = { type: 'festival', name: 'Festival' };
+            let callCountFestival = 0;
+            const spyFestival = vi.spyOn(Math, 'random').mockImplementation(() => {
+                callCountFestival++;
+                if (callCountFestival === 1) return 0; // allied bot index 0
+                if (callCountFestival === 2) return 0; // target tower index 0
+                if (callCountFestival === 3) return 0.12; // allied win chance (wins as ratio is 0.575, win chance is 0.14)
+                if (callCountFestival === 4) return 0.5; // damage multiplier roll
+                if (callCountFestival === 5) return 0.9; // allied log check (fail)
+                if (callCountFestival === 6) return 0; // rival bot index 0
+                if (callCountFestival === 7) return 0; // defender bot index 0
+                if (callCountFestival === 8) return 0.99; // rival win chance (fails)
+                if (callCountFestival === 9) return 0.9; // rival log check (fail)
+                return 0.9;
+            });
+
+            const stateFestival = simulateGvGTick(war, testBots, activeEvent);
+            expect(stateFestival.playerScore).toBe(500); // 500 for destroying the tower
+            spyFestival.mockRestore();
+        });
+
+        it('should apply -10% defense penalty during crisis/raid in simulateGvGTick', () => {
+            const testBots = bots.map((b, idx) => ({
+                ...b,
+                power: idx === 0 ? 1000 : 2000 // one weak, others strong
+            }));
+            
+            const testWar = {
+                ...war,
+                alliedBotIds: testBots.filter((_, idx) => idx > 0).map(b => b.id), // defenders: 2000 power
+                rivalBotIds: testBots.filter((_, idx) => idx === 0).map(b => b.id) // attacker: 1000 power
+            };
+
+            // 1. Without Crisis (rival attack should fail, scoring 30 pts for player)
+            let callCountNoCrisis = 0;
+            const spyNoCrisis = vi.spyOn(Math, 'random').mockImplementation(() => {
+                callCountNoCrisis++;
+                if (callCountNoCrisis === 1) return 0; // allied bot index 0
+                if (callCountNoCrisis === 2) return 0; // target tower index 0
+                if (callCountNoCrisis === 3) return 0.99; // allied win chance (fail)
+                if (callCountNoCrisis === 4) return 0.9; // allied log check (fail)
+                if (callCountNoCrisis === 5) return 0; // rival bot index 0
+                if (callCountNoCrisis === 6) return 0; // defender bot index 0
+                if (callCountNoCrisis === 7) return 0.11; // rival win chance (fails as ratio is 0.5, win chance is 0.10)
+                if (callCountNoCrisis === 8) return 0.9; // rival log check (fail)
+                return 0.9;
+            });
+
+            const stateNoCrisis = simulateGvGTick(testWar, testBots);
+            expect(stateNoCrisis.rivalScore).toBe(25); // 25 for failed allied attack
+            expect(stateNoCrisis.playerScore).toBe(30); // 30 for successful defense
+            spyNoCrisis.mockRestore();
+
+            // 2. With Crisis (rival attack should succeed, scoring 75 pts for rival)
+            const activeEvent = { type: 'crisis', name: 'Invasão' };
+            let callCountCrisis = 0;
+            const spyCrisis = vi.spyOn(Math, 'random').mockImplementation(() => {
+                callCountCrisis++;
+                if (callCountCrisis === 1) return 0; // allied bot index 0
+                if (callCountCrisis === 2) return 0; // target tower index 0
+                if (callCountCrisis === 3) return 0.99; // allied win chance (fail)
+                if (callCountCrisis === 4) return 0.9; // allied log check (fail)
+                if (callCountCrisis === 5) return 0; // rival bot index 0
+                if (callCountCrisis === 6) return 0; // defender bot index 0
+                if (callCountCrisis === 7) return 0.11; // rival win chance (wins as defender power is 1800, ratio is 0.555, win chance is 0.129)
+                if (callCountCrisis === 8) return 0.9; // rival log check (fail)
+                return 0.9;
+            });
+
+            const stateCrisis = simulateGvGTick(testWar, testBots, activeEvent);
+            expect(stateCrisis.rivalScore).toBe(100); // 25 for failed allied + 75 for rival hit
+            spyCrisis.mockRestore();
+        });
+
+        it('should apply +15% power bonus to player manual attacks during Festival', () => {
+            const spy = vi.spyOn(Math, 'random');
+            
+            // 1. Without Festival (should fail)
+            spy.mockReturnValueOnce(0.12);
+            const { won: wonNoFestival } = playerAttackTower(war, war.towers[0].id, 2500);
+            expect(wonNoFestival).toBe(false);
+
+            // 2. With Festival (should win)
+            const activeEvent = { type: 'festival', name: 'Festival' };
+            spy.mockReturnValueOnce(0.12);
+            const { won: wonFestival } = playerAttackTower(war, war.towers[0].id, 2500, activeEvent);
+            expect(wonFestival).toBe(true);
+            spy.mockRestore();
+        });
+    });
+
     describe('Mathematical Balance', () => {
         it('should produce balanced score growth over 100 ticks', () => {
             const bots = createFakePlayers(20, 5000);
             let state = initGvGWar(5000, bots, 'TestGuild');
 
-            // Override random for deterministic-like testing is complex,
-            // so we use statistical bounds instead
             for (let i = 0; i < 100 && state.warActive; i++) {
                 state = simulateGvGTick(state, bots);
             }
 
             const totalScore = state.playerScore + state.rivalScore;
-            // Both sides should have scored something
             expect(state.playerScore).toBeGreaterThan(0);
             expect(state.rivalScore).toBeGreaterThan(0);
 
-            // Player advantage ratio should not be extreme (within 10x)
             const ratio = state.playerScore / Math.max(1, state.rivalScore);
             expect(ratio).toBeGreaterThan(0.1);
             expect(ratio).toBeLessThan(10);
 
-            // Total score should be reasonable (not 0 or astronomically high)
             expect(totalScore).toBeGreaterThan(100);
             expect(totalScore).toBeLessThan(100000);
         });

@@ -831,7 +831,7 @@ export const TownModal: React.FC<TownModalProps> = ({
                                             <div className="space-y-4 text-sm text-stone-300">
                                                 <div className="bg-black/40 p-3 rounded-lg border border-white/5">
                                                     <span className="font-bold text-yellow-400 text-xs uppercase block mb-1">Efeito Passivo</span>
-                                                    <span>+15% Dano de Ataque Global (+5% / Lvl)</span>
+                                                    <span>+15% Dano de Ataque Global (+5% / Lvl) & +20% Eficácia de Bombardeio GvG</span>
                                                 </div>
                                                 <div className="bg-black/40 p-3 rounded-lg border border-white/5">
                                                     <span className="font-bold text-yellow-400 text-xs uppercase block mb-1">Magia Ativa (100% Carga)</span>
@@ -960,10 +960,16 @@ export const TownModal: React.FC<TownModalProps> = ({
                                             <h4 className="text-xs text-stone-400 font-bold uppercase tracking-wider text-left">Efeitos Ativos no Nível {deityLevel}</h4>
                                             <div className="bg-black/50 p-4 rounded-xl border border-stone-850 space-y-2 text-sm text-left">
                                                 {patronDeity === 'aurelius' && (
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-stone-400">Dano de Ataque Global</span>
-                                                        <span className="text-yellow-400 font-bold">+{(15 + (deityLevel - 1) * 5)}%</span>
-                                                    </div>
+                                                     <>
+                                                         <div className="flex justify-between items-center border-b border-stone-850/50 pb-2">
+                                                             <span className="text-stone-400">Dano de Ataque Global</span>
+                                                             <span className="text-yellow-400 font-bold">+{(15 + (deityLevel - 1) * 5)}%</span>
+                                                         </div>
+                                                         <div className="flex justify-between items-center">
+                                                             <span className="text-stone-400">Eficácia de Bombardeio GvG</span>
+                                                             <span className="text-amber-400 font-bold">+20%</span>
+                                                         </div>
+                                                     </>
                                                 )}
                                                 {patronDeity === 'tenebris' && (
                                                     <div className="flex justify-between items-center">
