@@ -214,5 +214,7 @@ export const ANCIENT_RELICS: AncientRelic[] = [
     { id: 'relic_crown', name: 'Coroa do Antigo Rei', description: '+10% Prosperidade da Cidade', bonusType: 'prosperity', bonusValue: 0.1, count: 0, emoji: '👑' },
     { id: 'relic_shield', name: 'Escudo Guardião', description: '+5% Estabilidade da Cidade', bonusType: 'stability', bonusValue: 0.05, count: 0, emoji: '🛡️' },
     { id: 'relic_coin', name: 'Moeda da Fortuna', description: '+5% Lucro do Mercado', bonusType: 'market', bonusValue: 0.05, count: 0, emoji: '🪙' },
-    { id: 'relic_torch', name: 'Tocha da Ordem', description: '-5% Criminalidade', bonusType: 'crime', bonusValue: -0.05, count: 0, emoji: '🔦' }
+    { id: 'relic_torch', name: 'Tocha da Ordem', description: '-5% Criminalidade', bonusType: 'crime', bonusValue: -0.05, count: 0, emoji: '🔦' },
+    { id: 'relic_banner', name: 'Estandarte Destruído', description: '+5% Defesa de GvG por unidade', bonusType: 'gvg_defense', bonusValue: 0.05, count: 0, emoji: '🚩' },
+    { id: 'relic_gear', name: 'Engrenagem de Cerco', description: '-10% Custo de Mitra/Ferro na Indústria por unidade', bonusType: 'industry_cost', bonusValue: -0.10, count: 0, emoji: '⚙️' }
 ];

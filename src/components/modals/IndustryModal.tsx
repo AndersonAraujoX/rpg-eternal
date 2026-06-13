@@ -15,9 +15,10 @@ interface IndustryModalProps {
     gold: number;
     buyMachine: (cost: number, execute: () => void) => void;
     assignedPet?: any;
+    costReduction?: number;
 }
 
-export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, industryState, gold, buyMachine, assignedPet }) => {
+export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, industryState, gold, buyMachine, assignedPet, costReduction = 0 }) => {
     const [activeTab, setActiveTab] = useState<'machines' | 'inventory' | 'research' | 'power'>('machines');
 
     if (!isOpen) return null;
@@ -95,6 +96,11 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, i
 
                     {activeTab === 'machines' && (
                         <div className="space-y-6">
+                            {costReduction > 0 && (
+                                <div className="bg-orange-500/20 border border-orange-500/50 text-orange-300 px-4 py-2.5 rounded-lg flex items-center justify-between text-xs font-mono animate-pulse">
+                                    <span>⚙️ Bônus do Museu Ativo: -{(costReduction * 100).toFixed(0)}% de custo de insumos para fabricar armas de cerco!</span>
+                                </div>
+                            )}
                             <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
                                 {MACHINES.filter(m => m.type !== 'generator' && m.type !== 'lab').map(machine => (
                                     <button
@@ -154,7 +160,11 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, i
                                                             <div className="text-stone-400 truncate">
                                                                 In: {Object.entries(currentRecipe.inputs).map(([id, am]) => {
                                                                     const item = INDUSTRY_ITEMS.find(i => i.id === id);
-                                                                    return `${am} ${item?.emoji}`;
+                                                                    let displayAmount = am;
+                                                                    if (costReduction > 0 && (currentRecipe.id === 'craft_catapult' || currentRecipe.id === 'craft_plasma_cannon')) {
+                                                                        displayAmount = Math.max(1, Math.floor(am * (1 - costReduction)));
+                                                                    }
+                                                                    return `${displayAmount} ${item?.emoji}`;
                                                                 }).join(', ')}
                                                             </div>
                                                         )}

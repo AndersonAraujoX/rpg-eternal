@@ -244,7 +244,8 @@ const gvgWinChance = (attackerPower: number, defenderPower: number): number => {
 export const simulateGvGTick = (
     state: GvGWarState,
     fakePlayers: FakePlayer[],
-    activeEvent?: any
+    activeEvent?: any,
+    gvgDefenseBonus: number = 0
 ): GvGWarState => {
     if (!state.warActive) return state;
 
@@ -315,6 +316,9 @@ export const simulateGvGTick = (
         let defPower = defender ? defender.power : 100;
         if (activeEvent?.type === 'crisis' || activeEvent?.type === 'raid') {
             defPower = Math.floor(defPower * 0.90);
+        }
+        if (gvgDefenseBonus > 0) {
+            defPower = Math.floor(defPower * (1 + gvgDefenseBonus));
         }
         const won = Math.random() < gvgWinChance(attacker.power, defPower);
 

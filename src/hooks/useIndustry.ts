@@ -110,9 +110,9 @@ export function useIndustry() {
         }));
     };
 
-    const processTick = (deltaSeconds: number) => {
+    const processTick = (deltaSeconds: number, costReduction: number = 0) => {
         setState(prev => {
-            const result = simulateIndustryTick(prev.nodes, prev.inventory, deltaSeconds);
+            const result = simulateIndustryTick(prev.nodes, prev.inventory, deltaSeconds, costReduction);
 
             // Only update metrics if something changed or every tick
             setMetrics({

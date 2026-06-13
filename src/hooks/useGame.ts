@@ -45,7 +45,7 @@ import { INITIAL_GALAXY } from '../engine/galaxy';
 import { calculateWinChance } from '../engine/arena';
 import { INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege, initGvGWar, simulateGvGTick, playerAttackTower } from '../engine/guildWar';
 import type { GvGWarState } from '../engine/guildWar';
-import { INITIAL_TOWN, INITIAL_MARKET_TREND } from '../engine/initialData';
+import { INITIAL_TOWN, INITIAL_MARKET_TREND, ANCIENT_RELICS } from '../engine/initialData';
 import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
 import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
 import { generateMarketStock } from '../engine/market';
@@ -1149,6 +1149,19 @@ export const useGame = () => {
 
                     galaxyState.setTerritories((prev: any[]) => prev.map((pt: any) => pt.id === id ? { ...pt, owner: 'player' } : pt));
                     addLog(`Vitória! A Guilda conquistou ${t.name}. +${Math.floor(goldReward)} Ouro, +${Math.floor(xpReward)} Guild XP.`, 'success');
+
+                    // Check GvG relics drops
+                    if (t.name.includes('Fortaleza de Ferro')) {
+                        const relic = ANCIENT_RELICS.find(r => r.id === 'relic_banner');
+                        if (relic) {
+                            ACTIONS.collectRelic(relic);
+                        }
+                    } else if (t.name.includes('Acampamento Titã')) {
+                        const relic = ANCIENT_RELICS.find(r => r.id === 'relic_gear');
+                        if (relic) {
+                            ACTIONS.collectRelic(relic);
+                        }
+                    }
                 } else {
                     addLog(`Derrota cruel ao tentar invadir ${t.name}... Suas tropas recuaram.`, 'danger');
                 }
@@ -2774,7 +2787,9 @@ export const useGame = () => {
                 const gvgNow = Date.now();
                 const gvgLast = stateRef.current.gvgWarState.lastTickTime || 0;
                 if (gvgNow - gvgLast >= 5000) {
-                    const gvgResult = simulateGvGTick(stateRef.current.gvgWarState, stateRef.current.fakePlayers, stateRef.current.activeEvent);
+                    const relicBannerCount = stateRef.current.town?.relics?.find(r => r.id === 'relic_banner')?.count || 0;
+                    const gvgDefenseBonus = relicBannerCount * 0.05;
+                    const gvgResult = simulateGvGTick(stateRef.current.gvgWarState, stateRef.current.fakePlayers, stateRef.current.activeEvent, gvgDefenseBonus);
                     setGvgWarState(gvgResult);
                     // Send notable GvG logs to global game log
                     const newGvgLogs = gvgResult.warLogs.filter(l => l.timestamp >= gvgLast);
@@ -2961,6 +2976,7 @@ export const useGame = () => {
             arenaRank, glory, quests, theme, autoSellRarity, arenaOpponents,
             fakePlayers, setFakePlayers,
             gvgWarState,
+            town,
             startGvGWar: (guildName: string) => {
                 if (gvgWarState?.warActive) return;
                 const newWar = initGvGWar(partyPower, fakePlayers, guildName || 'Sua Guilda');

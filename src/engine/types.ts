@@ -416,7 +416,7 @@ export interface AncientRelic {
     id: string;
     name: string;
     description: string;
-    bonusType: 'gold_gain' | 'price_reduction' | 'exp_gain' | 'dungeon_reveal' | 'prosperity' | 'stability' | 'market' | 'crime';
+    bonusType: 'gold_gain' | 'price_reduction' | 'exp_gain' | 'dungeon_reveal' | 'prosperity' | 'stability' | 'market' | 'crime' | 'gvg_defense' | 'industry_cost';
     bonusValue: number;
     count: number;
     emoji: string;

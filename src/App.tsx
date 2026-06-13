@@ -112,7 +112,7 @@ function App() {
     backroomsFloor, backroomsFloorProgress, backroomsBossHp,
     fakePlayers,
     elementalResonance, elementalEssences, ownedRelics, equippedRelics,
-    gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex
+    gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex, town
   } = useGame();
 
   const [scale, setScale] = useState(1);
@@ -188,10 +188,12 @@ function App() {
     const interval = setInterval(() => {
       const firePet = (pets || []).find(p => p.assignment === 'industry' && p.element === 'fire');
       const industrySpeedMult = 1.0 + (firePet ? firePet.level * 0.02 : 0);
-      industry.processTick(1 * industrySpeedMult);
+      const relicGearCount = town?.relics?.find(r => r.id === 'relic_gear')?.count || 0;
+      const costReduction = relicGearCount * 0.10;
+      industry.processTick(1 * industrySpeedMult, costReduction);
     }, 1000);
     return () => clearInterval(interval);
-  }, [pets, industry]);
+  }, [pets, industry, town]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -522,8 +524,16 @@ function App() {
         bossLevel={boss.level}
         voidAscensions={voidAscensions}
       />
-      <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} assignedPet={pets.find(p => p.assignment === 'industry')} />
-      {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
+      <IndustryModal 
+        isOpen={showIndustry} 
+        onClose={() => setShowIndustry(false)} 
+        industryState={industry} 
+        gold={gold} 
+        buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} 
+        assignedPet={pets.find(p => p.assignment === 'industry')}
+        costReduction={town?.relics?.find(r => r.id === 'relic_gear')?.count ? (town.relics.find(r => r.id === 'relic_gear')!.count * 0.10) : 0} 
+      />
+      {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} relics={town?.relics || []} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
 
       <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={fakePlayers} currentPower={partyPower} />

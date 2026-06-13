@@ -74,7 +74,7 @@ export const RECIPES: Recipe[] = [
 ];
 
 // Helper to determine net production and consumption per second for UI
-export function simulateIndustryTick(nodes: MachineNode[], inventory: Record<string, number>, deltaSeconds: number) {
+export function simulateIndustryTick(nodes: MachineNode[], inventory: Record<string, number>, deltaSeconds: number, costReduction: number = 0) {
     let powerGenerated = 0;
     let powerConsumed = 0;
     const newInventory = { ...inventory };
@@ -117,15 +117,23 @@ export function simulateIndustryTick(nodes: MachineNode[], inventory: Record<str
         // Determine actual cycles based on available inputs
         let possibleCycles = expectedCycles;
         for (const [inputId, inputAmount] of Object.entries(recipe.inputs)) {
-            const missing = ((possibleCycles * inputAmount) > (newInventory[inputId] || 0));
+            let adjustedAmount = inputAmount;
+            if (costReduction > 0 && (recipe.id === 'craft_catapult' || recipe.id === 'craft_plasma_cannon')) {
+                adjustedAmount = Math.max(1, Math.floor(inputAmount * (1 - costReduction)));
+            }
+            const missing = ((possibleCycles * adjustedAmount) > (newInventory[inputId] || 0));
             if (missing) {
-                possibleCycles = (newInventory[inputId] || 0) / inputAmount;
+                possibleCycles = (newInventory[inputId] || 0) / adjustedAmount;
             }
         }
 
         // Apply consumption
         for (const [inputId, inputAmount] of Object.entries(recipe.inputs)) {
-            const consumed = possibleCycles * inputAmount;
+            let adjustedAmount = inputAmount;
+            if (costReduction > 0 && (recipe.id === 'craft_catapult' || recipe.id === 'craft_plasma_cannon')) {
+                adjustedAmount = Math.max(1, Math.floor(inputAmount * (1 - costReduction)));
+            }
+            const consumed = possibleCycles * adjustedAmount;
             newInventory[inputId] -= consumed;
             flowPerSecond.set(inputId, (flowPerSecond.get(inputId) || 0) - (consumed / deltaSeconds));
         }

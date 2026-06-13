@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
 import { X, Trophy, User, Ghost, Book, Search } from 'lucide-react';
-import type { Hero, Pet, MonsterCard, Item } from '../../engine/types';
-import { INITIAL_HEROES, INITIAL_PET_DATA } from '../../engine/initialData';
+import type { Hero, Pet, MonsterCard, Item, AncientRelic } from '../../engine/types';
+import { INITIAL_HEROES, INITIAL_PET_DATA, ANCIENT_RELICS } from '../../engine/initialData';
 import { MONSTERS } from '../../engine/bestiary';
 
 interface MuseumModalProps {
@@ -12,10 +12,11 @@ interface MuseumModalProps {
     cards: MonsterCard[];
     items: Item[]; // Use inventory to check for Legendaries
     onDuel: () => void; // Phase 55
+    relics?: AncientRelic[];
 }
 
-export function MuseumModal({ onClose, heroes, pets, cards, items, onDuel }: MuseumModalProps) {
-    const [activeTab, setActiveTab] = useState<'heroes' | 'pets' | 'cards' | 'artifacts' | 'champions'>('heroes');
+export function MuseumModal({ onClose, heroes, pets, cards, items, onDuel, relics = [] }: MuseumModalProps) {
+    const [activeTab, setActiveTab] = useState<'heroes' | 'pets' | 'cards' | 'artifacts' | 'champions' | 'relics'>('heroes');
 
     // Calculate Progress
     const totalHeroes = INITIAL_HEROES.length; // Approximate, assuming initial list is all unique base heroes
@@ -74,6 +75,9 @@ export function MuseumModal({ onClose, heroes, pets, cards, items, onDuel }: Mus
                     </button>
                     <button onClick={() => setActiveTab('champions')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${activeTab === 'champions' ? 'text-yellow-300 border-b-2 border-yellow-400 bg-gray-800/50' : 'text-gray-500 hover:text-gray-300'}`}>
                         🌟 Hall of Fame
+                    </button>
+                    <button onClick={() => setActiveTab('relics')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${activeTab === 'relics' ? 'text-amber-400 border-b-2 border-amber-500 bg-gray-800/50' : 'text-gray-500 hover:text-gray-300'}`}>
+                        👑 Relíquias
                     </button>
                 </div>
 
@@ -204,6 +208,53 @@ export function MuseumModal({ onClose, heroes, pets, cards, items, onDuel }: Mus
                             </div>
                         );
                     })()}
+
+                    {activeTab === 'relics' && (
+                        <div>
+                            <div className="text-xs text-gray-400 mb-4 bg-gradient-to-r from-amber-900/30 to-transparent border border-amber-700/40 p-3 rounded flex items-center gap-2">
+                                👑 <span>Relíquias obtidas ao capturar territórios especiais no mapa de Guerra de Guildas (GvG). Concedem bônus permanentes.</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {ANCIENT_RELICS.map((baseRelic) => {
+                                    const owned = relics.find(r => r.id === baseRelic.id);
+                                    const count = owned ? owned.count || 0 : 0;
+                                    const isActive = count > 0;
+
+                                    return (
+                                        <div
+                                            key={baseRelic.id}
+                                            className={`p-4 rounded-xl border flex flex-col items-center text-center gap-2 relative overflow-hidden transition-all duration-300 ${
+                                                isActive
+                                                    ? 'bg-amber-950/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] border-dashed'
+                                                    : 'bg-gray-950 border-gray-800 opacity-50 grayscale'
+                                            }`}
+                                        >
+                                            <div className="text-4xl mb-1">{baseRelic.emoji}</div>
+                                            <div className="text-sm font-bold text-amber-400">{baseRelic.name}</div>
+                                            <div className="text-xs text-gray-300 min-h-[32px]">{baseRelic.description}</div>
+                                            <div className="text-xs font-mono font-bold mt-2">
+                                                {isActive ? (
+                                                    <span className="text-green-400">Ativa: x{count} ({baseRelic.id === 'relic_banner' ? `+${(count * 5)}% Defesa` : `-${(count * 10)}% Custo`})</span>
+                                                ) : (
+                                                    <span className="text-gray-500">Bloqueada</span>
+                                                )}
+                                            </div>
+                                            <div className="text-[10px] text-gray-400 mt-1 italic">
+                                                Fonte: {
+                                                    baseRelic.id === 'relic_banner' ? 'Fortaleza de Ferro (GvG)' :
+                                                    baseRelic.id === 'relic_gear' ? 'Acampamento Titã (GvG)' :
+                                                    'Criação da Cidade / Evento'
+                                                }
+                                            </div>
+                                            {isActive && (
+                                                <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-ping" />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                 </div>
             </div>
