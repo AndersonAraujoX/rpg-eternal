@@ -15,6 +15,7 @@ interface BattleAreaProps {
     artifacts: Artifact[];
     heroes: Hero[];
     synergies?: Synergy[];
+    globalSynergies?: any[];
     partyDps?: number;
     partyPower?: number;
     combatEvents?: CombatEvent[];
@@ -40,7 +41,7 @@ interface Particle {
     age: number;
 }
 
-export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, heroes = [], partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [], tower, voidActive = false, bossTimer = 60 }) => {
+export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dungeonTimer, ultimateCharge, pets, artifacts, actions, heroes = [], partyDps = 0, partyPower = 0, combatEvents = [], suggestions = [], synergies = [], globalSynergies = [], tower, voidActive = false, bossTimer = 60 }) => {
     const [particles, setParticles] = React.useState<Particle[]>([]);
     const [showSynergyTracker, setShowSynergyTracker] = React.useState(false);
     const [shake, setShake] = React.useState(false);
@@ -114,9 +115,10 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
 
     return (
         <div
-            className={`flex-1 relative flex flex-col justify-between p-4 overflow-hidden transition-all duration-1000 ${getBackgroundClass()} ${victory ? 'victory-glow' : ''}`}
+            className={`flex-1 relative flex flex-col justify-between items-center p-4 overflow-hidden transition-all duration-1000 ${getBackgroundClass()} ${victory ? 'victory-glow' : ''}`}
             id="battle-field"
         >
+            {/* Absolute background and decoration elements */}
             {isTower && (
                 <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"></div>
             )}
@@ -126,57 +128,16 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {isTower && (
                 <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent z-0"></div>
             )}
-            <div className="absolute top-[37%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-4 z-10 opacity-95">
-                {activeCombatHeroes.map(h => {
-                    const xpPercent = Math.min(100, Math.floor(((h.xp || 0) / (h.maxXp || 100)) * 100));
-                    return (
-                        <div key={h.id} className="flex flex-col items-center gap-1 select-none">
-                            <div className="text-3xl transition-all duration-500 animate-pulse drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]" title={`${h.name} Lvl ${h.level}`}>
-                                {h.emoji}
-                            </div>
-                            <div className="bg-stone-900/90 border border-amber-900/40 px-1.5 py-0.5 rounded shadow flex flex-col items-center w-11">
-                                <span className="text-[7px] text-amber-400 font-extrabold tracking-tighter leading-none">L{h.level}</span>
-                                <div className="w-full h-1 bg-stone-950 rounded-full overflow-hidden mt-0.5" title={`${h.xp}/${h.maxXp} XP`}>
-                                    <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${xpPercent}%` }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+            <div className="absolute inset-0 opacity-10 pointer-events-none flex justify-center items-center"><Sword className="w-64 h-64" /></div>
+
+            {/* Artifacts (absolute top-left) */}
+            <div className="absolute top-2 left-2 flex gap-1 z-20 flex-wrap max-w-[200px]">
+                {artifacts.map(a => (
+                    <div key={a.id} className="w-5 h-5 bg-yellow-900 border border-yellow-500 rounded flex items-center justify-center text-[10px] cursor-help" title={a.name}>{a.emoji}</div>
+                ))}
             </div>
 
-            {/* Companion Pets Row */}
-            <div className="absolute top-[50%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-3.5 z-10 opacity-90">
-                {pets && [...pets].sort((a, b) => b.level - a.level).slice(0, 5).map((pet, idx) => {
-                    const xpPercent = Math.min(100, Math.floor(((pet.xp || 0) / (pet.maxXp || 100)) * 100));
-                    return (
-                        <div key={pet.id} className="flex flex-col items-center gap-0.5 select-none">
-                            <div
-                                className="text-xl animate-bounce drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-                                style={{ animationDelay: `${idx * 0.15}s`, animationDuration: '2s' }}
-                                title={`${pet.name} Lvl ${pet.level}`}
-                            >
-                                {pet.emoji}
-                            </div>
-                            <div className="bg-stone-900/90 border border-stone-850 px-1 py-0.5 rounded shadow flex flex-col items-center w-9">
-                                <span className="text-[7px] text-cyan-400 font-bold tracking-tighter leading-none">L{pet.level}</span>
-                                <div className="w-full h-0.5 bg-stone-950 rounded-full overflow-hidden mt-0.5" title={`${pet.xp}/${pet.maxXp} XP`}>
-                                    <div className="bg-cyan-500 h-full transition-all duration-300" style={{ width: `${xpPercent}%` }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-                {pets && pets.length > 5 && (
-                    <span className="text-[8px] font-black text-amber-400 bg-black/60 border border-amber-900/40 px-1 py-0.5 rounded shadow-sm self-end">
-                        +{pets.length - 5}
-                    </span>
-                )}
-            </div>
-
-            {/* Pet Rendering */}
-
-            {/* Particles */}
+            {/* Particles (absolute) */}
             {particles.map(p => (
                 <div
                     key={p.id}
@@ -187,51 +148,13 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                 </div>
             ))}
 
-            {/* Party DPS Meter & Synergies */}
-            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
-                <div className="bg-black bg-opacity-50 p-1 rounded text-xs font-mono text-yellow-300">
-                    DPS: {formatNumber(partyDps || 0)} | PODER: {formatNumber(partyPower || 0)}
-                </div>
+            {/* ================= IN-FLOW FLOW LAYOUT STACK ================= */}
 
-
-                {/* Active Synergies */}
-                <div className="flex gap-1 items-end">
-                    <button
-                        onClick={() => setShowSynergyTracker(!showSynergyTracker)}
-                        className={`p-1 rounded text-xs border ${showSynergyTracker ? 'bg-yellow-600 border-yellow-300 text-black font-bold' : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-white'}`}
-                        title="Alternar Informações Táticas"
-                    >
-                        INFO
-                    </button>
-                    {synergies?.some(s => ['burn', 'freeze', 'steam', 'overload'].includes(s.type)) && (
-                        <div className="animate-pulse text-xs font-bold text-orange-400 bg-black bg-opacity-50 px-1 rounded ml-1">
-                            REAÇÃO ATIVA
-                        </div>
-                    )}
-                </div>
-
-                {showSynergyTracker && (
-                    <SynergyTracker
-                        activeSynergies={synergies || []}
-                        suggestions={suggestions || []}
-                        onClose={() => setShowSynergyTracker(false)}
-                        className="bottom-12 right-0"
-                    />
-                )}
-            </div>
-            {/* Artifacts */}
-            <div className="absolute top-2 left-2 flex gap-1 z-20 flex-wrap max-w-[200px]">
-                {artifacts.map(a => (
-                    <div key={a.id} className="w-5 h-5 bg-yellow-900 border border-yellow-500 rounded flex items-center justify-center text-[10px] cursor-help" title={a.name}>{a.emoji}</div>
-                ))}
-            </div>
-
-            <div className="absolute inset-0 opacity-10 pointer-events-none flex justify-center items-center"><Sword className="w-64 h-64" /></div>
-
-            {/* Boss */}
-            <div className={`flex flex-col items-center justify-center mt-2 transition-all relative z-10 ${shake ? 'shake-anim' : ''} ${flash ? 'impact-flash' : ''} ${voidActive ? 'scale-110 drop-shadow-[0_0_30px_rgba(255,0,255,0.4)]' : ''}`}>
-                {isTower && <div className="text-cyan-400 font-black text-xl mb-1 animate-pulse drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">ANDAR {tower.floor}</div>}
+            {/* 1. Boss Section */}
+            <div className={`w-full flex flex-col items-center mt-2 transition-all relative z-10 ${shake ? 'shake-anim' : ''} ${flash ? 'impact-flash' : ''} ${voidActive ? 'scale-110 drop-shadow-[0_0_30px_rgba(255,0,255,0.4)]' : ''}`}>
+                {isTower && <div className="text-cyan-400 font-black text-xl mb-1 animate-pulse drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] font-retro">ANDAR {tower.floor}</div>}
                 {dungeonActive && <div className="text-yellow-400 font-bold animate-pulse mb-2">COFRE DE OURO: {Math.floor(dungeonTimer)}s</div>}
+                
                 <div className="flex items-center gap-2">
                     <div 
                         className={`text-6xl md:text-8xl filter drop-shadow-2xl transition-transform cursor-pointer hover:scale-110 active:scale-90 select-none ${boss.stats.hp < boss.stats.maxHp * 0.9 ? 'animate-pulse' : ''} ${boss.isDead ? 'scale-0' : ''} ${isTower ? 'sepia-[0.5] brightness-125' : ''} ${voidActive ? 'animate-bounce drop-shadow-[0_0_20px_purple] scale-125' : ''}`}
@@ -240,7 +163,8 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                         {boss.emoji}
                     </div>
                     <div className="text-white opacity-50" title={`Elemento: ${boss.element}`}>{getElementIcon(boss.element)}</div>
-                    {/* Status Icons based on recent events or state */}
+                    
+                    {/* Status Icons */}
                     <div className="flex gap-1">
                         {combatEvents?.some(e => e.type === 'reaction' && e.text.includes('BURN') && (Date.now() - parseInt(e.id.split('-')[1] || '0')) < 3000) && (
                             <span title="Queimando"><Flame size={16} className="text-orange-500 animate-pulse" /></span>
@@ -251,19 +175,20 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                     </div>
                 </div>
 
-                <div className="w-48 h-4 bg-gray-700 mt-2 bar-container relative rounded">
-                    <div className="h-full bg-red-600 transition-all duration-300" style={{ width: `${(boss.stats.hp / boss.stats.maxHp) * 100}%` }} />
-                    <div className="absolute inset-0 flex items-center justify-center text-[8px] text-white z-10">{boss.stats.hp}/{boss.stats.maxHp}</div>
+                {/* Boss Health Bar */}
+                <div className="w-64 h-4 bg-gray-900 border border-gray-700 mt-2 bar-container relative rounded-full overflow-hidden shadow-lg">
+                    <div className="h-full bg-gradient-to-r from-red-700 to-red-500 transition-all duration-300" style={{ width: `${(boss.stats.hp / boss.stats.maxHp) * 100}%` }} />
+                    <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] font-mono">{boss.stats.hp.toLocaleString()}/{boss.stats.maxHp.toLocaleString()}</div>
                 </div>
 
-                {/* Boss Timer — countdown bar + label */}
+                {/* Boss Timer */}
                 {!tower?.active && (
-                    <div className="w-48 mt-1">
+                    <div className="w-64 mt-1.5">
                         <div
-                            className={`w-full h-2 rounded-full overflow-hidden ${
-                                bossTimer <= 10 ? 'bg-red-900 shadow-[0_0_6px_rgba(239,68,68,0.8)]'
-                                : bossTimer <= 20 ? 'bg-orange-900'
-                                : 'bg-gray-700'
+                            className={`w-full h-1.5 rounded-full overflow-hidden ${
+                                bossTimer <= 10 ? 'bg-red-950 shadow-[0_0_6px_rgba(239,68,68,0.8)]'
+                                : bossTimer <= 20 ? 'bg-orange-950'
+                                : 'bg-gray-800'
                             }`}
                         >
                             <div
@@ -275,7 +200,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                                 style={{ width: `${(bossTimer / 60) * 100}%` }}
                             />
                         </div>
-                        <div className={`flex justify-between items-center mt-0.5 ${
+                        <div className={`flex justify-between items-center mt-1 ${
                             bossTimer <= 10 ? 'text-red-400 font-bold' :
                             bossTimer <= 20 ? 'text-orange-400' :
                             'text-gray-400'
@@ -286,16 +211,100 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
                     </div>
                 )}
 
-                <div className="w-48 h-1 bg-gray-800 mt-1 relative rounded overflow-hidden">
-                    <div className={`h-full transition-all duration-100 ${ultimateCharge >= 100 ? 'bg-cyan-400 animate-pulse' : 'bg-cyan-800'}`} style={{ width: `${ultimateCharge}%` }}></div>
-                </div>
-
-                <div className="mt-2 text-xs font-mono text-gray-400 flex flex-col items-center">
-                    <span className="text-red-400 font-bold">{partyDps.toLocaleString()} DPS</span>
+                {/* Ultimate Charge Bar */}
+                <div className="w-64 h-1.5 bg-gray-900 border border-gray-800 mt-1.5 relative rounded-full overflow-hidden shadow-inner">
+                    <div className={`h-full transition-all duration-100 ${ultimateCharge >= 100 ? 'bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.8)]' : 'bg-cyan-600'}`} style={{ width: `${ultimateCharge}%` }}></div>
                 </div>
             </div>
 
+            {/* 2. Active Combat Heroes Section */}
+            <div className="w-full max-w-xl bg-slate-950/60 border border-slate-800/40 backdrop-blur-md px-4 py-2.5 rounded-2xl flex flex-col items-center gap-1.5 z-10 shadow-xl my-2">
+                <span className="text-[9px] text-amber-500/80 font-black uppercase tracking-widest font-mono">Heróis em Combate ({activeCombatHeroes.length})</span>
+                <div className="flex flex-wrap justify-center gap-3">
+                    {activeCombatHeroes.map(h => {
+                        const xpPercent = Math.min(100, Math.floor(((h.xp || 0) / (h.maxXp || 100)) * 100));
+                        return (
+                            <div key={h.id} className="flex flex-col items-center gap-1 select-none transition-transform hover:scale-105">
+                                <div className="text-2xl transition-all duration-500 animate-pulse drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" title={`${h.name} Lvl ${h.level}`}>
+                                    {h.emoji}
+                                </div>
+                                <div className="bg-stone-900/95 border border-amber-950/40 px-1 py-0.5 rounded shadow-sm flex flex-col items-center w-10">
+                                    <span className="text-[7px] text-amber-450 font-extrabold tracking-tighter leading-none">L{h.level}</span>
+                                    <div className="w-full h-0.5 bg-stone-950 rounded-full overflow-hidden mt-0.5" title={`${h.xp}/${h.maxXp} XP`}>
+                                        <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${xpPercent}%` }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
 
+            {/* 3. Companion Pets Section */}
+            {pets && pets.length > 0 && (
+                <div className="w-full max-w-lg bg-slate-950/45 border border-slate-900/30 backdrop-blur-sm px-4 py-2 rounded-xl flex flex-col items-center gap-1 z-10 shadow-lg my-1">
+                    <span className="text-[8px] text-cyan-400/80 font-bold uppercase tracking-widest font-mono">Mascotes Ativos ({pets.length})</span>
+                    <div className="flex flex-wrap justify-center gap-3">
+                        {[...pets].sort((a, b) => b.level - a.level).slice(0, 5).map((pet, idx) => {
+                            const xpPercent = Math.min(100, Math.floor(((pet.xp || 0) / (pet.maxXp || 100)) * 100));
+                            return (
+                                <div key={pet.id} className="flex flex-col items-center gap-0.5 select-none transition-transform hover:scale-105">
+                                    <div
+                                        className="text-lg animate-bounce drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]"
+                                        style={{ animationDelay: `${idx * 0.15}s`, animationDuration: '2s' }}
+                                        title={`${pet.name} Lvl ${pet.level}`}
+                                    >
+                                        {pet.emoji}
+                                    </div>
+                                    <div className="bg-stone-900/95 border border-stone-850 px-1 py-0.5 rounded shadow-sm flex flex-col items-center w-8">
+                                        <span className="text-[6px] text-cyan-400 font-bold tracking-tighter leading-none">L{pet.level}</span>
+                                        <div className="w-full h-0.5 bg-stone-950 rounded-full overflow-hidden mt-0.5" title={`${pet.xp}/${pet.maxXp} XP`}>
+                                            <div className="bg-cyan-500 h-full transition-all duration-300" style={{ width: `${xpPercent}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {pets.length > 5 && (
+                            <span className="text-[8px] font-black text-amber-400 bg-black/60 border border-amber-900/40 px-1 py-0.5 rounded shadow-sm self-end">
+                                +{pets.length - 5}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* 4. Party DPS Meter & Tactical Info Footer */}
+            <div className="w-full flex justify-between items-end mt-2 z-10">
+                <div className="bg-black/60 border border-yellow-900/20 px-2 py-1 rounded text-xs font-mono text-yellow-300 shadow">
+                    DPS: {formatNumber(partyDps || 0)} | PODER: {formatNumber(partyPower || 0)}
+                </div>
+
+                <div className="flex gap-1 items-end">
+                    <button
+                        onClick={() => setShowSynergyTracker(!showSynergyTracker)}
+                        className={`px-2 py-1 rounded text-xs border ${showSynergyTracker ? 'bg-yellow-600 border-yellow-300 text-black font-bold' : 'bg-gray-800 border-gray-600 text-gray-400 hover:text-white'}`}
+                        title="Alternar Informações Táticas"
+                    >
+                        INFO
+                    </button>
+                    {synergies?.some(s => ['burn', 'freeze', 'steam', 'overload'].includes(s.type)) && (
+                        <div className="animate-pulse text-xs font-bold text-orange-400 bg-black/60 border border-orange-900/20 px-2 py-1 rounded shadow ml-1">
+                            REAÇÃO ATIVA
+                        </div>
+                    )}
+                </div>
+
+                {showSynergyTracker && (
+                    <SynergyTracker
+                        activeSynergies={synergies || []}
+                        globalSynergies={globalSynergies || []}
+                        suggestions={suggestions || []}
+                        onClose={() => setShowSynergyTracker(false)}
+                        className="bottom-12 right-0"
+                    />
+                )}
+            </div>
         </div>
     );
 };

@@ -126,7 +126,8 @@ export const processCombatTurn = (
     divinity: number = 0,
     bonds?: Record<string, { xp: number; level: number; type: string }>,
     monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number },
-    equippedRelics: string[] = []
+    equippedRelics: string[] = [],
+    activeGlobalSynergyIds: string[] = []
 ) => {
     let totalDmg = 0;
     let crits = 0;
@@ -151,7 +152,11 @@ export const processCombatTurn = (
     // Burn Damage (DoT)
     if (burnEffect && !boss.isDead) {
         // Capped to prevent exponential scaling cheese on astronomical tower bosses.
-        const burnDmg = Math.floor(boss.stats.maxHp * burnEffect.value * (tickDuration / 1000));
+        let burnVal = burnEffect.value;
+        if (activeGlobalSynergyIds.includes('global_synergy_ignition')) {
+            burnVal *= 2.0; // 100% burn damage boost
+        }
+        const burnDmg = Math.floor(boss.stats.maxHp * burnVal * (tickDuration / 1000));
         const totalAtk = heroes.reduce((sum, h) => sum + (h.stats?.attack || 0), 0);
         const cappedBurn = Math.min(burnDmg, totalAtk * 10);
         const actualBurn = Math.max(1, cappedBurn);

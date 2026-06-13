@@ -93,6 +93,7 @@ function App() {
     spaceship, upgradeSpaceship, // Phase 59
     dungeonState, moveDungeon, exitDungeon, handleDungeonEvent, descendDungeon, // Phase 61 & 83
     synergies, // Fixed: Destructured from useGame
+    globalSynergies,
     voidAscensions,
     formations, saveFormation, loadFormation, deleteFormation, // Update 74
     activeEvent,
@@ -187,13 +188,58 @@ function App() {
   useEffect(() => {
     const interval = setInterval(() => {
       const firePet = (pets || []).find(p => p.assignment === 'industry' && p.element === 'fire');
-      const industrySpeedMult = 1.0 + (firePet ? firePet.level * 0.02 : 0);
+      let industrySpeedMult = 1.0 + (firePet ? firePet.level * 0.02 : 0);
+      
+      const isAssemblyActive = (globalSynergies || []).some(s => s.id === 'global_synergy_assembly');
+      if (isAssemblyActive) {
+        industrySpeedMult *= 1.30; // +30% speed boost from Linha de Montagem Mecânica
+      }
+
       const relicGearCount = town?.relics?.find(r => r.id === 'relic_gear')?.count || 0;
       const costReduction = relicGearCount * 0.10;
       industry.processTick(1 * industrySpeedMult, costReduction);
+
+      // Auto-collect resources from Industry to main player balances/resources
+      if (isAssemblyActive) {
+        let collectedSomething = false;
+        let goldToCollect = 0;
+        let copperToCollect = 0;
+        let ironToCollect = 0;
+
+        if (industry.inventory['gold'] >= 1) {
+          goldToCollect = Math.floor(industry.inventory['gold']);
+          setGold(g => g + goldToCollect);
+          collectedSomething = true;
+        }
+
+        if (industry.inventory['copper_ore'] >= 1) {
+          copperToCollect = Math.floor(industry.inventory['copper_ore']);
+          setResources(r => ({ ...r, copper: r.copper + copperToCollect }));
+          collectedSomething = true;
+        }
+
+        if (industry.inventory['iron_ore'] >= 1) {
+          ironToCollect = Math.floor(industry.inventory['iron_ore']);
+          setResources(r => ({ ...r, iron: r.iron + ironToCollect }));
+          collectedSomething = true;
+        }
+
+        if (collectedSomething) {
+          industry.setIndustryState(prev => {
+            const newInv = { ...prev.inventory };
+            if (goldToCollect > 0) newInv['gold'] = (newInv['gold'] || 0) - goldToCollect;
+            if (copperToCollect > 0) newInv['copper_ore'] = (newInv['copper_ore'] || 0) - copperToCollect;
+            if (ironToCollect > 0) newInv['iron_ore'] = (newInv['iron_ore'] || 0) - ironToCollect;
+            return {
+              ...prev,
+              inventory: newInv
+            };
+          });
+        }
+      }
     }, 1000);
     return () => clearInterval(interval);
-  }, [pets, industry, town]);
+  }, [pets, industry, town, globalSynergies, setGold, setResources]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -324,11 +370,12 @@ function App() {
           setShowRelicChamber={setShowRelicChamber}
         />
 
-        <BattleArea
+         <BattleArea
           boss={tower.active ? towerBoss : boss} dungeonActive={dungeonActive} dungeonTimer={dungeonTimer}
           ultimateCharge={ultimateCharge} pets={pets} actions={actions} artifacts={artifacts} heroes={heroes} partyDps={partyDps} partyPower={partyPower}
           combatEvents={combatEvents}
           synergies={synergies}
+          globalSynergies={globalSynergies}
           bossTimer={bossTimer}
           tower={tower}
         />

@@ -255,7 +255,8 @@ export function simulateBackroomsTick(
     logs: string[],
     deltaSeconds: number,
     currentFloor: number,
-    bossHp: number | null
+    bossHp: number | null,
+    isExploradoresOcultosActive: boolean = false
 ): {
     updatedExplorers: BackroomsExplorer[];
     gainedResources: Partial<BackroomsResources>;
@@ -356,7 +357,10 @@ export function simulateBackroomsTick(
 
             // Acumular progresso de exploração (Scout ajuda)
             const speedMult = explorer.classType === 'scout' ? 1.4 : 1.0;
-            const progTick = (0.2 + (explorer.equipment.tracker * 0.1)) * speedMult * deltaSeconds;
+            let progTick = (0.2 + (explorer.equipment.tracker * 0.1)) * speedMult * deltaSeconds;
+            if (isExploradoresOcultosActive) {
+                progTick *= 1.1765; // 15% time reduction (equivalent to ~17.6% speedup)
+            }
             progressGained += progTick;
 
             // Ações de Exploração ou Combate com Chefe
@@ -386,6 +390,7 @@ export function simulateBackroomsTick(
                 const actionChance = 0.08 * deltaSeconds;
                 if (Math.random() < actionChance) {
                     const roll = Math.random();
+                    const dropMult = isExploradoresOcultosActive ? 1.15 : 1.0;
 
                     // 1. Encontro com Entidade Comum
                     if (roll < lvl.entityRate * (1 - trackerReduction)) {
@@ -397,20 +402,20 @@ export function simulateBackroomsTick(
                         explorer.sanity = Math.max(0, explorer.sanity - 10);
                         pushLog(`⚠️ ${explorer.emoji} ${explorer.name} encontrou uma Entidade no ${lvl.name} e perdeu ${finalDamage} HP!`);
 
-                        if (Math.random() < 0.35) {
+                        if (Math.random() < 0.35 * dropMult) {
                             gainedResources.anomalyParts += 1;
                             pushLog(`⚔️ ${explorer.emoji} ${explorer.name} derrotou a criatura e coletou 1 Peça de Anomalia!`);
                         }
                     }
                     // 2. Coletar Sucata
-                    else if (roll < lvl.entityRate * (1 - trackerReduction) + lvl.scrapRate * (1 + flashlightBonus)) {
+                    else if (roll < lvl.entityRate * (1 - trackerReduction) + lvl.scrapRate * (1 + flashlightBonus) * dropMult) {
                         const multiplier = explorer.classType === 'scout' ? 2.0 : 1.0;
-                        const scrapFound = Math.floor((1 + Math.random() * 4) * multiplier);
+                        const scrapFound = Math.floor((1 + Math.random() * 4) * multiplier * dropMult);
                         gainedResources.scrap += scrapFound;
                         pushLog(`🔧 ${explorer.emoji} ${explorer.name} coletou ${scrapFound} Sucatas.`);
                     }
                     // 3. Achar Água de Amêndoa
-                    else if (roll < lvl.entityRate * (1 - trackerReduction) + lvl.scrapRate * (1 + flashlightBonus) + lvl.itemRate) {
+                    else if (roll < lvl.entityRate * (1 - trackerReduction) + lvl.scrapRate * (1 + flashlightBonus) * dropMult + lvl.itemRate * dropMult) {
                         gainedResources.almondWater += 1;
                         pushLog(`🧴 ${explorer.emoji} ${explorer.name} encontrou Água de Amêndoa.`);
                     }

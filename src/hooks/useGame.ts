@@ -38,6 +38,8 @@ import { useRoguelike } from './useRoguelike';
 import { getPlanetaryRunRewards } from '../engine/roguelike';
 import { useBackrooms } from './useBackrooms';
 import { BACKROOMS_RESEARCHES } from '../engine/backrooms';
+import { getUnlocksState } from '../engine/features';
+import { checkGlobalSynergies } from '../engine/globalSynergies';
 
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS, INITIAL_PETS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -412,6 +414,37 @@ export const useGame = () => {
         ...h, stats: { ...h.stats, attack: Math.floor(h.stats.attack * guildAtkMult * prestigeAtkMult * (1 + galaxyBuffs.damageMult)), maxHp: Math.floor(h.stats.maxHp * guildHpMult * prestigeHpMult), hp: Math.floor(h.stats.hp * guildHpMult * prestigeHpMult) }
     }))), [activeHeroesWithBonusStats, guildAtkMult, guildHpMult, prestigeAtkMult, prestigeHpMult, galaxyBuffs.damageMult]);
 
+    const globalSynergies = useMemo(() => {
+        const unlocks = getUnlocksState({
+            bossLevel: boss.level,
+            highestFloor: world.tower.maxFloor || 1,
+            voidAscensions: voidAscensions,
+            buildings: buildings || [],
+            outerSpaceUnlocked: !!outerSpaceUnlocked,
+            riftsUnlocked: backrooms.backroomsUnlockedTechs.includes('rift_tech')
+        });
+
+        return checkGlobalSynergies({
+            activeSynergies,
+            unlockedFeatures: unlocks,
+            heroes,
+            backroomsExplorers: backrooms.backroomsExplorers,
+            buildings,
+            riftsActive: world.riftState.active
+        });
+    }, [
+        activeSynergies,
+        boss.level,
+        world.tower.maxFloor,
+        voidAscensions,
+        buildings,
+        outerSpaceUnlocked,
+        backrooms.backroomsUnlockedTechs,
+        backrooms.backroomsExplorers,
+        world.riftState.active,
+        heroes
+    ]);
+
     const getMonumentMultipliers = useCallback(() => {
         let gold = 1.0;
         let attack = 1.0;
@@ -570,6 +603,9 @@ export const useGame = () => {
         galaxyDamageMult: galaxyBuffs.damageMult,
         classMastery,
         artifactMultipliers,
+        globalSynergies: [] as any[],
+        galaxy: galaxyState.galaxy,
+        spaceship: galaxyState.spaceship,
         patronDeity, deityLevel, deityFavor, deityEnergy,
         divinity,
         resources, items, runes, elementalEssences, elementalResonance,
@@ -675,9 +711,12 @@ export const useGame = () => {
             gameStats,
             dungeonMastery,
             ownedRelics,
-            equippedRelics
+            equippedRelics,
+            globalSynergies,
+            galaxy: galaxyState.galaxy,
+            spaceship: galaxyState.spaceship
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship]);
 
     // Side Effects
     useEffect(() => {
@@ -1682,6 +1721,35 @@ export const useGame = () => {
             exitRift: (success: boolean) => {
                 world.exitRift(success);
                 if (success) {
+                    // Mapeamento Estelar (Roguelike Rifts ⇄ Galáxia)
+                    const activeGs = stateRef.current.globalSynergies || [];
+                    const isMappingActive = activeGs.some((s: any) => s.id === 'global_synergy_mapping');
+
+                    if (isMappingActive) {
+                        // Grant 30 spaceship fuel
+                        galaxyState.setSpaceship((prev: any) => ({
+                            ...prev,
+                            fuel: Math.min(prev.maxFuel, prev.fuel + 30)
+                        }));
+
+                        // Check unowned sectors
+                        const galaxySectors = stateRef.current.galaxy || [];
+                        const unownedSectors = galaxySectors.filter((s: any) => !s.isOwned);
+
+                        if (unownedSectors.length > 0) {
+                            const target = unownedSectors[Math.floor(Math.random() * unownedSectors.length)];
+                            galaxyState.setGalaxy((prev: any) =>
+                                prev.map((s: any) => (s.id === target.id ? { ...s, isOwned: true } : s))
+                            );
+                            addLog(`🌌 Mapeamento Estelar: Completar o Rift revelou e conquistou o setor oculto ${target.name} na Galáxia!`, 'success');
+                        } else {
+                            // Stellar bonus if all owned
+                            setSouls((s: number) => s + 500);
+                            setStarlight((sl: number) => sl + 5);
+                            addLog(`🌌 Mapeamento Estelar: Todos os setores da Galáxia já foram mapeados! Concedido bônus estelar de +500 Almas e +5 Luz Estelar.`, 'success');
+                        }
+                    }
+
                     if (Math.random() < 0.4) {
                         const combatants = stateRef.current.heroes.filter(h => h.assignment === 'combat');
                         if (combatants.length > 0) {
@@ -2226,7 +2294,7 @@ export const useGame = () => {
                 synergiesForCombat.push({ type: 'void_execute', value: voidExecuteCount } as any);
             }
 
-            res = processCombatTurn(activeHeroesWithBonusStats, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults, equippedRelics);
+            res = processCombatTurn(activeHeroesWithBonusStats, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults, equippedRelics, globalSynergies.map(s => s.id));
 
             damageAccumulator.current += res.totalDmg;
 
@@ -2802,7 +2870,7 @@ export const useGame = () => {
             }
 
             // Backrooms Simulation Tick
-            backrooms.processBackroomsTick(1);
+            backrooms.processBackroomsTick(1, globalSynergies.some(s => s.id === 'global_synergy_explorers'));
 
             // Tutorial progress check
             const tutorialIdx = stateRef.current.currentTutorialIndex;
@@ -3011,6 +3079,7 @@ export const useGame = () => {
             territories: galaxyState.territories,
             galaxy: galaxyState.galaxy,
             synergies: activeSynergies,
+            globalSynergies,
             buildings,
 
             voidGuardian,
@@ -3080,7 +3149,7 @@ export const useGame = () => {
             backroomsBossHp: backrooms.backroomsBossHp,
             currentTutorialIndex,
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies]);
 
     return result;
 };

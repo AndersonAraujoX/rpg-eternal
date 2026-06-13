@@ -180,7 +180,7 @@ export function useBackrooms() {
         }
     };
 
-    const processBackroomsTick = useCallback((deltaSeconds: number) => {
+    const processBackroomsTick = useCallback((deltaSeconds: number, isExploradoresOcultosActive: boolean = false) => {
         setBackroomsExplorers(prevExplorers => {
             const isTransitionFloor = [15, 30, 45, 60, 75, 90, 100].includes(backroomsFloor);
             
@@ -202,7 +202,8 @@ export function useBackrooms() {
                 [],
                 deltaSeconds,
                 backroomsFloor,
-                activeBossHp
+                activeBossHp,
+                isExploradoresOcultosActive
             );
 
             // Update boss HP if combat occurred
