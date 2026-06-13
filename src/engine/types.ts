@@ -642,6 +642,8 @@ export interface Pet extends Entity {
     xp: number;
     maxXp: number;
     isDead: boolean;
+    element?: ElementType;
+    assignment?: 'combat' | 'industry' | 'expedition';
     // Phase 4: Chimera
     chimera?: boolean;
     parents?: string[];
@@ -730,6 +732,7 @@ export interface GameActions {
     // Minigames/Features
     breedPets: (parent1: Pet, parent2: Pet) => void;
     feedPet: (foodType: 'gold' | 'souls', petId?: string) => void;
+    assignPet?: (petId: string, assignment: 'combat' | 'industry' | 'expedition') => void;
     winCardBattle: (opponentId: string, difficulty: number) => void;
     forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => void;
     craftStarForgedItem: (item: Item, goldCost: number, fragmentCost: number) => void;

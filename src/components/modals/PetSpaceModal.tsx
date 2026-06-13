@@ -11,6 +11,7 @@ interface PetSpaceModalProps {
     souls: number;
     onFeedGold: (petId: string) => void;
     onFeedSouls: (petId: string) => void;
+    onAssignPet: (petId: string, assignment: 'combat' | 'industry' | 'expedition') => void;
     onBreed: () => void;
 }
 
@@ -23,7 +24,7 @@ const RARITY_STYLE: Record<string, string> = {
 };
 
 export const PetSpaceModal: React.FC<PetSpaceModalProps> = ({
-    isOpen, onClose, pets, gold, souls, onFeedGold, onFeedSouls, onBreed
+    isOpen, onClose, pets, gold, souls, onFeedGold, onFeedSouls, onAssignPet, onBreed
 }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     if (!isOpen) return null;
@@ -68,7 +69,12 @@ export const PetSpaceModal: React.FC<PetSpaceModalProps> = ({
                             >
                                 <div className="text-xl text-center">{p.emoji || '🐾'}</div>
                                 <div className="text-xs font-bold text-white truncate">{p.name}</div>
-                                <div className="text-[10px] text-gray-400">Lv{p.level} · {p.rarity}</div>
+                                <div className="text-[10px] text-gray-400">Lv{p.level} · {p.rarity} {p.element ? `· ${p.element.toUpperCase()}` : ''}</div>
+                                {p.assignment && p.assignment !== 'combat' && (
+                                    <div className="text-[9px] text-orange-400 bg-black/45 px-1 py-0.5 rounded text-center mt-1 font-bold">
+                                        {p.assignment === 'industry' ? '🏭 Indústria' : '🗺️ Expedição'}
+                                    </div>
+                                )}
                             </button>
                         ))}
                     </div>
@@ -82,8 +88,13 @@ export const PetSpaceModal: React.FC<PetSpaceModalProps> = ({
                                     <span className="text-4xl">{pet.emoji || '🐾'}</span>
                                     <div className="flex-1">
                                         <div className="font-bold text-white text-base">{pet.name}</div>
-                                        <div className="text-xs text-gray-400">{pet.rarity} · Nível {pet.level}</div>
+                                        <div className="text-xs text-gray-400">{pet.rarity} · Nível {pet.level} {pet.element ? `· Elemento: ${pet.element.toUpperCase()}` : ''}</div>
                                         {pet.bonus && <div className="text-xs text-green-400 mt-0.5">{pet.bonus}</div>}
+                                        {pet.assignment && pet.assignment !== 'combat' && (
+                                            <div className="text-xs font-bold text-orange-400 mt-0.5">
+                                                Atribuição: {pet.assignment === 'industry' ? '🏭 Indústria' : '🗺️ Expedição'}
+                                            </div>
+                                        )}
                                         {/* XP bar */}
                                         <div className="mt-1.5 h-1.5 bg-gray-700 rounded-full overflow-hidden w-full">
                                             <div
@@ -125,6 +136,47 @@ export const PetSpaceModal: React.FC<PetSpaceModalProps> = ({
                                     >
                                         <Star className="w-3 h-3" /> 100 Almas (×3 XP)
                                     </button>
+                                </div>
+
+                                {/* Special Assignment */}
+                                <div className="mt-3 bg-black/40 p-2.5 rounded-lg border border-gray-800 space-y-2">
+                                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider font-mono">Designação Especial</div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            onClick={() => onAssignPet(pet.id, 'combat')}
+                                            className={`py-1 rounded text-xs font-bold border transition-all ${(!pet.assignment || pet.assignment === 'combat')
+                                                ? 'bg-red-950/40 border-red-500 text-red-300'
+                                                : 'bg-stone-900/60 border-stone-850 text-stone-400 hover:text-stone-300'
+                                            }`}
+                                        >
+                                            ⚔️ Combate
+                                        </button>
+                                        <button
+                                            onClick={() => onAssignPet(pet.id, 'industry')}
+                                            className={`py-1 rounded text-xs font-bold border transition-all ${pet.assignment === 'industry'
+                                                ? 'bg-orange-950/40 border-orange-500 text-orange-300'
+                                                : 'bg-stone-900/60 border-stone-850 text-stone-400 hover:text-stone-300'
+                                            }`}
+                                            title="Requer elemento FOGO para bônus de velocidade"
+                                        >
+                                            🏭 Indústria
+                                        </button>
+                                        <button
+                                            onClick={() => onAssignPet(pet.id, 'expedition')}
+                                            className={`py-1 rounded text-xs font-bold border transition-all ${pet.assignment === 'expedition'
+                                                ? 'bg-amber-950/40 border-amber-500 text-amber-300'
+                                                : 'bg-stone-900/60 border-stone-850 text-stone-400 hover:text-stone-300'
+                                            }`}
+                                            title="Raros/Chimeras reduzem tempo e aumentam Mithril"
+                                        >
+                                            🗺️ Expedição
+                                        </button>
+                                    </div>
+                                    {pet.assignment === 'industry' && pet.element !== 'fire' && (
+                                        <div className="text-[9px] text-orange-500 text-center font-bold">
+                                            ⚠️ Este pet não é do elemento Fogo! Não dará bônus de velocidade na Indústria.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (

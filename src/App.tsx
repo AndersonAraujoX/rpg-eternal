@@ -186,10 +186,12 @@ function App() {
   // Industry Tick Loop
   useEffect(() => {
     const interval = setInterval(() => {
-      industry.processTick(1);
+      const firePet = (pets || []).find(p => p.assignment === 'industry' && p.element === 'fire');
+      const industrySpeedMult = 1.0 + (firePet ? firePet.level * 0.02 : 0);
+      industry.processTick(1 * industrySpeedMult);
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [pets, industry]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -432,7 +434,7 @@ function App() {
 
       <AlchemyModal isOpen={showAlchemy} onClose={() => setShowAlchemy(false)} resources={resources} activePotions={activePotions || []} brewPotion={actions.brewPotion} />
 
-      <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} />
+      <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} assignedPet={pets.find(p => p.assignment === 'expedition')} />
 
       <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0)} />
 
@@ -485,7 +487,7 @@ function App() {
         return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} gvgWarState={gvgWarState} onStartGvG={() => startGvGWar(guild?.name || 'Sua Guilda')} onPlayerGvGAttack={playerGvGAttack} />;
       })()}
 
-      {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
+      {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onAssignPet={(id, assign) => actions.assignPet && actions.assignPet(id, assign)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
       <TownModal
         isOpen={showTown}
         onClose={() => setShowTown(false)}
@@ -520,7 +522,7 @@ function App() {
         bossLevel={boss.level}
         voidAscensions={voidAscensions}
       />
-      <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} />
+      <IndustryModal isOpen={showIndustry} onClose={() => setShowIndustry(false)} industryState={industry} gold={gold} buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} assignedPet={pets.find(p => p.assignment === 'industry')} />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
 

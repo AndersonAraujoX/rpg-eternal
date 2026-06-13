@@ -47,6 +47,8 @@ export const calculateBreedingResult = (parent1: Pet, parent2: Pet): Pet => {
     // Try to mix? No, random specific Chimera emoji or a "New" one.
     const emoji = possibleEmojis[Math.floor(Math.random() * possibleEmojis.length)];
 
+    const inheritedElement = Math.random() < 0.5 ? (parent1.element || 'neutral') : (parent2.element || 'neutral');
+
     return {
         id: newId,
         name: name,
@@ -60,6 +62,7 @@ export const calculateBreedingResult = (parent1: Pet, parent2: Pet): Pet => {
         xp: 0,
         maxXp: 100 * generation, // Harder to level up higher gens
         isDead: false,
+        element: inheritedElement,
         chimera: true,
         parents: [parent1.name, parent2.name],
         fusionCount: generation

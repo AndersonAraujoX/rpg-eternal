@@ -74,8 +74,8 @@ export const INITIAL_PET_DATA: Pet = {
 };
 
 export const INITIAL_PETS: Pet[] = [
-    { id: 'pet-eye', name: 'Olho Flutuante', type: 'pet', bonus: '+Dano Crítico', emoji: '👁️', isDead: false, level: 1, xp: 0, maxXp: 100, rarity: 'common', stats: { attack: 2, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 } },
-    { id: 'pet-slime', name: 'Slime Dourado', type: 'pet', bonus: '+Ouro', emoji: '🦠', isDead: false, level: 1, xp: 0, maxXp: 100, rarity: 'rare', stats: { attack: 1, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 } }
+    { id: 'pet-eye', name: 'Olho Flutuante', type: 'pet', bonus: '+Dano Crítico', emoji: '👁️', isDead: false, level: 1, xp: 0, maxXp: 100, rarity: 'common', stats: { attack: 2, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 }, element: 'dark' },
+    { id: 'pet-slime', name: 'Slime Dourado', type: 'pet', bonus: '+Ouro', emoji: '🦠', isDead: false, level: 1, xp: 0, maxXp: 100, rarity: 'rare', stats: { attack: 1, hp: 1, maxHp: 1, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 10 }, element: 'light' }
 ];
 
 export const INITIAL_TALENTS: Talent[] = [

@@ -20,7 +20,7 @@ import { simulateTavernSummon } from '../engine/tavern';
 import { processMining } from '../engine/mining';
 import { processFishingAdvanced } from '../engine/fishing';
 import { brewPotion, transmuteResources, ELIXIRS } from '../engine/alchemy';
-import { startExpedition } from '../engine/expeditions';
+import { startExpedition, claimExpeditionRewards } from '../engine/expeditions';
 import { mysticReforge } from '../engine/starForge';
 import { processGlobalAutomation } from '../engine/automation';
 import { initOrUpdateHeroPassiveTree } from '../data/skillTreeData';
@@ -39,7 +39,7 @@ import { getPlanetaryRunRewards } from '../engine/roguelike';
 import { useBackrooms } from './useBackrooms';
 import { BACKROOMS_RESEARCHES } from '../engine/backrooms';
 
-import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS } from '../engine/initialData';
+import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS, INITIAL_PETS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GALAXY } from '../engine/galaxy';
 import { calculateWinChance } from '../engine/arena';
@@ -223,7 +223,7 @@ export const useGame = () => {
 
     // SUB-HOOKS
     const guildState = useGuild(null, gold, setGold, addLog);
-    const petsState = usePets([], gold, souls, setGold, setSouls, addLog);
+    const petsState = usePets(INITIAL_PETS, gold, souls, setGold, setSouls, addLog);
     const world = useWorld({ floor: 1, active: false, maxFloor: 1 }, { active: false, floor: 1, blessings: [], tempHeroes: [], maxFloor: 1 }, addLog);
     const galaxyState = useGalaxy(INITIAL_GALAXY, INITIAL_TERRITORIES, INITIAL_SPACESHIP, gold, setGold, addLog);
     const roguelike = useRoguelike();
@@ -493,13 +493,15 @@ export const useGame = () => {
 
 
     const petStats = useMemo(() => {
-        return (petsState.pets || []).reduce((acc, p) => {
-            acc.attack = (acc.attack || 0) + (p.stats?.attack || 0);
-            acc.hp = (acc.hp || 0) + (p.stats?.maxHp || 0);
-            acc.defense = (acc.defense || 0) + (p.stats?.defense || 0);
-            acc.magic = (acc.magic || 0) + (p.stats?.magic || 0);
-            return acc;
-        }, { attack: 0, hp: 0, defense: 0, magic: 0 } as Record<string, number>);
+        return (petsState.pets || [])
+            .filter(p => !p.assignment || p.assignment === 'combat')
+            .reduce((acc, p) => {
+                acc.attack = (acc.attack || 0) + (p.stats?.attack || 0);
+                acc.hp = (acc.hp || 0) + (p.stats?.maxHp || 0);
+                acc.defense = (acc.defense || 0) + (p.stats?.defense || 0);
+                acc.magic = (acc.magic || 0) + (p.stats?.magic || 0);
+                return acc;
+            }, { attack: 0, hp: 0, defense: 0, magic: 0 } as Record<string, number>);
     }, [petsState.pets]);
 
     const territoryAtkMult = useMemo(() => {
@@ -1237,6 +1239,18 @@ export const useGame = () => {
 
                 addLog(`Fed ${targetPet.name} with ${type}!`, 'action');
             },
+            assignPet: (petId: string, assignment: 'combat' | 'industry' | 'expedition') => {
+                petsState.setPets(prev => prev.map(p => {
+                    if (p.id === petId) {
+                        return { ...p, assignment };
+                    }
+                    if (assignment !== 'combat' && p.assignment === assignment) {
+                        return { ...p, assignment: 'combat' };
+                    }
+                    return p;
+                }));
+                addLog(`Mascote designado para ${assignment === 'industry' ? 'Indústria' : assignment === 'expedition' ? 'Expedição' : 'Combate'}!`, 'action');
+            },
             winCardBattle: (_o: string, d: number) => setGold(g => g + d * 10),
             forgeUpgrade: (m: 'copper' | 'iron' | 'mithril') => {
                 const costMap = { copper: 100, iron: 50, mithril: 10 };
@@ -1611,7 +1625,21 @@ export const useGame = () => {
                     setActivePotions(p => [...p, { id: pot.id, name: pot.name, effect: pot.effect, value: pot.value, endTime: Date.now() + pot.duration * 1000 }]);
                 }
             },
-            startExpedition: (e: Expedition) => { setHeroes(startExpedition(e, stateRef.current.heroes)); setActiveExpeditions(p => [...p, e]); },
+            startExpedition: (e: Expedition, heroIds?: string[]) => {
+                const team = heroIds || e.heroIds || [];
+                const petForExp = (stateRef.current.pets || []).find(p => p.assignment === 'expedition');
+                let durationMult = 1.0;
+                if (petForExp) {
+                    if (petForExp.rarity === 'chimera' || petForExp.chimera) durationMult -= 0.30;
+                    else if (petForExp.rarity === 'legendary') durationMult -= 0.15;
+                }
+                const duration = Math.max(10, Math.floor(e.duration * durationMult));
+                const expWithTeam = { ...e, heroIds: team, duration, startTime: Date.now() };
+
+                setHeroes(startExpedition(expWithTeam, stateRef.current.heroes));
+                setActiveExpeditions(p => [...p, expWithTeam]);
+                addLog(`Expedição ${e.name} iniciada! Tempo de duração: ${duration}s.`, 'success');
+            },
             startGuildExpedition: (e: Expedition) => {
                 if (validateGuildExpeditionTeam(e.heroIds, stateRef.current.heroes)) {
                     setHeroes(startExpedition(e, stateRef.current.heroes));
@@ -1992,7 +2020,9 @@ export const useGame = () => {
     useEffect(() => {
         const runTick = () => {
             const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers, tower, towerBoss } = stateRef.current;
-            if (activeHeroes.length === 0 && !tower.active) return;
+            const hasCombat = activeHeroes.length > 0 || tower.active;
+            let res: { totalDmg: number; events: any[]; updatedHeroes: any[] } = { totalDmg: 0, events: [], updatedHeroes: [] };
+            let bossDefeated = false;
 
             const monumentMults = getMonumentMultipliers();
 
@@ -2016,6 +2046,17 @@ export const useGame = () => {
                 };
             }
 
+            const currentBoss = { ...targetBoss };
+            const townHallLevel = buildings.find(b => b.id === 'town_hall')?.level || 0;
+            const townHallGoldMult = 1 + (townHallLevel * 0.05); // 5% per level
+            const steamEngineMult = backrooms.backroomsUnlockedTechs.includes('steam_engine') ? 1.15 : 1.0;
+            const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
+            const resonanceGoldMult = 1 + (elementalResonance.neutral || 0) * 0.015;
+            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * monumentMults.gold * steamEngineMult * cleanFusionMult * resonanceGoldMult;
+            const resonanceXpMult = 1 + (elementalResonance.neutral || 0) * 0.015;
+            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0)) * cleanFusionMult * resonanceXpMult;
+            const moraleXpMult = 0.5 + (teamMorale / 100) * 0.7;
+
             const windmillsMult = backrooms.backroomsUnlockedTechs.includes('windmills') ? 1.05 : 1.0;
             const effectiveGameSpeed = gameSpeed * (equippedRelics.includes('relic_hourglass') ? 1.10 : 1.0);
             const attackSpeedBonusSum = (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0) + (elementalResonance.nature || 0) * 0.02;
@@ -2030,6 +2071,7 @@ export const useGame = () => {
                 setTeamMorale(prev => Math.min(100, prev + moraleRecovery));
             }
 
+            if (hasCombat) {
             // Accumulate bond XP for combat partners
             const livingCombatants = stateRef.current.heroes.filter(h => h.assignment === 'combat');
             if (livingCombatants.length >= 2) {
@@ -2164,7 +2206,7 @@ export const useGame = () => {
                 synergiesForCombat.push({ type: 'void_execute', value: voidExecuteCount } as any);
             }
 
-            const res = processCombatTurn(activeHeroesWithBonusStats, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults, equippedRelics);
+            res = processCombatTurn(activeHeroesWithBonusStats, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults, equippedRelics);
 
             damageAccumulator.current += res.totalDmg;
 
@@ -2209,27 +2251,13 @@ export const useGame = () => {
                 setCombatEvents(prev => [...prev, ...res.events].slice(-5));
             }
 
-            const petDpsBonus = (pets || []).reduce((sum, pet) => sum + (pet.level * 5), 0);
+            const petDpsBonus = (pets || []).filter(p => !p.assignment || p.assignment === 'combat').reduce((sum, pet) => sum + (pet.level * 5), 0);
             if (petDpsBonus > 0) damageAccumulator.current += petDpsBonus * (tick / 1000);
 
             if (ultimateCharge >= 100) setUltimateCharge(0);
             else setUltimateCharge(p => Math.min(100, p + 5));
 
-            let bossDefeated = false;
-            const currentBoss = { ...targetBoss };
-
-            // Apply Galaxy Gold/XP Buffs to the gains
-            const townHallLevel = buildings.find(b => b.id === 'town_hall')?.level || 0;
-            const townHallGoldMult = 1 + (townHallLevel * 0.05); // 5% per level
-
-            const steamEngineMult = backrooms.backroomsUnlockedTechs.includes('steam_engine') ? 1.15 : 1.0;
-            const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
-            const resonanceGoldMult = 1 + (elementalResonance.neutral || 0) * 0.015;
-            const finalGoldMult = guildGoldMult * prestigeGoldMult * (1 + (galaxyState.galaxyBuffs.goldMult || 0)) * townHallGoldMult * monumentMults.gold * steamEngineMult * cleanFusionMult * resonanceGoldMult;
-            const resonanceXpMult = 1 + (elementalResonance.neutral || 0) * 0.015;
-            const finalXpMult = guildXpMult * prestigeXpMult * (1 + (galaxyState.galaxyBuffs.xpMult || 0)) * cleanFusionMult * resonanceXpMult;
-
-            const moraleXpMult = 0.5 + (teamMorale / 100) * 0.7;
+            bossDefeated = false;
 
             if (res.totalDmg >= currentBoss.stats.hp) {
                 bossDefeated = true;
@@ -2335,6 +2363,7 @@ export const useGame = () => {
                     }
                     return newItems;
                 });
+            }
             }
 
             setHeroes(prev => {
@@ -2621,6 +2650,108 @@ export const useGame = () => {
                 }
             }
 
+            // Regular/Guild Expedition completion check
+            const ongoingExpeditions = stateRef.current.activeExpeditions || [];
+            if (ongoingExpeditions.length > 0) {
+                const nowTimestamp = Date.now();
+                const completedExpeditions: Expedition[] = [];
+                const activeStill: Expedition[] = [];
+
+                ongoingExpeditions.forEach(exp => {
+                    const elapsed = nowTimestamp - (exp.startTime || 0);
+                    if (elapsed >= exp.duration * 1000) {
+                        completedExpeditions.push(exp);
+                    } else {
+                        activeStill.push(exp);
+                    }
+                });
+
+                if (completedExpeditions.length > 0) {
+                    let heroesToFree: string[] = [];
+                    completedExpeditions.forEach(exp => {
+                        heroesToFree = [...heroesToFree, ...(exp.heroIds || [])];
+
+                        // Roll rewards
+                        const rewards = claimExpeditionRewards(exp);
+
+                        // Mascot bonus:
+                        const petForExp = (stateRef.current.pets || []).find(p => p.assignment === 'expedition');
+                        if (petForExp && (petForExp.rarity === 'chimera' || petForExp.chimera || petForExp.rarity === 'legendary')) {
+                            // Boost reward chance: 40% chance to double the rewards or add extra Mithril / rare item!
+                            if (Math.random() < 0.4) {
+                                rewards.push({ type: 'mithril', amount: Math.floor(Math.random() * 2) + 2 });
+                                addLog(`🎁 Bônus de Mascote de Expedição: ${petForExp.name} encontrou Mithril extra!`, 'achievement');
+                            }
+                            // Bonus item chance: 30% chance for a rare item if pet is Chimera
+                            if ((petForExp.rarity === 'chimera' || petForExp.chimera) && Math.random() < 0.3) {
+                                const bonusItem = generateLoot(exp.difficulty * 2);
+                                setItems(prev => [...prev, bonusItem]);
+                                addLog(`🎁 Bônus de Mascote Chimera: ${petForExp.name} desenterrou um item raro: ${bonusItem.name}!`, 'achievement');
+                            }
+                        }
+
+                        // Apply rewards
+                        let goldEarned = 0;
+                        let xpEarned = 0;
+                        let starFragmentsEarned = 0;
+
+                        rewards.forEach(r => {
+                            if (r.type === 'gold') {
+                                goldEarned += r.amount;
+                            } else if (r.type === 'xp') {
+                                xpEarned += r.amount;
+                            } else if (r.type === 'starFragments' || r.type === 'starfragments') {
+                                starFragmentsEarned += r.amount;
+                            } else if (r.type === 'mithril') {
+                                setResources(res => ({ ...res, mithril: (res.mithril || 0) + r.amount }));
+                            } else if (r.type === 'item') {
+                                for (let k = 0; k < r.amount; k++) {
+                                    setItems(prev => [...prev, generateLoot(exp.difficulty)]);
+                                }
+                            }
+                        });
+
+                        if (goldEarned > 0) setGold(g => g + goldEarned);
+                        if (starFragmentsEarned > 0) setResources(res => ({ ...res, starFragments: (res.starFragments || 0) + starFragmentsEarned }));
+
+                        // Give XP to heroes on this expedition
+                        if (xpEarned > 0 && exp.heroIds && exp.heroIds.length > 0) {
+                            setHeroes(prevHeroes => prevHeroes.map(h => {
+                                if (exp.heroIds.includes(h.id)) {
+                                    let newXp = (h.xp || 0) + xpEarned;
+                                    let newLevel = h.level || 1;
+                                    let newMaxXp = h.maxXp || 100;
+                                    let currentStatPoints = h.statPoints || 0;
+
+                                    while (newXp >= newMaxXp) {
+                                        newLevel++;
+                                        newXp -= newMaxXp;
+                                        newMaxXp = Math.floor(newMaxXp * 1.5);
+                                        currentStatPoints += 5;
+                                    }
+                                    return { ...h, xp: newXp, level: newLevel, maxXp: newMaxXp, statPoints: currentStatPoints };
+                                }
+                                return h;
+                            }));
+                        }
+
+                        addLog(`Expedição ${exp.name} concluída! Recompensas recebidas.`, 'success');
+                    });
+
+                    // Free heroes
+                    if (heroesToFree.length > 0) {
+                        setHeroes(prev => prev.map(h => {
+                            if (heroesToFree.includes(h.id) && h.assignment === 'expedition') {
+                                return { ...h, assignment: 'none' };
+                            }
+                            return h;
+                        }));
+                    }
+
+                    setActiveExpeditions(activeStill);
+                }
+            }
+
             // Fake Players (Bots) Simulation Tick
             const botsResult = tickFakePlayers(stateRef.current.fakePlayers, calculatedPartyPower);
             if (botsResult.updatedBots) {
@@ -2810,7 +2941,7 @@ export const useGame = () => {
     }, [roguelike.roguelikeRun, roguelike.abandonRoguelikeRun, roguelike.setEmberFragments, galaxyState.rewardPlanetaryRun, galaxyState.galaxy, galaxyState.setGalaxy, galaxyState.spaceship, galaxyState.setSpaceship, addLog, setGold]);
 
     const result = useMemo(() => {
-        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave, setVoidMatter };
+        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave, setVoidMatter, setPets: petsState.setPets, setActiveExpeditions };
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,

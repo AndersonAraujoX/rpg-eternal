@@ -14,9 +14,10 @@ interface IndustryModalProps {
     };
     gold: number;
     buyMachine: (cost: number, execute: () => void) => void;
+    assignedPet?: any;
 }
 
-export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, industryState, gold, buyMachine }) => {
+export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, industryState, gold, buyMachine, assignedPet }) => {
     const [activeTab, setActiveTab] = useState<'machines' | 'inventory' | 'research' | 'power'>('machines');
 
     if (!isOpen) return null;
@@ -42,6 +43,19 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, i
                     </div>
 
                     <div className="flex gap-4">
+                        {assignedPet && (
+                            <div className="bg-black/50 px-3 py-1.5 rounded border border-orange-500/30 flex flex-col items-center min-w-[150px] justify-center">
+                                <span className="text-[9px] text-orange-400 font-bold uppercase tracking-wider font-mono">Pet Assistente</span>
+                                <span className="text-xs font-bold text-white flex items-center gap-1.5 mt-0.5">
+                                    {assignedPet.emoji} {assignedPet.name}
+                                </span>
+                                <span className="text-[9px] text-green-400 font-black mt-0.5">
+                                    {assignedPet.element === 'fire' 
+                                        ? `+${(assignedPet.level * 2)}% Velocidade` 
+                                        : 'Sem Bônus (Não é Fogo)'}
+                                </span>
+                            </div>
+                        )}
                         <div className="bg-black/50 p-2 rounded border border-stone-700 flex flex-col items-center min-w-[120px]">
                             <span className="text-xs text-stone-400">Energia Gerada</span>
                             <span className="text-green-400 font-bold">{metrics.powerGenerated.toFixed(0)} MW</span>

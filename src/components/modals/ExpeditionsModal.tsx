@@ -9,9 +9,10 @@ interface ExpeditionsModalProps {
     activeExpeditions: Expedition[];
     heroes: Hero[];
     startExpedition: (exp: Expedition, heroIds: string[]) => void;
+    assignedPet?: any;
 }
 
-export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onClose, activeExpeditions, heroes, startExpedition }) => {
+export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onClose, activeExpeditions, heroes, startExpedition, assignedPet }) => {
     const [now, setNow] = React.useState(0);
 
     React.useEffect(() => {
@@ -48,16 +49,33 @@ export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onCl
                     ✕
                 </button>
 
-                <div className="flex items-center gap-3 mb-6 border-b border-gray-800 pb-4">
-                    <div className="p-3 bg-amber-900/20 rounded-lg border border-amber-900/30">
-                        <Map className="w-6 h-6 text-amber-500" />
+                <div className="flex items-center justify-between gap-3 mb-6 border-b border-gray-800 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-amber-900/20 rounded-lg border border-amber-900/30">
+                            <Map className="w-6 h-6 text-amber-500" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-yellow-600">
+                                Expedições
+                            </h2>
+                            <p className="text-gray-400 text-sm">Envie heróis em missões perigosas por saques.</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-yellow-600">
-                            Expedições
-                        </h2>
-                        <p className="text-gray-400 text-sm">Envie heróis em missões perigosas por saques.</p>
-                    </div>
+                    {assignedPet && (
+                        <div className="bg-amber-900/10 px-3 py-1.5 rounded border border-amber-500/20 flex flex-col items-center min-w-[150px] justify-center mr-6">
+                            <span className="text-[9px] text-amber-400 font-bold uppercase tracking-wider font-mono">Pet Assistente</span>
+                            <span className="text-xs font-bold text-white flex items-center gap-1 mt-0.5">
+                                {assignedPet.emoji} {assignedPet.name}
+                            </span>
+                            <span className="text-[9px] text-green-400 font-black mt-0.5">
+                                {assignedPet.rarity === 'chimera' || assignedPet.chimera 
+                                    ? '-30% tempo & +Saques' 
+                                    : assignedPet.rarity === 'legendary' 
+                                        ? '-15% tempo & +Saques' 
+                                        : 'Sem Bônus (Comum/Raro/Épico)'}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-2">
