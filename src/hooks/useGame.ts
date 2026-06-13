@@ -436,7 +436,9 @@ export const useGame = () => {
         artifactMultipliers,
         patronDeity, deityLevel, deityFavor, deityEnergy,
         divinity,
-        resources, items, runes
+        resources, items, runes,
+        towerBoss: world.towerBoss,
+        tower: world.tower
     });
 
     useEffect(() => {
@@ -449,9 +451,11 @@ export const useGame = () => {
             artifactMultipliers,
             patronDeity, deityLevel, deityFavor, deityEnergy,
             divinity,
-            resources, items, runes
+            resources, items, runes,
+            towerBoss: world.towerBoss,
+            tower: world.tower
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.towerBoss, world.tower]);
 
     // Side Effects
     useEffect(() => {
@@ -1531,11 +1535,11 @@ export const useGame = () => {
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
         const runTick = () => {
-            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers } = stateRef.current;
-            if (activeHeroes.length === 0 && !world.tower.active) return;
+            const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers, towerBoss, tower } = stateRef.current;
+            if (activeHeroes.length === 0 && !tower.active) return;
 
-            const isTower = world.tower.active;
-            let targetBoss = isTower ? world.towerBoss : boss;
+            const isTower = tower.active;
+            let targetBoss = isTower ? towerBoss : boss;
 
             // VOID BOSS EMOJI FIX
             if (voidActive && !isTower) {
@@ -1594,7 +1598,7 @@ export const useGame = () => {
 
             const moraleDamageMult = 0.5 + (teamMorale / 100) * 0.6;
             const totalDmgMult = calculateDamageMultiplier(souls, talents, constellations, artifacts, targetBoss, cards, achievements, pets, galaxyDamageMult) * artifactMultipliers.damage * moraleDamageMult * getMonumentMultipliers().attack;
-            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, world.tower.active ? ((world.towerBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
+            const res = processCombatTurn(activeHeroes, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, activeSynergies, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, tower.active ? ((towerBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, getMonumentMultipliers());
 
             damageAccumulator.current += res.totalDmg;
 
@@ -1683,7 +1687,7 @@ export const useGame = () => {
                 if (isTower) {
                     world.setTower(p => ({ ...p, floor: p.floor + 1, maxFloor: Math.max(p.maxFloor, p.floor + 1) }));
                     world.setTowerBoss({ ...nextBossData, id: `tower-${nextLevel}` });
-                    addLog(`Torre Andar ${world.tower.floor} Concluído! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
+                    addLog(`Torre Andar ${tower.floor} Concluído! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
                 } else {
                     setBoss(p => ({ ...p, ...nextBossData }));
                     addLog(`Boss ${currentBoss.name} Derrotado! Heróis ganharam ${xpGain} XP. Próximo: ${nextBossData.name}`, 'success');
