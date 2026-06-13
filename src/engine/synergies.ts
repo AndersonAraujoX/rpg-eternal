@@ -145,7 +145,7 @@ export const checkSynergies = (heroes: Hero[]): Synergy[] => {
 
         // 1. Exact Class Match (Legacy)
         if (def.classes) {
-            active = def.classes.every(c => activeClasses.has(c as any));
+            active = def.classes.every(c => activeClasses.has(c as HeroClass));
         }
         // 2. Class Set Count (New)
         else if (def.classSet && def.classSetCount) {

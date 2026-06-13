@@ -70,7 +70,7 @@ export const checkActiveCombos = (heroes: Hero[]): ComboDefinition[] => {
 
         if (def.elements) {
             for (const el of def.elements) {
-                if (!elements.has(el as any)) {
+                if (!elements.has(el as ElementType)) {
                     match = false;
                     break;
                 }
@@ -79,7 +79,7 @@ export const checkActiveCombos = (heroes: Hero[]): ComboDefinition[] => {
 
         if (match && def.classes) {
             for (const cls of def.classes) {
-                if (!classes.has(cls as any)) { // specific hero class type vs string
+                if (!classes.has(cls as HeroClass)) { // specific hero class type vs string
                     match = false;
                     break;
                 }
