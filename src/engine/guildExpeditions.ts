@@ -1,4 +1,4 @@
-import type { Expedition } from './types';
+import type { Expedition, Hero } from './types';
 
 export const GUILD_EXPEDITIONS: Expedition[] = [
     {
@@ -42,7 +42,7 @@ export const GUILD_EXPEDITIONS: Expedition[] = [
     }
 ];
 
-export const validateGuildExpeditionTeam = (heroIds: string[], allHeroes: any[]): boolean => {
+export const validateGuildExpeditionTeam = (heroIds: string[], allHeroes: Hero[]): boolean => {
     return heroIds.every(id => {
         const hero = allHeroes.find(h => h.id === id);
         return hero && hero.assignment === 'none' && hero.unlocked;

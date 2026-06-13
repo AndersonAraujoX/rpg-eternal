@@ -6,7 +6,7 @@ export const useWorldBoss = (
     partyPower: number,
     gameStats: GameStats,
     addLog: (msg: string, type?: LogEntry['type']) => void,
-    onWorldBossClaimed: (rewards: any) => void
+    onWorldBossClaimed: (rewards: Record<string, unknown>) => void
 ) => {
     const [worldBoss, setWorldBoss] = useState<WorldBoss | null>(null);
     const [personalDamage, setPersonalDamage] = useState(0);

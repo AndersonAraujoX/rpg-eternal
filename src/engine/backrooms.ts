@@ -149,6 +149,47 @@ export const BACKROOMS_LEVELS: BackroomsLevel[] = [
     }
 ];
 
+export const INITIAL_BACKROOMS_EXPLORERS: BackroomsExplorer[] = [
+    {
+        id: 'exp_init_1',
+        name: 'Robert "Scout" Chen',
+        classType: 'scout',
+        emoji: '🏃‍♂️',
+        hp: 100,
+        maxHp: 100,
+        sanity: 100,
+        maxSanity: 100,
+        status: 'idle',
+        assignedLevel: null,
+        equipment: { flashlight: 0, suit: 0, tracker: 0 }
+    },
+    {
+        id: 'exp_init_2',
+        name: 'Dr. Evelyn Carter',
+        classType: 'scientist',
+        emoji: '🥼',
+        hp: 100,
+        maxHp: 100,
+        sanity: 100,
+        maxSanity: 100,
+        status: 'idle',
+        assignedLevel: null,
+        equipment: { flashlight: 0, suit: 0, tracker: 0 }
+    }
+];
+
+export const INITIAL_BACKROOMS_OUTPOST: BackroomsOutpost = {
+    refinery: 1,
+    quarters: 1,
+    sensors: 1
+};
+
+export const INITIAL_BACKROOMS_RESOURCES: BackroomsResources = {
+    scrap: 10,
+    almondWater: 3,
+    anomalyParts: 0
+};
+
 export const EXPLORER_NAMES = [
     'John Doe', 'Alice Cooper', 'Bob Martin', 'Sarah Connor', 'Gordon Freeman', 
     'Clara Oswald', 'David Miller', 'Elena Rostova', 'Marcus Vance', 'Rachel Green'
