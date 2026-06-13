@@ -156,7 +156,11 @@ export const processCombatTurn = (
         if (activeGlobalSynergyIds.includes('global_synergy_ignition')) {
             burnVal *= 2.0; // 100% burn damage boost
         }
-        const burnDmg = Math.floor(boss.stats.maxHp * burnVal * (tickDuration / 1000));
+        let burnDmgMult = 1.0;
+        if (activeGlobalSynergyIds.includes('overcharged_ammo_buff')) {
+            burnDmgMult += 3.0; // +300% damage boost
+        }
+        const burnDmg = Math.floor(boss.stats.maxHp * burnVal * burnDmgMult * (tickDuration / 1000));
         const totalAtk = heroes.reduce((sum, h) => sum + (h.stats?.attack || 0), 0);
         const cappedBurn = Math.min(burnDmg, totalAtk * 10);
         const actualBurn = Math.max(1, cappedBurn);

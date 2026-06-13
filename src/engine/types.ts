@@ -450,7 +450,7 @@ export interface StarlightUpgrade {
     cost: number;
     description: string;
     maxLevel: number;
-    effectType: 'galaxy_difficulty' | 'crafting_cost' | 'auto_equip' | 'auto_sell';
+    effectType: 'galaxy_difficulty' | 'crafting_cost' | 'auto_equip' | 'auto_sell' | 'offline_cargo_capacity';
     effectValue: number; // e.g. 0.2 for 20%
     icon: string; // Emoji
 }
@@ -472,6 +472,11 @@ export type Resources = {
     herbs: number;
     starFragments: number; // Phase 1
     dungeonTokens?: number; // Phase 87
+    automatedDredges?: number;
+    hydroponicIrrigation?: number;
+    overchargedAmmo?: number;
+    starlightMicrochips?: number;
+    magneticCoils?: number;
 };
 
 export interface DungeonMastery {
@@ -823,6 +828,7 @@ export interface GameActions {
     startBossRush: () => void;
     endBossRush: (success: boolean) => void;
     infuseItemWithVoid: (itemId: string) => void;
+    sellOre: (oreType: 'copper' | 'iron', amount: number) => void;
 }
 
 export interface WorldBoss extends Boss {

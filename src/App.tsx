@@ -113,8 +113,9 @@ function App() {
     backroomsFloor, backroomsFloorProgress, backroomsBossHp,
     fakePlayers,
     elementalResonance, elementalEssences, ownedRelics, equippedRelics,
-    gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex, town
-  } = useGame();
+    gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex, town,
+    globalModifiers, sellOre
+  } = useGame(industry.inventory, industry.setIndustryState);
 
   const [scale, setScale] = useState(1);
 
@@ -434,7 +435,8 @@ function App() {
       <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} theme={theme} />
       {showShop && <ShopModal isOpen={true} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />}
-      {showTavern && <TavernModal heroes={heroes} gold={gold} tavernPurchases={gameStats.tavernPurchases || 0} heroPity={gameStats.heroPity || 0} petPity={gameStats.petPity || 0} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} />}
+      {showTavern && <TavernModal heroes={heroes} gold={gold} tavernPurchases={gameStats.tavernPurchases || 0} heroPity={gameStats.heroPity || 0} petPity={gameStats.petPity || 0} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} onDiceWin={(actions as any).onDiceWin} />}
+
       {showForge && <ForgeModal resources={resources} forgeUpgrade={actions.forgeUpgrade} onClose={() => setShowForge(false)} setResources={setResources} />}
       {showInventory && <InventoryModal isOpen={true} items={items} onClose={() => setShowInventory(false)} />}
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
@@ -451,7 +453,7 @@ function App() {
       <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={{ craftRune, socketRune, combineRunes }} runes={runes || []} />
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
       <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
-      <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} />
+      <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} industryInventory={industry.inventory} />
       <GalaxyModal
         isOpen={showGalaxy}
         onClose={() => setShowGalaxy(false)}
@@ -485,9 +487,9 @@ function App() {
 
       <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} assignedPet={pets.find(p => p.assignment === 'expedition')} />
 
-      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0)} />
+      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0) * (globalModifiers?.collection?.gardenSpeedMult || 1.0)} />
 
-      <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} />
+      <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} resources={resources} sellOre={sellOre} globalModifiers={globalModifiers} />
 
       {/* RIFT OVERLAY */}
       {activeRift && (

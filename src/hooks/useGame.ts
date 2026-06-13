@@ -40,6 +40,7 @@ import { useBackrooms } from './useBackrooms';
 import { BACKROOMS_RESEARCHES } from '../engine/backrooms';
 import { getUnlocksState } from '../engine/features';
 import { checkGlobalSynergies } from '../engine/globalSynergies';
+import { calculateGlobalModifiers, calcOfflineRiftFragments, COSMIC_DUST_PER_REACTION_TICK, DICE_LUCK_BUFF_DURATION_MS } from '../engine/modifiersManager';
 
 import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS, INITIAL_SPACESHIP, INITIAL_CONSTELLATIONS, INITIAL_CLASS_MASTERY, RARE_ARTIFACTS, INITIAL_PETS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -127,7 +128,10 @@ const autoAllocateHeroStats = (h: Hero): Hero => {
     };
 };
 
-export const useGame = () => {
+export const useGame = (
+    industryInventory?: Record<string, number>,
+    setIndustryState?: React.Dispatch<React.SetStateAction<any>>
+) => {
     // CORE STATE
     const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
     const [teamMorale, setTeamMorale] = useState<number>(100);
@@ -213,7 +217,18 @@ export const useGame = () => {
         onConfirm: () => void;
     } | null>(null);
 
+    // ── Sinergias Transversais Globais (modifiersManager) ──
+    /** Poeira Cósmica acumulada por reações de combate (Sinergia 4) */
+    const [cosmicDust, setCosmicDust] = useState<number>(0);
+    /** Fragmentos de Fenda gerados durante tempo offline (Sinergia 3) */
+    const [riftFragments, setRiftFragments] = useState<number>(0);
+    /** Timestamp até o qual o buff "Sorte do Conquistador" está ativo (ms) */
+    const [diceLuckUntil, setDiceLuckUntil] = useState<number>(0);
+    /** Flag indicando que o buff de primeiro tick da Dungeon está ativo (Sinergia Industrial 2) */
+    const [dungeonFirstTickBuff, setDungeonFirstTickBuff] = useState<boolean>(false);
+
     const damageAccumulator = useRef(0);
+    const fishAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
     const bondXpAccumulatorRef = useRef<{ [key: string]: number }>({});
     const bondTicksRef = useRef<number>(0);
@@ -222,6 +237,24 @@ export const useGame = () => {
         const newLog: LogEntry = { id: (Date.now() + Math.random()).toString(), message, type, timestamp: Date.now() };
         setLogs(prev => [newLog, ...prev].slice(0, 5));
     }, []);
+
+    const resolvedIndustryInventory = useMemo(() => {
+        if (industryInventory) return industryInventory;
+        try {
+            const raw = localStorage.getItem('rpg_eternal_industry');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.inventory) {
+                    return parsed.inventory;
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        return {};
+    }, [industryInventory]);
+
+    const finalIndustryInventory = industryInventory || resolvedIndustryInventory;
 
     // SUB-HOOKS
     const guildState = useGuild(null, gold, setGold, addLog);
@@ -653,7 +686,13 @@ export const useGame = () => {
         gameStats,
         dungeonMastery,
         ownedRelics,
-        equippedRelics
+        equippedRelics,
+        // Sinergias Transversais
+        cosmicDust,
+        riftFragments,
+        diceLuckUntil,
+        dungeonFirstTickBuff,
+        industryInventory: finalIndustryInventory
     });
 
     useEffect(() => {
@@ -714,9 +753,15 @@ export const useGame = () => {
             equippedRelics,
             globalSynergies,
             galaxy: galaxyState.galaxy,
-            spaceship: galaxyState.spaceship
+            spaceship: galaxyState.spaceship,
+            // Sinergias Transversais
+            cosmicDust,
+            riftFragments,
+            diceLuckUntil,
+            dungeonFirstTickBuff,
+            industryInventory: finalIndustryInventory
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dungeonFirstTickBuff, finalIndustryInventory]);
 
     // Side Effects
     useEffect(() => {
@@ -857,21 +902,45 @@ export const useGame = () => {
                 playTime: (prev.playTime || 0) + 1
             }));
 
-            // Phase 100: Market Trend Rotation
+            // ── Sinergia 4 (Monopólio Industrial) ──
+            const coilsCount = finalIndustryInventory?.['magnetic_coil'] || 0;
             setMarketTrend(prev => {
-                if (Date.now() >= prev.endTime) {
-                    const nextTrend = generateRandomTrend(60);
-                    addLog(`Economia da Cidade mudou para: ${nextTrend.name}!`, 'action');
-                    // Refresh market stock on trend change
-                    setMarketStock(generateMarketStock());
-                    setMarketTimer(3600);
-                    return nextTrend;
+                if (coilsCount >= 1000) {
+                    if (prev.type !== 'monopoly') {
+                        addLog("🧲 Monopólio Industrial ativado! O estoque de Bobinas Magnéticas elevou o preço dos minérios em +50%!", 'success');
+                        setMarketStock(generateMarketStock());
+                        setMarketTimer(3600);
+                        return {
+                            type: 'monopoly',
+                            multiplier: 1.5,
+                            name: 'Monopólio Industrial',
+                            description: 'Bobinas Magnéticas em massa! Preço de minérios brutos +50%.',
+                            endTime: Date.now() + 3600000
+                        };
+                    }
+                    return prev;
+                } else {
+                    if (prev.type === 'monopoly') {
+                        const nextTrend = generateRandomTrend(60);
+                        addLog(`Economia da Cidade normalizada para: ${nextTrend.name}!`, 'action');
+                        setMarketStock(generateMarketStock());
+                        setMarketTimer(3600);
+                        return nextTrend;
+                    }
+                    if (Date.now() >= prev.endTime) {
+                        const nextTrend = generateRandomTrend(60);
+                        addLog(`Economia da Cidade mudou para: ${nextTrend.name}!`, 'action');
+                        // Refresh market stock on trend change
+                        setMarketStock(generateMarketStock());
+                        setMarketTimer(3600);
+                        return nextTrend;
+                    }
+                    return prev;
                 }
-                return prev;
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [raidActive, voidActive, calculatedPartyPower]);
+    }, [raidActive, voidActive, calculatedPartyPower, industryInventory]);
 
     // Spaceship fuel & hull passive regeneration (every 5 seconds)
     useEffect(() => {
@@ -1086,7 +1155,41 @@ export const useGame = () => {
                     });
                 }
             },
-            enterDungeon: (lvl: number) => world.enterDungeon(lvl),
+            enterDungeon: (lvl: number) => {
+                if (finalIndustryInventory && (finalIndustryInventory['overcharged_ammo'] || 0) > 0) {
+                    if (setIndustryState) {
+                        setIndustryState((prev: any) => {
+                            const current = prev.inventory['overcharged_ammo'] || 0;
+                            if (current > 0) {
+                                return {
+                                    ...prev,
+                                    inventory: {
+                                        ...prev.inventory,
+                                        ['overcharged_ammo']: current - 1
+                                    }
+                                };
+                            }
+                            return prev;
+                        });
+                    } else {
+                        try {
+                            const raw = localStorage.getItem('rpg_eternal_industry');
+                            if (raw) {
+                                const parsed = JSON.parse(raw);
+                                if (parsed && parsed.inventory && (parsed.inventory['overcharged_ammo'] || 0) > 0) {
+                                    parsed.inventory['overcharged_ammo']--;
+                                    localStorage.setItem('rpg_eternal_industry', JSON.stringify(parsed));
+                                }
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                    setDungeonFirstTickBuff(true);
+                    addLog("⚡ Carga Bélica Sobrecarregada ativada! O primeiro combo elemental causará +300% de dano.", "success");
+                }
+                world.enterDungeon(lvl);
+            },
             descendDungeon: () => world.descendDungeon(),
             exitDungeon: () => world.exitDungeon(),
             moveDungeon: (x: number, y: number): DungeonInteraction | null => world.moveDungeon(x, y),
@@ -1311,16 +1414,36 @@ export const useGame = () => {
                 addLog(`Mascote designado para ${assignment === 'industry' ? 'Indústria' : assignment === 'expedition' ? 'Expedição' : 'Combate'}!`, 'action');
             },
             winCardBattle: (_o: string, d: number) => setGold(g => g + d * 10),
+
+            // ── Sinergia 2: Sorte do Conquistador (Dados ⇄ Forja/Runas) ──
+            // Acionado quando o jogador vence uma partida de dados na Taverna.
+            // Ativa um buff de 5 minutos que aumenta a taxa de sucesso da Forja/Runas.
+            onDiceWin: () => {
+                const buffUntil = Date.now() + DICE_LUCK_BUFF_DURATION_MS;
+                setDiceLuckUntil(buffUntil);
+                addLog('🎲 "Sorte do Conquistador" ativada! +10% de taxa de sucesso na Forja e Runas por 5 minutos!', 'achievement');
+            },
+
             forgeUpgrade: (m: 'copper' | 'iron' | 'mithril') => {
                 const costMap = { copper: 100, iron: 50, mithril: 10 };
                 const cost = costMap[m];
+                // ── Sinergia 2: aplica bônus de sucesso se buff ativo ──
+                const diceLuckBonus = stateRef.current.diceLuckUntil && Date.now() < stateRef.current.diceLuckUntil ? 0.10 : 0;
+                const successRate = 0.75 + diceLuckBonus; // base 75%
                 if (stateRef.current.resources[m] >= cost) {
-                    setResources(r => ({ ...r, [m]: r[m] - cost }));
-                    addLog(`⚒️ Upgrade de Forja Realizado: Equipamento de ${m.toUpperCase()} reforjado!`, 'success');
+                    if (Math.random() < successRate) {
+                        setResources(r => ({ ...r, [m]: r[m] - cost }));
+                        const bonusText = diceLuckBonus > 0 ? ' 🎲 [+Sorte do Conquistador]' : '';
+                        addLog(`⚒️ Upgrade de Forja Realizado: Equipamento de ${m.toUpperCase()} reforjado!${bonusText}`, 'success');
+                    } else {
+                        setResources(r => ({ ...r, [m]: r[m] - Math.floor(cost * 0.5) }));
+                        addLog(`⚒️ Forja Falhou! Metade dos recursos de ${m.toUpperCase()} foram perdidos.`, 'error');
+                    }
                 } else {
                     addLog(`Recursos insuficientes de ${m.toUpperCase()} para melhorar a Forja.`, 'error');
                 }
             },
+
             craftRune: () => {
                 const costMithril = 10;
                 const costSouls = 50;
@@ -1496,7 +1619,11 @@ export const useGame = () => {
                 };
 
                 setRunes(prev => [...prev, newRune]);
-                addLog(`🔮 Fusão de Runas Concluída: ${newRune.name} (${newRune.rarity.toUpperCase()}) +${newRune.value} ${newRune.stat}!`, 'success');
+
+                // ── Sinergia 2: Sorte do Conquistador — bônus de fusão ──
+                const hasLuckBuff = stateRef.current.diceLuckUntil && Date.now() < stateRef.current.diceLuckUntil;
+                const bonusText = hasLuckBuff ? ' 🎲 [+Sorte do Conquistador]' : '';
+                addLog(`🔮 Fusão de Runas Concluída: ${newRune.name} (${newRune.rarity.toUpperCase()}) +${newRune.value} ${newRune.stat}!${bonusText}`, 'success');
             },
             invokeWeather: (weatherType: import('../engine/weather').WeatherType) => {
                 const hasAltar = buildings.find(b => b.id === 'altar_deities' && b.level > 0);
@@ -2099,10 +2226,34 @@ export const useGame = () => {
                         return item;
                     });
                 });
+            },
+            sellOre: (oreType: 'copper' | 'iron', amount: number) => {
+                const currentAmount = stateRef.current.resources[oreType] || 0;
+                const toSell = Math.min(currentAmount, amount);
+                if (toSell <= 0) return;
+                const basePrice = oreType === 'copper' ? 10 : 20;
+                const globalMods = calculateGlobalModifiers({
+                    heroes: stateRef.current.heroes,
+                    activeSynergies: stateRef.current.activeSynergies as any,
+                    buildings: stateRef.current.buildings,
+                    items: stateRef.current.items,
+                    highestRiftFloor: stateRef.current.gameStats.highestRiftFloor || 0,
+                    diceLuckUntil: stateRef.current.diceLuckUntil,
+                    cosmicDust: stateRef.current.cosmicDust,
+                    industryInventory: finalIndustryInventory,
+                    starlightUpgrades: stateRef.current.starlightUpgrades,
+                    dungeonFirstTickBuff: stateRef.current.dungeonFirstTickBuff
+                });
+                const bonus = globalMods.market?.metalOrePriceBonus || 1.0;
+                const sellPrice = Math.floor(basePrice * bonus);
+                const totalGold = toSell * sellPrice;
+                setResources(r => ({ ...r, [oreType]: (r[oreType] || 0) - toSell }));
+                setGold(g => g + totalGold);
+                addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Ferro'} por ${totalGold} Ouro!`, 'loot');
             }
         };
         return baseActions as any as GameActions;
-    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains, ownedRelics, equippedRelics, elementalResonance, elementalEssences, voidMatter]);
+    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains, ownedRelics, equippedRelics, elementalResonance, elementalEssences, voidMatter, finalIndustryInventory, setIndustryState]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
@@ -2113,6 +2264,19 @@ export const useGame = () => {
             let bossDefeated = false;
 
             const monumentMults = getMonumentMultipliers();
+
+            const globalMods = calculateGlobalModifiers({
+                heroes,
+                activeSynergies: activeSynergies as any,
+                buildings,
+                items,
+                highestRiftFloor: gameStats.highestRiftFloor || 0,
+                diceLuckUntil,
+                cosmicDust,
+                industryInventory: finalIndustryInventory,
+                starlightUpgrades,
+                dungeonFirstTickBuff,
+            });
 
             const isTower = tower.active;
             let targetBoss = isTower ? towerBoss : boss;
@@ -2294,9 +2458,27 @@ export const useGame = () => {
                 synergiesForCombat.push({ type: 'void_execute', value: voidExecuteCount } as any);
             }
 
-            res = processCombatTurn(activeHeroesWithBonusStats, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults, equippedRelics, globalSynergies.map(s => s.id));
+            // globalMods already calculated at start of runTick
+
+            const hasReactionActive = synergiesForCombat.some(s =>
+                (s.id === 'reaction_burn' || s.id === 'reaction_freeze') && s.isActive !== false
+            );
+
+            const activeGlobalSynergyIds = [...globalSynergies.map(s => s.id), ...globalMods.activeSynergyIds];
+            if (globalMods.combat.dungeonFirstTickBonus && hasReactionActive) {
+                activeGlobalSynergyIds.push('overcharged_ammo_buff');
+                setDungeonFirstTickBuff(false);
+            }
+
+            res = processCombatTurn(activeHeroesWithBonusStats, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults, equippedRelics, activeGlobalSynergyIds);
 
             damageAccumulator.current += res.totalDmg;
+
+            // ── Sinergia 4: Combustível Residual (Combate ⇄ Automação Starlight) ──
+            // Cada tick com reação elemental ativa (burn/freeze) gera Poeira Cósmica
+            if (hasReactionActive && !targetBoss.isDead) {
+                setCosmicDust(prev => prev + COSMIC_DUST_PER_REACTION_TICK);
+            }
 
             if (stateRef.current.patronDeity && !targetBoss.isDead) {
                 setDeityEnergy(prev => {
@@ -2594,6 +2776,17 @@ export const useGame = () => {
                     Object.entries(autoResult.resources).forEach(([k, v]) => (next as any)[k] += v);
                     return next;
                 });
+            }
+
+            // ── Sinergia 1 (Dredges): Coleta Passiva de Peixe ──
+            if (globalMods.collection?.passiveFishPerHour > 0) {
+                fishAccumulator.current += (globalMods.collection.passiveFishPerHour * (tick / 1000)) / 3600;
+                if (fishAccumulator.current >= 1) {
+                    const fishToGain = Math.floor(fishAccumulator.current);
+                    fishAccumulator.current -= fishToGain;
+                    setResources(prev => ({ ...prev, fish: (prev.fish || 0) + fishToGain }));
+                    addLog(`🎣 Coletado ${fishToGain} peixe(s) passivamente via Dragas Automatizadas!`, 'loot');
+                }
             }
 
             // Collect all stats updates including combat damage
@@ -2984,7 +3177,11 @@ export const useGame = () => {
         canClaim: worldBossState.canClaim, setCanClaim: worldBossState.setCanClaim,
         cooldownUntil: worldBossState.cooldownUntil, setCooldownUntil: worldBossState.setCooldownUntil,
         marketStock, setMarketStock,
-        marketTimer, setMarketTimer
+        marketTimer, setMarketTimer,
+        // Sinergias Transversais (modifiersManager)
+        highestRiftFloor: gameStats.highestRiftFloor || 0,
+        riftFragments,
+        setRiftFragments
     });
 
     const abandonRoguelikeRun = useCallback(() => {
@@ -3031,7 +3228,7 @@ export const useGame = () => {
     }, [roguelike.roguelikeRun, roguelike.abandonRoguelikeRun, roguelike.setEmberFragments, galaxyState.rewardPlanetaryRun, galaxyState.galaxy, galaxyState.setGalaxy, galaxyState.spaceship, galaxyState.setSpaceship, addLog, setGold]);
 
     const result = useMemo(() => {
-        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave, setVoidMatter, setPets: petsState.setPets, setActiveExpeditions, setTerritories: galaxyState.setTerritories };
+        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setStarlightUpgrades, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave, setVoidMatter, setPets: petsState.setPets, setActiveExpeditions, setTerritories: galaxyState.setTerritories };
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
@@ -3148,8 +3345,32 @@ export const useGame = () => {
             backroomsFloorProgress: backrooms.backroomsFloorProgress,
             backroomsBossHp: backrooms.backroomsBossHp,
             currentTutorialIndex,
+
+            // ── Sinergias Transversais Globais (modifiersManager) ──
+            cosmicDust,
+            setCosmicDust,
+            riftFragments,
+            setRiftFragments,
+            diceLuckUntil,
+            setDiceLuckUntil,
+            dungeonFirstTickBuff,
+            setDungeonFirstTickBuff,
+            /** Modificadores globais calculados a partir das sinergias transversais */
+            globalModifiers: calculateGlobalModifiers({
+                heroes,
+                activeSynergies: activeSynergies as any,
+                buildings,
+                items,
+                highestRiftFloor: gameStats.highestRiftFloor || 0,
+                diceLuckUntil,
+                cosmicDust,
+                industryInventory: finalIndustryInventory,
+                starlightUpgrades,
+                dungeonFirstTickBuff,
+            }),
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff]);
+
 
     return result;
 };

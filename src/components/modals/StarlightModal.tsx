@@ -8,9 +8,10 @@ interface StarlightModalProps {
     starlight: number;
     upgrades: Record<string, number>; // ID -> Level
     onBuy: (upgradeId: string) => void;
+    industryInventory?: Record<string, number>;
 }
 
-export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose, starlight, upgrades, onBuy }) => {
+export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose, starlight, upgrades, onBuy, industryInventory }) => {
     if (!isOpen) return null;
 
     return (
@@ -40,6 +41,14 @@ export const StarlightModal: React.FC<StarlightModalProps> = ({ isOpen, onClose,
 
                     <div className="relative grid grid-cols-1 md:grid-cols-2 gap-6 z-10">
                         {STARLIGHT_UPGRADES.map(upgrade => {
+                            if (upgrade.id === 'bot_offline_capacity') {
+                                const currentLvl = upgrades[upgrade.id] || 0;
+                                const microchips = industryInventory?.['starlight_microchip'] || 0;
+                                if (microchips <= 0 && currentLvl <= 0) {
+                                    return null;
+                                }
+                            }
+
                             const currentLevel = upgrades[upgrade.id] || 0;
                             const isMaxed = currentLevel >= upgrade.maxLevel;
                             const cost = getStarlightUpgradeCost(upgrade, currentLevel);

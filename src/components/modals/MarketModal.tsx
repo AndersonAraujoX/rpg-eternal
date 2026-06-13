@@ -12,9 +12,12 @@ interface MarketModalProps {
     divinity: number;
     voidMatter: number;
     timer: number;
+    resources: Resources;
+    sellOre: (oreType: 'copper' | 'iron', amount: number) => void;
+    globalModifiers?: any;
 }
 
-export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock, buyItem, gold, divinity, voidMatter, timer }) => {
+export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock, buyItem, gold, divinity, voidMatter, timer, resources, sellOre, globalModifiers }) => {
     if (!isOpen) return null;
 
     const formatTime = (ms: number) => {
@@ -27,7 +30,7 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-gray-900 border-2 border-purple-900 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl relative">
+            <div className="bg-gray-900 border-2 border-purple-900 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl relative">
 
                 {/* Header */}
                 <div className="p-4 border-b border-purple-800 flex justify-between items-center bg-gradient-to-r from-gray-900 to-purple-950">
@@ -49,7 +52,7 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
                 </div>
 
                 {/* Stock Grid */}
-                <div className="p-4 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
                     {stock.length === 0 ? (
                         <div className="col-span-2 text-center py-10 text-gray-500">
                             Sold Out
@@ -87,6 +90,76 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
                             );
                         })
                     )}
+                </div>
+
+                {/* Sell Raw Ores Section */}
+                <div className="p-4 border-t border-purple-900 bg-gray-950/40">
+                    <h3 className="text-sm font-bold text-purple-300 mb-3 flex items-center gap-2">
+                        <span>💰</span> Vender Minérios Brutos
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Copper Ore */}
+                        <div className="bg-gray-800/40 border border-purple-950/60 p-3 rounded-lg flex items-center justify-between">
+                            <div>
+                                <div className="font-bold text-gray-300 text-xs flex items-center gap-1">
+                                    <span>🪨</span> Minério de Cobre
+                                </div>
+                                <div className="text-xs text-gray-500 font-mono mt-0.5">
+                                    Estoque: {resources.copper || 0}
+                                </div>
+                                <div className="text-xs text-yellow-500 font-mono mt-1">
+                                    Preço: {Math.floor(10 * (globalModifiers?.market?.metalOrePriceBonus || 1.0))} Gold
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <button
+                                    onClick={() => sellOre('copper', 100)}
+                                    disabled={(resources.copper || 0) < 100}
+                                    className="px-2 py-1 bg-purple-900/40 hover:bg-purple-800/60 disabled:opacity-50 text-[10px] text-purple-300 font-bold rounded transition-colors"
+                                >
+                                    Vender 100
+                                </button>
+                                <button
+                                    onClick={() => sellOre('copper', resources.copper || 0)}
+                                    disabled={!(resources.copper && resources.copper > 0)}
+                                    className="px-2 py-1 bg-purple-900/40 hover:bg-purple-800/60 disabled:opacity-50 text-[10px] text-purple-300 font-bold rounded transition-colors"
+                                >
+                                    Tudo
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Iron Ore */}
+                        <div className="bg-gray-800/40 border border-purple-950/60 p-3 rounded-lg flex items-center justify-between">
+                            <div>
+                                <div className="font-bold text-gray-300 text-xs flex items-center gap-1">
+                                    <span>🪨</span> Minério de Ferro
+                                </div>
+                                <div className="text-xs text-gray-500 font-mono mt-0.5">
+                                    Estoque: {resources.iron || 0}
+                                </div>
+                                <div className="text-xs text-yellow-500 font-mono mt-1">
+                                    Preço: {Math.floor(20 * (globalModifiers?.market?.metalOrePriceBonus || 1.0))} Gold
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <button
+                                    onClick={() => sellOre('iron', 100)}
+                                    disabled={(resources.iron || 0) < 100}
+                                    className="px-2 py-1 bg-purple-900/40 hover:bg-purple-800/60 disabled:opacity-50 text-[10px] text-purple-300 font-bold rounded transition-colors"
+                                >
+                                    Vender 100
+                                </button>
+                                <button
+                                    onClick={() => sellOre('iron', resources.iron || 0)}
+                                    disabled={!(resources.iron && resources.iron > 0)}
+                                    className="px-2 py-1 bg-purple-900/40 hover:bg-purple-800/60 disabled:opacity-50 text-[10px] text-purple-300 font-bold rounded transition-colors"
+                                >
+                                    Tudo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Footer */}

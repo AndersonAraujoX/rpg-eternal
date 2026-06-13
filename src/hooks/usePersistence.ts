@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot, ElementType, Territory, Spaceship, Formation, ClassMastery, TownState, RiftState, Rift, WorldBoss, MarketItem } from '../engine/types';
+import { calcOfflineRiftFragments } from '../engine/modifiersManager';
 import type { DungeonState } from '../engine/dungeon';
 import type { WeatherType } from '../engine/weather';
 import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS, INITIAL_BOSS } from '../engine/initialData';
@@ -178,6 +179,12 @@ export interface PersistenceProps {
     setMarketStock: React.Dispatch<React.SetStateAction<MarketItem[]>>;
     marketTimer: number;
     setMarketTimer: React.Dispatch<React.SetStateAction<number>>;
+    // ── Sinergias Transversais (modifiersManager) ──
+    highestRiftFloor?: number;
+    riftFragments?: number;
+    setRiftFragments?: React.Dispatch<React.SetStateAction<number>>;
+    dungeonFirstTickBuff: boolean;
+    setDungeonFirstTickBuff: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -285,7 +292,9 @@ export const usePersistence = (props: PersistenceProps) => {
         marketStock,
         setMarketStock,
         marketTimer,
-        setMarketTimer
+        setMarketTimer,
+        dungeonFirstTickBuff,
+        setDungeonFirstTickBuff
     } = props;
 
 
@@ -499,6 +508,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.cooldownUntil !== undefined) setCooldownUntil(state.cooldownUntil);
                 if (state.marketStock) setMarketStock(state.marketStock);
                 if (state.marketTimer !== undefined) setMarketTimer(state.marketTimer);
+                if (state.dungeonFirstTickBuff !== undefined) setDungeonFirstTickBuff(state.dungeonFirstTickBuff);
 
                 setRaidActive(false);
                 if (state.dungeonActive === undefined) {
@@ -509,7 +519,12 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.lastSaveTime) {
                     const now = Date.now();
                     const diff = now - state.lastSaveTime;
-                    const secondsOffline = Math.floor(diff / 1000);
+                    const hasOfflineUpgrade = (state.starlightUpgrades?.['bot_offline_capacity'] || 0) > 0;
+                    const starlightOfflineCapacityBonus = hasOfflineUpgrade ? 1.25 : 1.0;
+                    const baseMaxOfflineTime = 8 * 3600; // 8 hours in seconds
+                    const maxOfflineTime = baseMaxOfflineTime * starlightOfflineCapacityBonus;
+                    const rawSecondsOffline = Math.floor(diff / 1000);
+                    const secondsOffline = Math.min(rawSecondsOffline, maxOfflineTime);
                     if (secondsOffline > 60) {
                         const miners = updatedHeroes.filter((h: Hero) => h.unlocked && h.assignment === 'mine');
                         const combatants = updatedHeroes.filter((h: Hero) => h.unlocked && h.assignment === 'combat');
@@ -530,9 +545,22 @@ export const usePersistence = (props: PersistenceProps) => {
                                 logMsg += `\nKilled ${kills} Monsters.\nGained ${gainedSouls} Souls & ${gainedGold} Gold.`;
                             }
                         }
+
+                        // ── Sinergia 3: Eficiência de Retorno Idle (Rifts ⇄ OfflineModal) ──
+                        // Gera Fragmentos de Fenda passivamente baseado no andar máximo atingido
+                        const savedHighestRiftFloor = state.highestRiftFloor || props.highestRiftFloor || 0;
+                        if (savedHighestRiftFloor > 0 && props.setRiftFragments) {
+                            const riftFragsGained = calcOfflineRiftFragments(savedHighestRiftFloor, secondsOffline);
+                            if (riftFragsGained > 0) {
+                                props.setRiftFragments(prev => prev + riftFragsGained);
+                                logMsg += `\n🔮 +${riftFragsGained} Fragmentos de Fenda (Andar ${savedHighestRiftFloor}).`;
+                            }
+                        }
+
                         setOfflineGains(logMsg);
                     }
                 }
+
             } catch (e) { console.error("Save Load Error", e); }
         }
     }, []);
@@ -630,6 +658,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 cooldownUntil: p.cooldownUntil,
                 marketStock: p.marketStock,
                 marketTimer: p.marketTimer,
+                dungeonFirstTickBuff: p.dungeonFirstTickBuff,
                 lastSaveTime: Date.now()
             };
 

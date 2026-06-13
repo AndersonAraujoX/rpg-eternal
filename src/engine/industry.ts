@@ -44,7 +44,12 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     { id: 'basic_circuit', name: 'Circuito Básico', description: 'Placa de controle simples.', emoji: '🖲️' },
     { id: 'science_red', name: 'Ciência a Vapor (Vermelha)', description: 'Pacote de pesquisa básica.', emoji: '🧪' },
     { id: 'siege_catapult', name: 'Catapulta de Cerco', description: 'Arma brutal de guerra. Diminui a dificuldade de territórios.', emoji: '🪨' },
-    { id: 'plasma_cannon', name: 'Canhão de Plasma', description: 'Tecnologia cósmica que aniquila defesas de guerra.', emoji: '☄️' }
+    { id: 'plasma_cannon', name: 'Canhão de Plasma', description: 'Tecnologia cósmica que aniquila defesas de guerra.', emoji: '☄️' },
+    { id: 'automated_dredge', name: 'Automated Dredges', description: 'Draga industrial para pescar passivamente.', emoji: '🎣' },
+    { id: 'hydroponic_irrigation', name: 'Hydroponic Irrigation', description: 'Acelera o crescimento do jardim em 20%.', emoji: '🌱' },
+    { id: 'overcharged_ammo', name: 'Overcharged Ammunition', description: 'Carga explosiva inicial para Dungeons.', emoji: '⚡' },
+    { id: 'starlight_microchip', name: 'Starlight Microchips', description: 'Componente de hardware para robôs do Starlight.', emoji: '💾' },
+    { id: 'magnetic_coil', name: 'Magnetic Coils', description: 'Bobina magnética industrial para bolsa de valores.', emoji: '🧲' }
 ];
 
 export const MACHINES: MachineInfo[] = [
@@ -70,7 +75,12 @@ export const RECIPES: Recipe[] = [
     { id: 'craft_catapult', name: 'Montar: Catapulta de Cerco', inputs: { 'iron_gear': 50, 'coal': 100 }, outputs: { 'siege_catapult': 1 }, time: 60, machineType: 'assembler', powerDraw: 100 },
     { id: 'craft_plasma_cannon', name: 'Montar: Canhão de Plasma', inputs: { 'basic_circuit': 20, 'copper_wire': 100 }, outputs: { 'plasma_cannon': 1 }, time: 300, machineType: 'assembler', powerDraw: 500 },
 
-    { id: 'gen_steam', name: 'Gerar Energia a Vapor', inputs: { 'coal': 1 }, outputs: {}, time: 10, machineType: 'generator', powerDraw: -500 } // negative draw = generation (produces 500 MW)
+    { id: 'gen_steam', name: 'Gerar Energia a Vapor', inputs: { 'coal': 1 }, outputs: {}, time: 10, machineType: 'generator', powerDraw: -500 }, // negative draw = generation (produces 500 MW)
+    { id: 'craft_automated_dredge', name: 'Montar: Automated Dredges', inputs: { 'basic_circuit': 10, 'copper_wire': 20 }, outputs: { 'automated_dredge': 1 }, time: 60, machineType: 'assembler', powerDraw: 100 },
+    { id: 'craft_hydroponic_irrigation', name: 'Montar: Hydroponic Irrigation', inputs: { 'basic_circuit': 5, 'copper_wire': 15 }, outputs: { 'hydroponic_irrigation': 1 }, time: 45, machineType: 'assembler', powerDraw: 80 },
+    { id: 'craft_overcharged_ammo', name: 'Montar: Overcharged Ammunition', inputs: { 'iron_ingot': 5, 'copper_wire': 10 }, outputs: { 'overcharged_ammo': 1 }, time: 30, machineType: 'assembler', powerDraw: 50 },
+    { id: 'craft_starlight_microchip', name: 'Montar: Starlight Microchips', inputs: { 'basic_circuit': 10, 'copper_wire': 50 }, outputs: { 'starlight_microchip': 1 }, time: 45, machineType: 'assembler', powerDraw: 80 },
+    { id: 'craft_magnetic_coil', name: 'Montar: Magnetic Coils', inputs: { 'copper_wire': 30, 'iron_ingot': 5 }, outputs: { 'magnetic_coil': 1 }, time: 20, machineType: 'assembler', powerDraw: 60 }
 ];
 
 // Helper to determine net production and consumption per second for UI

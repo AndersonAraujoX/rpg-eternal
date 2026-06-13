@@ -14,11 +14,17 @@ interface TavernModalProps {
     setGold: React.Dispatch<React.SetStateAction<number>>;
     heroPity?: number;
     petPity?: number;
+    /** Sinergia 2: Chamado ao vencer no jogo de dados para ativar buff de Sorte do Conquistador */
+    onDiceWin?: () => void;
 }
 
-export function TavernModal({ heroes, gold, tavernPurchases, summonTavern, onClose, setGold, heroPity = 0, petPity = 0 }: TavernModalProps) {
+export function TavernModal({ heroes, gold, tavernPurchases, summonTavern, onClose, setGold, heroPity = 0, petPity = 0, onDiceWin }: TavernModalProps) {
 
-    const handleWin = (amount: number) => setGold((g: number) => g + amount);
+    const handleWin = (amount: number) => {
+        setGold((g: number) => g + amount);
+        // ── Sinergia 2: Sorte do Conquistador ──
+        if (onDiceWin) onDiceWin();
+    };
     const handleLose = (amount: number) => setGold((g: number) => g - amount);
 
     const cost1 = calculateTavernCost(1, tavernPurchases);

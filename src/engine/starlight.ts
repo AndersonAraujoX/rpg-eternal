@@ -40,6 +40,16 @@ export const STARLIGHT_UPGRADES: StarlightUpgrade[] = [
         effectType: 'auto_sell',
         effectValue: 1,
         icon: '♻️'
+    },
+    {
+        id: 'bot_offline_capacity',
+        name: 'Starlight Cargo Buffer',
+        description: 'Increases the offline cargo capacity (max offline time) of bots by +25%.',
+        cost: 20,
+        maxLevel: 1,
+        effectType: 'offline_cargo_capacity',
+        effectValue: 0.25,
+        icon: '💾'
     }
 ];
 
