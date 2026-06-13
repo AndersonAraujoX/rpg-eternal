@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot, ElementType, Territory, Spaceship, Formation, ClassMastery, TownState, RiftState, Rift, WorldBoss, MarketItem } from '../engine/types';
+import type { DungeonState } from '../engine/dungeon';
 import type { WeatherType } from '../engine/weather';
 import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS, INITIAL_BOSS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
@@ -157,8 +158,8 @@ export interface PersistenceProps {
     dungeonActive: boolean;
     dungeonTimer: number;
     setDungeonTimer: React.Dispatch<React.SetStateAction<number>>;
-    dungeonState: Record<string, unknown>;
-    setDungeonState: React.Dispatch<React.SetStateAction<Record<string, unknown>>>;
+    dungeonState: DungeonState | null;
+    setDungeonState: React.Dispatch<React.SetStateAction<DungeonState | null>>;
     riftState: RiftState;
     setRiftState: React.Dispatch<React.SetStateAction<RiftState>>;
     riftTimer: number;

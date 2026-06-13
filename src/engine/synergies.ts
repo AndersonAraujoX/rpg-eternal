@@ -1,4 +1,4 @@
-import type { Hero, ElementType } from './types';
+import type { Hero, ElementType, HeroClass } from './types';
 
 export type SynergyType = 'defense' | 'vampirism' | 'attackSpeed' | 'resources' | 'burn' | 'freeze' | 'blind' | 'cd_reduction' | 'crit_dmg' | 'mitigation' | 'void_execute' | 'void_dodge';
 

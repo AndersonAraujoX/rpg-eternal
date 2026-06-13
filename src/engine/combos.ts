@@ -1,4 +1,4 @@
-import type { Hero } from './types';
+import type { Hero, ElementType, HeroClass } from './types';
 
 export interface ComboDefinition {
     id: string;
