@@ -74,11 +74,13 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
         if (last && last.id !== lastEventId.current) {
             lastEventId.current = last.id;
 
-            let color = 'text-white text-lg';
+            let color = 'text-white text-lg font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]';
             if (last.type === 'reaction') color = 'text-orange-500 font-extrabold text-2xl animate-bounce shadow-black drop-shadow-md';
             else if (last.type === 'status') color = 'text-cyan-400 font-bold text-xl shadow-black drop-shadow-sm';
-            else if (last.isCrit) color = 'text-yellow-400 font-bold text-xl';
+            else if (last.isCrit) color = 'text-yellow-400 font-black text-2xl animate-pulse shadow-black drop-shadow-md';
             else if (last.type === 'heal') color = 'text-green-400 font-bold text-lg';
+            else if (last.id?.startsWith('heroatk')) color = 'text-red-400 font-bold text-lg';
+            else if (last.id?.startsWith('bossatk')) color = 'text-red-600 font-medium text-base';
 
             const newParticle: Particle = {
                 id: last.id,
@@ -124,26 +126,47 @@ export const BattleArea: React.FC<BattleAreaProps> = ({ boss, dungeonActive, dun
             {isTower && (
                 <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent z-0"></div>
             )}
-            <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-3 z-10 opacity-90 pointer-events-none">
-                {activeCombatHeroes.map(h => (
-                    <div key={h.id} className="text-3xl transition-all duration-500 animate-pulse drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]" title={h.name}>
-                        {h.emoji}
-                    </div>
-                ))}
+            <div className="absolute top-[37%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-4 z-10 opacity-95">
+                {activeCombatHeroes.map(h => {
+                    const xpPercent = Math.min(100, Math.floor(((h.xp || 0) / (h.maxXp || 100)) * 100));
+                    return (
+                        <div key={h.id} className="flex flex-col items-center gap-1 select-none">
+                            <div className="text-3xl transition-all duration-500 animate-pulse drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]" title={`${h.name} Lvl ${h.level}`}>
+                                {h.emoji}
+                            </div>
+                            <div className="bg-stone-900/90 border border-amber-900/40 px-1.5 py-0.5 rounded shadow flex flex-col items-center w-11">
+                                <span className="text-[7px] text-amber-400 font-extrabold tracking-tighter leading-none">L{h.level}</span>
+                                <div className="w-full h-1 bg-stone-950 rounded-full overflow-hidden mt-0.5" title={`${h.xp}/${h.maxXp} XP`}>
+                                    <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${xpPercent}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Companion Pets Row */}
-            <div className="absolute top-[52%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-2.5 z-10 opacity-85 pointer-events-none">
-                {pets && [...pets].sort((a, b) => b.level - a.level).slice(0, 5).map((pet, idx) => (
-                    <div
-                        key={pet.id}
-                        className="text-xl animate-bounce drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-                        style={{ animationDelay: `${idx * 0.2}s`, animationDuration: '1.8s' }}
-                        title={pet.name}
-                    >
-                        {pet.emoji}
-                    </div>
-                ))}
+            <div className="absolute top-[50%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-3.5 z-10 opacity-90">
+                {pets && [...pets].sort((a, b) => b.level - a.level).slice(0, 5).map((pet, idx) => {
+                    const xpPercent = Math.min(100, Math.floor(((pet.xp || 0) / (pet.maxXp || 100)) * 100));
+                    return (
+                        <div key={pet.id} className="flex flex-col items-center gap-0.5 select-none">
+                            <div
+                                className="text-xl animate-bounce drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                                style={{ animationDelay: `${idx * 0.15}s`, animationDuration: '2s' }}
+                                title={`${pet.name} Lvl ${pet.level}`}
+                            >
+                                {pet.emoji}
+                            </div>
+                            <div className="bg-stone-900/90 border border-stone-850 px-1 py-0.5 rounded shadow flex flex-col items-center w-9">
+                                <span className="text-[7px] text-cyan-400 font-bold tracking-tighter leading-none">L{pet.level}</span>
+                                <div className="w-full h-0.5 bg-stone-950 rounded-full overflow-hidden mt-0.5" title={`${pet.xp}/${pet.maxXp} XP`}>
+                                    <div className="bg-cyan-500 h-full transition-all duration-300" style={{ width: `${xpPercent}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
                 {pets && pets.length > 5 && (
                     <span className="text-[8px] font-black text-amber-400 bg-black/60 border border-amber-900/40 px-1 py-0.5 rounded shadow-sm self-end">
                         +{pets.length - 5}

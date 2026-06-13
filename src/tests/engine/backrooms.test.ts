@@ -25,7 +25,7 @@ describe('Backrooms Simulation Engine', () => {
             sanity: 100,
             maxSanity: 100,
             status: 'exploring',
-            assignedLevel: 'lvl_0',
+            assignedLevel: 'sec_1',
             equipment: { flashlight: 0, suit: 0, tracker: 0 }
         };
 
@@ -34,9 +34,9 @@ describe('Backrooms Simulation Engine', () => {
 
         const { updatedExplorers } = simulateBackroomsTick([explorer], outpost, resources, [], 10);
         
-        // Nível 0 tem drain de 0.1 por segundo. Em 10 segundos -> 1.0 de dreno.
+        // Nível sec_1 tem drain de 0.08 por segundo. Em 10 segundos -> 0.8 de dreno.
         expect(updatedExplorers[0].sanity).toBeLessThan(100);
-        expect(updatedExplorers[0].sanity).toBeCloseTo(99, 0);
+        expect(updatedExplorers[0].sanity).toBeCloseTo(99.2, 1);
     });
 
     it('deve recuperar vida e sanidade dos exploradores descansando', () => {
@@ -64,8 +64,8 @@ describe('Backrooms Simulation Engine', () => {
     });
 
     it('deve carregar níveis da Backroom com perigos e taxas coerentes', () => {
-        expect(BACKROOMS_LEVELS.length).toBe(4);
-        const lvl37 = BACKROOMS_LEVELS.find(l => l.id === 'lvl_37');
-        expect(lvl37?.sanityDrain).toBeLessThan(0); // Poolrooms restaura sanidade
+        expect(BACKROOMS_LEVELS.length).toBe(7);
+        const sec1 = BACKROOMS_LEVELS.find(l => l.id === 'sec_1');
+        expect(sec1?.sanityDrain).toBeGreaterThan(0);
     });
 });

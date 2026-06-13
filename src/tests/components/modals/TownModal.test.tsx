@@ -11,8 +11,12 @@ const mockBuilding = (id: string, name: string, level = 0, emoji = '🏠'): Buil
     level,
     maxLevel: 10,
     cost: 100,
+    costScaling: 1.5,
+    currency: 'gold',
     effectValue: 0.1,
     bonus: `+${level * 10}%`,
+    width: 1,
+    height: 1
 });
 
 const baseProps = {

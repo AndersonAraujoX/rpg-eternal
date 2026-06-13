@@ -23,9 +23,8 @@ export const usePets = (
         setGold(g => g - cost);
         const newPet = calculateBreedingResult(parent1, parent2);
 
-        // Remove parents if it's a "Fusion" (Chimera) or keep them? 
-        // Existing logic in BreedingModal handles parent removal via setPets if needed,
-        // but let's centralize the basic "Add Pet" logic here.
+        // Fusion (Chimera) explicitly consumes the parents.
+        // The basic logic for consuming parents and adding the new pet is centralized here.
         setPets(prev => [...prev.filter(p => p.id !== parent1.id && p.id !== parent2.id), newPet]);
 
         addLog(`Successfully fused ${parent1.name} and ${parent2.name} into ${newPet.name}!`, 'achievement');
@@ -51,14 +50,19 @@ export const usePets = (
                 let newXp = p.xp + xpGain;
                 let newLevel = p.level;
                 let newMaxXp = p.maxXp;
+                const newStats = p.stats ? { ...p.stats } : { attack: 0, hp: 0, maxHp: 0, mp: 0, maxMp: 0, defense: 0, magic: 0, speed: 0 };
 
                 while (newXp >= newMaxXp) {
                     newLevel++;
                     newXp -= newMaxXp;
                     newMaxXp = Math.floor(newMaxXp * 1.5);
+                    newStats.attack = (newStats.attack || 0) + 1;
+                    newStats.maxHp = (newStats.maxHp || 0) + 5;
+                    newStats.hp = (newStats.hp || 0) + 5;
+                    newStats.defense = (newStats.defense || 0) + 1;
                 }
 
-                return { ...p, level: newLevel, xp: newXp, maxXp: newMaxXp };
+                return { ...p, level: newLevel, xp: newXp, maxXp: newMaxXp, stats: newStats };
             }
             return p;
         }));

@@ -17,17 +17,20 @@ export const getElementalMult = (atkEl: string, defEl: string) => {
 };
 
 export const calculateHeroPower = (hero: Hero): number => {
-    let stats = { ...hero.stats };
-    // Apply Divinity multiplier to base stats before equipment? Or after?
-    // Implementation Plan said "Global Multiplier". So after everything.
-    // Apply Divinity multiplier to base stats before equipment? Or after?
-    // Implementation Plan said "Global Multiplier". So after everything.
-    // const divMult = 1 + (divinity * 0.1); 
-
-
+    const stats = { ...hero.stats };
+    if (hero.passiveSkillTree?.modifiers) {
+        const mods = hero.passiveSkillTree.modifiers;
+        stats.attack = Math.floor(stats.attack * mods.attackMult);
+        stats.magic = Math.floor(stats.magic * mods.magicMult);
+        stats.hp = Math.floor(stats.hp * mods.hpMult);
+        stats.maxHp = Math.floor(stats.maxHp * mods.hpMult);
+        stats.defense = Math.floor(stats.defense * mods.defenseMult);
+        stats.speed = Math.floor(stats.speed * mods.speedMult);
+    }
 
     const baseScore = (stats.attack + (stats.magic * 0.5) + (stats.hp * 0.1) + (stats.defense * 0.2)) * 0.5;
     let power = Math.floor(baseScore * (1 + (stats.speed * 0.05)));
+
 
     // Phase 80: Fatigue Penalty
     if (hero.fatigue) {
@@ -61,16 +64,33 @@ export const calculateDamageMultiplier = (souls: number, talents: Talent[], cons
     if (cScale) totalBonus += (cScale.level * cScale.valuePerLevel);
 
     // Additive Void Artifact Bonus
-    const hasVoidStone = _artifacts.some(a => a.id === 'a2');
+    let hasVoidStone = false;
+    for (let i = 0; i < _artifacts.length; i++) {
+        if (_artifacts[i].id === 'a2') {
+            hasVoidStone = true;
+            break;
+        }
+    }
     if (hasVoidStone) totalBonus += 0.5;
 
     // Additive Cards Bonus
-    const attackCards = _cards.filter(c => c.stat === 'attack');
-    totalBonus += attackCards.reduce((acc, c) => acc + (c.count * c.value), 0);
+    let cardsBonus = 0;
+    for (let i = 0; i < _cards.length; i++) {
+        const c = _cards[i];
+        if (c.stat === 'attack') {
+            cardsBonus += c.count * c.value;
+        }
+    }
+    totalBonus += cardsBonus;
 
     // Additive Achievements Bonus
-    const achievementBonus = _achievements.filter(a => a.isUnlocked).length * 0.01;
-    totalBonus += achievementBonus;
+    let achievementCount = 0;
+    for (let i = 0; i < _achievements.length; i++) {
+        if (_achievements[i].isUnlocked) {
+            achievementCount++;
+        }
+    }
+    totalBonus += achievementCount * 0.01;
 
     // Additive Pets Bonus (Dano Crítico e outros buffs viram dps aditivo)
     const petDamageBonus = _pets.reduce((acc, p) => {
@@ -105,7 +125,8 @@ export const processCombatTurn = (
     weather?: WeatherType,
     divinity: number = 0,
     bonds?: Record<string, { xp: number; level: number; type: string }>,
-    monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number }
+    monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number },
+    equippedRelics: string[] = []
 ) => {
     let totalDmg = 0;
     let crits = 0;
@@ -125,15 +146,15 @@ export const processCombatTurn = (
     // Apply Attack Speed logic: scale additively but cap the max impact 
     // to prevent astronomical numbers or intervals hitting 0.
     const cappedSpeedBonus = Math.min(attackSpeedBonus, 3.0); // Max +300% effective speed gain
-    let effectiveDamageMult = damageMult * (1 + cappedSpeedBonus);
+    const effectiveDamageMult = damageMult * (1 + cappedSpeedBonus);
 
     // Burn Damage (DoT)
     if (burnEffect && !boss.isDead) {
-        // 5% Max HP per second implies 0.05 * (tickDuration / 1000)
-        // Cap burn to avoid instant cheese on huge bosses? No, % is fun.
-        // Let's cap at 100 * Hero Power to prevent 1-shotting raid bosses? 
+        // Capped to prevent exponential scaling cheese on astronomical tower bosses.
         const burnDmg = Math.floor(boss.stats.maxHp * burnEffect.value * (tickDuration / 1000));
-        const actualBurn = Math.max(1, burnDmg);
+        const totalAtk = heroes.reduce((sum, h) => sum + (h.stats?.attack || 0), 0);
+        const cappedBurn = Math.min(burnDmg, totalAtk * 10);
+        const actualBurn = Math.max(1, cappedBurn);
         totalDmg += actualBurn;
 
         // Add Burn Event (throttled visually or just added)
@@ -163,12 +184,22 @@ export const processCombatTurn = (
         }
     }
 
-    const heroHeals: Record<string, number> = {};
+    const heroHeals = new Map<string, number>();
 
     let updatedHeroes = heroes.map((h) => {
         if (h.assignment !== 'combat' || !h.unlocked) return h;
 
-        let stats = { ...h.stats };
+        const stats = { ...h.stats };
+        // Apply Passive Skill Tree modifiers
+        if (h.passiveSkillTree?.modifiers) {
+            const mods = h.passiveSkillTree.modifiers;
+            stats.attack = Math.floor(stats.attack * mods.attackMult);
+            stats.magic = Math.floor(stats.magic * mods.magicMult);
+            stats.maxHp = Math.floor(stats.maxHp * mods.hpMult);
+            stats.defense = Math.floor(stats.defense * mods.defenseMult);
+            stats.speed = Math.floor(stats.speed * mods.speedMult);
+        }
+
         // Apply Divinity
         if (divinity > 0) {
             const multiplier = 1 + (divinity * 0.1);
@@ -179,6 +210,7 @@ export const processCombatTurn = (
             stats.magic = Math.floor(stats.magic * multiplier);
             stats.speed = Math.floor(stats.speed * multiplier);
         }
+
  
         // Apply Monument Bonuses
         if (monumentEffects) {
@@ -198,8 +230,8 @@ export const processCombatTurn = (
         }
 
         // Phase 91: Insanity System
-        let insanityGain = 0;
-        let newInsanity = Math.min(100, (h.insanity || 0) + insanityGain);
+        const insanityGain = 0;
+        const newInsanity = Math.min(100, (h.insanity || 0) + insanityGain);
 
         let skipTurn = false;
         let attackAlly = false;
@@ -303,7 +335,7 @@ export const processCombatTurn = (
                         let canCast = true;
                         if (isUltimate && riftRestriction === 'no_ult') canCast = false;
 
-                        let processedSkill = { ...s };
+                        const processedSkill = { ...s };
                         let isHealConverted = false;
                         if (processedSkill.effectType === 'heal' && mutator?.id === 'bloodthirst') {
                             processedSkill.effectType = 'damage';
@@ -341,7 +373,7 @@ export const processCombatTurn = (
                                 }
 
                                 const healAmount = stats.maxHp * processedSkill.value;
-                                heroHeals[targetHero.id] = (heroHeals[targetHero.id] || 0) + healAmount;
+                                heroHeals.set(targetHero.id, (heroHeals.get(targetHero.id) || 0) + healAmount);
                                 events.push({ id: `heal-${h.id}-${Date.now()}`, type: 'status', text: 'HEAL', value: healAmount, x: 50, y: 50 });
                             }
                             s.currentCooldown = s.cooldown;
@@ -352,12 +384,16 @@ export const processCombatTurn = (
         }
 
         const critRoll = Math.random();
-        if (critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0)) {
-            const critMult = 2 + critDmgBonus;
+        const passiveCritChance = h.passiveSkillTree?.modifiers?.critChanceBonus || 0;
+        const isCrit = critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0) + passiveCritChance;
+        if (isCrit) {
+            const passiveCritDmg = h.passiveSkillTree?.modifiers?.critDamageBonus || 0;
+            const critMult = 2 + critDmgBonus + passiveCritDmg;
             baseDmg *= critMult;
             skillDmg *= critMult;
             crits++;
         }
+
 
         let totalHeroAttack = baseDmg + skillDmg;
 
@@ -374,8 +410,31 @@ export const processCombatTurn = (
             }
         }
 
-        const heroDamageDealt = Math.max(0, Math.floor(totalHeroAttack));
+        let heroDamageDealt = Math.max(0, Math.floor(totalHeroAttack));
+
+        // execute logic
+        const voidExecuteCount = activeSynergies.find(s => s.type === 'void_execute')?.value || 0;
+        if (voidExecuteCount > 0 && boss.stats.hp > 0 && (boss.stats.hp / boss.stats.maxHp) <= 0.20) {
+            const executeChance = 0.10 * voidExecuteCount;
+            if (Math.random() < executeChance) {
+                const remainingHp = boss.stats.hp;
+                heroDamageDealt += remainingHp;
+                events.push({ id: `execute-${h.id}-${Date.now()}`, type: 'reaction', text: 'EXECUÇÃO ABISSAL!', element: 'dark', x: 50, y: 35 });
+            }
+        }
+
         totalDmg += heroDamageDealt;
+
+        if (heroDamageDealt > 0) {
+            events.push({
+                id: `heroatk-${h.id}-${Date.now()}-${Math.random()}`,
+                type: 'damage',
+                text: `${heroDamageDealt}`,
+                isCrit,
+                x: 45 + (Math.random() * 20 - 10),
+                y: 45 + (Math.random() * 10 - 5)
+            });
+        }
 
         if (heroDamageDealt > 0 && lifeSteal > 0) {
             hp = Math.min(stats.maxHp, hp + (heroDamageDealt * lifeSteal));
@@ -385,11 +444,24 @@ export const processCombatTurn = (
         const attackChance = 0.3 * (tickDuration / 1000);
 
         if (!boss.isDead && Math.random() < attackChance) {
-            const bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
-            // Heroes are immortal — HP never drops below 1
-            hp = Math.max(1, hp - bossDmg);
-            events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `-${Math.floor(bossDmg)}`, x: 50, y: 50 });
+            const dodgeChance = activeSynergies.find(s => s.type === 'void_dodge')?.value || 0;
+            if (Math.random() < dodgeChance) {
+                events.push({ id: `dodge-${h.id}-${Date.now()}`, type: 'status', text: 'DESVIOU!', element: 'light', x: 45 + (Math.random() * 10 - 5), y: 25 });
+            } else {
+                let bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
+                if (h.passiveSkillTree?.modifiers?.damageMitigation) {
+                    bossDmg = Math.floor(bossDmg * (1 - h.passiveSkillTree.modifiers.damageMitigation));
+                }
+                if (equippedRelics.includes('relic_void_orb')) {
+                    bossDmg = Math.floor(bossDmg * 0.88);
+                }
+                bossDmg = Math.max(1, bossDmg);
+                // Heroes are immortal — HP never drops below 1
+                hp = Math.max(1, hp - bossDmg);
+                events.push({ id: `bossatk-${h.id}-${Date.now()}`, type: 'damage', text: `${h.emoji} -${Math.floor(bossDmg)}`, x: 45 + (Math.random() * 10 - 5), y: 25 });
+            }
         }
+
 
         // 🧬 Auto-corrupção ao atingir insanidade 100
         const shouldMutate = newInsanity >= 100 && !h.isMutated;
@@ -409,7 +481,7 @@ export const processCombatTurn = (
 
     // Final pass to apply heals (Referential stability: only clone if changed)
     updatedHeroes = updatedHeroes.map((h, i) => {
-        const heal = heroHeals[h.id];
+        const heal = heroHeals.get(h.id);
         const originalHero = heroes[i]; // Reference to initial input
 
         if (heal) {

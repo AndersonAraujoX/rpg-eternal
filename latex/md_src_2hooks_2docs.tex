@@ -1,0 +1,39 @@
+\chapter{📁 Documentação Técnica\+: \texorpdfstring{$<$}{<}tt\texorpdfstring{$>$}{>}src/hooks/\texorpdfstring{$<$}{<}/tt\texorpdfstring{$>$}{>}}
+\hypertarget{md_src_2hooks_2docs}{}\label{md_src_2hooks_2docs}\index{📁 Documentação Técnica: $<$tt$>$src/hooks/$<$/tt$>$@{📁 Documentação Técnica: $<$tt$>$src/hooks/$<$/tt$>$}}
+\label{md_src_2hooks_2docs_autotoc_md11}%
+\Hypertarget{md_src_2hooks_2docs_autotoc_md11}%
+ Esta pasta centraliza os hooks customizados do React que controlam o ciclo de vida do estado global e dos subprocessos do RPG.\hypertarget{md_src_2hooks_2docs_autotoc_md12}{}\doxysection{\texorpdfstring{📄 Hooks e Responsabilidades}{📄 Hooks e Responsabilidades}}\label{md_src_2hooks_2docs_autotoc_md12}
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Hook / Arquivo   }&\cellcolor{\tableheadbgcolor}\textbf{ Domínio de Estado   }&\cellcolor{\tableheadbgcolor}\textbf{ Funções e Recursos Relevantes    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Hook / Arquivo   }&\cellcolor{\tableheadbgcolor}\textbf{ Domínio de Estado   }&\cellcolor{\tableheadbgcolor}\textbf{ Funções e Recursos Relevantes    }\\\cline{1-3}
+\endhead
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Backrooms.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Minijogo de sobrevivência e exploração nas Backrooms.   &{\ttfamily recruit\+Explorer}, {\ttfamily send\+Explorer}, {\ttfamily research\+Tech}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Galaxy.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Desbloqueio de setores estelares e invasões espaciais.   &{\ttfamily attack\+Sector}, {\ttfamily upgrade\+Spaceship}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Game.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Loop principal do jogo, tick-\/cycle global e ações integradas.   &{\ttfamily active\+Heroes\+With\+Bonus\+Stats}, {\ttfamily gvg\+War\+State}, {\ttfamily active\+Potions}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Guild.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Fila de contratação, upgrades e monumentos de heróis despertos.   &{\ttfamily enshrine\+Hero}, {\ttfamily pledge\+Deity}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Industry.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Controle da esteira industrial e estoque de armas de cerco GvG.   &{\ttfamily process\+Tick}, fabricação de catapulta/plasma    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Persistence.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Salvamento e recuperação de todo o estado em {\ttfamily local\+Storage}.   &{\ttfamily save\+Profile}, {\ttfamily load\+Profile}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Pets.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Sistema de mascotes, alimentação e reprodução por níveis.   &{\ttfamily feed\+Pet}, {\ttfamily breed\+Pets}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Roguelike.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Ciclo de vida e progressão de escolhas da jornada roguelike.   &{\ttfamily start\+Planetary\+Run}, {\ttfamily select\+Roguelike\+Node}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+Void\+Guardian.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Eventos e lutas do portal contra o guardião do abismo.   &{\ttfamily void\+Active}, {\ttfamily void\+Timer}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+World.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Gerenciamento de andares da torre e clima ativo.   &{\ttfamily weather}, {\ttfamily weather\+Timer}, climas ativos    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily use\+World\+Boss.\+ts}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Temporizadores de aparição e danos acumulados do chefe mundial.   &{\ttfamily world\+Boss}, {\ttfamily world\+Boss\+Damage}   \\\cline{1-3}
+\end{longtabu}
+\hypertarget{md_src_2hooks_2docs_autotoc_md13}{}\doxysection{\texorpdfstring{🛠️ Exemplo de Uso (\+Integração)}{🛠️ Exemplo de Uso (Integração)}}\label{md_src_2hooks_2docs_autotoc_md13}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{import\ \{\ useGame\ \}\ from\ './hooks/useGame';}
+\DoxyCodeLine{}
+\DoxyCodeLine{function\ MeuComponente()\ \{}
+\DoxyCodeLine{\ \ const\ \{\ gold,\ heroes,\ actions\ \}\ =\ useGame();}
+\DoxyCodeLine{\ \ return\ <div>Ouro\ atual:\ \{gold\}</div>;}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+ 

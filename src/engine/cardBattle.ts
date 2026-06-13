@@ -1,4 +1,6 @@
 import type { MonsterCard, CardOpponent } from './types';
+import { MONSTERS } from './bestiary';
+import { getCardStat } from './loot';
 
 export interface BattleResult {
     winner: 'player' | 'opponent';
@@ -10,7 +12,7 @@ export interface BattleResult {
 export const simulateCardBattle = (
     playerDeck: MonsterCard[],
     opponent: CardOpponent,
-    allCards: MonsterCard[] // Needed to resolve opponent deck IDs to stats
+    // allCards: MonsterCard[] // Removed
 ): BattleResult => {
     let playerScore = 0;
     let opponentScore = 0;
@@ -27,7 +29,17 @@ export const simulateCardBattle = (
         // Find opponent card stats (simulated or real)
         // For simplicity, we'll assume opponent uses standard cards but maybe with a multiplier for difficulty?
         // Actually, let's just find the card in the global list or create a "ghost" card if missing.
-        let oppCard = allCards.find(c => c.id === oppCardId);
+        let oppCard: MonsterCard | undefined;
+        const baseMonster = MONSTERS.find(m => m.name.toLowerCase() === oppCardId.toLowerCase() || m.emoji === oppCardId);
+        if (baseMonster) {
+            oppCard = {
+                id: baseMonster.emoji,
+                monsterName: baseMonster.name,
+                count: 1,
+                stat: getCardStat(baseMonster.emoji),
+                value: 0.1
+            };
+        }
 
         // Fallback for opponent card if not found (shouldn't happen with valid data)
         if (!oppCard) {

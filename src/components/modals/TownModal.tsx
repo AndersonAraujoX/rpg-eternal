@@ -3,6 +3,7 @@ import { Home, Hammer, Info, Lock, ArrowLeft, Trash2, Sparkles } from 'lucide-re
 import type { Building } from '../../engine/types';
 import { formatNumber } from '../../utils';
 import { FEATURES_LIST } from '../../engine/features';
+import { IsometricTownGrid } from '../IsometricTownGrid';
 
 interface TownModalProps {
     isOpen: boolean;
@@ -284,11 +285,11 @@ export const TownModal: React.FC<TownModalProps> = ({
                             const isSelected = selectedBuildingId !== null;
 
                             return (
-                                <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-0">
+                                <div className="flex-1 flex flex-col md:flex-row gap-6 min-w-0 min-h-0">
                                     {/* Left Area: Grid Map */}
-                                    <div className="flex-1 bg-stone-950/40 p-6 rounded-2xl border border-stone-900/60 shadow-inner flex flex-col items-center justify-center relative min-h-[300px] select-none">
+                                    <div className="flex-1 min-w-0 bg-stone-950/40 p-6 rounded-2xl border border-stone-900/60 shadow-inner flex flex-col items-center justify-center relative min-h-[300px] select-none">
                                         <div className="absolute top-3 left-4 text-[10px] text-stone-500 font-bold uppercase tracking-wider font-mono">
-                                            🗺️ Mapa da Cidade (Grid 5x5)
+                                            🗺️ Grid de Construção 2D
                                         </div>
 
                                         {isSelected && (
@@ -297,57 +298,25 @@ export const TownModal: React.FC<TownModalProps> = ({
                                             </div>
                                         )}
 
-                                        <div className="grid grid-cols-5 gap-3 w-full max-w-[420px] aspect-square relative mt-4">
-                                            {Array.from({ length: 5 }).map((_, r) => (
-                                                Array.from({ length: 5 }).map((_, c) => {
-                                                    const building = buildings.find(b => b.placed && b.x === c && b.y === r);
-
-                                                    return (
-                                                        <div
-                                                            key={`${r}-${c}`}
-                                                            onClick={() => {
-                                                                if (selectedBuildingId) {
-                                                                    placeBuilding(selectedBuildingId, c, r);
-                                                                } else if (building) {
-                                                                    setClickedBuildingId(building.id);
-                                                                }
-                                                            }}
-                                                            className={`relative aspect-square rounded-xl border flex flex-col items-center justify-center transition-all duration-300 cursor-pointer select-none group
-                                                                ${building 
-                                                                    ? 'bg-gradient-to-br from-stone-900 to-stone-950 border-amber-600/30 hover:border-amber-400 shadow-md hover:scale-105 active:scale-95' 
-                                                                    : isSelected
-                                                                        ? 'bg-emerald-950/20 border-emerald-500/50 hover:bg-emerald-900/30 hover:border-emerald-400 border-dashed animate-pulse'
-                                                                        : 'bg-gradient-to-br from-emerald-950/10 to-stone-900/40 border-stone-850/40 hover:border-emerald-800/40 hover:bg-emerald-950/20'
-                                                                }`}
-                                                        >
-                                                            {building ? (
-                                                                <>
-                                                                    <span className="text-3xl filter drop-shadow group-hover:scale-110 transition-transform">{building.emoji}</span>
-                                                                    <span className="absolute -bottom-1 -right-1 bg-amber-500 text-stone-950 text-[9px] font-black px-1.5 py-0.5 rounded-md border border-stone-900 shadow-sm">
-                                                                        L{building.level}
-                                                                    </span>
-                                                                    {/* Hover tooltip for name */}
-                                                                    <div className="absolute bottom-full mb-2 bg-stone-950 border border-stone-800 text-[10px] text-white px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-30 shadow-xl pointer-events-none">
-                                                                        {building.name} (Lvl {building.level})
-                                                                    </div>
-                                                                </>
-                                                            ) : (
-                                                                <div className="flex flex-col items-center justify-center gap-1">
-                                                                    <span className="text-lg opacity-10 group-hover:opacity-40 transition-all select-none filter grayscale group-hover:grayscale-0">🌱</span>
-                                                                    <span className="text-[8px] text-stone-700 opacity-0 group-hover:opacity-60 transition-opacity font-mono">
-                                                                        {c},{r}
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })
-                                            ))}
+                                        <div className="w-full relative mt-4 flex justify-center">
+                                            <IsometricTownGrid
+                                                buildings={buildings}
+                                                gold={gold}
+                                                selectedBuildingId={selectedBuildingId}
+                                                placeBuilding={placeBuilding}
+                                                onTileClick={(x, y) => {
+                                                    setViewMode('construction');
+                                                }}
+                                                onBuildingClick={(buildingId) => {
+                                                    setClickedBuildingId(buildingId);
+                                                }}
+                                                heroes={heroes}
+                                            />
                                         </div>
                                     </div>
 
                                     {/* Right Area: Control Panel Sidebar */}
-                                    <div className="w-full md:w-80 bg-stone-900/60 border border-stone-850 p-5 rounded-2xl flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-none">
+                                    <div className="w-full md:w-80 flex-shrink-0 bg-stone-900/60 border border-stone-850 p-5 rounded-2xl flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-none">
                                         {clickedBuilding ? (
                                             /* Details of a clicked building */
                                             <div className="flex flex-col h-full justify-between gap-4">

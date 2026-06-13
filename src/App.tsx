@@ -61,8 +61,9 @@ import { PortalResetModal } from './components/modals/PortalResetModal';
 import { PrestigeTreeModal } from './components/modals/PrestigeTreeModal';
 import { PetSpaceModal } from './components/modals/PetSpaceModal';
 import { WeatherOverlays } from './components/WeatherOverlays';
-
-import { FAKE_LEADERBOARD } from './engine/initialData'; // Phase 60
+import { ElementalResonanceModal } from './components/modals/ElementalResonanceModal';
+import { RelicChamberModal } from './components/modals/RelicChamberModal';
+import { VoidInfusionModal } from './components/modals/VoidInfusionModal';
 
 function App() {
   const industry = useIndustry();
@@ -107,9 +108,28 @@ function App() {
     backroomsExplorers, backroomsOutpost, backroomsResources, backroomsLogs,
     recruitExplorer, sendExplorer, recallExplorer, restExplorer, useAlmondWater,
     upgradeOutpost, craftGear,
-    backroomsUnlockedTechs, researchTech
+    backroomsUnlockedTechs, researchTech,
+    backroomsFloor, backroomsFloorProgress, backroomsBossHp,
+    fakePlayers,
+    elementalResonance, elementalEssences, ownedRelics, equippedRelics,
+    gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex
   } = useGame();
 
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const baseWidth = 850;
+      const baseHeight = 880;
+      const wScale = window.innerWidth / baseWidth;
+      const hScale = (window.innerHeight - 16) / baseHeight;
+      const newScale = Math.min(wScale, hScale);
+      setScale(Math.max(0.4, Math.min(1.2, newScale)));
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [showShop, setShowShop] = useState(false);
   const [showTown, setShowTown] = useState(false); // Phase 53
@@ -156,6 +176,9 @@ function App() {
   const [showRoguelike, setShowRoguelike] = useState(false);
   const [showBackrooms, setShowBackrooms] = useState(false);
   const [showJourney, setShowJourney] = useState(false);
+  const [showElementalResonance, setShowElementalResonance] = useState(false);
+  const [showRelicChamber, setShowRelicChamber] = useState(false);
+  const [showVoidInfusion, setShowVoidInfusion] = useState(false);
   const [bottomTab, setBottomTab] = useState<'heroes' | 'pets'>('heroes');
 
   const [importString, setImportString] = useState('');
@@ -245,7 +268,16 @@ function App() {
       <WeatherOverlays weather={weather} />
 
       {/* Game Container */}
-      <div className={`w-full max-w-4xl h-full max-h-[900px] flex flex-col bg-opacity-95 border-4 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm transition-colors duration-500 ${themeClass}`}>
+      <div 
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+          width: '850px',
+          height: '880px',
+          flexShrink: 0
+        }}
+        className={`flex flex-col bg-opacity-95 border-4 rounded-lg shadow-2xl relative z-10 backdrop-blur-sm transition-all duration-300 ${themeClass}`}
+      >
         {/* TOWN EVENT WIDGET */}
         {activeEvent && <TownEventWidget event={activeEvent} actions={actions} onDismiss={actions.dismissEvent} />}
 
@@ -283,6 +315,9 @@ function App() {
           setShowRoguelike={setShowRoguelike}
           setShowBackrooms={setShowBackrooms}
           setShowJourney={setShowJourney}
+          setShowElementalResonance={setShowElementalResonance}
+          setShowVoidInfusion={setShowVoidInfusion}
+          setShowRelicChamber={setShowRelicChamber}
         />
 
         <BattleArea
@@ -399,7 +434,7 @@ function App() {
 
       <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} />
 
-      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0} />
+      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0)} />
 
       <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} />
 
@@ -447,7 +482,7 @@ function App() {
             actions.bombardTerritory(id, multiplier, weaponName);
           }
         };
-        return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} />;
+        return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} gvgWarState={gvgWarState} onStartGvG={() => startGvGWar(guild?.name || 'Sua Guilda')} onPlayerGvGAttack={playerGvGAttack} />;
       })()}
 
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
@@ -489,7 +524,7 @@ function App() {
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
 
-      <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={FAKE_LEADERBOARD} currentPower={partyPower} />
+      <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={fakePlayers} currentPower={partyPower} />
       {dungeonActive && (
         <DungeonModal
           dungeon={dungeonState}
@@ -630,11 +665,15 @@ function App() {
       <BackroomsManagerModal
         isOpen={showBackrooms}
         onClose={() => setShowBackrooms(false)}
+        currentTutorialIndex={currentTutorialIndex}
         explorers={backroomsExplorers}
         outpost={backroomsOutpost}
         resources={backroomsResources}
         logs={backroomsLogs}
         unlockedTechs={backroomsUnlockedTechs}
+        floor={backroomsFloor}
+        floorProgress={backroomsFloorProgress}
+        bossHp={backroomsBossHp}
         actions={{
           recruitExplorer,
           sendExplorer,
@@ -658,6 +697,33 @@ function App() {
           outerSpaceUnlocked,
           riftsUnlocked: backroomsUnlockedTechs.includes('rift_tech')
         }}
+      />
+
+      <ElementalResonanceModal
+        isOpen={showElementalResonance}
+        onClose={() => setShowElementalResonance(false)}
+        elementalResonance={elementalResonance}
+        elementalEssences={elementalEssences}
+        actions={actions}
+      />
+
+      <RelicChamberModal
+        isOpen={showRelicChamber}
+        onClose={() => setShowRelicChamber(false)}
+        ownedRelics={ownedRelics}
+        equippedRelics={equippedRelics}
+        gold={gold}
+        souls={souls}
+        voidMatter={voidMatter}
+        actions={actions}
+      />
+
+      <VoidInfusionModal
+        isOpen={showVoidInfusion}
+        onClose={() => setShowVoidInfusion(false)}
+        items={items}
+        voidMatter={voidMatter}
+        actions={actions}
       />
     </div>
   );

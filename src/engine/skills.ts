@@ -1,4 +1,4 @@
-import type { Skill, ElementType, Stats } from './types';
+import type { Skill, ElementType, Stats, SkillTreeNode, Hero } from './types';
 
 // Helper to create Active Skills
 const active = (id: string, name: string, desc: string, level: number, cd: number, val: number, target: Skill['target'], el?: ElementType, effect: Skill['effectType'] = 'damage'): Skill => ({
@@ -382,4 +382,121 @@ export const getBestDamageSkill = (skills: Skill[], heroLevel: number): Skill | 
     const available = getActiveSkills(skills, heroLevel).filter(s => s.effectType === 'damage');
     if (available.length === 0) return null;
     return available.reduce((best, s) => s.value > best.value ? s : best);
+};
+
+export const STATIC_SKILL_TREE_NODES: {
+    id: string;
+    name: string;
+    description: string;
+    requiredLevel: number;
+    archetype: 'attack' | 'defense' | 'utility';
+    tier: number;
+    baseValue: number;
+    maxLevel: number;
+    bonusType: SkillTreeNode['bonusType'];
+}[] = [
+    // --- ATTACK PATH ---
+    { id: 'atk_t1', name: 'Treinamento de Força', description: 'Aumenta o multiplicador de ataque físico.', requiredLevel: 1, archetype: 'attack', tier: 1, baseValue: 0.015, maxLevel: 5, bonusType: 'attackMult' },
+    { id: 'atk_t2', name: 'Golpes Precisos', description: 'Melhora o dano crítico.', requiredLevel: 10, archetype: 'attack', tier: 2, baseValue: 0.015, maxLevel: 5, bonusType: 'critDamageBonus' },
+    { id: 'atk_t3', name: 'Foco Letal', description: 'Aumenta a chance de acerto crítico.', requiredLevel: 20, archetype: 'attack', tier: 3, baseValue: 0.002, maxLevel: 5, bonusType: 'critChanceBonus' },
+    { id: 'atk_t4', name: 'Poder Brutal', description: 'Aumenta o multiplicador de ataque físico.', requiredLevel: 30, archetype: 'attack', tier: 4, baseValue: 0.02, maxLevel: 5, bonusType: 'attackMult' },
+    { id: 'atk_t5', name: 'Amplificação Mágica', description: 'Melhora o poder mágico do herói.', requiredLevel: 40, archetype: 'attack', tier: 5, baseValue: 0.015, maxLevel: 5, bonusType: 'magicMult' },
+    { id: 'atk_t6', name: 'Precisão Cirúrgica', description: 'Chance extra de causar golpes críticos devastadores.', requiredLevel: 50, archetype: 'attack', tier: 6, baseValue: 0.003, maxLevel: 5, bonusType: 'critChanceBonus' },
+    { id: 'atk_t7', name: 'Fúria Destruidora', description: 'Bônus massivo no dano crítico.', requiredLevel: 60, archetype: 'attack', tier: 7, baseValue: 0.02, maxLevel: 5, bonusType: 'critDamageBonus' },
+    { id: 'atk_t8', name: 'Canalização Arcana', description: 'Amplifica ainda mais a magia.', requiredLevel: 70, archetype: 'attack', tier: 8, baseValue: 0.02, maxLevel: 5, bonusType: 'magicMult' },
+    { id: 'atk_t9', name: 'Ira do Gladiador', description: 'Aumenta o ataque e a força geral.', requiredLevel: 80, archetype: 'attack', tier: 9, baseValue: 0.025, maxLevel: 5, bonusType: 'attackMult' },
+    { id: 'atk_t10', name: 'Ascensão Divina', description: 'Amplifica ataque e magia em níveis absurdos.', requiredLevel: 90, archetype: 'attack', tier: 10, baseValue: 0.03, maxLevel: 5, bonusType: 'attackMult' },
+
+    // --- DEFENSE PATH ---
+    { id: 'def_t1', name: 'Vitalidade Básica', description: 'Aumenta o multiplicador de vida máxima.', requiredLevel: 1, archetype: 'defense', tier: 1, baseValue: 0.02, maxLevel: 5, bonusType: 'hpMult' },
+    { id: 'def_t2', name: 'Couraça de Aço', description: 'Melhora a defesa global do herói.', requiredLevel: 10, archetype: 'defense', tier: 2, baseValue: 0.02, maxLevel: 5, bonusType: 'defenseMult' },
+    { id: 'def_t3', name: 'Casca Grossa', description: 'Mitiga o dano recebido em porcentagem.', requiredLevel: 20, archetype: 'defense', tier: 3, baseValue: 0.005, maxLevel: 5, bonusType: 'damageMitigation' },
+    { id: 'def_t4', name: 'Resistência Física', description: 'Aumenta a defesa e armadura física.', requiredLevel: 30, archetype: 'defense', tier: 4, baseValue: 0.025, maxLevel: 5, bonusType: 'defenseMult' },
+    { id: 'def_t5', name: 'Coração de Ferro', description: 'Concede vida extra de forma massiva.', requiredLevel: 40, archetype: 'defense', tier: 5, baseValue: 0.025, maxLevel: 5, bonusType: 'hpMult' },
+    { id: 'def_t6', name: 'Barreira Espiritual', description: 'Mitiga o dano mágico e físico adicional.', requiredLevel: 50, archetype: 'defense', tier: 6, baseValue: 0.006, maxLevel: 5, bonusType: 'damageMitigation' },
+    { id: 'def_t7', name: 'Constituição Divina', description: 'Garante mais vida útil para o combate.', requiredLevel: 60, archetype: 'defense', tier: 7, baseValue: 0.03, maxLevel: 5, bonusType: 'hpMult' },
+    { id: 'def_t8', name: 'Paredão de Pedra', description: 'Aumenta a defesa e a resiliência física.', requiredLevel: 70, archetype: 'defense', tier: 8, baseValue: 0.03, maxLevel: 5, bonusType: 'defenseMult' },
+    { id: 'def_t9', name: 'Escudo do Vazio', description: 'Mitigação de dano de elite.', requiredLevel: 80, archetype: 'defense', tier: 9, baseValue: 0.008, maxLevel: 5, bonusType: 'damageMitigation' },
+    { id: 'def_t10', name: 'Baluarte Imortal', description: 'Aumenta a vida de forma colossal.', requiredLevel: 90, archetype: 'defense', tier: 10, baseValue: 0.035, maxLevel: 5, bonusType: 'hpMult' },
+
+    // --- UTILITY PATH ---
+    { id: 'utl_t1', name: 'Passo Rápido', description: 'Aumenta a velocidade de movimento e combate.', requiredLevel: 1, archetype: 'utility', tier: 1, baseValue: 0.015, maxLevel: 5, bonusType: 'speedMult' },
+    { id: 'utl_t2', name: 'Foco Mental', description: 'Melhora a resistência à insanidade nos Backrooms.', requiredLevel: 10, archetype: 'utility', tier: 2, baseValue: 0.01, maxLevel: 5, bonusType: 'insanityResistance' },
+    { id: 'utl_t3', name: 'Explorador Ágil', description: 'Melhora a eficiência em expedições.', requiredLevel: 20, archetype: 'utility', tier: 3, baseValue: 0.01, maxLevel: 5, bonusType: 'expeditionSpeedBonus' },
+    { id: 'utl_t4', name: 'Reflexos Rápidos', description: 'Melhora a velocidade do herói.', requiredLevel: 30, archetype: 'utility', tier: 4, baseValue: 0.02, maxLevel: 5, bonusType: 'speedMult' },
+    { id: 'utl_t5', name: 'Mente Sã', description: 'Resistência extra contra loucura.', requiredLevel: 40, archetype: 'utility', tier: 5, baseValue: 0.015, maxLevel: 5, bonusType: 'insanityResistance' },
+    { id: 'utl_t6', name: 'Logística Avançada', description: 'Melhora o poder e velocidade de expedição.', requiredLevel: 50, archetype: 'utility', tier: 6, baseValue: 0.015, maxLevel: 5, bonusType: 'expeditionSpeedBonus' },
+    { id: 'utl_t7', name: 'Velocidade da Luz', description: 'Aumento massivo na velocidade básica.', requiredLevel: 60, archetype: 'utility', tier: 7, baseValue: 0.025, maxLevel: 5, bonusType: 'speedMult' },
+    { id: 'utl_t8', name: 'Sanidade Blindada', description: 'Resistência de elite a efeitos mentais.', requiredLevel: 70, archetype: 'utility', tier: 8, baseValue: 0.02, maxLevel: 5, bonusType: 'insanityResistance' },
+    { id: 'utl_t9', name: 'Sobrevivente do Labirinto', description: 'Perfeito para expedições perigosas.', requiredLevel: 80, archetype: 'utility', tier: 9, baseValue: 0.02, maxLevel: 5, bonusType: 'expeditionSpeedBonus' },
+    { id: 'utl_t10', name: 'Caminhante do Vazio', description: 'Aumenta a velocidade global absurdamente.', requiredLevel: 90, archetype: 'utility', tier: 10, baseValue: 0.03, maxLevel: 5, bonusType: 'speedMult' }
+];
+
+export const updateHeroSkills = (hero: Hero): Hero => {
+    const level = hero.level || 1;
+    
+    // 1. Build nodes list
+    const nodes: SkillTreeNode[] = STATIC_SKILL_TREE_NODES.map(staticNode => {
+        const unlocked = level >= staticNode.requiredLevel;
+        const nodeLvl = unlocked ? Math.min(staticNode.maxLevel, Math.floor((level - staticNode.requiredLevel) / 10) + 1) : 0;
+        const effectValue = staticNode.baseValue * nodeLvl;
+        
+        return {
+            id: staticNode.id,
+            name: staticNode.name,
+            description: staticNode.description,
+            requiredLevel: staticNode.requiredLevel,
+            archetype: staticNode.archetype,
+            tier: staticNode.tier,
+            unlocked,
+            level: nodeLvl,
+            maxLevel: staticNode.maxLevel,
+            effectValue,
+            bonusType: staticNode.bonusType
+        };
+    });
+
+    // 2. Initialize or update passiveSkillTree
+    const passiveTree = hero.passiveSkillTree || {
+        level: level,
+        pointsSpent: Math.max(0, level - 1),
+        offensivePoints: 0,
+        defensivePoints: 0,
+        utilityPoints: 0,
+        modifiers: {
+            attackMult: 1.0,
+            magicMult: 1.0,
+            hpMult: 1.0,
+            defenseMult: 1.0,
+            speedMult: 1.0,
+            critChanceBonus: 0.0,
+            critDamageBonus: 0.0,
+            damageMitigation: 0.0,
+            insanityResistance: 0.0,
+            expeditionSpeedBonus: 0.0
+        },
+        unlockedMilestones: []
+    };
+
+    const modifiers = { ...passiveTree.modifiers };
+
+    nodes.forEach(node => {
+        if (node.unlocked && node.effectValue > 0) {
+            const bt = node.bonusType;
+            if (bt.endsWith('Mult')) {
+                modifiers[bt] = (modifiers[bt] || 1.0) + node.effectValue;
+            } else {
+                modifiers[bt] = (modifiers[bt] || 0.0) + node.effectValue;
+            }
+        }
+    });
+
+    return {
+        ...hero,
+        skillTreeNodes: nodes,
+        passiveSkillTree: {
+            ...passiveTree,
+            modifiers
+        }
+    };
 };

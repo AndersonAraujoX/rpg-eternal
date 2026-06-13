@@ -12,7 +12,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: '+5% Ouro / Lvl',
         effectValue: 0.05,
         currency: 'gold',
-        emoji: '🏛️'
+        emoji: '🏛️',
+        width: 2,
+        height: 2
     },
     {
         id: 'barracks',
@@ -25,7 +27,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: '+2% DPS / Lvl',
         effectValue: 0.02,
         currency: 'gold',
-        emoji: '⚔️'
+        emoji: '⚔️',
+        width: 2,
+        height: 1
     },
     {
         id: 'library',
@@ -38,7 +42,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: '+10% XP / Lvl',
         effectValue: 0.1,
         currency: 'gold',
-        emoji: '📚'
+        emoji: '📚',
+        width: 1,
+        height: 2
     },
     {
         id: 'warehouse',
@@ -49,9 +55,11 @@ export const INITIAL_BUILDINGS: Building[] = [
         cost: 10000,
         costScaling: 2.0,
         bonus: '+1h Offline Time / Lvl',
-        effectValue: 1, // Represents hours
+        effectValue: 1,
         currency: 'gold',
-        emoji: '📦'
+        emoji: '📦',
+        width: 1,
+        height: 1
     },
     {
         id: 'altar',
@@ -64,7 +72,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: '+0.5% Soul Chance / Lvl',
         effectValue: 0.005,
         currency: 'gold',
-        emoji: '🔮'
+        emoji: '🔮',
+        width: 1,
+        height: 1
     },
     {
         id: 'guild_hall',
@@ -77,7 +87,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Guildas',
         effectValue: 1,
         currency: 'gold',
-        emoji: '🏰'
+        emoji: '🏰',
+        width: 2,
+        height: 2
     },
     {
         id: 'forge_workshop',
@@ -90,7 +102,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia a Forja',
         effectValue: 1,
         currency: 'gold',
-        emoji: '🔨'
+        emoji: '🔨',
+        width: 2,
+        height: 1
     },
     {
         id: 'breeding_center',
@@ -103,7 +117,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Criar Pets',
         effectValue: 1,
         currency: 'gold',
-        emoji: '🧬'
+        emoji: '🧬',
+        width: 1,
+        height: 1
     },
     {
         id: 'fishing_dock',
@@ -116,7 +132,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia a Pesca',
         effectValue: 1,
         currency: 'gold',
-        emoji: '⚓'
+        emoji: '⚓',
+        width: 1,
+        height: 1
     },
     {
         id: 'alchemy_lab',
@@ -129,7 +147,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Poções',
         effectValue: 1,
         currency: 'gold',
-        emoji: '🧪'
+        emoji: '🧪',
+        width: 1,
+        height: 1
     },
     {
         id: 'expedition_post',
@@ -142,7 +162,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Explorar',
         effectValue: 1,
         currency: 'gold',
-        emoji: '🗺️'
+        emoji: '🗺️',
+        width: 2,
+        height: 1
     },
     {
         id: 'mystic_garden',
@@ -155,7 +177,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia o Jardim',
         effectValue: 1,
         currency: 'gold',
-        emoji: '🌿'
+        emoji: '🌿',
+        width: 2,
+        height: 2
     },
     {
         id: 'rune_sanctuary',
@@ -168,7 +192,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Runas',
         effectValue: 1,
         currency: 'gold',
-        emoji: '💎'
+        emoji: '💎',
+        width: 1,
+        height: 1
     },
     {
         id: 'celestial_observatory',
@@ -181,7 +207,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: '+10% Luz Estelar / Lvl',
         effectValue: 0.1,
         currency: 'gold',
-        emoji: '🔭'
+        emoji: '🔭',
+        width: 2,
+        height: 2
     },
     {
         id: 'industry',
@@ -194,7 +222,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: '+15% Velocidade de Coleta / Lvl',
         effectValue: 0.15,
         currency: 'gold',
-        emoji: '🏭'
+        emoji: '🏭',
+        width: 2,
+        height: 2
     },
     {
         id: 'curse_sanctuary',
@@ -207,7 +237,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Purificação',
         effectValue: 1,
         currency: 'gold',
-        emoji: '⛪'
+        emoji: '⛪',
+        width: 1,
+        height: 1
     },
     {
         id: 'altar_deities',
@@ -220,7 +252,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Deuses Padroeiros',
         effectValue: 1,
         currency: 'gold',
-        emoji: '⛪'
+        emoji: '⛪',
+        width: 1,
+        height: 1
     },
     {
         id: 'pantheon',
@@ -233,7 +267,9 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Monumentos',
         effectValue: 1,
         currency: 'gold',
-        emoji: '🏛️'
+        emoji: '🏛️',
+        width: 2,
+        height: 2
     },
     {
         id: 'backrooms_manager',
@@ -246,6 +282,8 @@ export const INITIAL_BUILDINGS: Building[] = [
         bonus: 'Desbloqueia Exploração das Backrooms',
         effectValue: 1,
         currency: 'gold',
-        emoji: '🏢'
+        emoji: '🏢',
+        width: 2,
+        height: 1
     }
 ];

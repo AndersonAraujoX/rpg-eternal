@@ -8,7 +8,7 @@ import { getNextBoss } from '../../hooks/useGame';
 
 describe('Void & Tower Mechanics', () => {
     test('Tower floor progression and boss sync', () => {
-        let tower = { floor: 1, maxFloor: 1, active: false };
+        const tower = { floor: 1, maxFloor: 1, active: false };
         let towerBoss = { ...INITIAL_BOSS };
 
         // Simulate enterTower logic
@@ -62,8 +62,8 @@ describe('Void & Tower Mechanics', () => {
     });
 
     test('Void boss customization', () => {
-        let boss = { ...INITIAL_BOSS, name: "Original", emoji: "👹" };
-        let voidActive = true;
+        const boss = { ...INITIAL_BOSS, name: "Original", emoji: "👹" };
+        const voidActive = true;
         let isTower = false;
 
         // Logic from useGame.ts

@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
-import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot, ElementType } from '../engine/types';
+import type { Hero, Boss, Item, Pet, Talent, Artifact, MonsterCard, ConstellationNode, Tower, Guild, Achievement, GalaxySector, GameStats, Resources, Building, Quest, ArenaOpponent, Expedition, DailyQuest, ActivePotion, Rune, GardenPlot, ElementType, Territory, Spaceship, Formation } from '../engine/types';
+import type { WeatherType } from '../engine/weather';
 import { INITIAL_HEROES, INITIAL_PET_DATA, INITIAL_CONSTELLATIONS, INITIAL_BOSS } from '../engine/initialData';
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GARDEN } from '../engine/garden';
 import type { BackroomsExplorer, BackroomsOutpost, BackroomsResources } from '../engine/backrooms';
+import type { FakePlayer } from '../engine/playerSimulation';
+import type { GvGWarState } from '../engine/guildWar';
+import { initOrUpdateHeroPassiveTree } from '../data/skillTreeData';
+
 
 export interface PersistenceProps {
     heroes: Hero[];
@@ -79,14 +84,28 @@ export interface PersistenceProps {
     setDailyLoginClaimed: React.Dispatch<React.SetStateAction<boolean>>;
     lastDailyReset: number;
     setLastDailyReset: React.Dispatch<React.SetStateAction<number>>;
-    territories: any[];
-    setTerritories: React.Dispatch<React.SetStateAction<any[]>>;
-    spaceship: any;
-    setSpaceship: React.Dispatch<React.SetStateAction<any>>;
-    formations: any[];
-    setFormations: React.Dispatch<React.SetStateAction<any[]>>;
-    weather: any;
-    setWeather: React.Dispatch<React.SetStateAction<any>>;
+    territories: Territory[];
+    setTerritories: React.Dispatch<React.SetStateAction<Territory[]>>;
+    spaceship: Spaceship;
+    setSpaceship: React.Dispatch<React.SetStateAction<Spaceship>>;
+    formations: Formation[];
+    setFormations: React.Dispatch<React.SetStateAction<Formation[]>>;
+    weather: WeatherType;
+    setWeather: React.Dispatch<React.SetStateAction<WeatherType>>;
+    teamMorale: number;
+    setTeamMorale: React.Dispatch<React.SetStateAction<number>>;
+    heroBonds: Record<string, { xp: number, level: number, type: 'comrades' | 'rivals' | 'soulmates' }>;
+    setHeroBonds: React.Dispatch<React.SetStateAction<Record<string, { xp: number, level: number, type: 'comrades' | 'rivals' | 'soulmates' }>>>;
+    patronDeity: string | null;
+    setPatronDeity: React.Dispatch<React.SetStateAction<string | null>>;
+    deityLevel: number;
+    setDeityLevel: React.Dispatch<React.SetStateAction<number>>;
+    deityFavor: number;
+    setDeityFavor: React.Dispatch<React.SetStateAction<number>>;
+    deityEnergy: number;
+    setDeityEnergy: React.Dispatch<React.SetStateAction<number>>;
+    outerSpaceUnlocked: boolean;
+    setOuterSpaceUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
     prestigeNodes: Record<string, number>;
     setPrestigeNodes: React.Dispatch<React.SetStateAction<Record<string, number>>>;
     monuments: (string | null)[];
@@ -119,6 +138,45 @@ export interface PersistenceProps {
     setBackroomsResources: React.Dispatch<React.SetStateAction<BackroomsResources>>;
     backroomsUnlockedTechs: string[];
     setBackroomsUnlockedTechs: React.Dispatch<React.SetStateAction<string[]>>;
+    backroomsFloor: number;
+    setBackroomsFloor: React.Dispatch<React.SetStateAction<number>>;
+    backroomsFloorProgress: number;
+    setBackroomsFloorProgress: React.Dispatch<React.SetStateAction<number>>;
+    fakePlayers: FakePlayer[];
+    setFakePlayers: React.Dispatch<React.SetStateAction<FakePlayer[]>>;
+    gvgWarState: GvGWarState | null;
+    setGvgWarState: React.Dispatch<React.SetStateAction<GvGWarState | null>>;
+    currentTutorialIndex: number;
+    setCurrentTutorialIndex: React.Dispatch<React.SetStateAction<number>>;
+    classMastery: Record<string, any>;
+    setClassMastery: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+    town: import("../engine/types").TownState;
+    setTown: React.Dispatch<React.SetStateAction<import("../engine/types").TownState>>;
+    townVisited: boolean;
+    setTownVisited: React.Dispatch<React.SetStateAction<boolean>>;
+    dungeonActive: boolean;
+    dungeonTimer: number;
+    setDungeonTimer: React.Dispatch<React.SetStateAction<number>>;
+    dungeonState: any;
+    setDungeonState: React.Dispatch<React.SetStateAction<any>>;
+    riftState: any;
+    setRiftState: React.Dispatch<React.SetStateAction<any>>;
+    riftTimer: number;
+    setRiftTimer: React.Dispatch<React.SetStateAction<number>>;
+    activeRift: any;
+    setActiveRift: React.Dispatch<React.SetStateAction<any>>;
+    worldBoss: any;
+    setWorldBoss: React.Dispatch<React.SetStateAction<any>>;
+    personalDamage: number;
+    setPersonalDamage: React.Dispatch<React.SetStateAction<number>>;
+    canClaim: boolean;
+    setCanClaim: React.Dispatch<React.SetStateAction<boolean>>;
+    cooldownUntil: number | null;
+    setCooldownUntil: React.Dispatch<React.SetStateAction<number | null>>;
+    marketStock: any[];
+    setMarketStock: React.Dispatch<React.SetStateAction<any[]>>;
+    marketTimer: number;
+    setMarketTimer: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -176,7 +234,57 @@ export const usePersistence = (props: PersistenceProps) => {
         backroomsResources,
         setBackroomsResources,
         backroomsUnlockedTechs,
-        setBackroomsUnlockedTechs
+        setBackroomsUnlockedTechs,
+        setBackroomsFloor,
+        setBackroomsFloorProgress,
+        fakePlayers,
+        setFakePlayers,
+        setGvgWarState,
+        currentTutorialIndex,
+        setCurrentTutorialIndex,
+        teamMorale,
+        setTeamMorale,
+        heroBonds,
+        setHeroBonds,
+        patronDeity,
+        setPatronDeity,
+        deityLevel,
+        setDeityLevel,
+        deityFavor,
+        setDeityFavor,
+        deityEnergy,
+        setDeityEnergy,
+        outerSpaceUnlocked,
+        setOuterSpaceUnlocked,
+        classMastery,
+        setClassMastery,
+        town,
+        setTown,
+        townVisited,
+        setTownVisited,
+        dungeonActive,
+        dungeonTimer,
+        setDungeonTimer,
+        dungeonState,
+        setDungeonState,
+        riftState,
+        setRiftState,
+        riftTimer,
+        setRiftTimer,
+        activeRift,
+        setActiveRift,
+        worldBoss,
+        setWorldBoss,
+        personalDamage,
+        setPersonalDamage,
+        canClaim,
+        setCanClaim,
+        cooldownUntil,
+        setCooldownUntil,
+        marketStock,
+        setMarketStock,
+        marketTimer,
+        setMarketTimer
     } = props;
 
 
@@ -185,7 +293,20 @@ export const usePersistence = (props: PersistenceProps) => {
         const saved = localStorage.getItem('rpg_eternal_save_v6');
         if (saved) {
             try {
-                const state = JSON.parse(saved);
+                const state = JSON.parse(saved, (key, value) => {
+                    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                        return undefined;
+                    }
+                    if (typeof value === 'string') {
+                        return value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    }
+                    return value;
+                });
+
+                if (typeof state !== 'object' || state === null || Array.isArray(state)) {
+                    throw new Error('Invalid save state');
+                }
+
                 // Merge loaded heroes with new props (element, assignment)
                 const savedHeroes = state.heroes || [];
 
@@ -214,7 +335,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 // 2. Preserve Dynamic Heroes (Miners) - those not in INITIAL_HEROES
                 const dynamicHeroes = savedHeroes
                     .filter((h: Hero) => !INITIAL_HEROES.some(initH => initH.id === h.id))
-                    .map((savedH: any) => ({
+                    .map((savedH: Partial<Hero> & { id: string }) => ({
                         ...savedH,
                         insanity: savedH.insanity ?? 0,
                         fatigue: savedH.fatigue ?? 0,
@@ -224,7 +345,8 @@ export const usePersistence = (props: PersistenceProps) => {
                         curses: savedH.curses || []
                     }));
 
-                const updatedHeroes = [...staticHeroes, ...dynamicHeroes];
+                const updatedHeroes = [...staticHeroes, ...dynamicHeroes].map(h => initOrUpdateHeroPassiveTree(h));
+
 
                 setHeroes(updatedHeroes);
                 setBoss({ ...state.boss, element: state.boss?.element || 'neutral' });
@@ -246,7 +368,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.constellations && state.constellations.length > 0) {
                     // Merge: preserve levels from save, but always include all INITIAL nodes
                     setConstellations(INITIAL_CONSTELLATIONS.map(initC => {
-                        const savedC = state.constellations.find((c: any) => c.id === initC.id);
+                        const savedC = state.constellations.find((c: Partial<ConstellationNode>) => c.id === initC.id);
                         return savedC ? { ...initC, level: savedC.level ?? initC.level } : initC;
                     }));
                 }
@@ -316,15 +438,16 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.formations) setFormations(state.formations);
                 if (state.weather) setWeather(state.weather);
                 if (state.prestigeNodes) setPrestigeNodes(state.prestigeNodes);
-                if (state.teamMorale !== undefined) (props as any).setTeamMorale(state.teamMorale);
-                else (props as any).setTeamMorale(100);
-                if (state.heroBonds) (props as any).setHeroBonds(state.heroBonds);
+                if (state.teamMorale !== undefined) setTeamMorale(state.teamMorale);
+                else setTeamMorale(100);
+                if (state.heroBonds) setHeroBonds(state.heroBonds);
                 if (state.monuments) setMonuments(state.monuments);
                 else setMonuments([null, null, null]);
-                if (state.patronDeity !== undefined) (props as any).setPatronDeity(state.patronDeity);
-                if (state.deityLevel !== undefined) (props as any).setDeityLevel(state.deityLevel);
-                if (state.deityFavor !== undefined) (props as any).setDeityFavor(state.deityFavor);
-                if (state.deityEnergy !== undefined) (props as any).setDeityEnergy(state.deityEnergy);
+                if (state.patronDeity !== undefined) setPatronDeity(state.patronDeity);
+                if (state.deityLevel !== undefined) setDeityLevel(state.deityLevel);
+                if (state.deityFavor !== undefined) setDeityFavor(state.deityFavor);
+                if (state.deityEnergy !== undefined) setDeityEnergy(state.deityEnergy);
+                if (state.outerSpaceUnlocked !== undefined) setOuterSpaceUnlocked(state.outerSpaceUnlocked);
                 if (state.gardenPlots) setGardenPlots(state.gardenPlots);
                 else setGardenPlots(INITIAL_GARDEN);
                 if (state.runes) setRunes(state.runes);
@@ -341,6 +464,9 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.backroomsOutpost) setBackroomsOutpost(state.backroomsOutpost);
                 if (state.backroomsResources) setBackroomsResources(state.backroomsResources);
                 if (state.backroomsUnlockedTechs) setBackroomsUnlockedTechs(state.backroomsUnlockedTechs);
+                if (typeof state.backroomsFloor === 'number') setBackroomsFloor(state.backroomsFloor);
+                if (typeof state.backroomsFloorProgress === 'number') setBackroomsFloorProgress(state.backroomsFloorProgress);
+                if (typeof state.currentTutorialIndex === 'number') setCurrentTutorialIndex(state.currentTutorialIndex);
 
                 if (state.achievements) {
                     // Merge saved achievements with current data to ensure new achievements appear
@@ -353,11 +479,30 @@ export const usePersistence = (props: PersistenceProps) => {
                     });
                 }
 
-                // World Boss state generally shouldn't be persisted if active, or maybe yes?
-                // For now, let's reset WB on reload to avoid bugs, or persist only fragments.
+                if (state.fakePlayers) setFakePlayers(state.fakePlayers);
+                if (state.gvgWarState) setGvgWarState(state.gvgWarState);
+
+                // Persistir estados da Vila, Masmorras, Fendas, World Boss e Mercado
+                if (state.classMastery) setClassMastery(state.classMastery);
+                if (state.town) setTown(state.town);
+                if (state.townVisited !== undefined) setTownVisited(state.townVisited);
+                if (state.dungeonActive !== undefined) setDungeonActive(state.dungeonActive);
+                if (state.dungeonTimer !== undefined) setDungeonTimer(state.dungeonTimer);
+                if (state.dungeonState) setDungeonState(state.dungeonState);
+                if (state.riftState) setRiftState(state.riftState);
+                if (state.riftTimer !== undefined) setRiftTimer(state.riftTimer);
+                if (state.activeRift) setActiveRift(state.activeRift);
+                if (state.worldBoss) setWorldBoss(state.worldBoss);
+                if (state.personalDamage !== undefined) setPersonalDamage(state.personalDamage);
+                if (state.canClaim !== undefined) setCanClaim(state.canClaim);
+                if (state.cooldownUntil !== undefined) setCooldownUntil(state.cooldownUntil);
+                if (state.marketStock) setMarketStock(state.marketStock);
+                if (state.marketTimer !== undefined) setMarketTimer(state.marketTimer);
 
                 setRaidActive(false);
-                setDungeonActive(false);
+                if (state.dungeonActive === undefined) {
+                    setDungeonActive(false);
+                }
 
                 // Offline Calc (omitted for brevity, assume unchanged logic)
                 if (state.lastSaveTime) {
@@ -428,8 +573,8 @@ export const usePersistence = (props: PersistenceProps) => {
 
             // Filtrar monsterKills para economizar espaço
             const filteredKills: Record<string, number> = {};
-            Object.entries(p.monsterKills || {}).forEach(([id, count]: [string, any]) => {
-                if (typeof count === 'number' && count > 0) filteredKills[id] = count;
+            Object.entries(p.monsterKills || {}).forEach(([id, count]) => {
+                if (count > 0) filteredKills[id] = count;
             });
 
             const state = {
@@ -441,13 +586,14 @@ export const usePersistence = (props: PersistenceProps) => {
                 dailyQuests: p.dailyQuests, dailyLoginClaimed: p.dailyLoginClaimed, lastDailyReset: p.lastDailyReset,
                 territories: p.territories, spaceship: p.spaceship, formations: p.formations, weather: p.weather,
                 prestigeNodes: p.prestigeNodes,
-                teamMorale: (p as any).teamMorale,
-                heroBonds: (p as any).heroBonds,
+                teamMorale: p.teamMorale,
+                heroBonds: p.heroBonds,
                 monuments: p.monuments,
-                patronDeity: (p as any).patronDeity,
-                deityLevel: (p as any).deityLevel,
-                deityFavor: (p as any).deityFavor,
-                deityEnergy: (p as any).deityEnergy,
+                patronDeity: p.patronDeity,
+                deityLevel: p.deityLevel,
+                deityFavor: p.deityFavor,
+                deityEnergy: p.deityEnergy,
+                outerSpaceUnlocked: p.outerSpaceUnlocked,
                 gardenPlots: p.gardenPlots,
                 items: compactItems,
                 runes: p.runes,
@@ -463,6 +609,26 @@ export const usePersistence = (props: PersistenceProps) => {
                 backroomsOutpost: p.backroomsOutpost,
                 backroomsResources: p.backroomsResources,
                 backroomsUnlockedTechs: p.backroomsUnlockedTechs,
+                backroomsFloor: p.backroomsFloor,
+                backroomsFloorProgress: p.backroomsFloorProgress,
+                fakePlayers: p.fakePlayers,
+                gvgWarState: p.gvgWarState,
+                currentTutorialIndex: p.currentTutorialIndex,
+                classMastery: p.classMastery,
+                town: p.town,
+                townVisited: p.townVisited,
+                dungeonActive: p.dungeonActive,
+                dungeonTimer: p.dungeonTimer,
+                dungeonState: p.dungeonState,
+                riftState: p.riftState,
+                riftTimer: p.riftTimer,
+                activeRift: p.activeRift,
+                worldBoss: p.worldBoss,
+                personalDamage: p.personalDamage,
+                canClaim: p.canClaim,
+                cooldownUntil: p.cooldownUntil,
+                marketStock: p.marketStock,
+                marketTimer: p.marketTimer,
                 lastSaveTime: Date.now()
             };
 

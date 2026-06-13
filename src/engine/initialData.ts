@@ -111,10 +111,10 @@ export const INITIAL_GAME_STATS: GameStats = {
 };
 
 export const INITIAL_BUILDINGS: Building[] = [
-    { id: 'b_tavern', name: 'Caneca Enferrujada', description: 'Atrai heróis melhores e reduz custos de recrutamento.', level: 1, maxLevel: 10, cost: 1000, costScaling: 2.5, bonus: '-5% Custo de Recruta / Nível', effectValue: 0.05, currency: 'gold', emoji: '🍺' },
-    { id: 'b_forge', name: 'Forja Eterna', description: 'Melhora a eficiência e descontos de forja.', level: 1, maxLevel: 10, cost: 2000, costScaling: 3, bonus: '-5% Custo de Melhoria / Nível', effectValue: 0.05, currency: 'gold', emoji: '⚒️' },
-    { id: 'b_temple', name: 'Templo da Luz', description: 'Um lugar de adoração que coleta mais Almas.', level: 1, maxLevel: 10, cost: 5000, costScaling: 4, bonus: '+10% Ganho de Almas / Nível', effectValue: 0.1, currency: 'gold', emoji: '🏛️' },
-    { id: 'b_guild', name: 'Guilda dos Heróis', description: 'Hub central para operações da guilda.', level: 1, maxLevel: 5, cost: 10000, costScaling: 5, bonus: '+20% XP de Guilda / Nível', effectValue: 0.2, currency: 'gold', emoji: '🏰' }
+    { id: 'b_tavern', name: 'Caneca Enferrujada', description: 'Atrai heróis melhores e reduz custos de recrutamento.', level: 1, maxLevel: 10, cost: 1000, costScaling: 2.5, bonus: '-5% Custo de Recruta / Nível', effectValue: 0.05, currency: 'gold', emoji: '🍺', width: 1, height: 1 },
+    { id: 'b_forge', name: 'Forja Eterna', description: 'Melhora a eficiência e descontos de forja.', level: 1, maxLevel: 10, cost: 2000, costScaling: 3, bonus: '-5% Custo de Melhoria / Nível', effectValue: 0.05, currency: 'gold', emoji: '⚒️', width: 1, height: 1 },
+    { id: 'b_temple', name: 'Templo da Luz', description: 'Um lugar de adoração que coleta mais Almas.', level: 1, maxLevel: 10, cost: 5000, costScaling: 4, bonus: '+10% Ganho de Almas / Nível', effectValue: 0.1, currency: 'gold', emoji: '🏛️', width: 1, height: 1 },
+    { id: 'b_guild', name: 'Guilda dos Heróis', description: 'Hub central para operações da guilda.', level: 1, maxLevel: 5, cost: 10000, costScaling: 5, bonus: '+20% XP de Guilda / Nível', effectValue: 0.2, currency: 'gold', emoji: '🏰', width: 1, height: 1 }
 ];
 
 export const INITIAL_CONSTELLATIONS: ConstellationNode[] = [

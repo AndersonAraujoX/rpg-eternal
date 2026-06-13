@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { WorldBoss, GameStats, LogEntry } from '../engine/types';
 import { generateWorldBoss, simulateGlobalDamage, calculateWorldBossRewards } from '../engine/worldBoss';
 
@@ -12,6 +12,11 @@ export const useWorldBoss = (
     const [personalDamage, setPersonalDamage] = useState(0);
     const [canClaim, setCanClaim] = useState(false);
     const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+
+    const stateRef = useRef({ partyPower, onWorldBossClaimed, worldBoss, canClaim, personalDamage });
+    useEffect(() => {
+        stateRef.current = { partyPower, onWorldBossClaimed, worldBoss, canClaim, personalDamage };
+    });
 
     // Cooldown tick
     useEffect(() => {
@@ -36,7 +41,8 @@ export const useWorldBoss = (
     }, [worldBoss, gameStats.bossKills, cooldownUntil]);
 
     // Attack Action
-    const attackWorldBoss = (manualDamage?: number) => {
+    const attackWorldBoss = useCallback((manualDamage?: number) => {
+        const { worldBoss, partyPower } = stateRef.current;
         if (!worldBoss || worldBoss.isDead) return;
 
         // Damage calculation (simulated crit or passive)
@@ -48,11 +54,11 @@ export const useWorldBoss = (
             damage = Math.floor(partyPower * (isCrit ? 2.5 : 1));
         }
 
-        setPersonalDamage(prev => prev + damage);
+        setPersonalDamage(prev => prev + damage!);
 
         setWorldBoss(prev => {
             if (!prev) return null;
-            const newHp = Math.max(0, prev.globalHp - damage);
+            const newHp = Math.max(0, prev.globalHp - damage!);
             return {
                 ...prev,
                 globalHp: newHp,
@@ -61,7 +67,7 @@ export const useWorldBoss = (
         });
 
         if (isCrit) addLog(`CRITICAL HIT! You dealt ${damage} damage to the World Boss!`, 'action');
-    };
+    }, [addLog]);
 
     // Global Tick Simulation
     useEffect(() => {
@@ -91,24 +97,29 @@ export const useWorldBoss = (
     }, [worldBoss?.id, worldBoss?.isDead, partyPower]); // Depend on ID to reset on new boss
 
     // Claim Rewards
-    const claimReward = () => {
+    const claimReward = useCallback(() => {
+        const { worldBoss, canClaim, personalDamage } = stateRef.current;
         if (!worldBoss || !canClaim) return;
 
         const rewards = calculateWorldBossRewards(worldBoss.tier, personalDamage, worldBoss.maxGlobalHp);
 
-        onWorldBossClaimed(rewards);
+        stateRef.current.onWorldBossClaimed(rewards);
 
         // Reset boss and start cooldown
         setWorldBoss(null);
         setCanClaim(false);
         setCooldownUntil(Date.now() + 30 * 60 * 1000); // 30 minutes
-    };
+    }, []);
 
     return {
         worldBoss,
+        setWorldBoss,
         personalDamage,
+        setPersonalDamage,
         canClaim,
+        setCanClaim,
         cooldownUntil,
+        setCooldownUntil,
         attackWorldBoss,
         claimReward
     };

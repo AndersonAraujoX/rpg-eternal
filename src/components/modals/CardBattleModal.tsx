@@ -34,8 +34,7 @@ export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClos
         if (!selectedOpponent || selectedDeck.length !== 3) return;
 
         const deck = cards.filter(c => selectedDeck.includes(c.id));
-        const result = simulateCardBattle(deck, selectedOpponent, cards); // Note: Passing all playerCards as 'allCards' context might be incomplete if opponent uses cards player doesn't have.
-        // Fix: Ideally 'allCards' should be a global list, but for now assuming opponents use subset of existing or we handle 'unknown' in engine.
+        const result = simulateCardBattle(deck, selectedOpponent);
 
         setBattleResult(result);
         if (result.winner === 'player') {

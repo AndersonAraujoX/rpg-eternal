@@ -9,20 +9,30 @@ export const shouldSummonTavern = (gold: number, upgrades: Record<string, number
 export const processGlobalAutomation = (
     stats: GameStats,
     resources: Resources,
-    _expeditions: Expedition[]
+    _expeditions: Expedition[],
+    equippedRelics: string[] = []
 ): { resources: Partial<Resources>, stats: Partial<GameStats>, expeditions: Expedition[] } => {
     const changes: Partial<Resources> = {};
     const statChanges: Partial<GameStats> = {};
 
     // Automation logic
     const _ignore = resources; // Just to satisfy lint if needed, or remove completely if confident
-    let updatedExpeditions = [..._expeditions];
+    const updatedExpeditions = [..._expeditions];
 
     // 1. Fishing Automation
     if (stats.automationActive?.fishing) {
         const { fish, legendary } = processFishingAdvanced(5); // 5 "ticks" of fishing
         changes.fish = (changes.fish || 0) + fish;
-        if (legendary) {
+        
+        let isLegendary = legendary;
+        if (!isLegendary && equippedRelics.includes('relic_golden_fish') && fish > 0) {
+            // Roll legendary chance again for double the opportunity
+            if (Math.random() < 0.05) {
+                isLegendary = true;
+            }
+        }
+
+        if (isLegendary) {
             statChanges.legendaryFishCount = (stats.legendaryFishCount || 0) + 1;
         }
     }

@@ -1,0 +1,67 @@
+\chapter{📁 Documentação Técnica\+: \texorpdfstring{$<$}{<}tt\texorpdfstring{$>$}{>}src/components/\texorpdfstring{$<$}{<}/tt\texorpdfstring{$>$}{>}}
+\hypertarget{md_src_2components_2docs}{}\label{md_src_2components_2docs}\index{📁 Documentação Técnica: $<$tt$>$src/components/$<$/tt$>$@{📁 Documentação Técnica: $<$tt$>$src/components/$<$/tt$>$}}
+\label{md_src_2components_2docs_autotoc_md0}%
+\Hypertarget{md_src_2components_2docs_autotoc_md0}%
+ Esta pasta contém todos os componentes visuais, painéis de gerenciamento de guilda, áreas de batalha ativa e modais de jogo.\hypertarget{md_src_2components_2docs_autotoc_md1}{}\doxysection{\texorpdfstring{📄 Componentes de Tela Principais}{📄 Componentes de Tela Principais}}\label{md_src_2components_2docs_autotoc_md1}
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Componente   }&\cellcolor{\tableheadbgcolor}\textbf{ Função na Interface   }&\cellcolor{\tableheadbgcolor}\textbf{ Arquivo Relacionado    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Componente   }&\cellcolor{\tableheadbgcolor}\textbf{ Função na Interface   }&\cellcolor{\tableheadbgcolor}\textbf{ Arquivo Relacionado    }\\\cline{1-3}
+\endhead
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Battle\+Area}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Renderiza a barra de vida do inimigo atual, heróis atacando e o histórico de dano com números flutuantes.   &{\ttfamily Battle\+Area.\+tsx}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Header}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Exibe as moedas de jogo, fendas, nível de torre, além de abrir atalhos para os painéis de controle.   &{\ttfamily Header.\+tsx}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Hero\+List}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Lista o roster do jogador com níveis e abas de posicionamento estratégico em formação.   &{\ttfamily Hero\+List.\+tsx}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Isometric\+Town\+Grid}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Renderiza o mapa bidimensional (2D) da prefeitura, exibindo construções e heróis caminhando autonomamente.   &{\ttfamily Isometric\+Town\+Grid.\+tsx}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Npc\+Instructor\+Widget}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Caixa de diálogo flutuante contendo instruções e tarefas de tutoriais do jogo.   &{\ttfamily Npc\+Instructor\+Widget.\+tsx}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Pet\+List}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Painel simples para visualização rápida e gerenciamento de companheiros ativos.   &{\ttfamily Pet\+List.\+tsx}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Synergy\+Tracker}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Rastreador de bônus baseado em elementos/classes presentes no grupo.   &{\ttfamily Synergy\+Tracker.\+tsx}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Town\+Event\+Widget}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Widget de notificação rápida de eventos climáticos ou aleatórios ocorridos na vila.   &{\ttfamily Town\+Event\+Widget.\+tsx}    \\\cline{1-3}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Weather\+Overlays}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Camada de overlay CSS que exibe partículas de chuva, tempestade ou neve na tela.   &{\ttfamily Weather\+Overlays.\+tsx}   \\\cline{1-3}
+\end{longtabu}
+
+
+\DoxyHorRuler{0}
+\hypertarget{md_src_2components_2docs_autotoc_md3}{}\doxysection{\texorpdfstring{📂 Subdiretório\+: $<$tt$>$src/components/modals/$<$/tt$>$}{📂 Subdiretório: <tt>src/components/modals/</tt>}}\label{md_src_2components_2docs_autotoc_md3}
+Aqui estão hospedados os painéis e modais detalhados de cada subsistema de RPG\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Modal   }&\cellcolor{\tableheadbgcolor}\textbf{ Função / Finalidade    }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Modal   }&\cellcolor{\tableheadbgcolor}\textbf{ Função / Finalidade    }\\\cline{1-2}
+\endhead
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Hero\+Detail\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Detalhes do herói, equipamentos, runas equipadas e a árvore de habilidades auto-\/skills.    \\\cline{1-2}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Guild\+War\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Painel principal de controle da Guerra de Guildas (aba GvG contra bots e aba Conquistas).    \\\cline{1-2}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Elemental\+Resonance\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Templo elemental para evolução das essências do grupo.    \\\cline{1-2}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Relic\+Chamber\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Painel para desbloquear, melhorar e equipar relíquias lendárias.    \\\cline{1-2}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Void\+Infusion\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Forja especial de infusão de matéria do abismo.    \\\cline{1-2}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Backrooms\+Manager\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Interface de exploração e pesquisa científica das Backrooms.    \\\cline{1-2}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Rune\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Santuário para criação e fusão de runas mágicas.    \\\cline{1-2}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Roguelike\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Painel de controle de nós e batalhas do modo de expedição roguelike.    \\\cline{1-2}
+\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}{\ttfamily Town\+Modal}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}   &Prefeitura para melhoria de edifícios e seleção do Deus Padroeiro do Panteão.   \\\cline{1-2}
+\end{longtabu}
+\hypertarget{md_src_2components_2docs_autotoc_md4}{}\doxysection{\texorpdfstring{🛠️ Exemplo de Uso (\+Renderização de Modal)}{🛠️ Exemplo de Uso (Renderização de Modal)}}\label{md_src_2components_2docs_autotoc_md4}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{import\ \{\ TownModal\ \}\ from\ './components/modals/TownModal';}
+\DoxyCodeLine{}
+\DoxyCodeLine{//\ Exemplo\ simples\ de\ chamada\ dentro\ do\ App.tsx}
+\DoxyCodeLine{<TownModal\ }
+\DoxyCodeLine{\ \ isOpen=\{showTown\}\ }
+\DoxyCodeLine{\ \ onClose=\{()\ =>\ setShowTown(false)\}\ }
+\DoxyCodeLine{\ \ buildings=\{buildings\}\ }
+\DoxyCodeLine{\ \ gold=\{gold\}\ }
+\DoxyCodeLine{\ \ upgradeBuilding=\{upgradeBuilding\}}
+\DoxyCodeLine{/>}
+
+\end{DoxyCode}
+ 
