@@ -349,8 +349,8 @@ export const usePersistence = (props: PersistenceProps) => {
 
 
                 setHeroes(updatedHeroes);
-                setBoss({ ...state.boss, element: state.boss?.element || 'neutral' });
-                setItems(state.items);
+                setBoss(state.boss ? { ...state.boss, element: state.boss.element || 'neutral' } : INITIAL_BOSS);
+                setItems(state.items || []);
                 setSouls(state.souls || 0);
                 setGold(state.gold || 0);
                 setDivinity(state.divinity || 0);
