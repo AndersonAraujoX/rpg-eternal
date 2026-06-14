@@ -110,11 +110,12 @@ function App() {
     recruitExplorer, sendExplorer, recallExplorer, restExplorer, useAlmondWater,
     upgradeOutpost, craftGear,
     backroomsUnlockedTechs, researchTech,
-    backroomsFloor, backroomsFloorProgress, backroomsBossHp,
+    backroomsFloor, isBackroomsUnlocked, backroomsFloorProgress, backroomsBossHp,
     fakePlayers,
     elementalResonance, elementalEssences, ownedRelics, equippedRelics,
     gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex, town,
-    globalModifiers, sellOre
+    globalModifiers, sellOre,
+    isMiningFrenzy, setIsMiningFrenzy
   } = useGame(industry.inventory, industry.setIndustryState);
 
   const [scale, setScale] = useState(1);
@@ -435,9 +436,20 @@ function App() {
       <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} theme={theme} />
       {showShop && <ShopModal isOpen={true} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />}
-      {showTavern && <TavernModal heroes={heroes} gold={gold} tavernPurchases={gameStats.tavernPurchases || 0} heroPity={gameStats.heroPity || 0} petPity={gameStats.petPity || 0} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} onDiceWin={(actions as any).onDiceWin} />}
+      {showTavern && <TavernModal heroes={heroes} gold={gold} tavernPurchases={gameStats.tavernPurchases || 0} heroPity={gameStats.heroPity || 0} petPity={gameStats.petPity || 0} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} onDiceWin={(actions as any).onDiceWin} onDicePerfectWin={(actions as any).onDicePerfectWin} backroomsFloor={backroomsFloor} isBackroomsUnlocked={isBackroomsUnlocked} />}
 
-      {showForge && <ForgeModal resources={resources} forgeUpgrade={actions.forgeUpgrade} onClose={() => setShowForge(false)} setResources={setResources} />}
+      {showForge && (
+         <ForgeModal
+           resources={resources}
+           forgeUpgrade={actions.forgeUpgrade}
+           onClose={() => setShowForge(false)}
+           setResources={setResources}
+           backroomsFloor={backroomsFloor}
+           isBackroomsUnlocked={isBackroomsUnlocked}
+           isMiningFrenzy={isMiningFrenzy}
+           setIsMiningFrenzy={setIsMiningFrenzy}
+         />
+       )}
       {showInventory && <InventoryModal isOpen={true} items={items} onClose={() => setShowInventory(false)} />}
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} guildQueue={guildQueue} />
@@ -581,6 +593,7 @@ function App() {
         buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} 
         assignedPet={pets.find(p => p.assignment === 'industry')}
         costReduction={town?.relics?.find(r => r.id === 'relic_gear')?.count ? (town.relics.find(r => r.id === 'relic_gear')!.count * 0.10) : 0} 
+        backroomsFloor={backroomsFloor}
       />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} relics={town?.relics || []} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
@@ -678,6 +691,9 @@ function App() {
         rewardText={portalConfig?.rewardText}
         onConfirm={portalConfig?.onConfirm || (() => { })}
         onCancel={() => setPortalConfig(null)}
+        hasRealityAnchor={(industry.inventory['reality_anchor'] || 0) >= 1}
+        buildings={buildings}
+        heroes={heroes}
       />
 
       <PrestigeTreeModal

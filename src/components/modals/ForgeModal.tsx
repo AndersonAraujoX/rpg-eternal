@@ -9,9 +9,22 @@ interface ForgeModalProps {
     forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => void;
     onClose: () => void;
     setResources: React.Dispatch<React.SetStateAction<Resources>>;
+    backroomsFloor?: number;
+    isBackroomsUnlocked?: boolean;
+    isMiningFrenzy?: boolean;
+    setIsMiningFrenzy?: (active: boolean) => void;
 }
 
-export function ForgeModal({ resources, forgeUpgrade, onClose, setResources }: ForgeModalProps) {
+export function ForgeModal({
+    resources,
+    forgeUpgrade,
+    onClose,
+    setResources,
+    backroomsFloor = 1,
+    isBackroomsUnlocked = false,
+    isMiningFrenzy = false,
+    setIsMiningFrenzy
+}: ForgeModalProps) {
 
     const handleMine = (type: 'copper' | 'iron' | 'mithril', amount: number) => {
         setResources((prev) => ({ ...prev, [type]: prev[type] + amount }));
@@ -53,7 +66,14 @@ export function ForgeModal({ resources, forgeUpgrade, onClose, setResources }: F
                     {/* Seção de Mineração */}
                     <div className="flex flex-col gap-3">
                         <h3 className="font-bold text-gray-300 border-b border-gray-700 pb-1">Mina Profunda</h3>
-                        <MiningClicker resources={resources} onMine={handleMine} />
+                        <MiningClicker
+                            resources={resources}
+                            onMine={handleMine}
+                            backroomsFloor={backroomsFloor}
+                            isBackroomsUnlocked={isBackroomsUnlocked}
+                            isMiningFrenzy={isMiningFrenzy}
+                            setIsMiningFrenzy={setIsMiningFrenzy}
+                        />
                     </div>
                 </div>
             </div>

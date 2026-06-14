@@ -334,6 +334,7 @@ export interface Hero extends Entity {
     curses?: string[]; // Active curses: 'blood', 'evil', 'abyss'
     passiveSkillTree?: PassiveSkillTreeState;
     skillTreeNodes?: SkillTreeNode[];
+    quantumStealth?: boolean;
 }
 
 
@@ -461,6 +462,7 @@ export interface Boss extends Entity {
     element: ElementType;
     emoji: string;
     abilities?: string[];
+    timeFrozenUntil?: number;
 }
 
 
@@ -726,7 +728,7 @@ export interface GameActions {
     advanceGuildWarMap: () => void;
     unlockOuterSpace: () => void;
     triggerRebirth: () => void;
-    confirmRebirth: () => void;
+    confirmRebirth: (preservedBuildingIds?: string[], preservedHeroId?: string) => void;
     buyPrestigeNode: (nodeId: string) => void;
     visitTown: () => void;
     triggerAscension: () => void;

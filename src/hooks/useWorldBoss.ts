@@ -6,7 +6,9 @@ export const useWorldBoss = (
     partyPower: number,
     gameStats: GameStats,
     addLog: (msg: string, type?: LogEntry['type']) => void,
-    onWorldBossClaimed: (rewards: Record<string, unknown>) => void
+    onWorldBossClaimed: (rewards: Record<string, unknown>) => void,
+    highestBackroomsLevel: number = 1,
+    isBackroomsUnlocked: boolean = false
 ) => {
     const [worldBoss, setWorldBoss] = useState<WorldBoss | null>(null);
     const [personalDamage, setPersonalDamage] = useState(0);
@@ -50,8 +52,18 @@ export const useWorldBoss = (
         let isCrit = false;
 
         if (damage === undefined) {
-            isCrit = Math.random() < 0.1;
-            damage = Math.floor(partyPower * (isCrit ? 2.5 : 1));
+            let critChance = 0.1;
+            let damageMult = 1.0;
+            if (isBackroomsUnlocked && highestBackroomsLevel >= 100) {
+                critChance += 0.1;
+                damageMult += 0.2;
+            }
+            isCrit = Math.random() < critChance;
+            damage = Math.floor(partyPower * damageMult * (isCrit ? 2.5 : 1));
+        } else {
+            if (isBackroomsUnlocked && highestBackroomsLevel >= 100) {
+                damage = Math.floor(damage * 1.2);
+            }
         }
 
         setPersonalDamage(prev => prev + damage!);

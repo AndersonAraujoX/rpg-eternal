@@ -6,13 +6,41 @@ interface DiceGameProps {
     gold: number;
     onWin: (amount: number) => void;
     onLose: (amount: number) => void;
+    onPerfectWin?: () => void;
+    backroomsFloor?: number;
+    isBackroomsUnlocked?: boolean;
 }
 
-export function DiceGame({ gold, onWin, onLose }: DiceGameProps) {
+export function DiceGame({ gold, onWin, onLose, onPerfectWin, backroomsFloor = 1, isBackroomsUnlocked = false }: DiceGameProps) {
     const [bet, setBet] = useState(10);
     const [dice, setDice] = useState([1, 1]);
     const [rolling, setRolling] = useState(false);
     const [message, setMessage] = useState("Role > 7 para Vencer (2x)!");
+
+    const isLucky = isBackroomsUnlocked && backroomsFloor >= 65;
+
+    const rollSingleDie = () => {
+        if (!isLucky) {
+            return Math.ceil(Math.random() * 6);
+        }
+        // Boost 5 and 6 by +12% aditivos.
+        // Base probability is 1/6 (~0.166667)
+        // Boosted weight for 5 & 6 is 1/6 + 0.12 = 0.286667 each.
+        // For 1, 2, 3, 4, weight is 1/6 = 0.166667 each.
+        // Total weight = 4 * (1/6) + 2 * (1/6 + 0.12) = 1.24.
+        const r = Math.random() * 1.24;
+        const w1 = 1 / 6;
+        const w2 = w1 + 1 / 6;
+        const w3 = w2 + 1 / 6;
+        const w4 = w3 + 1 / 6;
+        const w5 = w4 + 1 / 6 + 0.12;
+        if (r < w1) return 1;
+        if (r < w2) return 2;
+        if (r < w3) return 3;
+        if (r < w4) return 4;
+        if (r < w5) return 5;
+        return 6;
+    };
 
     const rollDice = () => {
         if (gold < bet) {
@@ -27,7 +55,7 @@ export function DiceGame({ gold, onWin, onLose }: DiceGameProps) {
         // Visual effect
         let rolls = 0;
         const interval = setInterval(() => {
-            setDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
+            setDice([rollSingleDie(), rollSingleDie()]);
             rolls++;
             if (rolls > 10) {
                 clearInterval(interval);
@@ -37,14 +65,18 @@ export function DiceGame({ gold, onWin, onLose }: DiceGameProps) {
     };
 
     const finishRoll = () => {
-        const d1 = Math.ceil(Math.random() * 6);
-        const d2 = Math.ceil(Math.random() * 6);
+        const d1 = rollSingleDie();
+        const d2 = rollSingleDie();
         setDice([d1, d2]);
         setRolling(false);
 
         const sum = d1 + d2;
-        if (sum > 7) {
-            setMessage(`Você tirou ${sum}! Você Vencer! (+${bet})`);
+        if (d1 === 6 && d2 === 6) {
+            setMessage(`VITÓRIA PERFEITA! Duplo 6! (+${bet})`);
+            onWin(bet);
+            if (onPerfectWin) onPerfectWin();
+        } else if (sum > 7) {
+            setMessage(`Você tirou ${sum}! Você Venceu! (+${bet})`);
             onWin(bet);
         } else if (sum === 7) {
             setMessage(`Você tirou 7! Empate (Ouro devolvido)`);

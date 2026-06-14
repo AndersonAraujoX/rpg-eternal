@@ -196,9 +196,14 @@ export const useGame = (
     const [theme, setTheme] = useState('default');
     const [autoSellRarity, setAutoSellRarity] = useState<'none' | 'common' | 'rare'>('none');
     const [showCampfire, setShowCampfire] = useState(false);
-    // Boss Timer: 60 seconds to kill the monster. On expiry, same-level boss respawns.
     const [bossTimer, setBossTimer] = useState<number>(60);
     const bossTimerRef = useRef<number>(60);
+    const [bossFrozenTimeRemaining, setBossFrozenTimeRemaining] = useState<number>(0);
+    const bossFrozenTimeRemainingRef = useRef<number>(0);
+    useEffect(() => {
+        bossFrozenTimeRemainingRef.current = bossFrozenTimeRemaining;
+    }, [bossFrozenTimeRemaining]);
+    const [isMiningFrenzy, setIsMiningFrenzy] = useState<boolean>(false);
     const [dungeonMastery, setDungeonMastery] = useState<import('../engine/types').DungeonMastery>({
         explorerLevel: 0, slayerLevel: 0, looterLevel: 0, trapSenseLevel: 0
     });
@@ -224,6 +229,8 @@ export const useGame = (
     const [riftFragments, setRiftFragments] = useState<number>(0);
     /** Timestamp até o qual o buff "Sorte do Conquistador" está ativo (ms) */
     const [diceLuckUntil, setDiceLuckUntil] = useState<number>(0);
+    /** Timestamp até o qual o buff "Vitória Perfeita" nos dados (Vila ouro +25%) está ativo */
+    const [dicePerfectWinUntil, setDicePerfectWinUntil] = useState<number>(0);
     /** Flag indicando que o buff de primeiro tick da Dungeon está ativo (Sinergia Industrial 2) */
     const [dungeonFirstTickBuff, setDungeonFirstTickBuff] = useState<boolean>(false);
 
@@ -257,12 +264,14 @@ export const useGame = (
     const finalIndustryInventory = industryInventory || resolvedIndustryInventory;
 
     // SUB-HOOKS
-    const guildState = useGuild(null, gold, setGold, addLog);
+    const backrooms = useBackrooms();
+    const isBackroomsUnlocked = backrooms.backroomsUnlockedTechs.includes('meg_outpost') || backrooms.backroomsFloor > 1;
+    const guildXpMultiplier = (isBackroomsUnlocked && backrooms.backroomsFloor >= 18) ? 1.10 : 1.0;
+    const guildState = useGuild(null, gold, setGold, addLog, guildXpMultiplier);
     const petsState = usePets(INITIAL_PETS, gold, souls, setGold, setSouls, addLog);
     const world = useWorld({ floor: 1, active: false, maxFloor: 1 }, { active: false, floor: 1, blessings: [], tempHeroes: [], maxFloor: 1 }, addLog);
     const galaxyState = useGalaxy(INITIAL_GALAXY, INITIAL_TERRITORIES, INITIAL_SPACESHIP, gold, setGold, addLog);
     const roguelike = useRoguelike();
-    const backrooms = useBackrooms();
 
     const researchTech = useCallback((techId: string) => {
         const tech = BACKROOMS_RESEARCHES.find(t => t.id === techId);
@@ -382,7 +391,7 @@ export const useGame = (
         addLog(`Recompensas da Reide: ${formatNumber(rewards.gold)} Ouro, ${rewards.souls} Almas, ${rewards.guildXp} Guild XP, ${rewards.guildMembers} Novos Membros!`, 'achievement');
     }, [addLog, guildState.setGuild, petsState.setPets]);
 
-    const worldBossState = useWorldBoss(partyPower, gameStats, addLog, handleWorldBossClaimed);
+    const worldBossState = useWorldBoss(partyPower, gameStats, addLog, handleWorldBossClaimed, backrooms.backroomsFloor, isBackroomsUnlocked);
 
     const activeHeroes = useMemo(() => (heroes || []).filter(h => h.assignment === 'combat' && h.unlocked), [heroes]);
 
@@ -691,6 +700,7 @@ export const useGame = (
         cosmicDust,
         riftFragments,
         diceLuckUntil,
+        dicePerfectWinUntil,
         dungeonFirstTickBuff,
         industryInventory: finalIndustryInventory
     });
@@ -758,10 +768,11 @@ export const useGame = (
             cosmicDust,
             riftFragments,
             diceLuckUntil,
+            dicePerfectWinUntil,
             dungeonFirstTickBuff,
             industryInventory: finalIndustryInventory
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dungeonFirstTickBuff, finalIndustryInventory]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory]);
 
     // Side Effects
     useEffect(() => {
@@ -1105,14 +1116,43 @@ export const useGame = (
                     message: "Um portal de pura energia celestial se abre diante de você.",
                     warning: "O Ouro e o progresso do Boss serão reiniciados, mas você ganhará Almas Celestiais.",
                     soulsGained,
-                    onConfirm: baseActions.confirmRebirth
+                    onConfirm: (preservedBuildingIds, preservedHeroId) => {
+                        baseActions.confirmRebirth(preservedBuildingIds, preservedHeroId);
+                    }
                 });
             },
-            confirmRebirth: () => {
+            confirmRebirth: (preservedBuildingIds?: string[], preservedHeroId?: string) => {
                 const cleanFusionMult = stateRef.current.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
                 const soulsGained = Math.floor(Math.floor(stateRef.current.boss.level / 5) * (1 + (stateRef.current.prestigeNodes['souls_1'] || 0) * 0.2) * cleanFusionMult);
                 setSouls(s => s + soulsGained);
-                setHeroes(INITIAL_HEROES.map(h => ({ ...h, level: 1 + (stateRef.current.prestigeNodes['legend_1'] || 0) * 2 })));
+                
+                const baseLevel = 1 + (stateRef.current.prestigeNodes['legend_1'] || 0) * 2;
+                setHeroes(prev => prev.map(h => {
+                    if (preservedHeroId && h.id === preservedHeroId) {
+                        return h;
+                    }
+                    const template = INITIAL_HEROES.find(ih => ih.id === h.id) || h;
+                    return {
+                        ...template,
+                        level: baseLevel,
+                        xp: 0,
+                        unlocked: h.unlocked,
+                        assignment: h.assignment
+                    };
+                }));
+
+                setBuildings(prev => prev.map(b => {
+                    if (preservedBuildingIds && preservedBuildingIds.includes(b.id)) {
+                        return b;
+                    }
+                    const template = INITIAL_BUILDINGS.find(ib => ib.id === b.id) || b;
+                    return {
+                        ...b,
+                        level: template.level,
+                        cost: template.cost
+                    };
+                }));
+
                 setGold(0);
                 setBoss(INITIAL_BOSS);
                 setItems([]);
@@ -1422,6 +1462,11 @@ export const useGame = (
                 const buffUntil = Date.now() + DICE_LUCK_BUFF_DURATION_MS;
                 setDiceLuckUntil(buffUntil);
                 addLog('🎲 "Sorte do Conquistador" ativada! +10% de taxa de sucesso na Forja e Runas por 5 minutos!', 'achievement');
+            },
+            onDicePerfectWin: () => {
+                const buffUntil = Date.now() + 10 * 60 * 1000; // 10 minutes
+                setDicePerfectWinUntil(buffUntil);
+                addLog('🎲 "Vitória Perfeita nos Dados" ativada! +25% de ouro de produção na Vila por 10 minutos!', 'achievement');
             },
 
             forgeUpgrade: (m: 'copper' | 'iron' | 'mithril') => {
@@ -1828,8 +1873,14 @@ export const useGame = (
             },
             startGuildExpedition: (e: Expedition) => {
                 if (validateGuildExpeditionTeam(e.heroIds, stateRef.current.heroes)) {
-                    setHeroes(startExpedition(e, stateRef.current.heroes));
-                    setActiveExpeditions(p => [...p, { ...e, startTime: Date.now() }]);
+                    let duration = e.duration;
+                    const isBackroomsUnlocked = backrooms.backroomsFloor > 1 || backrooms.backroomsUnlockedTechs.includes('meg_outpost');
+                    if (isBackroomsUnlocked && backrooms.backroomsFloor >= 72) {
+                        duration = Math.max(10, Math.floor(duration * 0.80));
+                    }
+                    const expWithDuration = { ...e, duration };
+                    setHeroes(startExpedition(expWithDuration, stateRef.current.heroes));
+                    setActiveExpeditions(p => [...p, { ...expWithDuration, startTime: Date.now() }]);
                     addLog(`Expedição de Guilda ${e.name} iniciada!`, 'success');
                 } else {
                     addLog("Falha ao iniciar expedição: heróis ocupados ou inválidos.", "error");
@@ -2242,7 +2293,9 @@ export const useGame = (
                     cosmicDust: stateRef.current.cosmicDust,
                     industryInventory: finalIndustryInventory,
                     starlightUpgrades: stateRef.current.starlightUpgrades,
-                    dungeonFirstTickBuff: stateRef.current.dungeonFirstTickBuff
+                    dungeonFirstTickBuff: stateRef.current.dungeonFirstTickBuff,
+                    backroomsFloor: stateRef.current.backroomsFloor,
+                    isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost')
                 });
                 const bonus = globalMods.market?.metalOrePriceBonus || 1.0;
                 const sellPrice = Math.floor(basePrice * bonus);
@@ -2276,6 +2329,8 @@ export const useGame = (
                 industryInventory: finalIndustryInventory,
                 starlightUpgrades,
                 dungeonFirstTickBuff,
+                backroomsFloor: stateRef.current.backroomsFloor,
+                isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost')
             });
 
             const isTower = tower.active;
@@ -2300,7 +2355,8 @@ export const useGame = (
 
             const currentBoss = { ...targetBoss };
             const townHallLevel = buildings.find(b => b.id === 'town_hall')?.level || 0;
-            const townHallGoldMult = 1 + (townHallLevel * 0.05); // 5% per level
+            const dicePerfectWinMult = stateRef.current.dicePerfectWinUntil && Date.now() < stateRef.current.dicePerfectWinUntil ? 1.25 : 1.0;
+            const townHallGoldMult = (1 + (townHallLevel * 0.05)) * dicePerfectWinMult; // 5% per level, +25% if perfect win active
             const steamEngineMult = backrooms.backroomsUnlockedTechs.includes('steam_engine') ? 1.15 : 1.0;
             const cleanFusionMult = backrooms.backroomsUnlockedTechs.includes('clean_fusion') ? 1.20 : 1.0;
             const resonanceGoldMult = 1 + (elementalResonance.neutral || 0) * 0.015;
@@ -2311,7 +2367,10 @@ export const useGame = (
 
             const windmillsMult = backrooms.backroomsUnlockedTechs.includes('windmills') ? 1.05 : 1.0;
             const effectiveGameSpeed = gameSpeed * (equippedRelics.includes('relic_hourglass') ? 1.10 : 1.0);
-            const attackSpeedBonusSum = (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0) + (elementalResonance.nature || 0) * 0.02;
+            let attackSpeedBonusSum = (activeSynergies || []).filter(s => s.type === 'attackSpeed').reduce((acc, s) => acc + s.value, 0) + (elementalResonance.nature || 0) * 0.02;
+            if (isMiningFrenzy) {
+                attackSpeedBonusSum += 0.10;
+            }
             const tick = Math.max(100, (1000 / (effectiveGameSpeed * windmillsMult)) * (1 - attackSpeedBonusSum));
 
             if (shouldSummonTavern(gold, starlightUpgrades)) ACTIONS.summonTavernLine(1);
@@ -2470,7 +2529,33 @@ export const useGame = (
                 setDungeonFirstTickBuff(false);
             }
 
-            res = processCombatTurn(activeHeroesWithBonusStats, targetBoss, totalDmgMult, 0.1, ultimateCharge >= 100, pets, tick, 1, synergiesForCombat, world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined, isTower ? ((targetBoss as any)?.mutator || undefined) : undefined, world.weather, divinity, heroBonds, monumentMults, equippedRelics, activeGlobalSynergyIds);
+            const isBackroomsUnlocked = backrooms.backroomsUnlockedTechs.includes('meg_outpost') || backrooms.backroomsFloor > 1;
+            res = processCombatTurn(
+                activeHeroesWithBonusStats,
+                targetBoss,
+                totalDmgMult,
+                0.1,
+                ultimateCharge >= 100,
+                pets,
+                tick,
+                1,
+                synergiesForCombat,
+                world.riftState.active ? (world.activeRift?.restriction || undefined) : undefined,
+                isTower ? ((targetBoss as any)?.mutator || undefined) : undefined,
+                world.weather,
+                divinity,
+                heroBonds,
+                monumentMults,
+                equippedRelics,
+                activeGlobalSynergyIds,
+                backrooms.backroomsFloor,
+                isBackroomsUnlocked
+            );
+            
+            if (res.freezeBossDuration && res.freezeBossDuration > 0) {
+                setBossFrozenTimeRemaining(res.freezeBossDuration);
+                bossFrozenTimeRemainingRef.current = res.freezeBossDuration;
+            }
 
             damageAccumulator.current += res.totalDmg;
 
@@ -2592,22 +2677,36 @@ export const useGame = (
             } else {
                 // Tick the boss timer down proportionally to tick duration
                 const timerDelta = tick / 1000;
-                const newTimerVal = bossTimerRef.current - timerDelta;
-
-                if (newTimerVal <= 0 && !isTower) {
-                    // Timer expired — boss stays alive, just reset timer for a new attempt
-                    bossTimerRef.current = 60;
-                    setBossTimer(60);
-                    addLog(`⏱️ Tentativa falhou! O ${currentBoss.name} ainda está vivo. Nova tentativa de 60s!`, 'danger');
-                    // Still apply damage from this tick
-                    setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
-                } else {
-                    bossTimerRef.current = Math.max(0, newTimerVal);
-                    setBossTimer(Math.ceil(bossTimerRef.current));
+                
+                const isFrozen = bossFrozenTimeRemainingRef.current > 0;
+                if (isFrozen) {
+                    const nextFreeze = Math.max(0, bossFrozenTimeRemainingRef.current - timerDelta);
+                    setBossFrozenTimeRemaining(nextFreeze);
+                    bossFrozenTimeRemainingRef.current = nextFreeze;
+                    
                     if (isTower) {
                         world.setTowerBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
                     } else {
                         setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
+                    }
+                } else {
+                    const newTimerVal = bossTimerRef.current - timerDelta;
+
+                    if (newTimerVal <= 0 && !isTower) {
+                        // Timer expired — boss stays alive, just reset timer for a new attempt
+                        bossTimerRef.current = 60;
+                        setBossTimer(60);
+                        addLog(`⏱️ Tentativa falhou! O ${currentBoss.name} ainda está vivo. Nova tentativa de 60s!`, 'danger');
+                        // Still apply damage from this tick
+                        setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
+                    } else {
+                        bossTimerRef.current = Math.max(0, newTimerVal);
+                        setBossTimer(Math.ceil(bossTimerRef.current));
+                        if (isTower) {
+                            world.setTowerBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
+                        } else {
+                            setBoss(p => ({ ...p, stats: { ...p.stats, hp: p.stats.hp - res.totalDmg } }));
+                        }
                     }
                 }
             }
@@ -2952,6 +3051,30 @@ export const useGame = (
                     completedExpeditions.forEach(exp => {
                         heroesToFree = [...heroesToFree, ...(exp.heroIds || [])];
 
+                        // Siege Drones (Lvl 72): reward a random Rune + 5 riftFragments upon completion of Guild Expedition
+                        if (exp.guild) {
+                            const isBackroomsUnlocked = backrooms.backroomsFloor > 1 || backrooms.backroomsUnlockedTechs.includes('meg_outpost');
+                            if (isBackroomsUnlocked && backrooms.backroomsFloor >= 72) {
+                                setRiftFragments(rf => rf + 5);
+                                
+                                const statsPool: ('attack' | 'defense' | 'hp' | 'speed' | 'lifesteal')[] = ['attack', 'defense', 'hp', 'speed', 'lifesteal'];
+                                const stat = statsPool[Math.floor(Math.random() * statsPool.length)];
+                                const val = Math.floor(Math.random() * 5) + 5;
+                                const emojiMap = { attack: '⚔️', defense: '🛡️', hp: '💚', speed: '⚡', lifesteal: '🩸' };
+                                const newRune = {
+                                    id: `rune-exp-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                                    name: `Runa da Fenda (${stat})`,
+                                    stat: stat === 'hp' ? 'hp' : stat,
+                                    value: val,
+                                    emoji: emojiMap[stat],
+                                    rarity: 'rare' as const,
+                                    description: `Aumenta ${stat} em +${val}`
+                                };
+                                setRunes(prevRunes => [...prevRunes, newRune]);
+                                addLog(`🛸 Drones de Cerco: Encontrada uma ${newRune.name} e +5 Fragmentos de Fenda!`, 'success');
+                            }
+                        }
+
                         // Roll rewards
                         const rewards = claimExpeditionRewards(exp);
 
@@ -3048,8 +3171,17 @@ export const useGame = (
                 const gvgNow = Date.now();
                 const gvgLast = stateRef.current.gvgWarState.lastTickTime || 0;
                 if (gvgNow - gvgLast >= 5000) {
+                    const isBackroomsUnlocked = backrooms.backroomsUnlockedTechs.includes('meg_outpost') || backrooms.backroomsFloor > 1;
                     const relicBannerCount = stateRef.current.town?.relics?.find(r => r.id === 'relic_banner')?.count || 0;
-                    const gvgDefenseBonus = relicBannerCount * 0.05;
+                    let gvgDefenseBonus = relicBannerCount * 0.05;
+                    if (isBackroomsUnlocked) {
+                        if (backrooms.backroomsFloor >= 18) {
+                            gvgDefenseBonus += 0.05;
+                        }
+                        if (backrooms.backroomsFloor >= 45) {
+                            gvgDefenseBonus += 0.15;
+                        }
+                    }
                     const gvgResult = simulateGvGTick(stateRef.current.gvgWarState, stateRef.current.fakePlayers, stateRef.current.activeEvent, gvgDefenseBonus);
                     setGvgWarState(gvgResult);
                     // Send notable GvG logs to global game log
@@ -3342,6 +3474,7 @@ export const useGame = (
             backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
             researchTech,
             backroomsFloor: backrooms.backroomsFloor,
+            isBackroomsUnlocked,
             backroomsFloorProgress: backrooms.backroomsFloorProgress,
             backroomsBossHp: backrooms.backroomsBossHp,
             currentTutorialIndex,
@@ -3355,6 +3488,8 @@ export const useGame = (
             setDiceLuckUntil,
             dungeonFirstTickBuff,
             setDungeonFirstTickBuff,
+            isMiningFrenzy,
+            setIsMiningFrenzy,
             /** Modificadores globais calculados a partir das sinergias transversais */
             globalModifiers: calculateGlobalModifiers({
                 heroes,
@@ -3367,9 +3502,11 @@ export const useGame = (
                 industryInventory: finalIndustryInventory,
                 starlightUpgrades,
                 dungeonFirstTickBuff,
+                backroomsFloor: backrooms.backroomsFloor,
+                isBackroomsUnlocked
             }),
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy]);
 
 
     return result;

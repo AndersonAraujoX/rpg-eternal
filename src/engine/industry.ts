@@ -24,6 +24,7 @@ export interface Recipe {
     time: number; // base time in seconds
     machineType: MachineType;
     powerDraw: number; // MW used (or generated, if generator)
+    requiredBackroomsLevel?: number; // Lock based on Backrooms exploration
 }
 
 export interface MachineNode {
@@ -49,7 +50,19 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     { id: 'hydroponic_irrigation', name: 'Hydroponic Irrigation', description: 'Acelera o crescimento do jardim em 20%.', emoji: '🌱' },
     { id: 'overcharged_ammo', name: 'Overcharged Ammunition', description: 'Carga explosiva inicial para Dungeons.', emoji: '⚡' },
     { id: 'starlight_microchip', name: 'Starlight Microchips', description: 'Componente de hardware para robôs do Starlight.', emoji: '💾' },
-    { id: 'magnetic_coil', name: 'Magnetic Coils', description: 'Bobina magnética industrial para bolsa de valores.', emoji: '🧲' }
+    { id: 'magnetic_coil', name: 'Magnetic Coils', description: 'Bobina magnética industrial para bolsa de valores.', emoji: '🧲' },
+    
+    // New Backrooms Tech Items
+    { id: 'liminal_scrap', name: 'Sucata Liminar', description: 'Sucata metálica liminar recuperada das Backrooms.', emoji: '⚙️' },
+    { id: 'dense_concrete', name: 'Concreto Denso', description: 'Bloco de concreto denso e pesado.', emoji: '🧱' },
+    { id: 'steel_plate', name: 'Placa de Aço', description: 'Chapa de aço refinada na indústria.', emoji: '💳' },
+    { id: 'dark_matter', name: 'Matéria Escura', description: 'Resíduo condensado de pura matéria escura.', emoji: '🌌' },
+    { id: 'anomalous_microchip', name: 'Microchip Anômalo', description: 'Microchip que emite sinais de rádio em frequência anômala.', emoji: '💾' },
+    { id: 'reinforced_alloy', name: 'Liga Metálica Reforçada', description: 'Liga metálica leve e extremamente resistente.', emoji: '🔩' },
+    { id: 'almond_condenser', name: 'Condensador Alquímico', description: 'Refina compostos usando Água de Amêndoa para acelerar o Jardim em 20% e dar +5% de eficácia em poções.', emoji: '⚗️' },
+    { id: 'scrap_press', name: 'Compactador de Sucata de Aço', description: 'Permite reciclagem sob alta pressão, reduzindo o custo de Ligas Metálicas Reforçadas em 50% e dando +10% de chance na Forja.', emoji: '🗜️' },
+    { id: 'stellar_receptor', name: 'Painel Receptor Estelar', description: 'Sintoniza ondas de energia cósmica, aumentando a capacidade de coleta offline dos bots em +25% e alimentando a automação Starlight.', emoji: '📡' },
+    { id: 'reality_anchor', name: 'Ancorador de Realidade', description: 'Estabiliza a realidade física local, protegendo 2 prédios da vila ou 1 herói ascendido de resets de Rebirth.', emoji: '⚓' }
 ];
 
 export const MACHINES: MachineInfo[] = [
@@ -80,7 +93,20 @@ export const RECIPES: Recipe[] = [
     { id: 'craft_hydroponic_irrigation', name: 'Montar: Hydroponic Irrigation', inputs: { 'basic_circuit': 5, 'copper_wire': 15 }, outputs: { 'hydroponic_irrigation': 1 }, time: 45, machineType: 'assembler', powerDraw: 80 },
     { id: 'craft_overcharged_ammo', name: 'Montar: Overcharged Ammunition', inputs: { 'iron_ingot': 5, 'copper_wire': 10 }, outputs: { 'overcharged_ammo': 1 }, time: 30, machineType: 'assembler', powerDraw: 50 },
     { id: 'craft_starlight_microchip', name: 'Montar: Starlight Microchips', inputs: { 'basic_circuit': 10, 'copper_wire': 50 }, outputs: { 'starlight_microchip': 1 }, time: 45, machineType: 'assembler', powerDraw: 80 },
-    { id: 'craft_magnetic_coil', name: 'Montar: Magnetic Coils', inputs: { 'copper_wire': 30, 'iron_ingot': 5 }, outputs: { 'magnetic_coil': 1 }, time: 20, machineType: 'assembler', powerDraw: 60 }
+    { id: 'craft_magnetic_coil', name: 'Montar: Magnetic Coils', inputs: { 'copper_wire': 30, 'iron_ingot': 5 }, outputs: { 'magnetic_coil': 1 }, time: 20, machineType: 'assembler', powerDraw: 60 },
+
+    // New Backrooms Tech Recipes
+    { id: 'craft_liminal_scrap', name: 'Montar: Sucata Liminar', inputs: { 'iron_gear': 2 }, outputs: { 'liminal_scrap': 1 }, time: 5, machineType: 'assembler', powerDraw: 30, requiredBackroomsLevel: 0 },
+    { id: 'craft_dense_concrete', name: 'Montar: Concreto Denso', inputs: { 'iron_ore': 5, 'coal': 2 }, outputs: { 'dense_concrete': 1 }, time: 10, machineType: 'assembler', powerDraw: 20, requiredBackroomsLevel: 1 },
+    { id: 'craft_steel_plate', name: 'Montar: Placa de Aço', inputs: { 'iron_ingot': 3, 'coal': 3 }, outputs: { 'steel_plate': 1 }, time: 8, machineType: 'assembler', powerDraw: 30, requiredBackroomsLevel: 1 },
+    { id: 'craft_anomalous_microchip', name: 'Montar: Microchip Anômalo', inputs: { 'starlight_microchip': 1, 'basic_circuit': 2 }, outputs: { 'anomalous_microchip': 1 }, time: 15, machineType: 'assembler', powerDraw: 50, requiredBackroomsLevel: 4 },
+    { id: 'craft_dark_matter', name: 'Montar: Matéria Escura', inputs: { 'basic_circuit': 5, 'magnetic_coil': 2 }, outputs: { 'dark_matter': 1 }, time: 30, machineType: 'assembler', powerDraw: 100, requiredBackroomsLevel: 8 },
+    { id: 'craft_reinforced_alloy', name: 'Montar: Liga Reforçada', inputs: { 'iron_ore': 4, 'copper_wire': 6 }, outputs: { 'reinforced_alloy': 1 }, time: 10, machineType: 'assembler', powerDraw: 40, requiredBackroomsLevel: 1 },
+
+    { id: 'craft_almond_condenser', name: 'Criar: Condensador Alquímico', inputs: { 'iron_ingot': 50, 'liminal_scrap': 15 }, outputs: { 'almond_condenser': 1 }, time: 300, machineType: 'assembler', powerDraw: 150, requiredBackroomsLevel: 0 },
+    { id: 'craft_scrap_press', name: 'Criar: Compactador de Sucata', inputs: { 'steel_plate': 30, 'dense_concrete': 20 }, outputs: { 'scrap_press': 1 }, time: 600, machineType: 'assembler', powerDraw: 200, requiredBackroomsLevel: 1 },
+    { id: 'craft_stellar_receptor', name: 'Criar: Receptor Estelar', inputs: { 'anomalous_microchip': 10, 'basic_circuit': 30, 'copper_wire': 100 }, outputs: { 'stellar_receptor': 1 }, time: 1800, machineType: 'assembler', powerDraw: 350, requiredBackroomsLevel: 4 },
+    { id: 'craft_reality_anchor', name: 'Criar: Ancorador de Realidade', inputs: { 'dark_matter': 5, 'magnetic_coil': 50 }, outputs: { 'reality_anchor': 1 }, time: 3600, machineType: 'assembler', powerDraw: 500, requiredBackroomsLevel: 8 }
 ];
 
 // Helper to determine net production and consumption per second for UI
@@ -131,6 +157,9 @@ export function simulateIndustryTick(nodes: MachineNode[], inventory: Record<str
             if (costReduction > 0 && (recipe.id === 'craft_catapult' || recipe.id === 'craft_plasma_cannon')) {
                 adjustedAmount = Math.max(1, Math.floor(inputAmount * (1 - costReduction)));
             }
+            if (recipe.id === 'craft_reinforced_alloy' && inputId === 'iron_ore' && newInventory['scrap_press'] >= 1) {
+                adjustedAmount = Math.max(1, Math.floor(inputAmount * 0.5));
+            }
             const missing = ((possibleCycles * adjustedAmount) > (newInventory[inputId] || 0));
             if (missing) {
                 possibleCycles = (newInventory[inputId] || 0) / adjustedAmount;
@@ -142,6 +171,9 @@ export function simulateIndustryTick(nodes: MachineNode[], inventory: Record<str
             let adjustedAmount = inputAmount;
             if (costReduction > 0 && (recipe.id === 'craft_catapult' || recipe.id === 'craft_plasma_cannon')) {
                 adjustedAmount = Math.max(1, Math.floor(inputAmount * (1 - costReduction)));
+            }
+            if (recipe.id === 'craft_reinforced_alloy' && inputId === 'iron_ore' && newInventory['scrap_press'] >= 1) {
+                adjustedAmount = Math.max(1, Math.floor(inputAmount * 0.5));
             }
             const consumed = possibleCycles * adjustedAmount;
             newInventory[inputId] -= consumed;

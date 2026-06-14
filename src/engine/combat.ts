@@ -127,15 +127,21 @@ export const processCombatTurn = (
     bonds?: Record<string, { xp: number; level: number; type: string }>,
     monumentEffects?: { defense: number; speed: number; maxHp: number; lifesteal: number },
     equippedRelics: string[] = [],
-    activeGlobalSynergyIds: string[] = []
+    activeGlobalSynergyIds: string[] = [],
+    backroomsFloor: number = 1,
+    isBackroomsUnlocked: boolean = false
 ) => {
     let totalDmg = 0;
     let crits = 0;
     const events: CombatEvent[] = [];
+    let freezeBossDuration = 0;
  
     // Extract Synergy Effects
     const lifeSteal = (activeSynergies.find(s => s.type === 'vampirism')?.value || 0) + (monumentEffects?.lifesteal || 0);
-    const cdReduction = activeSynergies.find(s => s.type === 'cd_reduction')?.value || 0;
+    let cdReduction = activeSynergies.find(s => s.type === 'cd_reduction')?.value || 0;
+    if (isBackroomsUnlocked && backroomsFloor >= 55) {
+        cdReduction += 0.30;
+    }
     const critDmgBonus = activeSynergies.find(s => s.type === 'crit_dmg')?.value || 0;
     const attackSpeedBonus = activeSynergies.find(s => s.type === 'attackSpeed')?.value || 0;
     // const mitigation = (activeSynergies.find(s => s.type === 'mitigation')?.value || 0) + (mutator?.id === 'iron_wall' ? 0.5 : 0);
@@ -186,6 +192,26 @@ export const processCombatTurn = (
                 id: `freeze-${Date.now()}-${Math.random()}`,
                 type: 'status',
                 text: 'FROZEN',
+                element: 'water',
+                x: 50,
+                y: 30
+            });
+        }
+    }
+
+    if (isBackroomsUnlocked && backroomsFloor >= 2) {
+        const activeCombos = checkActiveCombos(heroes);
+        const hasAbsoluteZero = activeCombos.some(c => c.id === 'blizzard') || freezeEffect;
+        if (hasAbsoluteZero && !boss.isDead) {
+            const freezeDmg = Math.floor(boss.stats.maxHp * 0.03);
+            const totalAtk = heroes.reduce((sum, h) => sum + (h.stats?.attack || 0), 0);
+            const cappedFreezeDmg = Math.max(1, Math.min(freezeDmg, totalAtk * 10));
+            totalDmg += cappedFreezeDmg;
+            events.push({
+                id: `siphon-${Date.now()}-${Math.random()}`,
+                type: 'reaction',
+                text: 'SIFÃO CRIOGÊNICO',
+                value: cappedFreezeDmg,
                 element: 'water',
                 x: 50,
                 y: 30
@@ -300,6 +326,9 @@ export const processCombatTurn = (
         }
 
         let baseDmg = stats.attack * activeDamageMult * getElementalMult(h.element, boss.element);
+        if (isBackroomsUnlocked && backroomsFloor >= 2 && (h.element === 'water' || h.element === 'ice')) {
+            baseDmg *= 1.25;
+        }
 
         if (weather && WEATHER_DATA[weather]?.elementModifiers[h.element]) {
             baseDmg *= WEATHER_DATA[weather].elementModifiers[h.element]!;
@@ -394,10 +423,21 @@ export const processCombatTurn = (
 
         const critRoll = Math.random();
         const passiveCritChance = h.passiveSkillTree?.modifiers?.critChanceBonus || 0;
-        const isCrit = critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0) + passiveCritChance;
+        
+        let quantumTriggered = false;
+        const activeCombosForQuantum = checkActiveCombos(heroes);
+        if (isUltimate && h.quantumStealth && activeCombosForQuantum.length > 0) {
+            quantumTriggered = true;
+        }
+
+        const isCrit = quantumTriggered || (critRoll < critChance + (h.class === 'Rogue' ? 0.3 : 0) + passiveCritChance);
         if (isCrit) {
             const passiveCritDmg = h.passiveSkillTree?.modifiers?.critDamageBonus || 0;
-            const critMult = 2 + critDmgBonus + passiveCritDmg;
+            let critMult = 2 + critDmgBonus + passiveCritDmg;
+            if (quantumTriggered) {
+                critMult *= 2;
+                events.push({ id: `quantum-stealth-event-${h.id}-${Date.now()}`, type: 'status', text: '💥 FURTIVIDADE QUÂNTICA', x: 50, y: 55 });
+            }
             baseDmg *= critMult;
             skillDmg *= critMult;
             crits++;
@@ -413,6 +453,39 @@ export const processCombatTurn = (
                 totalHeroAttack *= bestCombo.multiplier;
                 if (Math.random() < 0.2) {
                     events.push({ id: `combo-${Date.now()}-${Math.random()}`, type: 'damage', text: `COMBO: ${bestCombo.name}!`, value: 0, x: 50, y: 20 });
+                }
+
+                // Acelerador Temporal (Lvl 55) - Chance de congelar boss em DIVINE JUDGEMENT
+                if (isBackroomsUnlocked && backroomsFloor >= 55 && bestCombo.id === 'divine_smite') {
+                    if (Math.random() < 0.15) {
+                        freezeBossDuration = 1.5;
+                        events.push({
+                            id: `freeze-boss-${Date.now()}`,
+                            type: 'status',
+                            text: '❄️ TEMPO CONGELADO',
+                            element: 'light',
+                            x: 50,
+                            y: 30
+                        });
+                    }
+                }
+
+                // Supercompressor de Matéria Escura (Lvl 85) - Vacuum Explosion
+                if (isBackroomsUnlocked && backroomsFloor >= 85) {
+                    if (Math.random() < 0.10) {
+                        const vacuumDmg = Math.floor(boss.stats.hp * 0.15);
+                        const cappedVacuumDmg = Math.min(vacuumDmg, Math.floor(boss.stats.maxHp * 0.10));
+                        totalDmg += cappedVacuumDmg;
+                        events.push({
+                            id: `vacuum-${Date.now()}-${Math.random()}`,
+                            type: 'reaction',
+                            text: '💥 EXPLOSÃO DE VÁCUO',
+                            value: cappedVacuumDmg,
+                            element: 'dark',
+                            x: 50,
+                            y: 35
+                        });
+                    }
                 }
             } else {
                 totalHeroAttack *= 5;
@@ -454,8 +527,12 @@ export const processCombatTurn = (
 
         if (!boss.isDead && Math.random() < attackChance) {
             const dodgeChance = activeSynergies.find(s => s.type === 'void_dodge')?.value || 0;
-            if (Math.random() < dodgeChance) {
+            const isDodged = Math.random() < dodgeChance;
+            if (isDodged) {
                 events.push({ id: `dodge-${h.id}-${Date.now()}`, type: 'status', text: 'DESVIOU!', element: 'light', x: 45 + (Math.random() * 10 - 5), y: 25 });
+                if (isBackroomsUnlocked && backroomsFloor >= 30) {
+                    h.quantumStealth = true;
+                }
             } else {
                 let bossDmg = Math.max(1, (boss.stats.attack * 2) - stats.defense);
                 if (h.passiveSkillTree?.modifiers?.damageMitigation) {
@@ -484,7 +561,8 @@ export const processCombatTurn = (
             mutationType: shouldMutate ? randomMutation : h.mutationType,
             stats: { ...h.stats, hp },
             skills: h.skills,
-            isDead: false // Heroes are immortal
+            isDead: false, // Heroes are immortal
+            quantumStealth: quantumTriggered ? false : h.quantumStealth
         };
     });
 
@@ -518,5 +596,5 @@ export const processCombatTurn = (
         });
     }
 
-    return { updatedHeroes, totalDmg: Math.max(0, totalDmg), crits, events };
+    return { updatedHeroes, totalDmg: Math.max(0, totalDmg), crits, events, freezeBossDuration };
 };

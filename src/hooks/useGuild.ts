@@ -9,7 +9,8 @@ export const useGuild = (
     initialGuild: Guild | null,
     gold: number,
     setGold: React.Dispatch<React.SetStateAction<number>>,
-    addLog: (message: string, type?: LogEntry['type']) => void
+    addLog: (message: string, type?: LogEntry['type']) => void,
+    guildXpMultiplier: number = 1.0
 ) => {
     const [guild, setGuild] = useState<Guild | null>(initialGuild);
 
@@ -28,7 +29,7 @@ export const useGuild = (
         setGold(g => Math.max(0, g - amount));
         setGuild(prev => {
             if (!prev) return null;
-            const xpGain = amount / 10;
+            const xpGain = (amount / 10) * guildXpMultiplier;
             const newXp = prev.xp + xpGain;
             const finalGuild = { ...prev, xp: newXp, totalContribution: (prev.totalContribution || 0) + amount };
 

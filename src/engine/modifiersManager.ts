@@ -9,6 +9,7 @@
 
 import type { Hero, Building, Item } from './types';
 import type { Synergy } from './synergies';
+import { calculateBackroomsTechnology, type BackroomsTechModifiers } from './backroomsTechnology';
 
 // ─────────────────────────────────────────────
 // Tipos Públicos
@@ -43,6 +44,10 @@ export interface ModifiersState {
     starlightUpgrades?: Record<string, number>;
     /** Flag para o buff de DungeonFirstTick */
     dungeonFirstTickBuff?: boolean;
+    /** Nível atual das Backrooms (1 a 100) */
+    backroomsFloor?: number;
+    /** Se o recurso Backrooms está desbloqueado */
+    isBackroomsUnlocked?: boolean;
 }
 
 /**
@@ -73,6 +78,8 @@ export interface GlobalModifiers {
         passiveFishPerHour: number;
         /** Multiplicador de velocidade de crescimento do Jardim (Sinergia 1) */
         gardenSpeedMult: number;
+        /** Chance aditiva para pescar peixe lendário */
+        fishingLendaryChance: number;
     };
     market: {
         /** Bônus de preço de venda de minérios brutos (Sinergia 4) */
@@ -80,6 +87,12 @@ export interface GlobalModifiers {
     };
     /** Metadados de diagnóstico (quais sinergias estão ativas) */
     activeSynergyIds: string[];
+    /** Escalares contínuos das Backrooms */
+    backroomsScalars: {
+        globalElementalDamage: number;
+        industrialSpeed: number;
+        offlineGoldBonus: number;
+    };
 }
 
 // ─────────────────────────────────────────────
@@ -154,19 +167,6 @@ function calcBotSpeedFromDust(cosmicDust: number): number {
 
 /**
  * Calcula todos os modificadores globais transversais a partir do estado fornecido.
- *
- * @param state - Estado atual do jogo necessário para o cálculo
- * @returns Objeto `GlobalModifiers` com multiplicadores estruturados por domínio
- *
- * @example
- * const mods = calculateGlobalModifiers({
- *   heroes, activeSynergies, buildings, items,
- *   highestRiftFloor: 25,
- *   diceLuckUntil: Date.now() + 60000,
- *   cosmicDust: 50,
- * });
- * // mods.combat.waterHeroCritDamageBonus => ex: 0.15
- * // mods.crafting.forgeSuccessRateBonus  => ex: 0.10
  */
 export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers {
     const {
@@ -180,9 +180,14 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         industryInventory = {},
         starlightUpgrades = {},
         dungeonFirstTickBuff = false,
+        backroomsFloor = 1,
+        isBackroomsUnlocked = false
     } = state;
 
     const activeIds: string[] = [];
+
+    // Calcular scalars e milestones das Backrooms
+    const tech = calculateBackroomsTechnology(backroomsFloor, isBackroomsUnlocked);
 
     // ── Sinergia 1: Resonância Arquitetônica (Vila ⇄ Combate) ──────────────
     // Condição: Doca de Pesca desbloqueada + Hydro Resonance ativa no combate
@@ -209,6 +214,11 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
     if (isDiceLuckBuffActive(diceLuckUntil)) {
         forgeSuccessRateBonus = DICE_LUCK_FORGE_SUCCESS_BONUS;
         activeIds.push('sorte_do_conquistador');
+    }
+    // Compactador de Sucata de Aço dá +10% chance de sucesso na Forja
+    if (industryInventory['scrap_press'] >= 1) {
+        forgeSuccessRateBonus += 0.10;
+        activeIds.push('compactador_sucata_forja');
     }
 
     // ── Sinergia 3: Eficiência de Retorno Idle (Rifts ⇄ OfflineModal) ─────
@@ -240,10 +250,17 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
     }
 
     const hydroponicIrrigation = industryInventory['hydroponic_irrigation'] || 0;
-    const gardenSpeedMult = hydroponicIrrigation > 0 ? 1.25 : 1.0;
+    // Condensador Alquímico (almond_condenser) dá +20% velocidade no Jardim (multiplicador acumulativo)
+    let gardenSpeedBonus = 1.0;
     if (hydroponicIrrigation > 0) {
+        gardenSpeedBonus += 0.25;
         activeIds.push('maquinario_coleta_hidroponica_irrigation');
     }
+    if (industryInventory['almond_condenser'] >= 1) {
+        gardenSpeedBonus *= 1.20;
+        activeIds.push('condensador_alquimico_jardim');
+    }
+    const gardenSpeedMult = gardenSpeedBonus;
 
     // ── Sinergia Industrial 2: Carga Bélica Sobrecarregada ────────────────
     const dungeonFirstTickBonus = dungeonFirstTickBuff;
@@ -253,16 +270,39 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
 
     // ── Sinergia Industrial 3: Peças de Hardware Avançado ───────────────
     const hasOfflineUpgrade = (starlightUpgrades['bot_offline_capacity'] || 0) > 0;
-    const starlightOfflineCapacityBonus = hasOfflineUpgrade ? 1.25 : 1.0;
+    let offlineCapacityBonus = 1.0;
     if (hasOfflineUpgrade) {
+        offlineCapacityBonus += 0.25;
         activeIds.push('pecas_hardware_avancado');
     }
+    // Painel Receptor Estelar (stellar_receptor) dá +25% de capacidade offline dos bots
+    if (industryInventory['stellar_receptor'] >= 1) {
+        offlineCapacityBonus += 0.25;
+        activeIds.push('receptor_estelar_offline_capacity');
+    }
+    const starlightOfflineCapacityBonus = offlineCapacityBonus;
 
     // ── Sinergia Industrial 4: Monopólio Industrial ───────────────────────
     const magneticCoils = industryInventory['magnetic_coil'] || 0;
     const metalOrePriceBonus = magneticCoils >= 1000 ? 1.5 : 1.0;
     if (magneticCoils >= 1000) {
         activeIds.push('monopolio_industrial');
+    }
+
+    // Adicionar IDs de conquistas de marcos de tecnologia das Backrooms
+    if (isBackroomsUnlocked) {
+        if (backroomsFloor >= 2) activeIds.push('sifao_criogenico_ativo');
+        if (backroomsFloor >= 10) activeIds.push('isca_criogenica_almond');
+        if (backroomsFloor >= 18) activeIds.push('estandarte_combate_meg');
+        if (backroomsFloor >= 30) activeIds.push('injetor_ocultamento_quantico');
+        if (backroomsFloor >= 38) activeIds.push('sobrecarga_pulso_cinetico');
+        if (backroomsFloor >= 45) activeIds.push('gerador_escudo_gvg');
+        if (backroomsFloor >= 55) activeIds.push('acelerador_temporal_realidade');
+        if (backroomsFloor >= 65) activeIds.push('sorte_estabilizada_dados');
+        if (backroomsFloor >= 72) activeIds.push('drones_cerco_gvg');
+        if (backroomsFloor >= 85) activeIds.push('supercompressor_materia_escura');
+        if (backroomsFloor >= 92) activeIds.push('solo_hipercorrompido_vazio');
+        if (backroomsFloor >= 100) activeIds.push('protocolo_comando_titans');
     }
 
     return {
@@ -281,14 +321,15 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         collection: {
             passiveFishPerHour,
             gardenSpeedMult,
+            fishingLendaryChance: tech.modifiers.fishingLendaryChance,
         },
         market: {
             metalOrePriceBonus,
         },
         activeSynergyIds: activeIds,
+        backroomsScalars: tech.scalars
     };
 }
-
 /**
  * Calcula quantos Fragmentos de Fenda o jogador deve receber após um período offline.
  *

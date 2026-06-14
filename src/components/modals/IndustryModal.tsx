@@ -16,9 +16,10 @@ interface IndustryModalProps {
     buyMachine: (cost: number, execute: () => void) => void;
     assignedPet?: any;
     costReduction?: number;
+    backroomsFloor?: number;
 }
 
-export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, industryState, gold, buyMachine, assignedPet, costReduction = 0 }) => {
+export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, industryState, gold, buyMachine, assignedPet, costReduction = 0, backroomsFloor = 1 }) => {
     const [activeTab, setActiveTab] = useState<'machines' | 'inventory' | 'research' | 'power'>('machines');
 
     if (!isOpen) return null;
@@ -123,7 +124,10 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, i
                                 }).map(node => {
                                     const machine = MACHINES.find(m => m.id === node.machineId);
                                     const currentRecipe = RECIPES.find(r => r.id === node.recipeId);
-                                    const compatibleRecipes = RECIPES.filter(r => r.machineType === machine?.type);
+                                    const compatibleRecipes = RECIPES.filter(r => 
+                                        r.machineType === machine?.type &&
+                                        (r.requiredBackroomsLevel === undefined || (backroomsFloor !== undefined && (backroomsFloor - 1) >= r.requiredBackroomsLevel))
+                                    );
 
                                     if (!machine) return null;
 

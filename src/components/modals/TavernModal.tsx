@@ -16,9 +16,16 @@ interface TavernModalProps {
     petPity?: number;
     /** Sinergia 2: Chamado ao vencer no jogo de dados para ativar buff de Sorte do Conquistador */
     onDiceWin?: () => void;
+    onDicePerfectWin?: () => void;
+    backroomsFloor?: number;
+    isBackroomsUnlocked?: boolean;
 }
 
-export function TavernModal({ heroes, gold, tavernPurchases, summonTavern, onClose, setGold, heroPity = 0, petPity = 0, onDiceWin }: TavernModalProps) {
+export function TavernModal({
+    heroes, gold, tavernPurchases, summonTavern, onClose, setGold,
+    heroPity = 0, petPity = 0, onDiceWin, onDicePerfectWin,
+    backroomsFloor = 1, isBackroomsUnlocked = false
+}: TavernModalProps) {
 
     const handleWin = (amount: number) => {
         setGold((g: number) => g + amount);
@@ -90,7 +97,7 @@ export function TavernModal({ heroes, gold, tavernPurchases, summonTavern, onClo
                     </div>
 
                     {/* Minigame Section */}
-                    <DiceGame gold={gold} onWin={handleWin} onLose={handleLose} />
+                    <DiceGame gold={gold} onWin={handleWin} onLose={handleLose} onPerfectWin={onDicePerfectWin} backroomsFloor={backroomsFloor} isBackroomsUnlocked={isBackroomsUnlocked} />
                 </div>
             </div>
         </div>
