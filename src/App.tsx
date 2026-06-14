@@ -115,7 +115,8 @@ function App() {
     elementalResonance, elementalEssences, ownedRelics, equippedRelics,
     gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex, town,
     globalModifiers, sellOre,
-    isMiningFrenzy, setIsMiningFrenzy
+    isMiningFrenzy, setIsMiningFrenzy,
+    starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive
   } = useGame(industry.inventory, industry.setIndustryState);
 
   const [scale, setScale] = useState(1);
@@ -454,7 +455,17 @@ function App() {
       <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
       <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} guildQueue={guildQueue} />
       <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} voidAscensions={voidAscensions} voidActive={voidActive} voidTimer={voidTimer} />
-      <ArenaModal isOpen={showArena} onClose={() => setShowArena(false)} rank={arenaRank} glory={glory} heroes={heroes} opponents={arenaOpponents} onFight={actions.fightArena} />
+      <ArenaModal
+        isOpen={showArena}
+        onClose={() => setShowArena(false)}
+        rank={arenaRank}
+        glory={glory}
+        heroes={heroes}
+        opponents={arenaOpponents}
+        onFight={actions.fightArena}
+        adrenalineShotsAvailable={globalModifiers?.industry?.adrenalineShotsAvailable || 0}
+        onUseAdrenalineShot={actions.useAdrenalineShot}
+      />
       {showQuests && (
         <QuestModal
           quests={quests}
@@ -646,6 +657,9 @@ function App() {
         starFragments={resources.starFragments || 0}
         gold={gold}
         onCraft={actions.craftStarForgedItem}
+        dailyUsesRemaining={Math.max(0, 5 + (globalModifiers?.industry?.starForgeExtraAttempts || 0) - starForgeDailyUses)}
+        maxDailyUses={5 + (globalModifiers?.industry?.starForgeExtraAttempts || 0)}
+        perfectModChanceBonus={globalModifiers?.industry?.starForgePerfectModChance || 0}
       />
       <WorldBossModal
         isOpen={showWorldBoss}
@@ -692,6 +706,7 @@ function App() {
         onConfirm={portalConfig?.onConfirm || (() => { })}
         onCancel={() => setPortalConfig(null)}
         hasRealityAnchor={(industry.inventory['reality_anchor'] || 0) >= 1}
+        hasPortalStabilizer={(industry.inventory['portal_stabilizer'] || 0) >= 1}
         buildings={buildings}
         heroes={heroes}
       />

@@ -973,6 +973,39 @@ export const useGame = (
     }, []);
 
 
+    const consumeIndustryItem = useCallback((itemId: string, amount: number = 1) => {
+        if (setIndustryState) {
+            setIndustryState((prev: any) => {
+                if (!prev) return prev;
+                const current = prev.inventory?.[itemId] || 0;
+                if (current < amount) return prev;
+                return {
+                    ...prev,
+                    inventory: {
+                        ...prev.inventory,
+                        [itemId]: current - amount
+                    }
+                };
+            });
+        } else {
+            try {
+                const raw = localStorage.getItem('rpg_eternal_industry');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && parsed.inventory) {
+                        const current = parsed.inventory[itemId] || 0;
+                        if (current >= amount) {
+                            parsed.inventory[itemId] = current - amount;
+                            localStorage.setItem('rpg_eternal_industry', JSON.stringify(parsed));
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }, [setIndustryState]);
+
     const ACTIONS: GameActions = useMemo(() => {
         const baseActions = {
             toggleSound: () => setIsSoundOn(p => !p),
@@ -1271,8 +1304,19 @@ export const useGame = (
                 setRaidActive(p => !p);
             },
             fightArena: (opponent: ArenaOpponent) => {
-                const winChance = calculateWinChance(stateRef.current.partyPower, opponent.power);
+                const adrenalineActive = stateRef.current.arenaAdrenalineActive;
+                const playerPower = stateRef.current.partyPower;
+                const effectivePower = adrenalineActive ? playerPower * 1.3 : playerPower;
+
+                if (adrenalineActive) {
+                    addLog("💉 Adrenalina Injetada! Imunidade a debuffs ativada para esta luta.", "info");
+                }
+
+                const winChance = calculateWinChance(effectivePower, opponent.power);
                 const won = winChance > Math.random();
+
+                setArenaAdrenalineActive(false);
+
                 if (won) {
                     const nextRank = Math.max(1, stateRef.current.arenaRank - 20);
                     setArenaRank(nextRank);
@@ -1320,6 +1364,14 @@ export const useGame = (
                         return updatedBots;
                     });
                 }
+            },
+            useAdrenalineShot: () => {
+                const hasShot = (finalIndustryInventory['adrenaline_shot'] || 0) > 0;
+                if (!hasShot) return;
+
+                consumeIndustryItem('adrenaline_shot', 1);
+                setArenaAdrenalineActive(true);
+                addLog("💉 Injeção de Adrenalina preparada para a próxima luta na Arena!", "success");
             },
             attackSector: (id: string) => galaxyState.attackSector(id),
             attackTerritory: (id: string) => {
@@ -1703,9 +1755,33 @@ export const useGame = (
                 addLog(`⛪ Ritual do Clima realizado! O tempo mudou para: ${WEATHER_DATA[weatherType].name}!`, 'success');
             },
             craftStarForgedItem: (item: Item, gCost: number, fCost: number) => {
+                const globalMods = calculateGlobalModifiers({
+                    heroes: stateRef.current.heroes,
+                    activeSynergies: stateRef.current.activeSynergies as any,
+                    buildings: stateRef.current.buildings,
+                    items: stateRef.current.items,
+                    highestRiftFloor: stateRef.current.gameStats.highestRiftFloor || 0,
+                    diceLuckUntil: stateRef.current.diceLuckUntil,
+                    cosmicDust: stateRef.current.cosmicDust,
+                    industryInventory: finalIndustryInventory,
+                    starlightUpgrades: stateRef.current.starlightUpgrades,
+                    dungeonFirstTickBuff: stateRef.current.dungeonFirstTickBuff,
+                    backroomsFloor: stateRef.current.backroomsFloor,
+                    isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
+                    patronDeity: stateRef.current.patronDeity,
+                    starForgeDailyUses: stateRef.current.starForgeDailyUses
+                });
+                const limit = 5 + globalMods.industry.starForgeExtraAttempts;
+                if (stateRef.current.starForgeDailyUses >= limit) {
+                    addLog("⚠️ Limite diário de tentativas da Forja Estelar atingido!", "warning");
+                    return;
+                }
                 if (stateRef.current.gold >= gCost && stateRef.current.resources.starFragments >= fCost) {
-                    setGold(g => g - gCost); setResources(r => ({ ...r, starFragments: r.starFragments - fCost }));
-                    setItems(p => [...p, item]); addLog(`Forged ${item.name}!`, 'achievement');
+                    setGold(g => g - gCost);
+                    setResources(r => ({ ...r, starFragments: r.starFragments - fCost }));
+                    setItems(p => [...p, item]);
+                    setStarForgeDailyUses(u => u + 1);
+                    addLog(`Forged ${item.name}!`, 'achievement');
                 }
             },
             joinGuild: (name: string) => guildState.joinGuild(name),
@@ -2306,22 +2382,31 @@ export const useGame = (
                     starlightUpgrades: stateRef.current.starlightUpgrades,
                     dungeonFirstTickBuff: stateRef.current.dungeonFirstTickBuff,
                     backroomsFloor: stateRef.current.backroomsFloor,
-                    isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost')
+                    isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
+                    patronDeity: stateRef.current.patronDeity,
+                    starForgeDailyUses: stateRef.current.starForgeDailyUses
                 });
                 const bonus = globalMods.market?.metalOrePriceBonus || 1.0;
                 const sellPrice = Math.floor(basePrice * bonus);
                 const totalGold = toSell * sellPrice;
                 setResources(r => ({ ...r, [oreType]: (r[oreType] || 0) - toSell }));
                 setGold(g => g + totalGold);
-                addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Ferro'} por ${totalGold} Ouro!`, 'loot');
+addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Ferro'} por ${totalGold} Ouro!`, 'loot');
             }
         };
         return baseActions as any as GameActions;
-    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains, ownedRelics, equippedRelics, elementalResonance, elementalEssences, voidMatter, finalIndustryInventory, setIndustryState]);
+    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains, ownedRelics, equippedRelics, elementalResonance, elementalEssences, voidMatter, finalIndustryInventory, setIndustryState, setLastStarForgeResetDate, setStarForgeDailyUses]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
         const runTick = () => {
+            // Daily reset for StarForge
+            const todayStr = new Date().toDateString();
+            if (stateRef.current.lastStarForgeResetDate !== todayStr) {
+                setLastStarForgeResetDate(todayStr);
+                setStarForgeDailyUses(0);
+            }
+
             const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers, tower, towerBoss } = stateRef.current;
             const hasCombat = activeHeroes.length > 0 || tower.active;
             let res: { totalDmg: number; events: any[]; updatedHeroes: any[] } = { totalDmg: 0, events: [], updatedHeroes: [] };
@@ -2341,7 +2426,9 @@ export const useGame = (
                 starlightUpgrades,
                 dungeonFirstTickBuff,
                 backroomsFloor: stateRef.current.backroomsFloor,
-                isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost')
+                isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
+                patronDeity: stateRef.current.patronDeity,
+                starForgeDailyUses: stateRef.current.starForgeDailyUses
             });
 
             const isTower = tower.active;
@@ -2899,6 +2986,11 @@ export const useGame = (
                 }
             }
 
+            // ── Sinergia Industrial 2: Automação Sacra (Favor Divino passivo) ──
+            if (globalMods.industry?.divineFavorPerTick > 0 && !hasCombat) {
+                setDeityFavor(prev => prev + globalMods.industry.divineFavorPerTick);
+            }
+
             // Collect all stats updates including combat damage
             const statsDelta = (Object.keys(autoResult.stats).length > 0) || (res.totalDmg > 0);
             if (statsDelta) {
@@ -3389,6 +3481,7 @@ export const useGame = (
             monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, showCampfire,
             outerSpaceUnlocked, prestigeNodes, townVisited, portalConfig, guildQueue,
             arenaRank, glory, quests, theme, autoSellRarity, arenaOpponents,
+            starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive,
             fakePlayers, setFakePlayers,
             gvgWarState,
             town,
@@ -3521,10 +3614,12 @@ export const useGame = (
                 starlightUpgrades,
                 dungeonFirstTickBuff,
                 backroomsFloor: backrooms.backroomsFloor,
-                isBackroomsUnlocked
+                isBackroomsUnlocked,
+                patronDeity,
+                starForgeDailyUses
             }),
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive]);
 
 
     return result;
