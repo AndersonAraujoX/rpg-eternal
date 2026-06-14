@@ -11,9 +11,11 @@ interface ArenaModalProps {
     heroes: Hero[];
     opponents: ArenaOpponent[];
     onFight: (opponent: ArenaOpponent) => void;
+    adrenalineShotsAvailable?: number;
+    onUseAdrenalineShot?: () => void;
 }
 
-export const ArenaModal: React.FC<ArenaModalProps> = ({ isOpen, onClose, rank, glory, heroes, opponents, onFight }) => {
+export const ArenaModal: React.FC<ArenaModalProps> = ({ isOpen, onClose, rank, glory, heroes, opponents, onFight, adrenalineShotsAvailable = 0, onUseAdrenalineShot }) => {
     if (!isOpen) return null;
 
     const teamPower = heroes.filter(h => h.unlocked && h.assignment === 'combat').reduce((acc, h) =>
@@ -73,6 +75,13 @@ export const ArenaModal: React.FC<ArenaModalProps> = ({ isOpen, onClose, rank, g
                         </div>
                         <div className="mt-2 text-cyan-400 font-bold">Poder: {formatNumber(Math.floor(teamPower))}</div>
                     </div>
+                    {adrenalineShotsAvailable > 0 && (
+                        <div className="flex-1 bg-red-900/20 p-3 rounded border border-red-700/50">
+                            <h3 className="text-red-400 text-sm uppercase mb-2 flex items-center gap-1">💉 Adrenalina</h3>
+                            <div className="text-white font-bold text-lg">{adrenalineShotsAvailable}x</div>
+                            <div className="text-xs text-gray-400 mt-1">Imunidade ao 1º status negativo</div>
+                        </div>
+                    )}
                 </div>
 
                 <h3 className="text-white font-bold mb-3 border-b border-gray-700 pb-2">⚔️ ESCOLHER OPONENTE</h3>
@@ -98,22 +107,27 @@ export const ArenaModal: React.FC<ArenaModalProps> = ({ isOpen, onClose, rank, g
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col items-end gap-2">
-                                    <div className="flex flex-col items-end">
-                                        <span className={`font-bold text-sm ${op.power > teamPower ? 'text-red-400' : 'text-green-400'}`}>
-                                            ⚡ {formatNumber(op.power)}
-                                        </span>
-                                        <span className={`text-xs font-bold ${getWinChanceColor(op.power)}`}>
-                                            {getWinChanceLabel(op.power)}
-                                        </span>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div className="flex flex-col items-end">
+                                            <span className={`font-bold text-sm ${op.power > teamPower ? 'text-red-400' : 'text-green-400'}`}>
+                                                ⚡ {formatNumber(op.power)}
+                                            </span>
+                                            <span className={`text-xs font-bold ${getWinChanceColor(op.power)}`}>
+                                                {getWinChanceLabel(op.power)}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                if (adrenalineShotsAvailable > 0 && onUseAdrenalineShot) {
+                                                    onUseAdrenalineShot();
+                                                }
+                                                onFight(op);
+                                            }}
+                                            className="bg-red-700 hover:bg-red-600 text-white px-4 py-1 rounded font-bold flex items-center gap-1 border border-red-500 text-sm"
+                                        >
+                                            {adrenalineShotsAvailable > 0 ? '💉 ' : ''}LUTAR <Swords size={14} />
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => onFight(op)}
-                                        className="bg-red-700 hover:bg-red-600 text-white px-4 py-1 rounded font-bold flex items-center gap-1 border border-red-500 text-sm"
-                                    >
-                                        LUTAR <Swords size={14} />
-                                    </button>
-                                </div>
                             </div>
                         );
                     })}

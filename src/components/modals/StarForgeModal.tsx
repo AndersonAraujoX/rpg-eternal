@@ -10,12 +10,16 @@ interface StarForgeModalProps {
     starFragments: number;
     gold: number;
     onCraft: (item: Item, goldCost: number, fragmentCost: number) => void;
+    dailyUsesRemaining?: number;
+    maxDailyUses?: number;
+    perfectModChanceBonus?: number;
+    onUseDailyAttempt?: () => void;
 }
 
 const FORGE_COST = 5000; // Gold
 const STAR_COST = 5;    // Fragments
 
-export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose, starFragments, gold, onCraft }) => {
+export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose, starFragments, gold, onCraft, dailyUsesRemaining, maxDailyUses, perfectModChanceBonus = 0, onUseDailyAttempt }) => {
     const [view, setView] = useState<'select' | 'forging' | 'result'>('select');
     const [selectedType, setSelectedType] = useState<Item['type']>('weapon');
 
@@ -81,7 +85,7 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
     const finishCrafting = (finalQualityRaw: number) => {
         // Finalize
         const finalQuality = Math.min(100, Math.floor(finalQualityRaw));
-        const affixes = generateAffixes(50, 'legendary'); // Example level/rarity
+        const affixes = generateAffixes(50, 'legendary', perfectModChanceBonus); // Example level/rarity
 
         const newItem: Item = {
             id: `forged-${Date.now()}`,
@@ -106,6 +110,7 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
 
         setResultItem(newItem);
         onCraft(newItem, FORGE_COST, STAR_COST);
+        if (onUseDailyAttempt) onUseDailyAttempt();
         setView('result');
     };
 
@@ -151,10 +156,21 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
                                 </div>
                             </div>
 
+                            {dailyUsesRemaining !== undefined && maxDailyUses !== undefined && (
+                                <div className="flex justify-center mb-4">
+                                    <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold border ${dailyUsesRemaining > 0 ? 'bg-purple-900/30 border-purple-600 text-purple-300' : 'bg-red-900/30 border-red-600 text-red-400'}`}>
+                                        ⚡ Tentativas: {dailyUsesRemaining} / {maxDailyUses}
+                                        {perfectModChanceBonus > 0 && (
+                                            <span className="text-cyan-400 text-xs ml-2">+{Math.round(perfectModChanceBonus * 100)}% Mod Perfeito</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             <button
                                 onClick={() => setView('forging')}
-                                disabled={starFragments < STAR_COST || gold < FORGE_COST}
-                                className={`px-12 py-4 rounded-full font-black text-xl transition-all ${starFragments >= STAR_COST && gold >= FORGE_COST
+                                disabled={starFragments < STAR_COST || gold < FORGE_COST || (dailyUsesRemaining !== undefined && dailyUsesRemaining <= 0)}
+                                className={`px-12 py-4 rounded-full font-black text-xl transition-all ${starFragments >= STAR_COST && gold >= FORGE_COST && (dailyUsesRemaining === undefined || dailyUsesRemaining > 0)
                                     ? 'bg-gradient-to-r from-orange-600 to-red-600 hover:scale-105 text-white shadow-lg shadow-orange-500/50'
                                     : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                                     }`}

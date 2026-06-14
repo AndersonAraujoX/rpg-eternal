@@ -234,6 +234,11 @@ export const useGame = (
     /** Flag indicando que o buff de primeiro tick da Dungeon está ativo (Sinergia Industrial 2) */
     const [dungeonFirstTickBuff, setDungeonFirstTickBuff] = useState<boolean>(false);
 
+    // ── Sinergias Globais de Indústria ──
+    const [starForgeDailyUses, setStarForgeDailyUses] = useState<number>(0);
+    const [lastStarForgeResetDate, setLastStarForgeResetDate] = useState<string>('');
+    const [arenaAdrenalineActive, setArenaAdrenalineActive] = useState<boolean>(false);
+
     const damageAccumulator = useRef(0);
     const fishAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
@@ -702,7 +707,10 @@ export const useGame = (
         diceLuckUntil,
         dicePerfectWinUntil,
         dungeonFirstTickBuff,
-        industryInventory: finalIndustryInventory
+        industryInventory: finalIndustryInventory,
+        starForgeDailyUses,
+        lastStarForgeResetDate,
+        arenaAdrenalineActive
     });
 
     useEffect(() => {
@@ -770,9 +778,12 @@ export const useGame = (
             diceLuckUntil,
             dicePerfectWinUntil,
             dungeonFirstTickBuff,
-            industryInventory: finalIndustryInventory
+            industryInventory: finalIndustryInventory,
+            starForgeDailyUses,
+            lastStarForgeResetDate,
+            arenaAdrenalineActive
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive]);
 
     // Side Effects
     useEffect(() => {
@@ -3313,7 +3324,14 @@ export const useGame = (
         // Sinergias Transversais (modifiersManager)
         highestRiftFloor: gameStats.highestRiftFloor || 0,
         riftFragments,
-        setRiftFragments
+        setRiftFragments,
+        // Sinergias Globais de Indústria
+        starForgeDailyUses,
+        setStarForgeDailyUses,
+        lastStarForgeResetDate,
+        setLastStarForgeResetDate,
+        arenaAdrenalineActive,
+        setArenaAdrenalineActive
     });
 
     const abandonRoguelikeRun = useCallback(() => {

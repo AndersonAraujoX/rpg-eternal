@@ -129,12 +129,14 @@ export const processCombatTurn = (
     equippedRelics: string[] = [],
     activeGlobalSynergyIds: string[] = [],
     backroomsFloor: number = 1,
-    isBackroomsUnlocked: boolean = false
+    isBackroomsUnlocked: boolean = false,
+    divineSmiteHealExtension: number = 0
 ) => {
     let totalDmg = 0;
     let crits = 0;
     const events: CombatEvent[] = [];
     let freezeBossDuration = 0;
+    let healOverTime: { turnsRemaining: number; healPerTurn: number } | undefined = undefined;
  
     // Extract Synergy Effects
     const lifeSteal = (activeSynergies.find(s => s.type === 'vampirism')?.value || 0) + (monumentEffects?.lifesteal || 0);
@@ -470,6 +472,20 @@ export const processCombatTurn = (
                     }
                 }
 
+                // Automação Sacra: Extend divine_smite heal over time
+                if (bestCombo.id === 'divine_smite' && divineSmiteHealExtension > 0) {
+                    const totalAtk = heroes.reduce((sum, h) => sum + (h.stats?.attack || 0), 0);
+                    const healPerTurn = Math.floor(totalAtk * 0.15);
+                    healOverTime = { turnsRemaining: divineSmiteHealExtension, healPerTurn };
+                    events.push({
+                        id: `divine-heal-ext-${Date.now()}`,
+                        type: 'heal',
+                        text: `🕌 CURA SACRA (+${divineSmiteHealExtension} turnos)`,
+                        x: 50,
+                        y: 15
+                    });
+                }
+
                 // Supercompressor de Matéria Escura (Lvl 85) - Vacuum Explosion
                 if (isBackroomsUnlocked && backroomsFloor >= 85) {
                     if (Math.random() < 0.10) {
@@ -596,5 +612,5 @@ export const processCombatTurn = (
         });
     }
 
-    return { updatedHeroes, totalDmg: Math.max(0, totalDmg), crits, events, freezeBossDuration };
+    return { updatedHeroes, totalDmg: Math.max(0, totalDmg), crits, events, freezeBossDuration, healOverTime };
 };

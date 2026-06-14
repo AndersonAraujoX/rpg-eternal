@@ -185,6 +185,13 @@ export interface PersistenceProps {
     setRiftFragments?: React.Dispatch<React.SetStateAction<number>>;
     dungeonFirstTickBuff: boolean;
     setDungeonFirstTickBuff: React.Dispatch<React.SetStateAction<boolean>>;
+    // ── Sinergias Globais de Indústria ──
+    starForgeDailyUses: number;
+    setStarForgeDailyUses: React.Dispatch<React.SetStateAction<number>>;
+    lastStarForgeResetDate: string;
+    setLastStarForgeResetDate: React.Dispatch<React.SetStateAction<string>>;
+    arenaAdrenalineActive: boolean;
+    setArenaAdrenalineActive: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -294,7 +301,13 @@ export const usePersistence = (props: PersistenceProps) => {
         marketTimer,
         setMarketTimer,
         dungeonFirstTickBuff,
-        setDungeonFirstTickBuff
+        setDungeonFirstTickBuff,
+        starForgeDailyUses,
+        setStarForgeDailyUses,
+        lastStarForgeResetDate,
+        setLastStarForgeResetDate,
+        arenaAdrenalineActive,
+        setArenaAdrenalineActive
     } = props;
 
 
@@ -509,6 +522,9 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.marketStock) setMarketStock(state.marketStock);
                 if (state.marketTimer !== undefined) setMarketTimer(state.marketTimer);
                 if (state.dungeonFirstTickBuff !== undefined) setDungeonFirstTickBuff(state.dungeonFirstTickBuff);
+                if (state.starForgeDailyUses !== undefined) setStarForgeDailyUses(state.starForgeDailyUses);
+                if (state.lastStarForgeResetDate !== undefined) setLastStarForgeResetDate(state.lastStarForgeResetDate);
+                if (state.arenaAdrenalineActive !== undefined) setArenaAdrenalineActive(state.arenaAdrenalineActive);
 
                 setRaidActive(false);
                 if (state.dungeonActive === undefined) {
@@ -659,6 +675,9 @@ export const usePersistence = (props: PersistenceProps) => {
                 marketStock: p.marketStock,
                 marketTimer: p.marketTimer,
                 dungeonFirstTickBuff: p.dungeonFirstTickBuff,
+                starForgeDailyUses: p.starForgeDailyUses,
+                lastStarForgeResetDate: p.lastStarForgeResetDate,
+                arenaAdrenalineActive: p.arenaAdrenalineActive,
                 lastSaveTime: Date.now()
             };
 

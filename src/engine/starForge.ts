@@ -19,23 +19,24 @@ const SUFFIXES: ItemAffix[] = [
     { id: 's6', tier: 1, type: 'stats', name: 'of the Titan', value: 0.2, stat: 'defense' }
 ];
 
-export const generateAffixes = (_itemLevel: number, _rarity: string): { prefix?: ItemAffix, suffix?: ItemAffix } => {
+export const generateAffixes = (_itemLevel: number, _rarity: string, perfectModChanceBonus: number = 0): { prefix?: ItemAffix, suffix?: ItemAffix } => {
     const hasPrefix = Math.random() > 0.5;
     const hasSuffix = Math.random() > 0.5;
 
     let prefix: ItemAffix | undefined;
     let suffix: ItemAffix | undefined;
 
+    // Plasma Catalyst bonus: boost affix values by the bonus percentage
+    const perfectBoost = 1 + perfectModChanceBonus;
+
     if (hasPrefix || !hasSuffix) { // Ensure at least one if possible, or just random
         const p = PREFIXES[Math.floor(Math.random() * PREFIXES.length)];
-        // Scale value by item level or keep flat %? Flat % is better for "Affix" logic usually.
-        // But maybe higher tiers have higher % bounds.
-        prefix = { ...p };
+        prefix = { ...p, value: p.value ? +(p.value * perfectBoost).toFixed(4) : p.value };
     }
 
     if (hasSuffix) {
         const s = SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)];
-        suffix = { ...s };
+        suffix = { ...s, value: s.value ? +(s.value * perfectBoost).toFixed(4) : s.value };
     }
 
     return { prefix, suffix };

@@ -11,6 +11,7 @@ interface PortalResetModalProps {
     onConfirm: (preservedBuildingIds?: string[], preservedHeroId?: string) => void;
     onCancel: () => void;
     hasRealityAnchor?: boolean;
+    hasPortalStabilizer?: boolean;
     buildings?: Building[];
     heroes?: Hero[];
 }
@@ -25,6 +26,7 @@ export const PortalResetModal: React.FC<PortalResetModalProps> = ({
     onConfirm,
     onCancel,
     hasRealityAnchor = false,
+    hasPortalStabilizer = false,
     buildings = [],
     heroes = []
 }) => {
@@ -34,6 +36,11 @@ export const PortalResetModal: React.FC<PortalResetModalProps> = ({
     const [preserveType, setPreserveType] = useState<'none' | 'buildings' | 'hero'>('none');
     const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
     const [selectedHero, setSelectedHero] = useState<string>('');
+
+    // Calculate cumulative preservation slots
+    const hasAnyPreservation = hasRealityAnchor || hasPortalStabilizer;
+    const maxBuildingSlots = (hasRealityAnchor ? 2 : 0) + (hasPortalStabilizer ? 2 : 0);
+    const maxHeroSlots = (hasRealityAnchor ? 1 : 0) + (hasPortalStabilizer ? 1 : 0);
 
     useEffect(() => {
         if (!isOpen) {
@@ -50,8 +57,8 @@ export const PortalResetModal: React.FC<PortalResetModalProps> = ({
             if (prev.includes(id)) {
                 return prev.filter(x => x !== id);
             }
-            if (prev.length >= 2) {
-                return [prev[1], id];
+            if (prev.length >= maxBuildingSlots) {
+                return [...prev.slice(1), id];
             }
             return [...prev, id];
         });
@@ -98,10 +105,17 @@ export const PortalResetModal: React.FC<PortalResetModalProps> = ({
                         </div>
                     )}
 
-                    {hasRealityAnchor && (
+                    {hasAnyPreservation && (
                         <div className="bg-slate-800/80 border border-slate-700 rounded-lg p-4 mb-4 text-left animate-fade-in text-sm">
                             <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-1.5">
-                                ⚓ Ancorador de Realidade Ativo
+                                {hasRealityAnchor && <span>⚓</span>}
+                                {hasPortalStabilizer && <span>🌀</span>}
+                                {hasRealityAnchor && hasPortalStabilizer
+                                    ? ' Ancorador + Estabilizador Ativos'
+                                    : hasRealityAnchor
+                                        ? ' Ancorador de Realidade Ativo'
+                                        : ' Estabilizador de Portal Ativo'
+                                }
                             </h3>
                             <p className="text-gray-300 text-xs mb-3">
                                 Escolha proteger edifícios ou um herói dos efeitos do reset de Rebirth:
@@ -118,13 +132,13 @@ export const PortalResetModal: React.FC<PortalResetModalProps> = ({
                                     onClick={() => { setPreserveType('buildings'); setSelectedHero(''); }}
                                     className={`flex-1 py-1 px-1.5 rounded font-bold text-[10px] uppercase transition-colors ${preserveType === 'buildings' ? 'bg-purple-600 text-white border border-purple-400' : 'bg-slate-950 text-gray-400 border border-transparent hover:bg-slate-700'}`}
                                 >
-                                    Prédios (Max 2)
+                                    Prédios (Max {maxBuildingSlots})
                                 </button>
                                 <button
                                     onClick={() => { setPreserveType('hero'); setSelectedBuildings([]); }}
                                     className={`flex-1 py-1 px-1.5 rounded font-bold text-[10px] uppercase transition-colors ${preserveType === 'hero' ? 'bg-purple-600 text-white border border-purple-400' : 'bg-slate-950 text-gray-400 border border-transparent hover:bg-slate-700'}`}
                                 >
-                                    Herói (Max 1)
+                                    Herói (Max {maxHeroSlots})
                                 </button>
                             </div>
 

@@ -62,7 +62,13 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     { id: 'almond_condenser', name: 'Condensador Alquímico', description: 'Refina compostos usando Água de Amêndoa para acelerar o Jardim em 20% e dar +5% de eficácia em poções.', emoji: '⚗️' },
     { id: 'scrap_press', name: 'Compactador de Sucata de Aço', description: 'Permite reciclagem sob alta pressão, reduzindo o custo de Ligas Metálicas Reforçadas em 50% e dando +10% de chance na Forja.', emoji: '🗜️' },
     { id: 'stellar_receptor', name: 'Painel Receptor Estelar', description: 'Sintoniza ondas de energia cósmica, aumentando a capacidade de coleta offline dos bots em +25% e alimentando a automação Starlight.', emoji: '📡' },
-    { id: 'reality_anchor', name: 'Ancorador de Realidade', description: 'Estabiliza a realidade física local, protegendo 2 prédios da vila ou 1 herói ascendido de resets de Rebirth.', emoji: '⚓' }
+    { id: 'reality_anchor', name: 'Ancorador de Realidade', description: 'Estabiliza a realidade física local, protegendo 2 prédios da vila ou 1 herói ascendido de resets de Rebirth.', emoji: '⚓' },
+
+    // Global Industry Synergy Items
+    { id: 'portal_stabilizer', name: 'Estabilizador de Portal', description: 'Componente dimensional ultra-complexo que mitiga o impacto do reset de prestígio. Preserva 1 herói OU 2 prédios adicionais.', emoji: '🌀' },
+    { id: 'automated_temple', name: 'Templo Automatizado', description: 'Gerador autônomo de Favor Divino. Gera Favor passivamente e estende a cura do Divine Smite em +3 turnos.', emoji: '🛕' },
+    { id: 'plasma_catalyst', name: 'Catalisador de Plasma', description: 'Amplificador de energia da Forja Estelar. +3 tentativas diárias e +10% de chance de modificadores perfeitos.', emoji: '⚡' },
+    { id: 'adrenaline_shot', name: 'Injeção de Adrenalina', description: 'Consumível de Arena: concede imunidade ao primeiro status negativo sofrido no combate.', emoji: '💉' }
 ];
 
 export const MACHINES: MachineInfo[] = [
@@ -106,7 +112,13 @@ export const RECIPES: Recipe[] = [
     { id: 'craft_almond_condenser', name: 'Criar: Condensador Alquímico', inputs: { 'iron_ingot': 50, 'liminal_scrap': 15 }, outputs: { 'almond_condenser': 1 }, time: 300, machineType: 'assembler', powerDraw: 150, requiredBackroomsLevel: 0 },
     { id: 'craft_scrap_press', name: 'Criar: Compactador de Sucata', inputs: { 'steel_plate': 30, 'dense_concrete': 20 }, outputs: { 'scrap_press': 1 }, time: 600, machineType: 'assembler', powerDraw: 200, requiredBackroomsLevel: 1 },
     { id: 'craft_stellar_receptor', name: 'Criar: Receptor Estelar', inputs: { 'anomalous_microchip': 10, 'basic_circuit': 30, 'copper_wire': 100 }, outputs: { 'stellar_receptor': 1 }, time: 1800, machineType: 'assembler', powerDraw: 350, requiredBackroomsLevel: 4 },
-    { id: 'craft_reality_anchor', name: 'Criar: Ancorador de Realidade', inputs: { 'dark_matter': 5, 'magnetic_coil': 50 }, outputs: { 'reality_anchor': 1 }, time: 3600, machineType: 'assembler', powerDraw: 500, requiredBackroomsLevel: 8 }
+    { id: 'craft_reality_anchor', name: 'Criar: Ancorador de Realidade', inputs: { 'dark_matter': 5, 'magnetic_coil': 50 }, outputs: { 'reality_anchor': 1 }, time: 3600, machineType: 'assembler', powerDraw: 500, requiredBackroomsLevel: 8 },
+
+    // Global Industry Synergy Recipes
+    { id: 'craft_portal_stabilizer', name: 'Criar: Estabilizador de Portal', inputs: { 'reinforced_alloy': 10, 'dark_matter': 3, 'anomalous_microchip': 5 }, outputs: { 'portal_stabilizer': 1 }, time: 1200, machineType: 'assembler', powerDraw: 400, requiredBackroomsLevel: 4 },
+    { id: 'craft_automated_temple', name: 'Criar: Templo Automatizado', inputs: { 'basic_circuit': 20, 'magnetic_coil': 10, 'steel_plate': 15 }, outputs: { 'automated_temple': 1 }, time: 900, machineType: 'assembler', powerDraw: 300, requiredBackroomsLevel: 1 },
+    { id: 'craft_plasma_catalyst', name: 'Criar: Catalisador de Plasma', inputs: { 'anomalous_microchip': 8, 'dark_matter': 2, 'copper_wire': 50 }, outputs: { 'plasma_catalyst': 1 }, time: 1500, machineType: 'assembler', powerDraw: 450, requiredBackroomsLevel: 8 },
+    { id: 'craft_adrenaline_shot', name: 'Criar: Injeção de Adrenalina', inputs: { 'iron_ingot': 3, 'copper_wire': 5, 'coal': 2 }, outputs: { 'adrenaline_shot': 1 }, time: 60, machineType: 'assembler', powerDraw: 50 }
 ];
 
 // Helper to determine net production and consumption per second for UI

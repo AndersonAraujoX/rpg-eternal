@@ -48,6 +48,10 @@ export interface ModifiersState {
     backroomsFloor?: number;
     /** Se o recurso Backrooms está desbloqueado */
     isBackroomsUnlocked?: boolean;
+    /** Divindade patrona atual (Pantheon) */
+    patronDeity?: string | null;
+    /** Tentativas de StarForge usadas hoje */
+    starForgeDailyUses?: number;
 }
 
 /**
@@ -84,6 +88,23 @@ export interface GlobalModifiers {
     market: {
         /** Bônus de preço de venda de minérios brutos (Sinergia 4) */
         metalOrePriceBonus: number;
+    };
+    /** Sinergias Globais de Indústria (cross-system) */
+    industry: {
+        /** Slots extras de prédio para preservar no Rebirth (0 ou 2) */
+        portalPreserveBuildingSlots: number;
+        /** Slots extras de herói para preservar no Rebirth (0 ou 1) */
+        portalPreserveHeroSlots: number;
+        /** Favor Divino gerado por tick ocioso */
+        divineFavorPerTick: number;
+        /** Turnos extras de cura do Divine Smite */
+        divineSmiteHealExtension: number;
+        /** Tentativas extras diárias de StarForge */
+        starForgeExtraAttempts: number;
+        /** Chance aditiva de mod perfeito na StarForge (+0.10) */
+        starForgePerfectModChance: number;
+        /** Shots de adrenalina disponíveis para Arena */
+        adrenalineShotsAvailable: number;
     };
     /** Metadados de diagnóstico (quais sinergias estão ativas) */
     activeSynergyIds: string[];
@@ -181,7 +202,9 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         starlightUpgrades = {},
         dungeonFirstTickBuff = false,
         backroomsFloor = 1,
-        isBackroomsUnlocked = false
+        isBackroomsUnlocked = false,
+        patronDeity = null,
+        starForgeDailyUses = 0
     } = state;
 
     const activeIds: string[] = [];
@@ -305,6 +328,44 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         if (backroomsFloor >= 100) activeIds.push('protocolo_comando_titans');
     }
 
+    // ── Sinergias Globais de Indústria (Cross-System) ────────────────────
+
+    // Sinergia Ind. 1: Estabilizadores de Rebirth (Indústria ⇄ PortalReset)
+    const portalStabilizerCount = industryInventory['portal_stabilizer'] || 0;
+    let portalPreserveBuildingSlots = 0;
+    let portalPreserveHeroSlots = 0;
+    if (portalStabilizerCount >= 1) {
+        portalPreserveBuildingSlots = 2;
+        portalPreserveHeroSlots = 1;
+        activeIds.push('estabilizador_rebirth');
+    }
+
+    // Sinergia Ind. 2: Automação Sacra (Indústria ⇄ Pantheon/Combate)
+    const automatedTempleCount = industryInventory['automated_temple'] || 0;
+    let divineFavorPerTick = 0;
+    let divineSmiteHealExtension = 0;
+    if (automatedTempleCount >= 1 && patronDeity != null) {
+        divineFavorPerTick = 5 * automatedTempleCount;
+        divineSmiteHealExtension = 3;
+        activeIds.push('automacao_sacra');
+    }
+
+    // Sinergia Ind. 3: Catalisadores de Plasma (Indústria ⇄ StarForge)
+    const plasmaCatalystCount = industryInventory['plasma_catalyst'] || 0;
+    let starForgeExtraAttempts = 0;
+    let starForgePerfectModChance = 0;
+    if (plasmaCatalystCount >= 1) {
+        starForgeExtraAttempts = 3;
+        starForgePerfectModChance = 0.10;
+        activeIds.push('catalisador_plasma');
+    }
+
+    // Sinergia Ind. 4: Logística de Patrocínio (Indústria ⇄ Arena)
+    const adrenalineShotsAvailable = industryInventory['adrenaline_shot'] || 0;
+    if (adrenalineShotsAvailable > 0) {
+        activeIds.push('logistica_patrocinio_gladiadores');
+    }
+
     return {
         combat: {
             waterHeroCritDamageBonus,
@@ -325,6 +386,15 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         },
         market: {
             metalOrePriceBonus,
+        },
+        industry: {
+            portalPreserveBuildingSlots,
+            portalPreserveHeroSlots,
+            divineFavorPerTick,
+            divineSmiteHealExtension,
+            starForgeExtraAttempts,
+            starForgePerfectModChance,
+            adrenalineShotsAvailable,
         },
         activeSynergyIds: activeIds,
         backroomsScalars: tech.scalars

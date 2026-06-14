@@ -719,6 +719,7 @@ export interface GameActions {
     handleDungeonEvent: (event: DungeonInteraction) => void;
     toggleRaid: () => void;
     fightArena: (opponent: ArenaOpponent) => void;
+    useAdrenalineShot: () => void;
 
     // Galaxy & Territories
     attackSector: (id: string) => void;
