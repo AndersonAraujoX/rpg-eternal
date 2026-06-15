@@ -91,6 +91,10 @@ describe('expeditions', () => {
     });
 
     describe('claimExpeditionRewards', () => {
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
         it('should generate rewards within the specified min and max', () => {
             const exp: Expedition = {
                 id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
@@ -114,11 +118,68 @@ describe('expeditions', () => {
             expect(xpReward!.amount).toBe(5);
         });
 
+        it('should generate minimum rewards when Math.random() is 0', () => {
+            vi.spyOn(Math, 'random').mockReturnValue(0);
+
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [
+                    { type: 'gold', min: 10, max: 20 }
+                ], heroIds: []
+            };
+
+            const rewards = claimExpeditionRewards(exp);
+
+            expect(rewards.length).toBe(1);
+            expect(rewards[0]).toEqual({ type: 'gold', amount: 10 });
+        });
+
+        it('should generate maximum rewards when Math.random() is almost 1', () => {
+            vi.spyOn(Math, 'random').mockReturnValue(0.99999999);
+
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [
+                    { type: 'gold', min: 10, max: 20 }
+                ], heroIds: []
+            };
+
+            const rewards = claimExpeditionRewards(exp);
+
+            expect(rewards.length).toBe(1);
+            expect(rewards[0]).toEqual({ type: 'gold', amount: 20 });
+        });
+
         it('should not include rewards with 0 amount', () => {
             const exp: Expedition = {
                 id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
                 rewards: [
                     { type: 'gold', min: 0, max: 0 }
+                ], heroIds: []
+            };
+
+            const rewards = claimExpeditionRewards(exp);
+
+            expect(rewards.length).toBe(0);
+        });
+
+        it('should return empty array if expedition has no rewards', () => {
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [], heroIds: []
+            };
+
+            const rewards = claimExpeditionRewards(exp);
+
+            expect(rewards.length).toBe(0);
+            expect(rewards).toEqual([]);
+        });
+
+        it('should not include rewards with negative amount', () => {
+            const exp: Expedition = {
+                id: 'exp1', name: 'Expedition 1', description: 'Desc', duration: 60, difficulty: 1,
+                rewards: [
+                    { type: 'gold', min: -10, max: -5 }
                 ], heroIds: []
             };
 
