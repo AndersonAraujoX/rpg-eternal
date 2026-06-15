@@ -100,6 +100,26 @@ describe('dailies', () => {
             expect(getLoginStreak(lastLogin, 3)).toBe(3);
         });
 
+        it('should return current streak if time difference is exactly 0 or negative', () => {
+            const mockDate = new Date('2024-01-02T12:00:00Z').getTime();
+            vi.setSystemTime(mockDate);
+
+            // Exactly now
+            expect(getLoginStreak(mockDate, 3)).toBe(3);
+
+            // Future date (negative time diff, like clock change)
+            const futureLogin = mockDate + (12 * 60 * 60 * 1000);
+            expect(getLoginStreak(futureLogin, 3)).toBe(3);
+        });
+
+        it('should increment streak if time difference is exactly 24 hours', () => {
+            const mockDate = new Date('2024-01-03T12:00:00Z').getTime();
+            vi.setSystemTime(mockDate);
+
+            const lastLogin = mockDate - (24 * 60 * 60 * 1000);
+            expect(getLoginStreak(lastLogin, 3)).toBe(4);
+        });
+
         it('should increment streak up to 7 if time difference is between 24 and 48 hours', () => {
             const mockDate = new Date('2024-01-03T12:00:00Z').getTime();
             vi.setSystemTime(mockDate);
@@ -112,17 +132,30 @@ describe('dailies', () => {
             expect(getLoginStreak(lastLogin, 7)).toBe(7); // Max cap
         });
 
+        it('should reset streak to 1 if time difference is exactly 48 hours', () => {
+            const mockDate = new Date('2024-01-04T12:00:00Z').getTime();
+            vi.setSystemTime(mockDate);
+
+            const lastLogin = mockDate - (48 * 60 * 60 * 1000);
+            expect(getLoginStreak(lastLogin, 5)).toBe(1);
+        });
+
         it('should reset streak to 1 if time difference is 48 hours or more', () => {
             const mockDate = new Date('2024-01-04T12:00:00Z').getTime();
             vi.setSystemTime(mockDate);
 
-            // 48 hours ago
-            const lastLogin1 = mockDate - (48 * 60 * 60 * 1000);
-            expect(getLoginStreak(lastLogin1, 5)).toBe(1);
-
             // 72 hours ago
-            const lastLogin2 = mockDate - (72 * 60 * 60 * 1000);
-            expect(getLoginStreak(lastLogin2, 5)).toBe(1);
+            const lastLogin = mockDate - (72 * 60 * 60 * 1000);
+            expect(getLoginStreak(lastLogin, 5)).toBe(1);
+        });
+
+        it('should return 1 for a first-time login where lastLogin is 0', () => {
+            const mockDate = new Date('2024-01-05T12:00:00Z').getTime();
+            vi.setSystemTime(mockDate);
+
+            // lastLogin 0 means new user or very old epoch time
+            expect(getLoginStreak(0, 0)).toBe(1);
+            expect(getLoginStreak(0, 5)).toBe(1); // even if somehow streak was not 0
         });
     });
 });
