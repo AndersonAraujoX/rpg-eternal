@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import { isSkillUnlocked, getPassiveStatBonus, getBestDamageSkill, getActiveSkills } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, getSkillsForHero, CLASS_SKILLS } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
@@ -24,29 +24,54 @@ const mockHero = (level: number): Hero => ({
     maxFatigue: 100
 });
 
-describe('isSkillUnlocked', () => {
-    it('returns true if hero level is greater than unlock level', () => {
-        const skill: Skill = {
-            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
-            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
-        };
-        expect(isSkillUnlocked(skill, 10)).toBe(true);
+describe('getSkillsForHero', () => {
+    it('returns an empty array when a nonexistent class name is provided', () => {
+        expect(getSkillsForHero('NonExistentClass', 10)).toEqual([]);
     });
 
-    it('returns true if hero level is exactly equal to unlock level', () => {
-        const skill: Skill = {
-            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
-            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+    it('returns only the skills unlocked at a given hero level for a class', () => {
+        // Mock a dummy class in CLASS_SKILLS
+        const active1: Skill = {
+            id: 'a1', name: 'A1', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 10, unlockLevel: 1, cooldown: 0, currentCooldown: 0
         };
-        expect(isSkillUnlocked(skill, 5)).toBe(true);
+        const passive: Skill = {
+            id: 'p1', name: 'P1', description: '', type: 'passive', effectType: 'passive',
+            target: 'self', value: 0, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+        };
+        const active2: Skill = {
+            id: 'a2', name: 'A2', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 20, unlockLevel: 10, cooldown: 0, currentCooldown: 0
+        };
+
+        CLASS_SKILLS['DummyClass'] = [active1, passive, active2];
+
+        // At level 5, a1 and p1 should be unlocked, a2 locked
+        const result = getSkillsForHero('DummyClass', 5);
+        expect(result).toEqual([active1, passive]);
+
+        // Clean up
+        delete CLASS_SKILLS['DummyClass'];
     });
 
-    it('returns false if hero level is less than unlock level', () => {
-        const skill: Skill = {
-            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
-            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+    it('returns all skills for a class when the hero level is high enough to unlock everything', () => {
+        const active1: Skill = {
+            id: 'a1', name: 'A1', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 10, unlockLevel: 1, cooldown: 0, currentCooldown: 0
         };
-        expect(isSkillUnlocked(skill, 4)).toBe(false);
+        const passive: Skill = {
+            id: 'p1', name: 'P1', description: '', type: 'passive', effectType: 'passive',
+            target: 'self', value: 0, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+        };
+
+        CLASS_SKILLS['DummyClass2'] = [active1, passive];
+
+        // At level 100, everything is unlocked
+        const result = getSkillsForHero('DummyClass2', 100);
+        expect(result).toEqual([active1, passive]);
+
+        // Clean up
+        delete CLASS_SKILLS['DummyClass2'];
     });
 });
 
