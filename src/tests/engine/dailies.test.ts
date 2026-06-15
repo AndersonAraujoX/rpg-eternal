@@ -80,6 +80,24 @@ describe('dailies', () => {
             const lastReset2 = mockDate - (48 * 60 * 60 * 1000);
             expect(checkDailyReset(lastReset2)).toBe(true);
         });
+
+        it('should return false if lastReset is in the future', () => {
+            const mockDate = new Date('2024-01-02T12:00:00Z').getTime();
+            vi.setSystemTime(mockDate);
+
+            // 1 hour in the future
+            const lastResetFuture = mockDate + (60 * 60 * 1000);
+            expect(checkDailyReset(lastResetFuture)).toBe(false);
+        });
+
+        it('should handle lastReset being 0 (epoch)', () => {
+            const mockDate = new Date('2024-01-02T12:00:00Z').getTime();
+            vi.setSystemTime(mockDate);
+
+            const lastResetEpoch = 0;
+            // Since mockDate is in 2024, the difference will be much greater than 24 hours
+            expect(checkDailyReset(lastResetEpoch)).toBe(true);
+        });
     });
 
     describe('getLoginStreak', () => {
