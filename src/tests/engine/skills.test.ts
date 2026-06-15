@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, getSkillsForHero, CLASS_SKILLS } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, getTotalPassiveStatBonus } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
@@ -164,6 +164,27 @@ describe('getActiveSkills', () => {
 
         const result = getActiveSkills([active1, active2, passive, locked], 10);
         expect(result).toEqual([active1, active2]);
+    });
+});
+
+describe('getTotalPassiveStatBonus', () => {
+    it('returns an empty object if the class is unknown or has no skills', () => {
+        expect(getTotalPassiveStatBonus('UnknownClass', 10)).toEqual({});
+    });
+
+    it('returns accumulated passive stats up to the hero level for a known class', () => {
+        // Based on actual CLASS_SKILLS['Warrior']:
+        // w2 (Iron Skin) at lv 5: { defense: 15 }
+        // w4 (Veteran Vitality) at lv 12: { hp: 50, maxHp: 50 }
+
+        // At level 1, no passives should be unlocked yet
+        expect(getTotalPassiveStatBonus('Warrior', 1)).toEqual({});
+
+        // At level 10, only lv 5 passive is unlocked
+        expect(getTotalPassiveStatBonus('Warrior', 10)).toEqual({ defense: 15 });
+
+        // At level 15, both lv 5 and lv 12 passives are unlocked
+        expect(getTotalPassiveStatBonus('Warrior', 15)).toEqual({ defense: 15, hp: 50, maxHp: 50 });
     });
 });
 
