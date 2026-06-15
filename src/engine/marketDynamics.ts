@@ -36,6 +36,12 @@ export const MARKET_TRENDS: Record<MarketTrendType, Omit<MarketTrend, 'endTime'>
         multiplier: 2.0,
         name: 'Economic Boom',
         description: 'Hyper-inflation! Prices have skyrocketed.'
+    },
+    monopoly: {
+        type: 'monopoly',
+        multiplier: 1.5,
+        name: 'Monopólio Industrial',
+        description: 'Bobinas Magnéticas em massa! Preço de minérios brutos +50%.'
     }
 };
 

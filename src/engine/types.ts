@@ -371,7 +371,7 @@ export interface Spaceship {
 export type LogEntry = {
     id: string;
     message: string;
-    type: 'info' | 'battle' | 'loot' | 'achievement' | 'death' | 'craft' | 'action' | 'damage' | 'heal' | 'error' | 'danger' | 'success';
+    type: 'info' | 'battle' | 'loot' | 'achievement' | 'death' | 'craft' | 'action' | 'damage' | 'heal' | 'error' | 'danger' | 'success' | 'warning';
     timestamp: number;
 };
 
@@ -403,7 +403,7 @@ export interface TownEvent {
 
 
 // Phase 100: Market Dynamics & Town Sovereignty
-export type MarketTrendType = 'bull' | 'bear' | 'neutral' | 'volatile' | 'crash' | 'boom';
+export type MarketTrendType = 'bull' | 'bear' | 'neutral' | 'volatile' | 'crash' | 'boom' | 'monopoly';
 
 export interface MarketTrend {
     type: MarketTrendType;
