@@ -2933,7 +2933,7 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
                         }
                     }
 
-                    const fatigueDelta = h.assignment === 'combat' ? 0.1 : -1;
+                    const fatigueDelta = (h.assignment === 'combat') ? 0.1 : (h.assignment === 'mine' ? 0 : -1);
                     const prevFatigue = h.fatigue || 0;
                     const newFatigue = Math.max(0, Math.min(100, prevFatigue + fatigueDelta));
 
