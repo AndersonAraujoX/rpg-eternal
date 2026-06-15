@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills } from '../../engine/skills';
+import { isSkillUnlocked, getPassiveStatBonus, getBestDamageSkill, getActiveSkills } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
@@ -22,6 +22,32 @@ const mockHero = (level: number): Hero => ({
     skills: [],
     fatigue: 0,
     maxFatigue: 100
+});
+
+describe('isSkillUnlocked', () => {
+    it('returns true if hero level is greater than unlock level', () => {
+        const skill: Skill = {
+            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+        };
+        expect(isSkillUnlocked(skill, 10)).toBe(true);
+    });
+
+    it('returns true if hero level is exactly equal to unlock level', () => {
+        const skill: Skill = {
+            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+        };
+        expect(isSkillUnlocked(skill, 5)).toBe(true);
+    });
+
+    it('returns false if hero level is less than unlock level', () => {
+        const skill: Skill = {
+            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+        };
+        expect(isSkillUnlocked(skill, 4)).toBe(false);
+    });
 });
 
 describe('getActiveSkills', () => {
