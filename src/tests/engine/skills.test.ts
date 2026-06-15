@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, updateHeroSkills } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
@@ -343,5 +343,80 @@ describe('Automated Skill Tree System', () => {
         expect(mods?.attackMult).toBeGreaterThan(1.50);
         expect(mods?.hpMult).toBeGreaterThan(1.40);
         expect(mods?.critChanceBonus).toBeGreaterThanOrEqual(0.05);
+    });
+});
+
+describe('updateHeroSkills', () => {
+    it('initializes skill tree nodes and passive skill tree for a level 1 hero without existing trees', () => {
+        const hero = mockHero(1);
+        const updatedHero = updateHeroSkills(hero);
+
+        expect(updatedHero.skillTreeNodes).toBeDefined();
+        expect(updatedHero.skillTreeNodes?.length).toBeGreaterThan(0);
+
+        expect(updatedHero.passiveSkillTree).toBeDefined();
+        expect(updatedHero.passiveSkillTree?.level).toBe(1);
+        expect(updatedHero.passiveSkillTree?.pointsSpent).toBe(0);
+        expect(updatedHero.passiveSkillTree?.modifiers).toBeDefined();
+
+        // At level 1, base mult should be 1.0 plus any level 1 unlocks
+        expect(updatedHero.passiveSkillTree?.modifiers.attackMult).toBeGreaterThanOrEqual(1.0);
+    });
+
+    it('calculates higher levels and more unlocked nodes for a higher level hero', () => {
+        const hero = mockHero(50);
+        const updatedHero = updateHeroSkills(hero);
+
+        expect(updatedHero.skillTreeNodes).toBeDefined();
+
+        // Find a tier 5 node (req level 40) - should be unlocked
+        const t5Node = updatedHero.skillTreeNodes?.find(n => n.tier === 5);
+        expect(t5Node).toBeDefined();
+        expect(t5Node?.unlocked).toBe(true);
+
+        // Find a tier 6 node (req level 50) - should be unlocked and at least level 1
+        const t6Node = updatedHero.skillTreeNodes?.find(n => n.tier === 6);
+        expect(t6Node).toBeDefined();
+        expect(t6Node?.unlocked).toBe(true);
+        expect(t6Node?.level).toBeGreaterThan(0);
+
+        // Find a tier 7 node (req level 60) - should be locked
+        const t7Node = updatedHero.skillTreeNodes?.find(n => n.tier === 7);
+        expect(t7Node).toBeDefined();
+        expect(t7Node?.unlocked).toBe(false);
+        expect(t7Node?.level).toBe(0);
+    });
+
+    it('adds to existing multipliers properly (Mult ends with Mult)', () => {
+        const hero = mockHero(10);
+        // Preset passive tree to verify addition works properly
+        hero.passiveSkillTree = {
+            level: 10,
+            pointsSpent: 9,
+            offensivePoints: 0,
+            defensivePoints: 0,
+            utilityPoints: 0,
+            modifiers: {
+                attackMult: 1.5,
+                magicMult: 1.0,
+                hpMult: 1.0,
+                defenseMult: 1.0,
+                speedMult: 1.0,
+                critChanceBonus: 0.1,
+                critDamageBonus: 0.0,
+                damageMitigation: 0.0,
+                insanityResistance: 0.0,
+                expeditionSpeedBonus: 0.0
+            },
+            unlockedMilestones: []
+        };
+        const updatedHero = updateHeroSkills(hero);
+
+        // At level 10, some attack node should unlock and add to attackMult
+        // attackMult starts at 1.5, node base is e.g., 0.01
+        // Thus attackMult should be strictly > 1.5
+        expect(updatedHero.passiveSkillTree?.modifiers.attackMult).toBeGreaterThan(1.5);
+        // And non-Mult bonuses like critChanceBonus should be strictly >= 0.1
+        expect(updatedHero.passiveSkillTree?.modifiers.critChanceBonus).toBeGreaterThanOrEqual(0.1);
     });
 });
