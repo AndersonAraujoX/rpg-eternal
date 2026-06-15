@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
 import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, getSkillDamageEstimate } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, updateHeroSkills } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, getTotalPassiveStatBonus } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
@@ -24,29 +26,54 @@ const mockHero = (level: number): Hero => ({
     maxFatigue: 100
 });
 
-describe('isSkillUnlocked', () => {
-    it('returns true if hero level is greater than unlock level', () => {
-        const skill: Skill = {
-            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
-            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
-        };
-        expect(isSkillUnlocked(skill, 10)).toBe(true);
+describe('getSkillsForHero', () => {
+    it('returns an empty array when a nonexistent class name is provided', () => {
+        expect(getSkillsForHero('NonExistentClass', 10)).toEqual([]);
     });
 
-    it('returns true if hero level is exactly equal to unlock level', () => {
-        const skill: Skill = {
-            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
-            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+    it('returns only the skills unlocked at a given hero level for a class', () => {
+        // Mock a dummy class in CLASS_SKILLS
+        const active1: Skill = {
+            id: 'a1', name: 'A1', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 10, unlockLevel: 1, cooldown: 0, currentCooldown: 0
         };
-        expect(isSkillUnlocked(skill, 5)).toBe(true);
+        const passive: Skill = {
+            id: 'p1', name: 'P1', description: '', type: 'passive', effectType: 'passive',
+            target: 'self', value: 0, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+        };
+        const active2: Skill = {
+            id: 'a2', name: 'A2', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 20, unlockLevel: 10, cooldown: 0, currentCooldown: 0
+        };
+
+        CLASS_SKILLS['DummyClass'] = [active1, passive, active2];
+
+        // At level 5, a1 and p1 should be unlocked, a2 locked
+        const result = getSkillsForHero('DummyClass', 5);
+        expect(result).toEqual([active1, passive]);
+
+        // Clean up
+        delete CLASS_SKILLS['DummyClass'];
     });
 
-    it('returns false if hero level is less than unlock level', () => {
-        const skill: Skill = {
-            id: 's1', name: 'Skill', description: '', type: 'active', effectType: 'damage',
-            target: 'enemy', value: 10, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+    it('returns all skills for a class when the hero level is high enough to unlock everything', () => {
+        const active1: Skill = {
+            id: 'a1', name: 'A1', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 10, unlockLevel: 1, cooldown: 0, currentCooldown: 0
         };
-        expect(isSkillUnlocked(skill, 4)).toBe(false);
+        const passive: Skill = {
+            id: 'p1', name: 'P1', description: '', type: 'passive', effectType: 'passive',
+            target: 'self', value: 0, unlockLevel: 5, cooldown: 0, currentCooldown: 0
+        };
+
+        CLASS_SKILLS['DummyClass2'] = [active1, passive];
+
+        // At level 100, everything is unlocked
+        const result = getSkillsForHero('DummyClass2', 100);
+        expect(result).toEqual([active1, passive]);
+
+        // Clean up
+        delete CLASS_SKILLS['DummyClass2'];
     });
 });
 
@@ -139,6 +166,27 @@ describe('getActiveSkills', () => {
 
         const result = getActiveSkills([active1, active2, passive, locked], 10);
         expect(result).toEqual([active1, active2]);
+    });
+});
+
+describe('getTotalPassiveStatBonus', () => {
+    it('returns an empty object if the class is unknown or has no skills', () => {
+        expect(getTotalPassiveStatBonus('UnknownClass', 10)).toEqual({});
+    });
+
+    it('returns accumulated passive stats up to the hero level for a known class', () => {
+        // Based on actual CLASS_SKILLS['Warrior']:
+        // w2 (Iron Skin) at lv 5: { defense: 15 }
+        // w4 (Veteran Vitality) at lv 12: { hp: 50, maxHp: 50 }
+
+        // At level 1, no passives should be unlocked yet
+        expect(getTotalPassiveStatBonus('Warrior', 1)).toEqual({});
+
+        // At level 10, only lv 5 passive is unlocked
+        expect(getTotalPassiveStatBonus('Warrior', 10)).toEqual({ defense: 15 });
+
+        // At level 15, both lv 5 and lv 12 passives are unlocked
+        expect(getTotalPassiveStatBonus('Warrior', 15)).toEqual({ defense: 15, hp: 50, maxHp: 50 });
     });
 });
 
@@ -426,5 +474,80 @@ describe('Automated Skill Tree System', () => {
         expect(mods?.attackMult).toBeGreaterThan(1.50);
         expect(mods?.hpMult).toBeGreaterThan(1.40);
         expect(mods?.critChanceBonus).toBeGreaterThanOrEqual(0.05);
+    });
+});
+
+describe('updateHeroSkills', () => {
+    it('initializes skill tree nodes and passive skill tree for a level 1 hero without existing trees', () => {
+        const hero = mockHero(1);
+        const updatedHero = updateHeroSkills(hero);
+
+        expect(updatedHero.skillTreeNodes).toBeDefined();
+        expect(updatedHero.skillTreeNodes?.length).toBeGreaterThan(0);
+
+        expect(updatedHero.passiveSkillTree).toBeDefined();
+        expect(updatedHero.passiveSkillTree?.level).toBe(1);
+        expect(updatedHero.passiveSkillTree?.pointsSpent).toBe(0);
+        expect(updatedHero.passiveSkillTree?.modifiers).toBeDefined();
+
+        // At level 1, base mult should be 1.0 plus any level 1 unlocks
+        expect(updatedHero.passiveSkillTree?.modifiers.attackMult).toBeGreaterThanOrEqual(1.0);
+    });
+
+    it('calculates higher levels and more unlocked nodes for a higher level hero', () => {
+        const hero = mockHero(50);
+        const updatedHero = updateHeroSkills(hero);
+
+        expect(updatedHero.skillTreeNodes).toBeDefined();
+
+        // Find a tier 5 node (req level 40) - should be unlocked
+        const t5Node = updatedHero.skillTreeNodes?.find(n => n.tier === 5);
+        expect(t5Node).toBeDefined();
+        expect(t5Node?.unlocked).toBe(true);
+
+        // Find a tier 6 node (req level 50) - should be unlocked and at least level 1
+        const t6Node = updatedHero.skillTreeNodes?.find(n => n.tier === 6);
+        expect(t6Node).toBeDefined();
+        expect(t6Node?.unlocked).toBe(true);
+        expect(t6Node?.level).toBeGreaterThan(0);
+
+        // Find a tier 7 node (req level 60) - should be locked
+        const t7Node = updatedHero.skillTreeNodes?.find(n => n.tier === 7);
+        expect(t7Node).toBeDefined();
+        expect(t7Node?.unlocked).toBe(false);
+        expect(t7Node?.level).toBe(0);
+    });
+
+    it('adds to existing multipliers properly (Mult ends with Mult)', () => {
+        const hero = mockHero(10);
+        // Preset passive tree to verify addition works properly
+        hero.passiveSkillTree = {
+            level: 10,
+            pointsSpent: 9,
+            offensivePoints: 0,
+            defensivePoints: 0,
+            utilityPoints: 0,
+            modifiers: {
+                attackMult: 1.5,
+                magicMult: 1.0,
+                hpMult: 1.0,
+                defenseMult: 1.0,
+                speedMult: 1.0,
+                critChanceBonus: 0.1,
+                critDamageBonus: 0.0,
+                damageMitigation: 0.0,
+                insanityResistance: 0.0,
+                expeditionSpeedBonus: 0.0
+            },
+            unlockedMilestones: []
+        };
+        const updatedHero = updateHeroSkills(hero);
+
+        // At level 10, some attack node should unlock and add to attackMult
+        // attackMult starts at 1.5, node base is e.g., 0.01
+        // Thus attackMult should be strictly > 1.5
+        expect(updatedHero.passiveSkillTree?.modifiers.attackMult).toBeGreaterThan(1.5);
+        // And non-Mult bonuses like critChanceBonus should be strictly >= 0.1
+        expect(updatedHero.passiveSkillTree?.modifiers.critChanceBonus).toBeGreaterThanOrEqual(0.1);
     });
 });
