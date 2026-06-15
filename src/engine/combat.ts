@@ -328,7 +328,7 @@ export const processCombatTurn = (
         }
 
         let baseDmg = stats.attack * activeDamageMult * getElementalMult(h.element, boss.element);
-        if (isBackroomsUnlocked && backroomsFloor >= 2 && (h.element === 'water' || h.element === 'ice')) {
+        if (isBackroomsUnlocked && backroomsFloor >= 2 && h.element === 'water') {
             baseDmg *= 1.25;
         }
 

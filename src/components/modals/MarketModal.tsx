@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, ShoppingBag, Clock } from 'lucide-react';
-import type { MarketItem } from '../../engine/types';
+import type { MarketItem, Resources } from '../../engine/types';
 import { formatNumber } from '../../utils';
 
 interface MarketModalProps {

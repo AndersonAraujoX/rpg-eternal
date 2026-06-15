@@ -219,7 +219,7 @@ export const useGame = (
         warning?: string;
         soulsGained?: number;
         rewardText?: string;
-        onConfirm: () => void;
+        onConfirm: (preservedBuildingIds?: string[], preservedHeroId?: string) => void;
     } | null>(null);
 
     // ── Sinergias Transversais Globais (modifiersManager) ──
@@ -2409,7 +2409,7 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
 
             const { souls, talents, constellations, artifacts, cards, achievements, pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyDamageMult, artifactMultipliers, tower, towerBoss } = stateRef.current;
             const hasCombat = activeHeroes.length > 0 || tower.active;
-            let res: { totalDmg: number; events: any[]; updatedHeroes: any[] } = { totalDmg: 0, events: [], updatedHeroes: [] };
+            let res: { totalDmg: number; events: any[]; updatedHeroes: any[]; freezeBossDuration?: number; healOverTime?: { turnsRemaining: number; healPerTurn: number } } = { totalDmg: 0, events: [], updatedHeroes: [] };
             let bossDefeated = false;
 
             const monumentMults = getMonumentMultipliers();
@@ -3417,6 +3417,8 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
         highestRiftFloor: gameStats.highestRiftFloor || 0,
         riftFragments,
         setRiftFragments,
+        dungeonFirstTickBuff,
+        setDungeonFirstTickBuff,
         // Sinergias Globais de Indústria
         starForgeDailyUses,
         setStarForgeDailyUses,
