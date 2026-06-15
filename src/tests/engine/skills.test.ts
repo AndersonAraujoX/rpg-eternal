@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
-import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, getSkillDamageEstimate } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
 const mockHero = (level: number): Hero => ({
@@ -213,6 +213,63 @@ describe('getPassiveStatBonus', () => {
             attack: 15,
             defense: 20
         });
+    });
+});
+
+describe('getSkillDamageEstimate', () => {
+    it('returns 0 for non-damage skills', () => {
+        const healSkill: Skill = {
+            id: 'h1', name: 'Heal', description: '', type: 'active', effectType: 'heal',
+            target: 'ally', value: 2.0, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+        const buffSkill: Skill = {
+            id: 'b1', name: 'Buff', description: '', type: 'active', effectType: 'buff',
+            target: 'self', value: 1.5, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+
+        expect(getSkillDamageEstimate(healSkill, 100)).toBe(0);
+        expect(getSkillDamageEstimate(buffSkill, 100)).toBe(0);
+    });
+
+    it('calculates expected damage estimate for a basic damage skill', () => {
+        const damageSkill: Skill = {
+            id: 'd1', name: 'Strike', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 1.5, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+
+        expect(getSkillDamageEstimate(damageSkill, 10)).toBe(15);
+        expect(getSkillDamageEstimate(damageSkill, 100)).toBe(150);
+    });
+
+    it('floors the calculated damage correctly', () => {
+        const damageSkill: Skill = {
+            id: 'd2', name: 'Odd Strike', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 1.25, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+
+        // 1.25 * 15 = 18.75 -> floored to 18
+        expect(getSkillDamageEstimate(damageSkill, 15)).toBe(18);
+
+        // 1.25 * 9 = 11.25 -> floored to 11
+        expect(getSkillDamageEstimate(damageSkill, 9)).toBe(11);
+    });
+
+    it('returns 0 when baseAttack is 0', () => {
+        const damageSkill: Skill = {
+            id: 'd3', name: 'Zero Strike', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 2.0, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+
+        expect(getSkillDamageEstimate(damageSkill, 0)).toBe(0);
+    });
+
+    it('returns 0 when skill value is 0', () => {
+        const damageSkill: Skill = {
+            id: 'd4', name: 'Useless Strike', description: '', type: 'active', effectType: 'damage',
+            target: 'enemy', value: 0, unlockLevel: 1, cooldown: 0, currentCooldown: 0
+        };
+
+        expect(getSkillDamageEstimate(damageSkill, 100)).toBe(0);
     });
 });
 
