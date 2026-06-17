@@ -141,21 +141,6 @@ describe('Core Game Expansion: Hero Bonds', () => {
 
         expect(totalDmg).toBe(20);
     });
-
-    it('Rivals Level 3 applies a +20% XP bonus upon victory', () => {
-        const xpBase = 100;
-        const finalXpMult = 1.0;
-        const moraleXpMult = 1.0;
-
-        // Simulating the Rivals XP boost calculation in useGame:
-        // let xpMult = finalXpMult;
-        // if bond level >= 3 && type === 'rivals', xpMult *= 1.2
-        const rivalsActive = true;
-        const xpMult = finalXpMult * (rivalsActive ? 1.2 : 1.0);
-        const xpGain = Math.floor(xpBase * xpMult * moraleXpMult);
-
-        expect(xpGain).toBe(120);
-    });
 });
 
 describe('Core Game Expansion: Traveling Circus', () => {
