@@ -1,7 +1,8 @@
+import { CLASS_SKILLS } from "../../engine/skills";
 import { describe, it, expect } from 'vitest';
 import { initOrUpdateHeroPassiveTree } from '../../data/skillTreeData';
 import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, getSkillDamageEstimate } from '../../engine/skills';
-import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, updateHeroSkills } from '../../engine/skills';
+import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, updateHeroSkills, getSkillsForHero } from '../../engine/skills';
 import { getPassiveStatBonus, getBestDamageSkill, getActiveSkills, getTotalPassiveStatBonus } from '../../engine/skills';
 import type { Hero, Skill } from '../../engine/types';
 
