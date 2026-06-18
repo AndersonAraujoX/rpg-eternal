@@ -53,9 +53,6 @@ export const generateTownEvent = (gameStage: number, _activeEvents: TownEvent[])
         const stockSize = 3;
         const items: Item[] = [];
         for (let i = 0; i < stockSize; i++) {
-            // Mock level based on gameStage
-            // const itemLevel = Math.max(1, gameStage * 10); 
-
             items.push({
                 id: `merc-item-${Date.now()}-${i}`,
                 name: `Mysterious Artifact ${i + 1}`,
