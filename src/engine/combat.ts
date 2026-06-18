@@ -146,7 +146,6 @@ export const processCombatTurn = (
     }
     const critDmgBonus = activeSynergies.find(s => s.type === 'crit_dmg')?.value || 0;
     const attackSpeedBonus = activeSynergies.find(s => s.type === 'attackSpeed')?.value || 0;
-    // const mitigation = (activeSynergies.find(s => s.type === 'mitigation')?.value || 0) + (mutator?.id === 'iron_wall' ? 0.5 : 0);
 
     // Elemental Reactions
     const burnEffect = activeSynergies.find(s => s.type === 'burn');
