@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Hammer, Star, Flame } from 'lucide-react';
-import type { Item } from '../../engine/types';
+import type { Item, HeroClass } from '../../engine/types';
 import { generateAffixes } from '../../engine/starForge';
 import { soundManager } from '../../engine/sound';
 
@@ -14,14 +14,16 @@ interface StarForgeModalProps {
     maxDailyUses?: number;
     perfectModChanceBonus?: number;
     onUseDailyAttempt?: () => void;
+    classMastery?: Record<string, import('../../engine/types').ClassMastery>;
 }
 
 const FORGE_COST = 5000; // Gold
 const STAR_COST = 5;    // Fragments
 
-export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose, starFragments, gold, onCraft, dailyUsesRemaining, maxDailyUses, perfectModChanceBonus = 0, onUseDailyAttempt }) => {
+export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose, starFragments, gold, onCraft, dailyUsesRemaining, maxDailyUses, perfectModChanceBonus = 0, onUseDailyAttempt, classMastery }) => {
     const [view, setView] = useState<'select' | 'forging' | 'result'>('select');
     const [selectedType, setSelectedType] = useState<Item['type']>('weapon');
+    const [selectedClass, setSelectedClass] = useState<string>('');
 
     // Minigame State
     const [heat, setHeat] = useState(0); // 0-100
@@ -85,7 +87,16 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
     const finishCrafting = (finalQualityRaw: number) => {
         // Finalize
         const finalQuality = Math.min(100, Math.floor(finalQualityRaw));
-        const affixes = generateAffixes(50, 'legendary', perfectModChanceBonus); // Example level/rarity
+        const masteryLevel = selectedClass ? (classMastery?.[selectedClass]?.level || 1) : 1;
+        const hasMasteryBonus = masteryLevel >= 3;
+        
+        const finalPerfectBonus = perfectModChanceBonus + (hasMasteryBonus ? 0.15 : 0);
+        const affixes = generateAffixes(50, 'legendary', finalPerfectBonus); // Example level/rarity
+
+        let baseSockets = finalQuality > 90 ? 2 : 1;
+        if (hasMasteryBonus && Math.random() < 0.5) {
+            baseSockets = Math.min(3, baseSockets + 1);
+        }
 
         const newItem: Item = {
             id: `forged-${Date.now()}`,
@@ -94,12 +105,13 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
             rarity: 'legendary',
             stat: selectedType === 'weapon' ? 'attack' : 'defense',
             value: 50 * (1 + (finalQuality / 100)), // Base stats scaled by quality
-            sockets: finalQuality > 90 ? 2 : 1,
+            sockets: baseSockets,
             runes: [],
             quality: finalQuality,
             prefix: affixes.prefix,
             suffix: affixes.suffix,
-            craftedBy: 'Player'
+            craftedBy: 'Player',
+            classRestriction: selectedClass ? (selectedClass as HeroClass) : undefined
         };
 
         // Construct Name
@@ -145,6 +157,27 @@ export const StarForgeModal: React.FC<StarForgeModalProps> = ({ isOpen, onClose,
                                     <span className="text-4xl">🛡️</span>
                                     <span className="font-bold">Armadura</span>
                                 </button>
+                            </div>
+
+                            <div className="mb-6 w-full max-w-xs mx-auto">
+                                <label className="block text-gray-400 text-sm font-bold mb-2">Restrição de Classe (Opcional):</label>
+                                <select
+                                    value={selectedClass}
+                                    onChange={(e) => setSelectedClass(e.target.value)}
+                                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:border-orange-500 transition-colors font-sans"
+                                >
+                                    <option value="">Nenhuma</option>
+                                    {Object.keys(classMastery || {}).map(cls => (
+                                        <option key={cls} value={cls}>
+                                            {cls} (Nvl {(classMastery?.[cls]?.level || 1)})
+                                        </option>
+                                    ))}
+                                </select>
+                                {selectedClass && (classMastery?.[selectedClass]?.level || 1) >= 3 && (
+                                    <div className="mt-2 text-xs text-green-400 font-bold flex items-center justify-center gap-1 animate-pulse">
+                                        ✨ Maestria Nvl {(classMastery?.[selectedClass]?.level || 1)}: +15% Modificador Perfeito & +50% Extra Slot
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex justify-center gap-8 mb-8 text-sm font-mono">

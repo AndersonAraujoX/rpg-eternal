@@ -17,6 +17,9 @@ interface RelicChamberModalProps {
         equipRelic: (relicId: string, slotIndex: number) => void;
         unequipRelic: (slotIndex: number) => void;
     };
+    unpurifiedRelics?: number;
+    unlockedRiftPerks?: string[];
+    purifyRelic?: () => void;
 }
 
 export const RelicChamberModal: React.FC<RelicChamberModalProps> = ({
@@ -27,7 +30,10 @@ export const RelicChamberModal: React.FC<RelicChamberModalProps> = ({
     gold,
     souls,
     voidMatter,
-    actions
+    actions,
+    unpurifiedRelics = 0,
+    unlockedRiftPerks = [],
+    purifyRelic
 }) => {
     if (!isOpen) return null;
 
@@ -128,8 +134,81 @@ export const RelicChamberModal: React.FC<RelicChamberModalProps> = ({
                     </div>
                 </div>
 
+                {/* Purificação de Relíquias Cósmicas */}
+                <div className="mb-6 bg-slate-950/60 p-4 rounded-xl border border-indigo-900/40">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+                        <div>
+                            <h3 className="text-sm font-black text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" /> Purificação de Relíquias Cósmicas
+                            </h3>
+                            <p className="text-[11px] text-gray-400 mt-1 max-w-md">
+                                Relíquias brutas obtidas em expedições planetárias podem ser purificadas para conceder bônus de início de corrida no Modo Rifts (Fendas).
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="text-right">
+                                <span className="text-[10px] text-gray-500 block uppercase font-bold">Não Purificadas</span>
+                                <span className="text-base font-black text-indigo-300 font-mono">{unpurifiedRelics}</span>
+                            </div>
+                            <button
+                                onClick={purifyRelic}
+                                disabled={unpurifiedRelics < 1}
+                                className={`px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide border transition-all duration-300 ${
+                                    unpurifiedRelics >= 1
+                                        ? 'bg-indigo-600 hover:bg-indigo-500 border-indigo-500 text-white shadow-md shadow-indigo-950/40 active:scale-95 hover:scale-[1.03]'
+                                        : 'bg-gray-850 border-gray-800 text-gray-550 cursor-not-allowed'
+                                }`}
+                            >
+                                Purificar
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Perks Status */}
+                    <div className="mt-4 pt-3 border-t border-gray-850/60 grid grid-cols-3 gap-3">
+                        {/* Perk 1: Gold */}
+                        <div className={`p-2 rounded-lg border text-center transition-all ${
+                            unlockedRiftPerks.includes('rift_perk_gold')
+                                ? 'bg-indigo-950/20 border-indigo-650/40 text-indigo-200 font-bold'
+                                : 'bg-gray-950/40 border-gray-850 text-gray-500'
+                        }`}>
+                            <div className="text-[10px] font-bold uppercase truncate">Provisão Cósmica</div>
+                            <div className="text-[9px] mt-0.5 font-semibold text-gray-400">+20 Ouro Inicial</div>
+                            <div className="text-[9px] mt-1 font-mono uppercase font-black">
+                                {unlockedRiftPerks.includes('rift_perk_gold') ? '✓ Desbloqueado' : '❌ Bloqueado'}
+                            </div>
+                        </div>
+
+                        {/* Perk 2: Speed */}
+                        <div className={`p-2 rounded-lg border text-center transition-all ${
+                            unlockedRiftPerks.includes('rift_perk_speed')
+                                ? 'bg-indigo-950/20 border-indigo-650/40 text-indigo-200 font-bold'
+                                : 'bg-gray-950/40 border-gray-850 text-gray-500'
+                        }`}>
+                            <div className="text-[10px] font-bold uppercase truncate">Propulsor Célere</div>
+                            <div className="text-[9px] mt-0.5 font-semibold text-gray-400">+3 Vel. Inicial</div>
+                            <div className="text-[9px] mt-1 font-mono uppercase font-black">
+                                {unlockedRiftPerks.includes('rift_perk_speed') ? '✓ Desbloqueado' : '❌ Bloqueado'}
+                            </div>
+                        </div>
+
+                        {/* Perk 3: Shield (HP) */}
+                        <div className={`p-2 rounded-lg border text-center transition-all ${
+                            unlockedRiftPerks.includes('rift_perk_shield')
+                                ? 'bg-indigo-950/20 border-indigo-650/40 text-indigo-200 font-bold'
+                                : 'bg-gray-950/40 border-gray-850 text-gray-500'
+                        }`}>
+                            <div className="text-[10px] font-bold uppercase truncate">Escudo Estelar</div>
+                            <div className="text-[9px] mt-0.5 font-semibold text-gray-400">+15 HP Máximo</div>
+                            <div className="text-[9px] mt-1 font-mono uppercase font-black">
+                                {unlockedRiftPerks.includes('rift_perk_shield') ? '✓ Desbloqueado' : '❌ Bloqueado'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Available Relics List */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[45vh] overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[32vh] overflow-y-auto pr-1">
                     {CHAMBER_RELICS.map(relic => {
                         const owned = isOwned(relic.id);
                         const equippedSlot = getEquippedSlot(relic.id);

@@ -25,14 +25,27 @@ export function useRoguelike() {
         planetaryExpedition: null
     });
 
-    const startRoguelikeRun = (classType: RoguelikeClass) => {
+    const startRoguelikeRun = (classType: RoguelikeClass, unlockedPerks: string[] = []) => {
         const hero = getStartingHero(classType, roguelikeUpgrades);
         const nodes = generateRoguelikeNodes();
+        
+        let startGold = 10;
+        if (unlockedPerks.includes('rift_perk_gold')) {
+            startGold += 20;
+        }
+        if (unlockedPerks.includes('rift_perk_speed')) {
+            hero.speed += 3;
+        }
+        if (unlockedPerks.includes('rift_perk_shield')) {
+            hero.maxHp += 15;
+            hero.hp += 15;
+        }
+
         setRoguelikeRun({
             hero,
             nodes,
             currentNodeIndex: -1,
-            gold: 10,
+            gold: startGold,
             relics: [],
             combatState: null,
             eventState: null,
@@ -47,7 +60,8 @@ export function useRoguelike() {
         sectorName: string,
         biome: PlanetaryBiome,
         sectorLevel: number,
-        galaxySectors: { type: string; isOwned: boolean }[]
+        galaxySectors: { type: string; isOwned: boolean }[],
+        unlockedPerks: string[] = []
     ) => {
         const galaxyBonus = getGalaxyBonusForRoguelike(galaxySectors);
         const hero = getStartingHero(classType, roguelikeUpgrades);
@@ -58,6 +72,18 @@ export function useRoguelike() {
         hero.magic += galaxyBonus.bonusMag;
         hero.defense += galaxyBonus.bonusDef;
 
+        let startGold = 10;
+        if (unlockedPerks.includes('rift_perk_gold')) {
+            startGold += 20;
+        }
+        if (unlockedPerks.includes('rift_perk_speed')) {
+            hero.speed += 3;
+        }
+        if (unlockedPerks.includes('rift_perk_shield')) {
+            hero.maxHp += 15;
+            hero.hp += 15;
+        }
+
         const nodes = generatePlanetaryNodes(sectorLevel, biome);
         const expedition: PlanetaryExpedition = { sectorId, sectorName, biome, sectorLevel };
 
@@ -65,7 +91,7 @@ export function useRoguelike() {
             hero,
             nodes,
             currentNodeIndex: -1,
-            gold: 10,
+            gold: startGold,
             relics: [],
             combatState: null,
             eventState: null,

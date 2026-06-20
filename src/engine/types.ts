@@ -99,6 +99,7 @@ export interface Item {
     setId?: string;
     slot?: string;
     craftedBy?: string;
+    classRestriction?: HeroClass;
 }
 
 export interface Talent {
@@ -822,7 +823,9 @@ export interface GameActions {
     combineRunes: (runeIds: string[]) => void;
     invokeWeather: (weather: WeatherType) => void;
     pledgeDeity: (deityId: string | null) => void;
-    offerToDeity: (offeringType: 'souls' | 'divinity') => void;
+    offerToDeity: (offeringType: 'souls' | 'divinity' | 'high_tier_industry') => void;
+    purifyRelic: () => void;
+    convertSeasonalFish: () => void;
     // New Progression Systems
     upgradeResonance: (element: ElementType) => void;
     buyRelic: (relicId: string) => void;

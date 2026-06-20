@@ -10,9 +10,11 @@ interface FishingModalProps {
     legendaryCount: number;
     setFish: (n: number) => void;
     setGameStats: (fn: (prev: any) => any) => void;
+    items?: any[];
+    convertSeasonalFish?: () => void;
 }
 
-export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fishCount, legendaryCount, setFish, setGameStats }) => {
+export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fishCount, legendaryCount, setFish, setGameStats, items = [], convertSeasonalFish }) => {
     const [animate, setAnimate] = useState(false);
 
     if (!isOpen) return null;
@@ -75,6 +77,32 @@ export const FishingModal: React.FC<FishingModalProps> = ({ isOpen, onClose, fis
                 >
                     LANÇAR LINHA
                 </button>
+
+                {(() => {
+                    const seasonalFishCount = (items || []).filter(item => item?.id === 'seasonal_fish' || item?.name === 'Peixe Sazonal').length;
+                    return (
+                        <div className="bg-slate-950/60 p-4 rounded-xl border border-teal-900/40 text-center mt-6">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs text-teal-400 uppercase font-black tracking-wider text-left">Ecologia Sazonal</span>
+                                <span className="text-xs text-teal-300 font-mono font-bold">🐟 {seasonalFishCount} no Inventário</span>
+                            </div>
+                            <p className="text-[10px] text-gray-400 text-left leading-relaxed mb-3">
+                                Peixes sazonais capturados durante eventos sazonais podem ser convertidos em almas de prestígio para acelerar sua progressão.
+                            </p>
+                            <button
+                                onClick={convertSeasonalFish}
+                                disabled={seasonalFishCount === 0}
+                                className={`w-full py-2.5 rounded-lg font-bold text-xs uppercase tracking-wide border transition-all duration-300 ${
+                                    seasonalFishCount > 0
+                                        ? 'bg-teal-600 hover:bg-teal-500 border-teal-500 text-white shadow-md shadow-teal-950/40 active:scale-95 hover:scale-[1.02]'
+                                        : 'bg-gray-850 border-gray-800 text-gray-550 cursor-not-allowed'
+                                }`}
+                            >
+                                Converter em Almas (+{seasonalFishCount * 500})
+                            </button>
+                        </div>
+                    );
+                })()}
 
                 <p className="text-center text-xs text-gray-500 mt-4">
                     Passivo: 5% de chance de pescar a cada tick.

@@ -1,6 +1,6 @@
 import type { Hero, ElementType, HeroClass } from './types';
 
-export type SynergyType = 'defense' | 'vampirism' | 'attackSpeed' | 'resources' | 'burn' | 'freeze' | 'blind' | 'cd_reduction' | 'crit_dmg' | 'mitigation' | 'void_execute' | 'void_dodge';
+export type SynergyType = 'defense' | 'vampirism' | 'attackSpeed' | 'resources' | 'burn' | 'freeze' | 'blind' | 'cd_reduction' | 'crit_dmg' | 'mitigation' | 'void_execute' | 'void_dodge' | 'overload';
 
 export interface Synergy {
     id: string;
@@ -89,6 +89,15 @@ export const SYNERGY_DEFINITIONS: SynergyDefinition[] = [
         type: 'freeze',
         value: 0.3,
         elements: ['water', 'nature']
+    },
+    {
+        id: 'reaction_lightning',
+        name: 'Sobrecarga de Raio (Light + Nature)',
+        description: 'Raio: Chance de curar aliados em reações elementais de raio.',
+        icon: '⚡',
+        type: 'overload',
+        value: 0.25,
+        elements: ['light', 'nature']
     },
 
     // --- ELEMENTAL RESONANCE ---

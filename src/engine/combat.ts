@@ -222,6 +222,47 @@ export const processCombatTurn = (
 
     const heroHeals = new Map<string, number>();
 
+    // Lightning Reaction (Light + Nature)
+    const lightningEffect = activeSynergies.find(s => s.id === 'reaction_lightning');
+    if (lightningEffect && !boss.isDead) {
+        const lightningDmg = Math.floor(boss.stats.maxHp * 0.05 * (tickDuration / 1000));
+        const totalAtk = heroes.reduce((sum, h) => sum + (h.stats?.attack || 0), 0);
+        const cappedLightning = Math.min(lightningDmg, totalAtk * 10);
+        const actualLightning = Math.max(1, cappedLightning);
+        totalDmg += actualLightning;
+
+        if (Math.random() < 0.2) {
+            events.push({
+                id: `lightning-${Date.now()}-${Math.random()}`,
+                type: 'reaction',
+                text: '⚡ SOBRECARGA!',
+                value: actualLightning,
+                element: 'light',
+                x: 50 + (Math.random() * 10 - 5),
+                y: 40
+            });
+        }
+
+        if (activeGlobalSynergyIds.includes('divine_retribution')) {
+            if (Math.random() < 0.25) {
+                const combatants = heroes.filter(h => h.assignment === 'combat' && h.unlocked);
+                if (combatants.length > 0) {
+                    const targetHero = combatants[Math.floor(Math.random() * combatants.length)];
+                    const healAmt = Math.floor((targetHero.stats.maxHp || 100) * 0.15);
+                    heroHeals.set(targetHero.id, (heroHeals.get(targetHero.id) || 0) + healAmt);
+                    events.push({
+                        id: `divine-retribution-heal-${Date.now()}`,
+                        type: 'heal',
+                        text: `⛪ RETRIBUIÇÃO DIVINA`,
+                        value: healAmt,
+                        x: 50,
+                        y: 45
+                    });
+                }
+            }
+        }
+    }
+
     let updatedHeroes = heroes.map((h) => {
         if (h.assignment !== 'combat' || !h.unlocked) return h;
 

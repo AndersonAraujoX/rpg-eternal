@@ -239,6 +239,11 @@ export const useGame = (
     const [lastStarForgeResetDate, setLastStarForgeResetDate] = useState<string>('');
     const [arenaAdrenalineActive, setArenaAdrenalineActive] = useState<boolean>(false);
 
+    // ── Quarta Camada de Sinergias Globais ──
+    const [hasDonatedHighTierIndustry, setHasDonatedHighTierIndustry] = useState<boolean>(false);
+    const [unpurifiedRelics, setUnpurifiedRelics] = useState<number>(0);
+    const [unlockedRiftPerks, setUnlockedRiftPerks] = useState<string[]>([]);
+
     const damageAccumulator = useRef(0);
     const fishAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
@@ -710,7 +715,10 @@ export const useGame = (
         industryInventory: finalIndustryInventory,
         starForgeDailyUses,
         lastStarForgeResetDate,
-        arenaAdrenalineActive
+        arenaAdrenalineActive,
+        hasDonatedHighTierIndustry,
+        unpurifiedRelics,
+        unlockedRiftPerks
     });
 
     useEffect(() => {
@@ -781,9 +789,12 @@ export const useGame = (
             industryInventory: finalIndustryInventory,
             starForgeDailyUses,
             lastStarForgeResetDate,
-            arenaAdrenalineActive
+            arenaAdrenalineActive,
+            hasDonatedHighTierIndustry,
+            unpurifiedRelics,
+            unlockedRiftPerks
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks]);
 
     // Side Effects
     useEffect(() => {
@@ -1925,6 +1936,21 @@ export const useGame = (
                     setGameStats(s => ({ ...s, legendaryFishCount: (s.legendaryFishCount || 0) + 1 }));
                     addLog("🎣 Você pescou um PEIXE LENDÁRIO!", "achievement");
                 }
+
+                // Seasonal fish check
+                const isFestivalActive = stateRef.current.activeEvent?.type === 'festival';
+                if (isFestivalActive && Math.random() < 0.15) {
+                    const seasonalFishItem: Item = {
+                        id: 'seasonal_fish',
+                        name: 'Peixe Sazonal',
+                        type: 'material',
+                        rarity: 'rare',
+                        value: 0,
+                        emoji: '🌸'
+                    };
+                    setItems(prev => [...prev.slice(-199), seasonalFishItem]);
+                    addLog(`🎣 Você pescou um Peixe Sazonal! Converte-o no Cais por 500 Almas.`, 'loot');
+                }
             },
             brewPotion: (id: string) => {
                 const pot = POTIONS.find(p => p.id === id); 
@@ -2145,8 +2171,9 @@ export const useGame = (
                     addLog(`🏛️ Sua guilda renegou seu antigo deus padroeiro.`, 'info');
                 }
             },
-            offerToDeity: (offeringType: 'souls' | 'divinity') => {
+            offerToDeity: (offeringType: 'souls' | 'divinity' | 'high_tier_industry') => {
                 let costMet = false;
+                let gainedFavor = 500;
                 if (offeringType === 'souls' && stateRef.current.souls >= 5000) {
                     setSouls(s => s - 5000);
                     costMet = true;
@@ -2155,6 +2182,18 @@ export const useGame = (
                     setDivinity(d => d - 100);
                     costMet = true;
                     addLog(`⛪ Você ofereceu 100 de Divindade ao seu Deus Padroeiro!`, 'success');
+                } else if (offeringType === 'high_tier_industry') {
+                    const highTierItems = ['plasma_cannon', 'portal_stabilizer', 'automated_temple', 'plasma_catalyst', 'reality_anchor', 'stellar_receptor'];
+                    const foundItem = highTierItems.find(item => (stateRef.current.industryInventory?.[item] || 0) >= 1);
+                    if (foundItem) {
+                        consumeIndustryItem(foundItem, 1);
+                        costMet = true;
+                        setHasDonatedHighTierIndustry(true);
+                        gainedFavor = 2000;
+                        addLog(`⛪ Você ofereceu ${foundItem} de alto Tier ao seu Deus Padroeiro! +25% de aceleração de favor permanente desbloqueada!`, 'success');
+                    } else {
+                        addLog(`Nenhum item industrial de Tier alto disponível no estoque!`, 'error');
+                    }
                 } else {
                     addLog(`Recursos insuficientes para a oferenda.`, 'error');
                 }
@@ -2162,7 +2201,8 @@ export const useGame = (
                 if (costMet) {
                     const currentLevel = stateRef.current.deityLevel;
                     const currentFavor = stateRef.current.deityFavor;
-                    let newFavor = currentFavor + 500;
+                    const favorBonus = stateRef.current.hasDonatedHighTierIndustry ? 1.25 : 1.00;
+                    let newFavor = currentFavor + Math.floor(gainedFavor * favorBonus);
                     const req = currentLevel * 1000;
                     if (newFavor >= req) {
                         newFavor -= req;
@@ -2170,6 +2210,40 @@ export const useGame = (
                         addLog(`✨ O favor de seu Deus aumentou! Nível do Padroeiro subiu para ${currentLevel + 1}!`, 'achievement');
                     }
                     setDeityFavor(newFavor);
+                }
+            },
+            purifyRelic: () => {
+                if (stateRef.current.unpurifiedRelics >= 1) {
+                    setUnpurifiedRelics(r => r - 1);
+                    const perks = ['rift_perk_gold', 'rift_perk_speed', 'rift_perk_shield'];
+                    const lockedPerks = perks.filter(p => !stateRef.current.unlockedRiftPerks.includes(p));
+                    
+                    if (lockedPerks.length > 0) {
+                        const unlocked = lockedPerks[Math.floor(Math.random() * lockedPerks.length)];
+                        setUnlockedRiftPerks(prev => [...prev, unlocked]);
+                        const perkNames: Record<string, string> = {
+                            rift_perk_gold: 'Bolsa de Provisões Cósmica (+20 Ouro Inicial)',
+                            rift_perk_speed: 'Propulsor Espacial Célere (+3 Velocidade Inicial)',
+                            rift_perk_shield: 'Escudo Defletor Estelar (+15 HP Inicial)'
+                        };
+                        addLog(`🔮 Purificação Concluída! Você obteve o perk: ${perkNames[unlocked] || unlocked}`, 'success');
+                    } else {
+                        setSouls(s => s + 1000);
+                        addLog(`🔮 Purificação Concluída! Todos os perks já foram desbloqueados. Concedido +1000 Almas!`, 'success');
+                    }
+                } else {
+                    addLog(`Nenhuma Relíquia Não Purificada disponível!`, 'error');
+                }
+            },
+            convertSeasonalFish: () => {
+                const seasonalFish = stateRef.current.items.filter(item => item.id === 'seasonal_fish' || item.name === 'Peixe Sazonal');
+                if (seasonalFish.length > 0) {
+                    const count = seasonalFish.length;
+                    setItems(prev => prev.filter(item => item.id !== 'seasonal_fish' && item.name !== 'Peixe Sazonal'));
+                    setSouls(s => s + count * 500);
+                    addLog(`🎣 Convertido ${count} Peixe(s) Sazonal(is) em ${count * 500} Almas!`, 'success');
+                } else {
+                    addLog(`Nenhum Peixe Sazonal no inventário!`, 'error');
                 }
             },
             enshrineHero: (slotIndex: number, heroId: string | null) => {
@@ -2988,7 +3062,19 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
 
             // ── Sinergia Industrial 2: Automação Sacra (Favor Divino passivo) ──
             if (globalMods.industry?.divineFavorPerTick > 0 && !hasCombat) {
-                setDeityFavor(prev => prev + globalMods.industry.divineFavorPerTick);
+                const favorMult = hasDonatedHighTierIndustry ? 1.25 : 1.0;
+                setDeityFavor(prev => {
+                    const favorGain = Math.floor(globalMods.industry.divineFavorPerTick * favorMult);
+                    const currentLevel = stateRef.current.deityLevel;
+                    let newFavor = prev + favorGain;
+                    const req = currentLevel * 1000;
+                    if (newFavor >= req) {
+                        newFavor -= req;
+                        setDeityLevel(lvl => lvl + 1);
+                        addLog(`✨ O favor de seu Deus aumentou! Nível do Padroeiro subiu para ${currentLevel + 1}!`, 'achievement');
+                    }
+                    return newFavor;
+                });
             }
 
             // Collect all stats updates including combat damage
@@ -3425,7 +3511,13 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
         lastStarForgeResetDate,
         setLastStarForgeResetDate,
         arenaAdrenalineActive,
-        setArenaAdrenalineActive
+        setArenaAdrenalineActive,
+        hasDonatedHighTierIndustry,
+        setHasDonatedHighTierIndustry,
+        unpurifiedRelics,
+        setUnpurifiedRelics,
+        unlockedRiftPerks,
+        setUnlockedRiftPerks
     });
 
     const abandonRoguelikeRun = useCallback(() => {
@@ -3450,7 +3542,10 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
             const wasAlreadyOwned = sector ? sector.isOwned : false;
 
             if (victory) {
+                const relicGained = Math.floor(Math.random() * 2) + 1;
+                setUnpurifiedRelics(r => r + relicGained);
                 addLog(`Expedição Planetária em ${sectorName} concluída com sucesso! Combustível +${rewards.fuelReward}, Casco +${rewards.hullRepair}, Frags +${rewards.emberBonus}`, 'achievement');
+                addLog(`✨ Relíquias Não Purificadas encontradas: +${relicGained}! Purifique-as na Câmara de Relíquias.`, 'success');
                 if (!wasAlreadyOwned) {
                     galaxyState.setGalaxy(prev => prev.map(s => s.id === sectorId ? { ...s, isOwned: true } : s));
                     soundManager.playLevelUp();
@@ -3561,8 +3656,9 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
             roguelikeRun: roguelike.roguelikeRun,
             emberFragments: roguelike.emberFragments,
             roguelikeUpgrades: roguelike.roguelikeUpgrades,
-            startRoguelikeRun: roguelike.startRoguelikeRun,
-            startPlanetaryRun: roguelike.startPlanetaryRun,
+            startRoguelikeRun: (classType: any) => roguelike.startRoguelikeRun(classType, unlockedRiftPerks),
+            startPlanetaryRun: (classType: any, sectorId: string, sectorName: string, biome: any, sectorLevel: number, galaxySectors: any[]) =>
+                roguelike.startPlanetaryRun(classType, sectorId, sectorName, biome, sectorLevel, galaxySectors, unlockedRiftPerks),
             preparePlanetaryRun: roguelike.preparePlanetaryRun,
             clearPlanetaryExpedition: roguelike.clearPlanetaryExpedition,
             selectRoguelikeNode: roguelike.selectNode,
@@ -3603,6 +3699,12 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
             setDungeonFirstTickBuff,
             isMiningFrenzy,
             setIsMiningFrenzy,
+            hasDonatedHighTierIndustry,
+            setHasDonatedHighTierIndustry,
+            unpurifiedRelics,
+            setUnpurifiedRelics,
+            unlockedRiftPerks,
+            setUnlockedRiftPerks,
             /** Modificadores globais calculados a partir das sinergias transversais */
             globalModifiers: calculateGlobalModifiers({
                 heroes,
@@ -3618,10 +3720,12 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
                 backroomsFloor: backrooms.backroomsFloor,
                 isBackroomsUnlocked,
                 patronDeity,
-                starForgeDailyUses
+                starForgeDailyUses,
+                hasDonatedHighTierIndustry,
+                activeEvent
             }),
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks]);
 
 
     return result;

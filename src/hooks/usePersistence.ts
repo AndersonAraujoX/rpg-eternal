@@ -192,6 +192,13 @@ export interface PersistenceProps {
     setLastStarForgeResetDate: React.Dispatch<React.SetStateAction<string>>;
     arenaAdrenalineActive: boolean;
     setArenaAdrenalineActive: React.Dispatch<React.SetStateAction<boolean>>;
+    // ── Quarta Camada de Sinergias Globais ──
+    hasDonatedHighTierIndustry: boolean;
+    setHasDonatedHighTierIndustry: React.Dispatch<React.SetStateAction<boolean>>;
+    unpurifiedRelics: number;
+    setUnpurifiedRelics: React.Dispatch<React.SetStateAction<number>>;
+    unlockedRiftPerks: string[];
+    setUnlockedRiftPerks: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -307,7 +314,13 @@ export const usePersistence = (props: PersistenceProps) => {
         lastStarForgeResetDate,
         setLastStarForgeResetDate,
         arenaAdrenalineActive,
-        setArenaAdrenalineActive
+        setArenaAdrenalineActive,
+        hasDonatedHighTierIndustry,
+        setHasDonatedHighTierIndustry,
+        unpurifiedRelics,
+        setUnpurifiedRelics,
+        unlockedRiftPerks,
+        setUnlockedRiftPerks
     } = props;
 
 
@@ -525,6 +538,9 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.starForgeDailyUses !== undefined) setStarForgeDailyUses(state.starForgeDailyUses);
                 if (state.lastStarForgeResetDate !== undefined) setLastStarForgeResetDate(state.lastStarForgeResetDate);
                 if (state.arenaAdrenalineActive !== undefined) setArenaAdrenalineActive(state.arenaAdrenalineActive);
+                if (state.hasDonatedHighTierIndustry !== undefined) setHasDonatedHighTierIndustry(state.hasDonatedHighTierIndustry);
+                if (state.unpurifiedRelics !== undefined) setUnpurifiedRelics(state.unpurifiedRelics);
+                if (state.unlockedRiftPerks !== undefined) setUnlockedRiftPerks(state.unlockedRiftPerks || []);
 
                 setRaidActive(false);
                 if (state.dungeonActive === undefined) {
@@ -678,6 +694,9 @@ export const usePersistence = (props: PersistenceProps) => {
                 starForgeDailyUses: p.starForgeDailyUses,
                 lastStarForgeResetDate: p.lastStarForgeResetDate,
                 arenaAdrenalineActive: p.arenaAdrenalineActive,
+                hasDonatedHighTierIndustry: p.hasDonatedHighTierIndustry,
+                unpurifiedRelics: p.unpurifiedRelics,
+                unlockedRiftPerks: p.unlockedRiftPerks || [],
                 lastSaveTime: Date.now()
             };
 

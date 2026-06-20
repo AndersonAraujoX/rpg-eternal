@@ -28,9 +28,11 @@ interface TownModalProps {
     deityFavor: number;
     deityEnergy: number;
     pledgeDeity: (deityId: string | null) => void;
-    offerToDeity: (offeringType: 'souls' | 'divinity') => void;
+    offerToDeity: (offeringType: 'souls' | 'divinity' | 'high_tier_industry') => void;
     souls: number;
     divinity: number;
+    hasDonatedHighTierIndustry?: boolean;
+    industryInventory?: Record<string, number>;
     openRunes?: () => void;
     invokeWeather: (weather: import('../../engine/weather').WeatherType) => void;
     resources: import('../../engine/types').Resources;
@@ -66,6 +68,8 @@ export const TownModal: React.FC<TownModalProps> = ({
     offerToDeity,
     souls,
     divinity,
+    hasDonatedHighTierIndustry = false,
+    industryInventory = {},
     openRunes,
     invokeWeather,
     resources,
@@ -1057,6 +1061,66 @@ export const TownModal: React.FC<TownModalProps> = ({
                                                     Oferecer 100 Divindade
                                                 </button>
                                                 <span className="text-[9px] text-stone-500 text-center">+500 Favor</span>
+                                            </div>
+                                            
+                                            {/* Offer High-Tier Industry */}
+                                            <div className="bg-black/50 p-4 rounded-xl border border-stone-850 flex flex-col gap-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs text-stone-400 uppercase font-black">Devoção Tecnológica</span>
+                                                    {hasDonatedHighTierIndustry ? (
+                                                        <span className="text-green-400 font-mono text-xs font-bold">Ativo (+25% Favor)</span>
+                                                    ) : (
+                                                        <span className="text-orange-400 font-mono text-xs">Pendente</span>
+                                                    )}
+                                                </div>
+                                                {hasDonatedHighTierIndustry ? (
+                                                    <div className="text-[10px] text-green-300 text-left bg-green-950/20 border border-green-900/30 p-2 rounded-lg leading-relaxed">
+                                                        ⚡ Oferenda concluída! Ganhos de favor divino acelerados em +25% e efeito 'divine_retribution' desbloqueado no loop de combate!
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="text-[10px] text-stone-400 text-left leading-relaxed">
+                                                            Doe uma receita industrial de alto Tier (ex: Canhão de Plasma, Estabilizador de Portal, Templo Automatizado, Catalisador de Plasma, Âncora de Realidade ou Receptor Estelar) para satisfazer o Deus.
+                                                        </div>
+                                                        {(() => {
+                                                            const highTierItems = ['plasma_cannon', 'portal_stabilizer', 'automated_temple', 'plasma_catalyst', 'reality_anchor', 'stellar_receptor'];
+                                                            const itemLabels: Record<string, string> = {
+                                                                plasma_cannon: 'Canhão de Plasma',
+                                                                portal_stabilizer: 'Estabilizador de Portal',
+                                                                automated_temple: 'Templo Automatizado',
+                                                                plasma_catalyst: 'Catalisador de Plasma',
+                                                                reality_anchor: 'Âncora de Realidade',
+                                                                stellar_receptor: 'Receptor Estelar'
+                                                            };
+                                                            const available = highTierItems.filter(item => (industryInventory?.[item] || 0) >= 1);
+                                                            if (available.length > 0) {
+                                                                return (
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <button
+                                                                            onClick={() => offerToDeity('high_tier_industry')}
+                                                                            className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 active:scale-95"
+                                                                        >
+                                                                            Oferecer Item de Alto Tier
+                                                                        </button>
+                                                                        <div className="text-[9px] text-stone-500 text-center leading-normal">
+                                                                            Disponível: {available.map(item => `${itemLabels[item] || item} (${industryInventory?.[item]})`).join(', ')}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            } else {
+                                                                return (
+                                                                    <button
+                                                                        disabled
+                                                                        className="w-full py-3 bg-stone-800 text-stone-500 rounded-lg font-bold text-xs uppercase tracking-wider border border-stone-850 cursor-not-allowed"
+                                                                    >
+                                                                        Sem item de alto Tier
+                                                                    </button>
+                                                                );
+                                                            }
+                                                        })()}
+                                                    </>
+                                                )}
+                                                <span className="text-[9px] text-stone-500 text-center">+2000 Favor & Aceleração</span>
                                             </div>
                                             {/* Quick Info Box */}
                                             <div className="bg-black/35 p-3 rounded-lg border border-white/5 text-[10px] text-stone-500 mt-6 leading-relaxed text-left">

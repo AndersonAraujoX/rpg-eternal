@@ -116,7 +116,8 @@ function App() {
     gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex, town,
     globalModifiers, sellOre,
     isMiningFrenzy, setIsMiningFrenzy,
-    starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive
+    starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive,
+    hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, purifyRelic, convertSeasonalFish
   } = useGame(industry.inventory, industry.setIndustryState);
 
   const [scale, setScale] = useState(1);
@@ -503,6 +504,8 @@ function App() {
         fishCount={resources.fish || 0}
         legendaryCount={gameStats.legendaryFishCount || 0}
         setFish={() => actions.manualFish && actions.manualFish()}
+        items={items}
+        convertSeasonalFish={convertSeasonalFish}
         {...({ setGameStats: (actions as any).setGameStats } as any)}
       />
 
@@ -585,6 +588,8 @@ function App() {
         deityEnergy={deityEnergy}
         pledgeDeity={pledgeDeity}
         offerToDeity={offerToDeity}
+        hasDonatedHighTierIndustry={hasDonatedHighTierIndustry}
+        industryInventory={industry.inventory}
         souls={souls}
         divinity={divinity}
         invokeWeather={invokeWeather}
@@ -660,6 +665,7 @@ function App() {
         dailyUsesRemaining={Math.max(0, 5 + (globalModifiers?.industry?.starForgeExtraAttempts || 0) - starForgeDailyUses)}
         maxDailyUses={5 + (globalModifiers?.industry?.starForgeExtraAttempts || 0)}
         perfectModChanceBonus={globalModifiers?.industry?.starForgePerfectModChance || 0}
+        classMastery={classMastery}
       />
       <WorldBossModal
         isOpen={showWorldBoss}
@@ -808,6 +814,9 @@ function App() {
         souls={souls}
         voidMatter={voidMatter}
         actions={actions}
+        unpurifiedRelics={unpurifiedRelics}
+        unlockedRiftPerks={unlockedRiftPerks}
+        purifyRelic={purifyRelic}
       />
 
       <VoidInfusionModal

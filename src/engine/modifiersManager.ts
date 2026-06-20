@@ -52,6 +52,10 @@ export interface ModifiersState {
     patronDeity?: string | null;
     /** Tentativas de StarForge usadas hoje */
     starForgeDailyUses?: number;
+    /** Se o jogador doou item industrial de tier alto no Pantheon */
+    hasDonatedHighTierIndustry?: boolean;
+    /** Evento atual da cidade */
+    activeEvent?: any;
 }
 
 /**
@@ -64,6 +68,8 @@ export interface GlobalModifiers {
         waterHeroCritDamageBonus: number;
         /** Flag se o buff de primeiro tick da dungeon está ativo (Sinergia 2) */
         dungeonFirstTickBonus: boolean;
+        /** Flag se o modificador 'divine_retribution' está ativo */
+        divineRetribution: boolean;
     };
     crafting: {
         /** Bônus aditivo de taxa de sucesso na Forja / fusão de Runas (Sinergia 2) */
@@ -204,10 +210,19 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         backroomsFloor = 1,
         isBackroomsUnlocked = false,
         patronDeity = null,
-        starForgeDailyUses = 0
+        starForgeDailyUses = 0,
+        hasDonatedHighTierIndustry = false,
+        activeEvent = null
     } = state;
 
     const activeIds: string[] = [];
+
+    // Divine Retribution logic
+    let divineRetribution = false;
+    if (hasDonatedHighTierIndustry) {
+        divineRetribution = true;
+        activeIds.push('divine_retribution');
+    }
 
     // Calcular scalars e milestones das Backrooms
     const tech = calculateBackroomsTechnology(backroomsFloor, isBackroomsUnlocked);
@@ -282,6 +297,10 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
     if (industryInventory['almond_condenser'] >= 1) {
         gardenSpeedBonus *= 1.20;
         activeIds.push('condensador_alquimico_jardim');
+    }
+    if (activeEvent?.type === 'festival') {
+        gardenSpeedBonus *= 1.43;
+        activeIds.push('festival_jardim_acelerado');
     }
     const gardenSpeedMult = gardenSpeedBonus;
 
@@ -370,6 +389,7 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         combat: {
             waterHeroCritDamageBonus,
             dungeonFirstTickBonus,
+            divineRetribution,
         },
         crafting: {
             forgeSuccessRateBonus,
