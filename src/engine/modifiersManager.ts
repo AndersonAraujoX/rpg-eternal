@@ -56,6 +56,17 @@ export interface ModifiersState {
     hasDonatedHighTierIndustry?: boolean;
     /** Evento atual da cidade */
     activeEvent?: any;
+    // ── 5ª Camada de Sinergias Globais ─────────────────────────────────
+    /** Quantidade de Void Matter disponível para ativar o Void Overgrowth */
+    voidMatter?: number;
+    /** Se o estado Void Overgrowth está ativo (Jardim/Pesca em modo vazio) */
+    voidOvergrowthActive?: boolean;
+    /** Lista de runas no inventário (para calcular runas lendárias) */
+    runes?: Array<{ rarity: string }>;
+    /** Nível de Favor Divino atual (0–100) */
+    deityFavor?: number;
+    /** Se o World Boss atual está vivo (não morto) */
+    isWorldBossAlive?: boolean;
 }
 
 /**
@@ -94,6 +105,8 @@ export interface GlobalModifiers {
     market: {
         /** Bônus de preço de venda de minérios brutos (Sinergia 4) */
         metalOrePriceBonus: number;
+        /** Multiplicador de custo de consumíveis e minérios por escassez de guerra (Sinergia 5) */
+        warEconomyPriceMultiplier: number;
     };
     /** Sinergias Globais de Indústria (cross-system) */
     industry: {
@@ -111,6 +124,21 @@ export interface GlobalModifiers {
         starForgePerfectModChance: number;
         /** Shots de adrenalina disponíveis para Arena */
         adrenalineShotsAvailable: number;
+    };
+    /** Sinergias da 5ª Camada */
+    layer5: {
+        /** Multiplicador de tempo de maturação do Jardim quando Void Overgrowth ativo (2.0 = dobro) */
+        gardenMaturationMult: number;
+        /** Flag: colheita com Void Overgrowth garante fragmentos de Runa de tier alto */
+        voidHarvestRuneFragments: boolean;
+        /** Flag: colheita com Void Overgrowth garante minérios raros para a Forja */
+        voidHarvestRareMinerals: boolean;
+        /** Multiplicador de velocidade de recarga de bateria dos bots por runas lendárias (+2% por runa) */
+        starlightBotRechargeBoost: number;
+        /** Flag: Constelação Sagrada oculta foi desbloqueada (dano duplo em combos elementais) */
+        sacredConstellationUnlocked: boolean;
+        /** Multiplicador de dano em combos elementais quando constelação sagrada ativa (2.0 = dobro) */
+        elementalComboDamageMult: number;
     };
     /** Metadados de diagnóstico (quais sinergias estão ativas) */
     activeSynergyIds: string[];
@@ -149,6 +177,22 @@ export const COSMIC_DUST_PER_REACTION_TICK = 1;
 const COSMIC_DUST_PER_BOT_SPEED_TICK = 10;
 /** Multiplicador de velocidade de bot por "lote" de Poeira Cósmica consumida */
 const BOT_SPEED_PER_DUST_BATCH = 0.05; // +5% por lote
+
+// ── 5ª Camada — Constantes ──────────────────────────────────────────
+/** Custo em Void Matter para ativar o Void Overgrowth */
+export const VOID_OVERGROWTH_COST = 50;
+/** Multiplicador de tempo de maturação do Jardim com Void Overgrowth ativo */
+const VOID_GARDEN_MATURATION_MULT = 2.0;
+/** Boost de velocidade de recarga de bateria dos bots por runa lendária (aditivo) */
+const LEGENDARY_RUNE_BOT_RECHARGE_BOOST = 0.02; // +2% por runa lendária
+/** Máximo de boost via runas lendárias nos bots (anti-exploração) */
+const MAX_LEGENDARY_RUNE_BOT_BOOST = 0.50; // +50% máximo
+/** Favor Divino mínimo para desbloquear a Constelação Sagrada */
+const SACRED_CONSTELLATION_DEITY_FAVOR = 100;
+/** Multiplicador de dano em combos elementais com Constelação Sagrada ativa */
+const SACRED_CONSTELLATION_ELEMENTAL_MULT = 2.0;
+/** Multiplicador de preço (escassez) quando World Boss está vivo */
+const WAR_ECONOMY_PRICE_MULT = 3.0; // preços triplicam (200% mais caro)
 
 // ─────────────────────────────────────────────
 // Helpers Internos
@@ -212,7 +256,13 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         patronDeity = null,
         starForgeDailyUses = 0,
         hasDonatedHighTierIndustry = false,
-        activeEvent = null
+        activeEvent = null,
+        // ── 5ª Camada ────────────────────────────────────────────────────
+        voidMatter = 0,
+        voidOvergrowthActive = false,
+        runes = [],
+        deityFavor = 0,
+        isWorldBossAlive = false,
     } = state;
 
     const activeIds: string[] = [];
@@ -385,6 +435,62 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         activeIds.push('logistica_patrocinio_gladiadores');
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // 5ª CAMADA: Sinergias de End-Game
+    // ════════════════════════════════════════════════════════════════════
+
+    // ── Sinergia L5-1: Solo Corrompido pelo Vazio (Void ⇄ Jardim/Pesca) ─
+    // Condição: Void Overgrowth está ativo (jogador gastou VOID_OVERGROWTH_COST de voidMatter)
+    // Efeito 1: Tempo de maturação do Jardim dobra
+    // Efeito 2: Colheita garante fragmentos de Runa de tier alto
+    // Efeito 3: Colheita garante minérios raros para a Forja
+    let gardenMaturationMult = 1.0;
+    let voidHarvestRuneFragments = false;
+    let voidHarvestRareMinerals = false;
+    if (voidOvergrowthActive) {
+        gardenMaturationMult = VOID_GARDEN_MATURATION_MULT;
+        voidHarvestRuneFragments = true;
+        voidHarvestRareMinerals = true;
+        activeIds.push('void_overgrowth_jardim');
+    } else if (voidMatter >= VOID_OVERGROWTH_COST) {
+        // Indica que o jogador PODE ativar (sem ainda ter ativado)
+        activeIds.push('void_overgrowth_disponivel');
+    }
+
+    // ── Sinergia L5-2: Frequência Rúnica Estelar (Runas ⇄ Automação Starlight) ─
+    // Condição: Runas Lendárias no inventário
+    // Efeito: +2% de velocidade de recarga de bateria dos bots por runa lendária
+    const legendaryRuneCount = runes.filter(r => r.rarity === 'legendary').length;
+    const starlightBotRechargeBoost = Math.min(
+        legendaryRuneCount * LEGENDARY_RUNE_BOT_RECHARGE_BOOST,
+        MAX_LEGENDARY_RUNE_BOT_BOOST
+    );
+    if (starlightBotRechargeBoost > 0) {
+        activeIds.push('frequencia_runica_estelar');
+    }
+
+    // ── Sinergia L5-3: Constelações Sagradas (Pantheon ⇄ StarChart) ─────
+    // Condição: Favor Divino atingiu 100% (valor >= 100) com um deus patrono ativo
+    // Efeito: Desbloqueia constelação oculta — dano duplo em combos elementais
+    const sacredConstellationUnlocked = (
+        patronDeity != null &&
+        deityFavor >= SACRED_CONSTELLATION_DEITY_FAVOR
+    );
+    const elementalComboDamageMult = sacredConstellationUnlocked
+        ? SACRED_CONSTELLATION_ELEMENTAL_MULT
+        : 1.0;
+    if (sacredConstellationUnlocked) {
+        activeIds.push('constelacoes_sagradas');
+    }
+
+    // ── Sinergia L5-4: Economia de Guerra (World Boss ⇄ Mercado) ─────────
+    // Condição: World Boss está vivo (não derrotado)
+    // Efeito: Preços de consumíveis e minérios sobem 200% (multiplicador 3x)
+    const warEconomyPriceMultiplier = isWorldBossAlive ? WAR_ECONOMY_PRICE_MULT : 1.0;
+    if (isWorldBossAlive) {
+        activeIds.push('economia_de_guerra');
+    }
+
     return {
         combat: {
             waterHeroCritDamageBonus,
@@ -406,6 +512,7 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         },
         market: {
             metalOrePriceBonus,
+            warEconomyPriceMultiplier,
         },
         industry: {
             portalPreserveBuildingSlots,
@@ -415,6 +522,14 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
             starForgeExtraAttempts,
             starForgePerfectModChance,
             adrenalineShotsAvailable,
+        },
+        layer5: {
+            gardenMaturationMult,
+            voidHarvestRuneFragments,
+            voidHarvestRareMinerals,
+            starlightBotRechargeBoost,
+            sacredConstellationUnlocked,
+            elementalComboDamageMult,
         },
         activeSynergyIds: activeIds,
         backroomsScalars: tech.scalars

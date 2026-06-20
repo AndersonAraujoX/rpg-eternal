@@ -244,6 +244,10 @@ export const useGame = (
     const [unpurifiedRelics, setUnpurifiedRelics] = useState<number>(0);
     const [unlockedRiftPerks, setUnlockedRiftPerks] = useState<string[]>([]);
 
+    // ── Quinta Camada de Sinergias Globais ──
+    /** Void Overgrowth ativo: Jardim/Pesca produz fragmentos de Runa+minérios, mas dobra tempo de maturação */
+    const [voidOvergrowthActive, setVoidOvergrowthActive] = useState<boolean>(false);
+
     const damageAccumulator = useRef(0);
     const fishAccumulator = useRef(0);
     const lastDpsUpdate = useRef(Date.now());
@@ -718,7 +722,9 @@ export const useGame = (
         arenaAdrenalineActive,
         hasDonatedHighTierIndustry,
         unpurifiedRelics,
-        unlockedRiftPerks
+        unlockedRiftPerks,
+        // Quinta Camada
+        voidOvergrowthActive
     });
 
     useEffect(() => {
@@ -792,9 +798,11 @@ export const useGame = (
             arenaAdrenalineActive,
             hasDonatedHighTierIndustry,
             unpurifiedRelics,
-            unlockedRiftPerks
+            unlockedRiftPerks,
+            // Quinta Camada
+            voidOvergrowthActive
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, voidOvergrowthActive]);
 
     // Side Effects
     useEffect(() => {
@@ -1833,6 +1841,23 @@ export const useGame = (
                     setVoidTimer(30);
                     addLog("Você mergulhou na Dimensão do Vazio...", "danger");
                 }
+            },
+            // ── Sinergia L5-1: Ativação do Void Overgrowth ─────────────────
+            activateVoidOvergrowth: () => {
+                const COST = 50; // VOID_OVERGROWTH_COST
+                const currentVoidMatter = stateRef.current.voidMatter || 0;
+                const alreadyActive = stateRef.current.voidOvergrowthActive;
+                if (alreadyActive) {
+                    addLog('☢️ Void Overgrowth já está ativo! Aguarde a colheita para desativá-lo.', 'info');
+                    return;
+                }
+                if (currentVoidMatter < COST) {
+                    addLog(`☢️ Void Matter insuficiente! Requer ${COST} Void Matter para ativar o Void Overgrowth.`, 'error');
+                    return;
+                }
+                setVoidMatter((v: number) => v - COST);
+                setVoidOvergrowthActive(true);
+                addLog('☢️ VOID OVERGROWTH ATIVADO! O solo do Jardim e da Pesca foi corrompido pelo Vazio. A maturação dobrou, mas a colheita garantirá fragmentos de Runa e minérios raros!', 'danger');
             },
             triggerAscension: () => {
                 if (stateRef.current.souls >= 1000) {
@@ -3705,6 +3730,9 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
             setUnpurifiedRelics,
             unlockedRiftPerks,
             setUnlockedRiftPerks,
+            // ── Quinta Camada ──
+            voidOvergrowthActive,
+            setVoidOvergrowthActive,
             /** Modificadores globais calculados a partir das sinergias transversais */
             globalModifiers: calculateGlobalModifiers({
                 heroes,
@@ -3722,10 +3750,16 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
                 patronDeity,
                 starForgeDailyUses,
                 hasDonatedHighTierIndustry,
-                activeEvent
+                activeEvent,
+                // 5ª Camada
+                voidMatter,
+                voidOvergrowthActive,
+                runes,
+                deityFavor,
+                isWorldBossAlive: !!(worldBossState.worldBoss && !worldBossState.worldBoss.isDead),
             }),
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, voidOvergrowthActive]);
 
 
     return result;
