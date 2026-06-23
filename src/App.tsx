@@ -513,7 +513,7 @@ function App() {
 
       <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} assignedPet={pets.find(p => p.assignment === 'expedition')} />
 
-      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0) * (globalModifiers?.collection?.gardenSpeedMult || 1.0)} />
+      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0) * (globalModifiers?.collection?.gardenSpeedMult || 1.0)} voidOvergrowthActive={voidOvergrowthActive} voidHarvestRuneFragments={globalModifiers?.layer5?.voidHarvestRuneFragments} voidHarvestRareMinerals={globalModifiers?.layer5?.voidHarvestRareMinerals} />
 
       <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} resources={resources} sellOre={sellOre} globalModifiers={globalModifiers} />
 

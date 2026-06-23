@@ -864,4 +864,39 @@ export interface Formation {
     heroIds: string[];
 }
 
+// ── 5ª Camada: Tipos de Estado dos Buffs ─────────────────────────────────────
 
+/**
+ * Estado persistido do buff Void Overgrowth (Sinergia L5-1).
+ * Controla se o Jardim/Pesca estão no modo Corrompido pelo Vazio.
+ */
+export interface VoidOvergrowthState {
+    /** Se o buff está atualmente ativo */
+    active: boolean;
+    /** Timestamp de ativação (Date.now()) — para UX de duração e expiração */
+    activatedAt: number | null;
+}
+
+/**
+ * Constelação Sagrada desbloqueada ao atingir 100% de Favor Divino (Sinergia L5-3).
+ * Ativa dano duplo em combos elementais no StarChart.
+ */
+export interface SacredConstellationState {
+    /** ID do deus cujo favor máximo desbloqueou esta constelação */
+    deityId: string;
+    /** Elemento de afinidade que recebe o bônus de dano elemental em combo */
+    element: ElementType;
+    /** IDs dos nós da constelação que já foram ativados pelo jogador */
+    activatedNodeIds: string[];
+}
+
+/**
+ * Contexto econômico de mercado durante eventos de World Boss (Sinergia L5-4).
+ * Encapsula o estado de escassez para uso no MarketModal e na lógica de sellOre.
+ */
+export interface WarEconomyMarketContext {
+    /** Se o multiplicador de escassez de guerra está ativo (boss vivo) */
+    isWarEconomyActive: boolean;
+    /** Multiplicador de preço atual (1.0 = normal, 3.0 = escassez de guerra) */
+    priceMultiplier: number;
+}

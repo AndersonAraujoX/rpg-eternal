@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, ShoppingBag, Clock } from 'lucide-react';
+import { X, ShoppingBag, Clock, AlertTriangle } from 'lucide-react';
 import type { MarketItem, Resources } from '../../engine/types';
+import type { GlobalModifiers } from '../../engine/modifiersManager';
 import { formatNumber } from '../../utils';
 
 interface MarketModalProps {
@@ -14,11 +15,18 @@ interface MarketModalProps {
     timer: number;
     resources: Resources;
     sellOre: (oreType: 'copper' | 'iron', amount: number) => void;
-    globalModifiers?: any;
+    globalModifiers?: GlobalModifiers;
 }
 
 export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock, buyItem, gold, divinity, voidMatter, timer, resources, sellOre, globalModifiers }) => {
     if (!isOpen) return null;
+
+    // ── Cálculos de preço de minério ──────────────────────────────────────────
+    const oreBonus = globalModifiers?.market?.metalOrePriceBonus || 1.0;
+    // L5-4: Economia de Guerra — preços de minérios triplicam com o World Boss vivo
+    const warBonus = globalModifiers?.market?.warEconomyPriceMultiplier || 1.0;
+    const isWarEconomyActive = warBonus > 1.0;
+    const totalOreMultiplier = oreBonus * warBonus;
 
     const formatTime = (ms: number) => {
         if (!ms || isNaN(ms)) return "0:00";
@@ -50,6 +58,16 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
                         <X className="w-6 h-6 text-gray-400" />
                     </button>
                 </div>
+
+                {/* War Economy Banner — L5-4 */}
+                {isWarEconomyActive && (
+                    <div className="px-4 py-2 bg-red-950/60 border-b border-red-800/50 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                        <p className="text-xs text-red-300 font-semibold">
+                            ⚔️ Economia de Guerra Ativa — World Boss presente! Preços de minérios +{Math.round((warBonus - 1) * 100)}% por escassez.
+                        </p>
+                    </div>
+                )}
 
                 {/* Stock Grid */}
                 <div className="p-4 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
@@ -96,10 +114,16 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
                 <div className="p-4 border-t border-purple-900 bg-gray-950/40">
                     <h3 className="text-sm font-bold text-purple-300 mb-3 flex items-center gap-2">
                         <span>💰</span> Vender Minérios Brutos
+                        {isWarEconomyActive && (
+                            <span className="ml-auto flex items-center gap-1 bg-red-950/70 border border-red-700/50 text-red-300 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                                <AlertTriangle className="w-3 h-3" />
+                                +{Math.round((warBonus - 1) * 100)}% Escassez
+                            </span>
+                        )}
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                         {/* Copper Ore */}
-                        <div className="bg-gray-800/40 border border-purple-950/60 p-3 rounded-lg flex items-center justify-between">
+                        <div className={`bg-gray-800/40 border p-3 rounded-lg flex items-center justify-between ${isWarEconomyActive ? 'border-red-900/60' : 'border-purple-950/60'}`}>
                             <div>
                                 <div className="font-bold text-gray-300 text-xs flex items-center gap-1">
                                     <span>🪨</span> Minério de Cobre
@@ -107,8 +131,9 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
                                 <div className="text-xs text-gray-500 font-mono mt-0.5">
                                     Estoque: {resources.copper || 0}
                                 </div>
-                                <div className="text-xs text-yellow-500 font-mono mt-1">
-                                    Preço: {Math.floor(10 * (globalModifiers?.market?.metalOrePriceBonus || 1.0))} Gold
+                                <div className={`text-xs font-mono mt-1 ${isWarEconomyActive ? 'text-red-400' : 'text-yellow-500'}`}>
+                                    Preço: {Math.floor(10 * totalOreMultiplier)} Gold
+                                    {isWarEconomyActive && <span className="ml-1">🔥</span>}
                                 </div>
                             </div>
                             <div className="flex flex-col gap-1">
@@ -130,7 +155,7 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
                         </div>
 
                         {/* Iron Ore */}
-                        <div className="bg-gray-800/40 border border-purple-950/60 p-3 rounded-lg flex items-center justify-between">
+                        <div className={`bg-gray-800/40 border p-3 rounded-lg flex items-center justify-between ${isWarEconomyActive ? 'border-red-900/60' : 'border-purple-950/60'}`}>
                             <div>
                                 <div className="font-bold text-gray-300 text-xs flex items-center gap-1">
                                     <span>🪨</span> Minério de Ferro
@@ -138,8 +163,9 @@ export const MarketModal: React.FC<MarketModalProps> = ({ isOpen, onClose, stock
                                 <div className="text-xs text-gray-500 font-mono mt-0.5">
                                     Estoque: {resources.iron || 0}
                                 </div>
-                                <div className="text-xs text-yellow-500 font-mono mt-1">
-                                    Preço: {Math.floor(20 * (globalModifiers?.market?.metalOrePriceBonus || 1.0))} Gold
+                                <div className={`text-xs font-mono mt-1 ${isWarEconomyActive ? 'text-red-400' : 'text-yellow-500'}`}>
+                                    Preço: {Math.floor(20 * totalOreMultiplier)} Gold
+                                    {isWarEconomyActive && <span className="ml-1">🔥</span>}
                                 </div>
                             </div>
                             <div className="flex flex-col gap-1">

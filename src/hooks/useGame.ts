@@ -1788,7 +1788,13 @@ export const useGame = (
                     backroomsFloor: stateRef.current.backroomsFloor,
                     isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
                     patronDeity: stateRef.current.patronDeity,
-                    starForgeDailyUses: stateRef.current.starForgeDailyUses
+                    starForgeDailyUses: stateRef.current.starForgeDailyUses,
+                    // ── 5ª Camada ────────────────────────────────────────
+                    voidMatter,
+                    voidOvergrowthActive: stateRef.current.voidOvergrowthActive,
+                    runes: stateRef.current.runes,
+                    deityFavor: stateRef.current.deityFavor,
+                    isWorldBossAlive: !!(worldBossState.worldBoss && !worldBossState.worldBoss.isDead),
                 });
                 const limit = 5 + globalMods.industry.starForgeExtraAttempts;
                 if (stateRef.current.starForgeDailyUses >= limit) {
@@ -2483,9 +2489,18 @@ export const useGame = (
                     backroomsFloor: stateRef.current.backroomsFloor,
                     isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
                     patronDeity: stateRef.current.patronDeity,
-                    starForgeDailyUses: stateRef.current.starForgeDailyUses
+                    starForgeDailyUses: stateRef.current.starForgeDailyUses,
+                    // ── 5ª Camada ────────────────────────────────────────
+                    voidMatter,
+                    voidOvergrowthActive: stateRef.current.voidOvergrowthActive,
+                    runes: stateRef.current.runes,
+                    deityFavor: stateRef.current.deityFavor,
+                    isWorldBossAlive: !!(worldBossState.worldBoss && !worldBossState.worldBoss.isDead),
                 });
-                const bonus = globalMods.market?.metalOrePriceBonus || 1.0;
+                // L5-4: Economia de Guerra — minérios ficam 3× mais caros durante o World Boss
+                const oreBonus = globalMods.market?.metalOrePriceBonus || 1.0;
+                const warBonus = globalMods.market?.warEconomyPriceMultiplier || 1.0;
+                const bonus = oreBonus * warBonus;
                 const sellPrice = Math.floor(basePrice * bonus);
                 const totalGold = toSell * sellPrice;
                 setResources(r => ({ ...r, [oreType]: (r[oreType] || 0) - toSell }));
@@ -2527,7 +2542,13 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
                 backroomsFloor: stateRef.current.backroomsFloor,
                 isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
                 patronDeity: stateRef.current.patronDeity,
-                starForgeDailyUses: stateRef.current.starForgeDailyUses
+                starForgeDailyUses: stateRef.current.starForgeDailyUses,
+                // ── 5ª Camada ────────────────────────────────────────────────
+                voidMatter,
+                voidOvergrowthActive: stateRef.current.voidOvergrowthActive,
+                runes,
+                deityFavor,
+                isWorldBossAlive: !!(worldBossState.worldBoss && !worldBossState.worldBoss.isDead),
             });
 
             const isTower = tower.active;
