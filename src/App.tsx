@@ -67,6 +67,7 @@ import { VoidInfusionModal } from './components/modals/VoidInfusionModal';
 
 function App() {
   const industry = useIndustry();
+  const [showWorldBoss, setShowWorldBoss] = useState(false); // Phase 6 — must be before useGame
   const {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
@@ -118,7 +119,8 @@ function App() {
     isMiningFrenzy, setIsMiningFrenzy,
     starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive,
     hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, purifyRelic, convertSeasonalFish,
-    mechanizedCardsFused, fuseMechanizedCards
+    mechanizedCardsFused, fuseMechanizedCards,
+    voidOvergrowthActive
   } = useGame(industry.inventory, industry.setIndustryState, showWorldBoss);
 
   const [scale, setScale] = useState(1);
@@ -166,7 +168,6 @@ function App() {
   const [showLog, setShowLog] = useState(false);
   const [showStarlight, setShowStarlight] = useState(false);
   const [showGalaxy, setShowGalaxy] = useState(false); // Phase Galaxy
-  const [showWorldBoss, setShowWorldBoss] = useState(false); // Phase 6
   const [showStarForge, setShowStarForge] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   // PHASE 41

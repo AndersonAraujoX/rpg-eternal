@@ -131,7 +131,8 @@ const autoAllocateHeroStats = (h: Hero): Hero => {
 
 export const useGame = (
     industryInventory?: Record<string, number>,
-    setIndustryState?: React.Dispatch<React.SetStateAction<IndustryState>>
+    setIndustryState?: React.Dispatch<React.SetStateAction<IndustryState>>,
+    isWorldBossModalActive?: boolean
 ) => {
     // CORE STATE
     const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
@@ -3616,7 +3617,9 @@ export const useGame = (
         unpurifiedRelics,
         setUnpurifiedRelics,
         unlockedRiftPerks,
-        setUnlockedRiftPerks
+        setUnlockedRiftPerks,
+        mechanizedCardsFused,
+        setMechanizedCardsFused
     });
 
     const abandonRoguelikeRun = useCallback(() => {
@@ -3670,6 +3673,7 @@ export const useGame = (
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             mechanizedCardsFused,
+            fuseMechanizedCards: actions.fuseMechanizedCards,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
             guild: guildState.guild, activeHeroes, partyPower, partyDps, activeEvent,
             victory, boss, resources, starlightUpgrades, achievements, combatEvents,
