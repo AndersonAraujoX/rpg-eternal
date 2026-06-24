@@ -3673,7 +3673,6 @@ export const useGame = (
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             mechanizedCardsFused,
-            fuseMechanizedCards: actions.fuseMechanizedCards,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
             guild: guildState.guild, activeHeroes, partyPower, partyDps, activeEvent,
             victory, boss, resources, starlightUpgrades, achievements, combatEvents,

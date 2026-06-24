@@ -846,6 +846,7 @@ export interface GameActions {
     endBossRush: (success: boolean) => void;
     infuseItemWithVoid: (itemId: string) => void;
     sellOre: (oreType: 'copper' | 'iron', amount: number) => void;
+    fuseMechanizedCards: () => void;
 }
 
 export interface WorldBoss extends Boss {
