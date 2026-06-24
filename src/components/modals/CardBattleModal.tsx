@@ -11,9 +11,20 @@ interface CardBattleModalProps {
     cards: MonsterCard[]; // Renamed from playerCards
     onWin: (opponentId: string, difficulty: number) => void;
     stats: GameStats;
+    industryInventory?: Record<string, number>;
+    mechanizedCardsFused?: boolean;
+    fuseMechanizedCards?: () => void;
 }
 
-export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClose, cards, onWin }) => {
+export const CardBattleModal: React.FC<CardBattleModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    cards, 
+    onWin, 
+    industryInventory, 
+    mechanizedCardsFused, 
+    fuseMechanizedCards 
+}) => {
     const [selectedOpponent, setSelectedOpponent] = useState<CardOpponent | null>(null);
     const [selectedDeck, setSelectedDeck] = useState<string[]>([]); // IDs
     const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
@@ -56,6 +67,38 @@ export const CardBattleModal: React.FC<CardBattleModalProps> = ({ isOpen, onClos
                 <h2 className="text-3xl font-bold text-center mb-6 text-indigo-400 flex items-center justify-center gap-3">
                     <Swords size={32} /> MONSTER DUEL
                 </h2>
+
+                {/* L6-2: Impressão de Ligas Holográficas */}
+                <div className="mb-4 bg-indigo-950/40 border border-indigo-500/30 p-3 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl">💿</span>
+                        <div>
+                            <h4 className="font-bold text-indigo-300 text-sm">Impressão de Ligas Holográficas</h4>
+                            <p className="text-xs text-slate-400">
+                                Funda cartas mecanizadas para injetar um modificador permanente de +10% de HP no baralho ativo de heróis.
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        {mechanizedCardsFused ? (
+                            <span className="text-xs px-2.5 py-1 bg-green-950/80 border border-green-600/50 text-green-400 rounded-full font-bold flex items-center gap-1">
+                                HP +10% Ativo
+                            </span>
+                        ) : (
+                            <button
+                                onClick={fuseMechanizedCards}
+                                disabled={(industryInventory?.['Holographic_Alloys'] || 0) < 1}
+                                className={`px-4 py-2 rounded font-bold text-xs transition-all border ${
+                                    (industryInventory?.['Holographic_Alloys'] || 0) >= 1
+                                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-400 cursor-pointer shadow hover:scale-[1.02]'
+                                        : 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed'
+                                }`}
+                            >
+                                Fundir Cartas (Liga: {industryInventory?.['Holographic_Alloys'] || 0}/1)
+                            </button>
+                        )}
+                    </div>
+                </div>
 
                 {!battleResult ? (
                     <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6">

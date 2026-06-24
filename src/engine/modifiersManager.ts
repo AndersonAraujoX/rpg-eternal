@@ -7,7 +7,7 @@
  * principal de ticks, na Forja, no modal offline e na automação Starlight.
  */
 
-import type { Hero, Building, Item } from './types';
+import type { Hero, Building, Item, IndustryLayer6Modifiers } from './types';
 import type { Synergy } from './synergies';
 import { calculateBackroomsTechnology, type BackroomsTechModifiers } from './backroomsTechnology';
 
@@ -67,6 +67,11 @@ export interface ModifiersState {
     deityFavor?: number;
     /** Se o World Boss atual está vivo (não morto) */
     isWorldBossAlive?: boolean;
+    // ── 6ª Camada de Sinergias Globais ─────────────────────────────────
+    /** Se a fusão de cartas mecanizadas foi realizada pelo jogador */
+    mechanizedCardsFused?: boolean;
+    /** Se o modal do World Boss está atualmente aberto/ativo */
+    isWorldBossModalActive?: boolean;
 }
 
 /**
@@ -140,6 +145,8 @@ export interface GlobalModifiers {
         /** Multiplicador de dano em combos elementais quando constelação sagrada ativa (2.0 = dobro) */
         elementalComboDamageMult: number;
     };
+    /** Sinergias da 6ª Camada */
+    layer6: IndustryLayer6Modifiers;
     /** Metadados de diagnóstico (quais sinergias estão ativas) */
     activeSynergyIds: string[];
     /** Escalares contínuos das Backrooms */
@@ -263,6 +270,9 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         runes = [],
         deityFavor = 0,
         isWorldBossAlive = false,
+        // ── 6ª Camada ────────────────────────────────────────────────────
+        mechanizedCardsFused = false,
+        isWorldBossModalActive = false,
     } = state;
 
     const activeIds: string[] = [];
@@ -491,6 +501,30 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
         activeIds.push('economia_de_guerra');
     }
 
+    // ── Sinergia L6-1: Drones de Mapeamento Geográfico (Indústria ⇄ ExpeditionsModal) ─
+    const mappingDronesCount = industryInventory['Mapping_Drones'] || 0;
+    const expeditionTimeReduction = mappingDronesCount >= 1 ? 0.20 : 0.0;
+    const doubleIronDrop = mappingDronesCount >= 1;
+    if (mappingDronesCount >= 1) {
+        activeIds.push('drones_mapeamento_geografico');
+    }
+
+    // ── Sinergia L6-2: Impressão de Ligas Holográficas (Indústria ⇄ CardBattleModal) ─
+    const cardBattleHpBonus = mechanizedCardsFused ? 0.10 : 0.0;
+    if (mechanizedCardsFused) {
+        activeIds.push('ligas_holograficas_fusion');
+    }
+
+    // ── Sinergia L6-3: Logística de Escudos de Cerco (Indústria ⇄ WorldBossModal) ───
+    const fieldShieldGeneratorsCount = industryInventory['Field_Shield_Generators'] || 0;
+    const fieldShieldMitigation = (isWorldBossModalActive && fieldShieldGeneratorsCount >= 1) ? 0.15 : 0.0;
+    if (isWorldBossModalActive && fieldShieldGeneratorsCount >= 1) {
+        activeIds.push('escudos_de_cerco_ativo');
+    }
+
+    // ── Sinergia L6-4: Injetores Estabilizadores de Matéria (Indústria ⇄ VoidInfusionModal) ───
+    const hasHydraulicInjectors = (industryInventory['Hydraulic_Matter_Injectors'] || 0) >= 1;
+
     return {
         combat: {
             waterHeroCritDamageBonus,
@@ -530,6 +564,13 @@ export function calculateGlobalModifiers(state: ModifiersState): GlobalModifiers
             starlightBotRechargeBoost,
             sacredConstellationUnlocked,
             elementalComboDamageMult,
+        },
+        layer6: {
+            expeditionTimeReduction,
+            doubleIronDrop,
+            cardBattleHpBonus,
+            fieldShieldMitigation,
+            hasHydraulicInjectors
         },
         activeSynergyIds: activeIds,
         backroomsScalars: tech.scalars

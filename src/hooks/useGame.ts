@@ -152,6 +152,7 @@ export const useGame = (
     const [voidMatter, setVoidMatter] = useState<number>(0);
     const [voidAscensions, setVoidAscensions] = useState<number>(0);
     const [victory, setVictory] = useState(false);
+    const [mechanizedCardsFused, setMechanizedCardsFused] = useState<boolean>(false);
     const [fakePlayers, setFakePlayers] = useState<FakePlayer[]>(() => generateInitialBots(20));
     const [gvgWarState, setGvgWarState] = useState<GvGWarState | null>(null);
     const [currentTutorialIndex, setCurrentTutorialIndex] = useState<number>(0);
@@ -439,6 +440,10 @@ export const useGame = (
             if (voidCritDmgCount > 0) {
                 defense = Math.floor(defense * (1 - 0.12 * voidCritDmgCount));
             }
+            const cardBattleHpBonus = mechanizedCardsFused ? 0.10 : 0.0;
+            if (cardBattleHpBonus > 0) {
+                maxHp = Math.floor(maxHp * (1 + cardBattleHpBonus));
+            }
 
             return {
                 ...h,
@@ -453,7 +458,7 @@ export const useGame = (
                 }
             };
         });
-    }, [activeHeroes, items, equippedRelics]);
+    }, [activeHeroes, items, equippedRelics, mechanizedCardsFused]);
 
     const prestigeAtkMult = useMemo(() => 1 + (prestigeNodes['atk_1'] || 0) * 0.1 + (prestigeNodes['atk_2'] || 0) * 0.05, [prestigeNodes]);
     const prestigeHpMult = useMemo(() => 1 + (prestigeNodes['hp_1'] || 0) * 0.1 + (prestigeNodes['hp_2'] || 0) * 0.1, [prestigeNodes]);
@@ -1789,7 +1794,16 @@ export const useGame = (
                     backroomsFloor: stateRef.current.backroomsFloor,
                     isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
                     patronDeity: stateRef.current.patronDeity,
-                    starForgeDailyUses: stateRef.current.starForgeDailyUses
+                    starForgeDailyUses: stateRef.current.starForgeDailyUses,
+                    // ── 5ª Camada ────────────────────────────────────────
+                    voidMatter,
+                    voidOvergrowthActive: stateRef.current.voidOvergrowthActive,
+                    runes: stateRef.current.runes,
+                    deityFavor: stateRef.current.deityFavor,
+                    isWorldBossAlive: !!(worldBossState.worldBoss && !worldBossState.worldBoss.isDead),
+                    // ── 6ª Camada ────────────────────────────────────────
+                    mechanizedCardsFused,
+                    isWorldBossModalActive,
                 });
                 const limit = 5 + globalMods.industry.starForgeExtraAttempts;
                 if (stateRef.current.starForgeDailyUses >= limit) {
@@ -2433,9 +2447,14 @@ export const useGame = (
             startBossRush: () => {
                 addLog("Boss Rush não está disponível nesta versão.", "info");
             },
-            infuseItemWithVoid: (itemId: string) => {
+            infuseItemWithVoid: (itemId: string, useInjector?: boolean) => {
                 if (stateRef.current.voidMatter < 50) {
                     addLog("Matéria do Vazio insuficiente!", "danger");
+                    return;
+                }
+                const injectorCount = stateRef.current.industryInventory?.['Hydraulic_Matter_Injectors'] || 0;
+                if (useInjector && injectorCount < 1) {
+                    addLog("Injetores Estabilizadores de Matéria insuficientes!", "danger");
                     return;
                 }
                 const affixes = [
@@ -2445,14 +2464,23 @@ export const useGame = (
                     { id: 'void_dodge', name: 'Dobra Espacial', stat: 'dodge', value: 0.12 },
                     { id: 'void_crit_dmg', name: 'Pacto Sombrio', stat: 'crit_dmg', value: 0.35 }
                 ];
-                const randomAffix = affixes[Math.floor(Math.random() * affixes.length)];
+                
+                const filteredAffixes = useInjector
+                    ? affixes.filter(a => a.id !== 'void_damage' && a.id !== 'void_crit_dmg')
+                    : affixes;
+
+                const randomAffix = filteredAffixes[Math.floor(Math.random() * filteredAffixes.length)];
                 
                 setItems(prevItems => {
                     const exists = prevItems.some(i => i.id === itemId);
                     if (!exists) return prevItems;
                     
                     setVoidMatter(v => v - 50);
-                    
+
+                    if (useInjector) {
+                        consumeIndustryItem('Hydraulic_Matter_Injectors', 1);
+                    }
+
                     return prevItems.map(item => {
                         if (item.id === itemId) {
                             addLog(`🌌 Item ${item.name} infundido com ${randomAffix.name}!`, 'achievement');
@@ -2484,18 +2512,44 @@ export const useGame = (
                     backroomsFloor: stateRef.current.backroomsFloor,
                     isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
                     patronDeity: stateRef.current.patronDeity,
-                    starForgeDailyUses: stateRef.current.starForgeDailyUses
+                    starForgeDailyUses: stateRef.current.starForgeDailyUses,
+                    // ── 5ª Camada ────────────────────────────────────────
+                    voidMatter,
+                    voidOvergrowthActive: stateRef.current.voidOvergrowthActive,
+                    runes: stateRef.current.runes,
+                    deityFavor: stateRef.current.deityFavor,
+                    isWorldBossAlive: !!(worldBossState.worldBoss && !worldBossState.worldBoss.isDead),
+                    // ── 6ª Camada ────────────────────────────────────────
+                    mechanizedCardsFused,
+                    isWorldBossModalActive,
                 });
-                const bonus = globalMods.market?.metalOrePriceBonus || 1.0;
+                // L5-4: Economia de Guerra — minérios ficam 3× mais caros durante o World Boss
+                const oreBonus = globalMods.market?.metalOrePriceBonus || 1.0;
+                const warBonus = globalMods.market?.warEconomyPriceMultiplier || 1.0;
+                const bonus = oreBonus * warBonus;
                 const sellPrice = Math.floor(basePrice * bonus);
                 const totalGold = toSell * sellPrice;
                 setResources(r => ({ ...r, [oreType]: (r[oreType] || 0) - toSell }));
                 setGold(g => g + totalGold);
-addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Ferro'} por ${totalGold} Ouro!`, 'loot');
+                addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Ferro'} por ${totalGold} Ouro!`, 'loot');
+            },
+            fuseMechanizedCards: () => {
+                if (mechanizedCardsFused) {
+                    addLog("Cartas mecanizadas já foram fundidas!", "info");
+                    return;
+                }
+                const alloyCount = stateRef.current.industryInventory?.['Holographic_Alloys'] || 0;
+                if (alloyCount < 1) {
+                    addLog("Ligas Holográficas insuficientes para fusão!", "danger");
+                    return;
+                }
+                consumeIndustryItem('Holographic_Alloys', 1);
+                setMechanizedCardsFused(true);
+                addLog("🏆 Fusão de cartas mecanizadas concluída! Modificador permanente de +10% de HP ativado.", "achievement");
             }
         };
         return baseActions as any as GameActions;
-    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains, ownedRelics, equippedRelics, elementalResonance, elementalEssences, voidMatter, finalIndustryInventory, setIndustryState, setLastStarForgeResetDate, setStarForgeDailyUses]);
+    }, [petsState.setPets, guildState.setGuild, guildState.joinGuild, guildState.contributeGuild, guildState.upgradeMonument, galaxyState.setTerritories, galaxyState.setSpaceship, galaxyState.setGalaxy, galaxyState.attackSector, galaxyState.upgradeSpaceship, world.setTower, world.setTowerBoss, world.setWeather, world.setWeatherTimer, world.enterDungeon, world.descendDungeon, world.exitDungeon, world.moveDungeon, world.enterRift, world.exitRift, world.startRift, world.selectBlessing, world.saveFormation, world.loadFormation, world.deleteFormation, world.setDungeonActive, voidGuardian.startChallenge, worldBossState.attackWorldBoss, worldBossState.claimReward, backrooms.researchTech, backrooms.setBackroomsResources, addLog, setIsSoundOn, setGameSpeed, setHeroes, setGold, setSouls, setTalents, setDivinity, setConstellations, setArtifacts, setClassMastery, setStarlightUpgrades, setStarlight, setPrestigeNodes, setTownVisited, setTown, setMarketStock, setArenaOpponents, setArenaRank, setGlory, setGuildQueue, setFakePlayers, setGvgWarState, setCurrentTutorialIndex, setActiveEvent, setDailyLoginClaimed, setDailyQuests, setLastDailyReset, setVoidActive, setVoidTimer, setRaidActive, setRaidTimer, setMonuments, setDungeonMastery, setTheme, setAutoSellRarity, setOfflineGains, ownedRelics, equippedRelics, elementalResonance, elementalEssences, voidMatter, finalIndustryInventory, setIndustryState, setLastStarForgeResetDate, setStarForgeDailyUses, mechanizedCardsFused, isWorldBossModalActive]);
 
     // CORE LOOP (STABILIZED - Phase Memory Fix)
     useEffect(() => {
@@ -2528,8 +2582,21 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
                 backroomsFloor: stateRef.current.backroomsFloor,
                 isBackroomsUnlocked: stateRef.current.backroomsFloor > 1 || stateRef.current.backroomsUnlockedTechs.includes('meg_outpost'),
                 patronDeity: stateRef.current.patronDeity,
-                starForgeDailyUses: stateRef.current.starForgeDailyUses
+                starForgeDailyUses: stateRef.current.starForgeDailyUses,
+                // ── 5ª Camada ────────────────────────────────────────────────
+                voidMatter,
+                voidOvergrowthActive: stateRef.current.voidOvergrowthActive,
+                runes,
+                deityFavor,
+                isWorldBossAlive: !!(worldBossState.worldBoss && !worldBossState.worldBoss.isDead),
+                // ── 6ª Camada ────────────────────────────────────────────────
+                mechanizedCardsFused,
+                isWorldBossModalActive,
             });
+
+            if (globalMods.activeSynergyIds.includes('escudos_de_cerco_ativo')) {
+                consumeIndustryItem('Field_Shield_Generators', 1);
+            }
 
             const isTower = tower.active;
             let targetBoss = isTower ? towerBoss : boss;
@@ -2965,6 +3032,10 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
                         if (mithrilGain > 0 && Math.random() < 0.25) mithrilGain++;
                     }
 
+                    if (globalMods?.layer6?.doubleIronDrop) {
+                        ironGain *= 2;
+                    }
+
                     if (copperGain > 0 || ironGain > 0 || mithrilGain > 0) {
                         setResources(r => ({
                             ...r,
@@ -3254,7 +3325,9 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
 
                 ongoingExpeditions.forEach(exp => {
                     const elapsed = nowTimestamp - (exp.startTime || 0);
-                    if (elapsed >= exp.duration * 1000) {
+                    const reduction = globalMods?.layer6?.expeditionTimeReduction || 0.0;
+                    const effectiveDuration = exp.duration * (1 - reduction);
+                    if (elapsed >= effectiveDuration * 1000) {
                         completedExpeditions.push(exp);
                     } else {
                         activeStill.push(exp);
@@ -3593,9 +3666,10 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
     }, [roguelike.roguelikeRun, roguelike.abandonRoguelikeRun, roguelike.setEmberFragments, galaxyState.rewardPlanetaryRun, galaxyState.galaxy, galaxyState.setGalaxy, galaxyState.spaceship, galaxyState.setSpaceship, addLog, setGold]);
 
     const result = useMemo(() => {
-        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setStarlightUpgrades, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave, setVoidMatter, setPets: petsState.setPets, setActiveExpeditions, setTerritories: galaxyState.setTerritories };
+        const setUIState = { setVictory, setMarketTimer, setRaidTimer, setVoidActive, setVoidTimer, setIsStarlightModalOpen, setPartyPower, setCombatEvents, setGameSpeed, setTheme, setIsSoundOn, setShowCampfire, setResources, setGold, setSouls, setHeroes, setItems, setDungeonMastery, setGardenPlots, setDivinity, setStarlight, setStarlightUpgrades, setAchievements, setBuildings, setOuterSpaceUnlocked, setRunes, setPatronDeity, setDeityLevel, setDeityFavor, setDeityEnergy, setElementalResonance, setElementalEssences, setOwnedRelics, setEquippedRelics, setBossRushWave, setBossRushMaxWave, setVoidMatter, setPets: petsState.setPets, setActiveExpeditions, setTerritories: galaxyState.setTerritories, setMechanizedCardsFused };
         return {
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
+            mechanizedCardsFused,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
             guild: guildState.guild, activeHeroes, partyPower, partyDps, activeEvent,
             victory, boss, resources, starlightUpgrades, achievements, combatEvents,
@@ -3758,9 +3832,12 @@ addLog(`💰 Vendeu ${toSell} Minério de ${oreType === 'copper' ? 'Cobre' : 'Fe
                 runes,
                 deityFavor,
                 isWorldBossAlive: !!(worldBossState.worldBoss && !worldBossState.worldBoss.isDead),
+                // 6ª Camada
+                mechanizedCardsFused,
+                isWorldBossModalActive
             }),
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, voidOvergrowthActive]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, voidOvergrowthActive, mechanizedCardsFused, isWorldBossModalActive]);
 
 
     return result;

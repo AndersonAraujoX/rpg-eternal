@@ -875,4 +875,57 @@ export interface Formation {
     heroIds: string[];
 }
 
+// ── 5ª Camada: Tipos de Estado dos Buffs ─────────────────────────────────────
 
+/**
+ * Estado persistido do buff Void Overgrowth (Sinergia L5-1).
+ * Controla se o Jardim/Pesca estão no modo Corrompido pelo Vazio.
+ */
+export interface VoidOvergrowthState {
+    /** Se o buff está atualmente ativo */
+    active: boolean;
+    /** Timestamp de ativação (Date.now()) — para UX de duração e expiração */
+    activatedAt: number | null;
+}
+
+/**
+ * Constelação Sagrada desbloqueada ao atingir 100% de Favor Divino (Sinergia L5-3).
+ * Ativa dano duplo em combos elementais no StarChart.
+ */
+export interface SacredConstellationState {
+    /** ID do deus cujo favor máximo desbloqueou esta constelação */
+    deityId: string;
+    /** Elemento de afinidade que recebe o bônus de dano elemental em combo */
+    element: ElementType;
+    /** IDs dos nós da constelação que já foram ativados pelo jogador */
+    activatedNodeIds: string[];
+}
+
+/**
+ * Contexto econômico de mercado durante eventos de World Boss (Sinergia L5-4).
+ * Encapsula o estado de escassez para uso no MarketModal e na lógica de sellOre.
+ */
+export interface WarEconomyMarketContext {
+    /** Se o multiplicador de escassez de guerra está ativo (boss vivo) */
+    isWarEconomyActive: boolean;
+    /** Multiplicador de preço atual (1.0 = normal, 3.0 = escassez de guerra) */
+    priceMultiplier: number;
+}
+
+// ── 6ª Camada: Sinergias Industriais de Fim de Jogo ──────────────────────────
+
+/**
+ * Modificadores aplicados pela 6ª Camada de Sinergias Globais (Indústria).
+ */
+export interface IndustryLayer6Modifiers {
+    /** Redução no tempo restante das expedições (ex: 0.20 = 20% mais rápido) */
+    expeditionTimeReduction: number;
+    /** Se o drop de minérios básicos de ferro deve ser duplicado */
+    doubleIronDrop: boolean;
+    /** Bônus de HP no baralho ativo / heróis de combate (ex: 0.10 = +10% HP) */
+    cardBattleHpBonus: number;
+    /** Mitigação extra de dano para as classes Warrior e Paladin (ex: 0.15 = +15% de mitigação) */
+    fieldShieldMitigation: number;
+    /** Indica se há Injetores de Matéria Hidráulica disponíveis na Indústria */
+    hasHydraulicInjectors: boolean;
+}

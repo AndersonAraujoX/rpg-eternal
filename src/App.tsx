@@ -117,8 +117,9 @@ function App() {
     globalModifiers, sellOre,
     isMiningFrenzy, setIsMiningFrenzy,
     starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive,
-    hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, purifyRelic, convertSeasonalFish
-  } = useGame(industry.inventory, industry.setIndustryState);
+    hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, purifyRelic, convertSeasonalFish,
+    mechanizedCardsFused, fuseMechanizedCards
+  } = useGame(industry.inventory, industry.setIndustryState, showWorldBoss);
 
   const [scale, setScale] = useState(1);
 
@@ -511,9 +512,9 @@ function App() {
 
       <AlchemyModal isOpen={showAlchemy} onClose={() => setShowAlchemy(false)} resources={resources} activePotions={activePotions || []} brewPotion={actions.brewPotion} />
 
-      <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} assignedPet={pets.find(p => p.assignment === 'expedition')} />
+      <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} assignedPet={pets.find(p => p.assignment === 'expedition')} globalModifiers={globalModifiers} />
 
-      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0) * (globalModifiers?.collection?.gardenSpeedMult || 1.0)} />
+      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0) * (globalModifiers?.collection?.gardenSpeedMult || 1.0)} voidOvergrowthActive={voidOvergrowthActive} voidHarvestRuneFragments={globalModifiers?.layer5?.voidHarvestRuneFragments} voidHarvestRareMinerals={globalModifiers?.layer5?.voidHarvestRareMinerals} />
 
       <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} resources={resources} sellOre={sellOre} globalModifiers={globalModifiers} />
 
@@ -612,7 +613,7 @@ function App() {
         backroomsFloor={backroomsFloor}
       />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} relics={town?.relics || []} />}
-      <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} />
+      <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} industryInventory={industry.inventory} mechanizedCardsFused={mechanizedCardsFused} fuseMechanizedCards={fuseMechanizedCards} />
 
       <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={fakePlayers} currentPower={partyPower} />
       {dungeonActive && (
@@ -825,6 +826,7 @@ function App() {
         items={items}
         voidMatter={voidMatter}
         actions={actions}
+        industryInventory={industry.inventory}
       />
     </div>
   );

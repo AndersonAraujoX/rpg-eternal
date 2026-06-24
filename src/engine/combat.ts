@@ -597,6 +597,9 @@ export const processCombatTurn = (
                 if (equippedRelics.includes('relic_void_orb')) {
                     bossDmg = Math.floor(bossDmg * 0.88);
                 }
+                if (activeGlobalSynergyIds.includes('escudos_de_cerco_ativo') && ['Warrior', 'Paladin'].includes(h.class)) {
+                    bossDmg = Math.floor(bossDmg * 0.85);
+                }
                 bossDmg = Math.max(1, bossDmg);
                 // Heroes are immortal — HP never drops below 1
                 hp = Math.max(1, hp - bossDmg);

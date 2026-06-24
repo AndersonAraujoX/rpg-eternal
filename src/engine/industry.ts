@@ -68,7 +68,13 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     { id: 'portal_stabilizer', name: 'Estabilizador de Portal', description: 'Componente dimensional ultra-complexo que mitiga o impacto do reset de prestígio. Preserva 1 herói OU 2 prédios adicionais.', emoji: '🌀' },
     { id: 'automated_temple', name: 'Templo Automatizado', description: 'Gerador autônomo de Favor Divino. Gera Favor passivamente e estende a cura do Divine Smite em +3 turnos.', emoji: '🛕' },
     { id: 'plasma_catalyst', name: 'Catalisador de Plasma', description: 'Amplificador de energia da Forja Estelar. +3 tentativas diárias e +10% de chance de modificadores perfeitos.', emoji: '⚡' },
-    { id: 'adrenaline_shot', name: 'Injeção de Adrenalina', description: 'Consumível de Arena: concede imunidade ao primeiro status negativo sofrido no combate.', emoji: '💉' }
+    { id: 'adrenaline_shot', name: 'Injeção de Adrenalina', description: 'Consumível de Arena: concede imunidade ao primeiro status negativo sofrido no combate.', emoji: '💉' },
+
+    // L6 Global Industry Synergy Items
+    { id: 'Mapping_Drones', name: 'Drones de Mapeamento Geográfico', description: 'Drones industriais de mapeamento que aceleram expedições em 20% e duplicam o drop de minérios de ferro.', emoji: '🛸' },
+    { id: 'Holographic_Alloys', name: 'Ligas Holográficas', description: 'Ligas metálicas avançadas para fundir cartas mecanizadas e ganhar +10% de HP permanente no baralho.', emoji: '💿' },
+    { id: 'Field_Shield_Generators', name: 'Escudos de Cerco', description: 'Estruturas de defesa tática para o World Boss que mitigam dano de Warrior/Paladin em +15%.', emoji: '🛡️' },
+    { id: 'Hydraulic_Matter_Injectors', name: 'Injetores Estabilizadores de Matéria', description: 'Injetores hidráulicos que evitam afixos negativos durante a infusão na Forja do Vazio.', emoji: '💉' }
 ];
 
 export const MACHINES: MachineInfo[] = [
@@ -118,7 +124,13 @@ export const RECIPES: Recipe[] = [
     { id: 'craft_portal_stabilizer', name: 'Criar: Estabilizador de Portal', inputs: { 'reinforced_alloy': 10, 'dark_matter': 3, 'anomalous_microchip': 5 }, outputs: { 'portal_stabilizer': 1 }, time: 1200, machineType: 'assembler', powerDraw: 400, requiredBackroomsLevel: 4 },
     { id: 'craft_automated_temple', name: 'Criar: Templo Automatizado', inputs: { 'basic_circuit': 20, 'magnetic_coil': 10, 'steel_plate': 15 }, outputs: { 'automated_temple': 1 }, time: 900, machineType: 'assembler', powerDraw: 300, requiredBackroomsLevel: 1 },
     { id: 'craft_plasma_catalyst', name: 'Criar: Catalisador de Plasma', inputs: { 'anomalous_microchip': 8, 'dark_matter': 2, 'copper_wire': 50 }, outputs: { 'plasma_catalyst': 1 }, time: 1500, machineType: 'assembler', powerDraw: 450, requiredBackroomsLevel: 8 },
-    { id: 'craft_adrenaline_shot', name: 'Criar: Injeção de Adrenalina', inputs: { 'iron_ingot': 3, 'copper_wire': 5, 'coal': 2 }, outputs: { 'adrenaline_shot': 1 }, time: 60, machineType: 'assembler', powerDraw: 50 }
+    { id: 'craft_adrenaline_shot', name: 'Criar: Injeção de Adrenalina', inputs: { 'iron_ingot': 3, 'copper_wire': 5, 'coal': 2 }, outputs: { 'adrenaline_shot': 1 }, time: 60, machineType: 'assembler', powerDraw: 50 },
+
+    // L6 Global Industry Synergy Recipes
+    { id: 'craft_mapping_drones', name: 'Criar: Drones de Mapeamento', inputs: { 'basic_circuit': 10, 'iron_ingot': 20 }, outputs: { 'Mapping_Drones': 1 }, time: 60, machineType: 'assembler', powerDraw: 100 },
+    { id: 'craft_holographic_alloys', name: 'Criar: Ligas Holográficas', inputs: { 'reinforced_alloy': 5, 'dark_matter': 1 }, outputs: { 'Holographic_Alloys': 1 }, time: 120, machineType: 'assembler', powerDraw: 150 },
+    { id: 'craft_field_shield_generators', name: 'Criar: Escudos de Cerco', inputs: { 'steel_plate': 10, 'magnetic_coil': 5 }, outputs: { 'Field_Shield_Generators': 1 }, time: 90, machineType: 'assembler', powerDraw: 120 },
+    { id: 'craft_hydraulic_matter_injectors', name: 'Criar: Injetores Estabilizadores', inputs: { 'basic_circuit': 5, 'copper_wire': 15 }, outputs: { 'Hydraulic_Matter_Injectors': 1 }, time: 60, machineType: 'assembler', powerDraw: 80 }
 ];
 
 // Helper to determine net production and consumption per second for UI

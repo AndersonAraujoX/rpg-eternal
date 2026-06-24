@@ -9,8 +9,9 @@ interface VoidInfusionModalProps {
     items: Item[];
     voidMatter: number;
     actions: {
-        infuseItemWithVoid: (itemId: string) => void;
+        infuseItemWithVoid: (itemId: string, useInjector?: boolean) => void;
     };
+    industryInventory?: Record<string, number>;
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -33,9 +34,11 @@ export const VoidInfusionModal: React.FC<VoidInfusionModalProps> = ({
     onClose,
     items = [],
     voidMatter,
-    actions
+    actions,
+    industryInventory
 }) => {
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    const [useInjector, setUseInjector] = useState<boolean>(false);
 
     if (!isOpen) return null;
 
@@ -44,7 +47,10 @@ export const VoidInfusionModal: React.FC<VoidInfusionModalProps> = ({
 
     const handleInfuse = () => {
         if (selectedItemId) {
-            actions.infuseItemWithVoid(selectedItemId);
+            actions.infuseItemWithVoid(selectedItemId, useInjector);
+            if (useInjector && (industryInventory?.['Hydraulic_Matter_Injectors'] || 0) <= 1) {
+                setUseInjector(false);
+            }
         }
     };
 
@@ -162,6 +168,21 @@ export const VoidInfusionModal: React.FC<VoidInfusionModalProps> = ({
                                         <span className={`font-bold ${hasEnoughVoidMatter ? 'text-purple-350' : 'text-red-400'}`}>
                                             50 Matéria (Você tem {voidMatter})
                                         </span>
+                                    </div>
+
+                                    {/* L6-4: Injetores Estabilizadores de Matéria */}
+                                    <div className="flex items-center justify-between p-2.5 bg-purple-950/20 border border-purple-900/30 rounded-lg mb-3">
+                                        <div className="flex flex-col text-left">
+                                            <span className="text-[11px] font-bold text-purple-300">Estabilizador de Matéria</span>
+                                            <span className="text-[9px] text-gray-400">Garante afixos 100% positivos. (Injetores: {industryInventory?.['Hydraulic_Matter_Injectors'] || 0})</span>
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            checked={useInjector}
+                                            disabled={(industryInventory?.['Hydraulic_Matter_Injectors'] || 0) < 1}
+                                            onChange={(e) => setUseInjector(e.target.checked)}
+                                            className="w-4 h-4 rounded text-purple-650 bg-gray-900 border-gray-800 focus:ring-purple-500 cursor-pointer disabled:cursor-not-allowed"
+                                        />
                                     </div>
 
                                     <button
