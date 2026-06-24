@@ -900,3 +900,21 @@ export interface WarEconomyMarketContext {
     /** Multiplicador de preço atual (1.0 = normal, 3.0 = escassez de guerra) */
     priceMultiplier: number;
 }
+
+// ── 6ª Camada: Sinergias Industriais de Fim de Jogo ──────────────────────────
+
+/**
+ * Modificadores aplicados pela 6ª Camada de Sinergias Globais (Indústria).
+ */
+export interface IndustryLayer6Modifiers {
+    /** Redução no tempo restante das expedições (ex: 0.20 = 20% mais rápido) */
+    expeditionTimeReduction: number;
+    /** Se o drop de minérios básicos de ferro deve ser duplicado */
+    doubleIronDrop: boolean;
+    /** Bônus de HP no baralho ativo / heróis de combate (ex: 0.10 = +10% HP) */
+    cardBattleHpBonus: number;
+    /** Mitigação extra de dano para as classes Warrior e Paladin (ex: 0.15 = +15% de mitigação) */
+    fieldShieldMitigation: number;
+    /** Indica se há Injetores de Matéria Hidráulica disponíveis na Indústria */
+    hasHydraulicInjectors: boolean;
+}

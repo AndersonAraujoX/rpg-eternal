@@ -10,9 +10,10 @@ interface ExpeditionsModalProps {
     heroes: Hero[];
     startExpedition: (exp: Expedition, heroIds: string[]) => void;
     assignedPet?: any;
+    globalModifiers?: any;
 }
 
-export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onClose, activeExpeditions, heroes, startExpedition, assignedPet }) => {
+export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onClose, activeExpeditions, heroes, startExpedition, assignedPet, globalModifiers }) => {
     const [now, setNow] = React.useState(0);
 
     React.useEffect(() => {
@@ -81,19 +82,33 @@ export const ExpeditionsModal: React.FC<ExpeditionsModalProps> = ({ isOpen, onCl
                 <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-2">
                     {EXPEDITIONS.map(exp => {
                         const active = activeExpeditions.find(e => e.id === exp.id);
-                        const progress = active ? Math.min(100, ((now - (active.startTime || 0)) / (exp.duration * 1000)) * 100) : 0;
-                        const timeLeft = active ? Math.max(0, (exp.duration * 1000) - (now - (active.startTime || 0))) : 0;
+                        const reduction = globalModifiers?.layer6?.expeditionTimeReduction || 0.0;
+                        const effectiveDuration = exp.duration * (1 - reduction);
+                        const progress = active ? Math.min(100, ((now - (active.startTime || 0)) / (effectiveDuration * 1000)) * 100) : 0;
+                        const timeLeft = active ? Math.max(0, (effectiveDuration * 1000) - (now - (active.startTime || 0))) : 0;
 
                         return (
                             <div key={exp.id} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-amber-900/50 transition-colors">
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
-                                        <h3 className="text-lg font-bold text-amber-100">{exp.name}</h3>
+                                        <h3 className="text-lg font-bold text-amber-100 flex items-center gap-2">
+                                            {exp.name}
+                                            {reduction > 0 && (
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-950/80 border border-green-800/50 text-green-400 font-medium">
+                                                    -20% Tempo
+                                                </span>
+                                            )}
+                                        </h3>
                                         <p className="text-gray-400 text-sm">{exp.description}</p>
                                     </div>
                                     <div className="flex items-center gap-2 text-xs bg-gray-900/50 px-2 py-1 rounded border border-gray-700">
                                         <Clock className="w-3 h-3 text-amber-500" />
-                                        <span>{Math.floor(exp.duration / 60)}m</span>
+                                        <span>
+                                            {reduction > 0 
+                                                ? `${Math.floor(effectiveDuration / 60)}m ${Math.floor(effectiveDuration % 60)}s` 
+                                                : `${Math.floor(exp.duration / 60)}m`
+                                            }
+                                        </span>
                                         <span className="text-gray-600">|</span>
                                         <Share2 className="w-3 h-3 text-red-500" />
                                         <span>Dif {exp.difficulty}</span>

@@ -199,6 +199,8 @@ export interface PersistenceProps {
     setUnpurifiedRelics: React.Dispatch<React.SetStateAction<number>>;
     unlockedRiftPerks: string[];
     setUnlockedRiftPerks: React.Dispatch<React.SetStateAction<string[]>>;
+    mechanizedCardsFused: boolean;
+    setMechanizedCardsFused: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const usePersistence = (props: PersistenceProps) => {
@@ -320,7 +322,9 @@ export const usePersistence = (props: PersistenceProps) => {
         unpurifiedRelics,
         setUnpurifiedRelics,
         unlockedRiftPerks,
-        setUnlockedRiftPerks
+        setUnlockedRiftPerks,
+        mechanizedCardsFused,
+        setMechanizedCardsFused
     } = props;
 
 
@@ -541,6 +545,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 if (state.hasDonatedHighTierIndustry !== undefined) setHasDonatedHighTierIndustry(state.hasDonatedHighTierIndustry);
                 if (state.unpurifiedRelics !== undefined) setUnpurifiedRelics(state.unpurifiedRelics);
                 if (state.unlockedRiftPerks !== undefined) setUnlockedRiftPerks(state.unlockedRiftPerks || []);
+                if (state.mechanizedCardsFused !== undefined) setMechanizedCardsFused(state.mechanizedCardsFused);
 
                 setRaidActive(false);
                 if (state.dungeonActive === undefined) {
@@ -697,6 +702,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 hasDonatedHighTierIndustry: p.hasDonatedHighTierIndustry,
                 unpurifiedRelics: p.unpurifiedRelics,
                 unlockedRiftPerks: p.unlockedRiftPerks || [],
+                mechanizedCardsFused: p.mechanizedCardsFused,
                 lastSaveTime: Date.now()
             };
 
