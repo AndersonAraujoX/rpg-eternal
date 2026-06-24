@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { checkGlobalSynergies, type GlobalSynergyCheckState } from '../../engine/globalSynergies';
-import type { Hero, Building } from '../../engine/types';
-import type { BackroomsExplorer } from '../../engine/backrooms';
-import type { Synergy } from '../../engine/synergies';
+
 
 describe('Global Synergies Verification Logic', () => {
     const defaultState = (): GlobalSynergyCheckState => ({

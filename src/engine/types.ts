@@ -209,6 +209,17 @@ export interface Achievement {
     rewardText: string;
 }
 
+export interface WorldBossRewards {
+    souls: number;
+    gold: number;
+    petXp: number;
+    guildXp: number;
+    guildMembers: number;
+    wonPet: boolean;
+    tier: number;
+    damagePercent: number;
+}
+
 export interface GameStats {
     totalGoldEarned: number;
     totalKills: number;

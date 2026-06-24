@@ -72,7 +72,7 @@ function App() {
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, tower, towerBoss, guild, voidMatter, voidActive, voidTimer, worldBossCooldownUntil,
     arenaRank, glory, quests, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
-    victory,
+    victory, classMastery,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
     outerSpaceUnlocked,
     assignHero, showCampfire, setShowCampfire, setOuterSpaceUnlocked,

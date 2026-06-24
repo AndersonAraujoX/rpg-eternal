@@ -6,7 +6,7 @@ export const useWorldBoss = (
     partyPower: number,
     gameStats: GameStats,
     addLog: (msg: string, type?: LogEntry['type']) => void,
-    onWorldBossClaimed: (rewards: Record<string, unknown>) => void,
+    onWorldBossClaimed: (rewards: import('../engine/types').WorldBossRewards) => void,
     highestBackroomsLevel: number = 1,
     isBackroomsUnlocked: boolean = false
 ) => {
@@ -106,7 +106,7 @@ export const useWorldBoss = (
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [worldBoss?.id, worldBoss?.isDead, partyPower]); // Depend on ID to reset on new boss
+    }, [worldBoss?.id, worldBoss?.isDead, partyPower, addLog]); // Depend on ID to reset on new boss
 
     // Claim Rewards
     const claimReward = useCallback(() => {

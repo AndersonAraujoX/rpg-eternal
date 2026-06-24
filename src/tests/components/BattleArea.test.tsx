@@ -19,7 +19,7 @@ describe('BattleArea Component', () => {
         dungeonTimer: 0,
         ultimateCharge: 45,
         pets: [
-            { id: 'pet-1', name: 'Slime', type: 'pet' as const, bonus: '+10% Gold', emoji: '🦠', isDead: false, level: 5, xp: 0, maxXp: 100, rarity: 'common' as const, stats: {} as any, element: 'water' as const }
+            { id: 'pet-1', name: 'Slime', type: 'pet' as const, bonus: '+10% Gold', emoji: '🦠', isDead: false, level: 5, xp: 0, maxXp: 100, rarity: 'common' as const, stats: {} as unknown as import('../../engine/types').Stats, element: 'water' as const }
         ],
         actions: {
             manualAttack: vi.fn()

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { INITIAL_GALAXY, calculateGalaxyIncome, calculateGalaxyBuffs } from '../../engine/galaxy';
 import type { GalaxySector, Spaceship } from '../../engine/types';
 
