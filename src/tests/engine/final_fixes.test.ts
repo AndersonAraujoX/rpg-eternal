@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_BUILDINGS } from '../../data/buildings';
 import { INITIAL_HEROES } from '../../engine/initialData';
-import type { Hero, Pet, Item } from '../../engine/types';
+import type { Hero } from '../../engine/types';
 
 // Mocking the power calc logic from useGame.ts to verify its correctness
 const calculatePower = (
     activeHeroes: Hero[],
-    itemStats: any,
-    petStats: any,
+    itemStats: unknown,
+    petStats: unknown,
     multipliers: { prestige: number, guild: number, galaxy: number, territory: number, potion: number }
 ) => {
     const baseStatsPower = activeHeroes.reduce((sum, h) => {
@@ -66,7 +66,7 @@ describe('Final Fixes Verification', () => {
         // Simulate Rebirth Execution
         const soulsGained = Math.floor(bossLevel / 5);
         souls += soulsGained;
-        heroes = INITIAL_HEROES.map(h => ({ ...h, level: 1 }));
+
         gold = 0;
         bossLevel = 1;
         // In my fix, prestigeNodes is NOT touched/reset

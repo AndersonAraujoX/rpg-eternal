@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
-import type { Hero, Boss, LogEntry, Item, Quest, ArenaOpponent, Achievement, GameStats, Resources, Building, DailyQuest, CombatEvent, Potion, MarketItem, GardenPlot, Expedition, GameActions, Stats, Pet, Rift, RiftBlessing, DungeonInteraction, ClassMastery, HeroClass, ElementType } from '../engine/types';
+import type { Hero, Boss, LogEntry, Item, Quest, ArenaOpponent, Achievement, GameStats, Resources, Building, DailyQuest, CombatEvent, Potion, MarketItem, GardenPlot, Expedition, GameActions, Stats, Pet, Rift, RiftBlessing, DungeonInteraction, ClassMastery, HeroClass, ElementType, WorldBossRewards } from '../engine/types';
 import { POTIONS } from '../engine/types';
 import { getStarlightUpgradeCost, STARLIGHT_UPGRADES } from '../engine/starlight';
 import { checkDailyReset, generateDailyQuests, LOGIN_REWARDS } from '../engine/dailies';
@@ -32,7 +32,7 @@ import { useVoidGuardian } from './useVoidGuardian';
 import { calculateVoidGuardianRewards } from '../engine/voidBoss';
 import { PRESTIGE_CLASSES } from '../engine/classes';
 import { CLASS_TALENTS } from '../data/masteryData';
-import { PRESTIGE_NODES, getPrestigeNodeCost } from '../components/modals/PrestigeTreeModal';
+import { PRESTIGE_NODES, getPrestigeNodeCost } from '../data/prestige.constants';
 import { MONSTERS } from '../engine/bestiary';
 import { useRoguelike } from './useRoguelike';
 import { getPlanetaryRunRewards } from '../engine/roguelike';
@@ -48,6 +48,7 @@ import { INITIAL_GALAXY } from '../engine/galaxy';
 import { calculateWinChance } from '../engine/arena';
 import { INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege, initGvGWar, simulateGvGTick, playerAttackTower } from '../engine/guildWar';
 import type { GvGWarState } from '../engine/guildWar';
+import type { IndustryState } from './useIndustry';
 import { INITIAL_TOWN, INITIAL_MARKET_TREND, ANCIENT_RELICS } from '../engine/initialData';
 import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
 import type { MarketTrend, TownState, AncientRelic } from '../engine/types';
@@ -130,7 +131,7 @@ const autoAllocateHeroStats = (h: Hero): Hero => {
 
 export const useGame = (
     industryInventory?: Record<string, number>,
-    setIndustryState?: React.Dispatch<React.SetStateAction<any>>
+    setIndustryState?: React.Dispatch<React.SetStateAction<IndustryState>>
 ) => {
     // CORE STATE
     const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
@@ -346,7 +347,7 @@ export const useGame = (
 
     const voidGuardian = useVoidGuardian(partyPower, addLog, handleVoidGuardianFinish);
 
-    const handleWorldBossClaimed = useCallback((rewards: any) => {
+    const handleWorldBossClaimed = useCallback((rewards: WorldBossRewards) => {
         setGold(g => g + rewards.gold);
         setSouls(s => s + rewards.souls);
 
@@ -994,7 +995,7 @@ export const useGame = (
 
     const consumeIndustryItem = useCallback((itemId: string, amount: number = 1) => {
         if (setIndustryState) {
-            setIndustryState((prev: any) => {
+            setIndustryState((prev: IndustryState) => {
                 if (!prev) return prev;
                 const current = prev.inventory?.[itemId] || 0;
                 if (current < amount) return prev;
@@ -1224,7 +1225,7 @@ export const useGame = (
                 soundManager.playLevelUp();
             },
             buyPrestigeNode: (nodeId: string) => {
-                const node = PRESTIGE_NODES.find((n: any) => n.id === nodeId);
+                const node = PRESTIGE_NODES.find((n: import('../data/prestige.constants').PrestigeNode) => n.id === nodeId);
                 const currentLevel = stateRef.current.prestigeNodes[nodeId] || 0;
                 if (node && currentLevel < node.maxLevel) {
                     const cost = getPrestigeNodeCost(node, currentLevel);
@@ -1261,7 +1262,7 @@ export const useGame = (
             enterDungeon: (lvl: number) => {
                 if (finalIndustryInventory && (finalIndustryInventory['overcharged_ammo'] || 0) > 0) {
                     if (setIndustryState) {
-                        setIndustryState((prev: any) => {
+                        setIndustryState((prev: IndustryState) => {
                             const current = prev.inventory['overcharged_ammo'] || 0;
                             if (current > 0) {
                                 return {

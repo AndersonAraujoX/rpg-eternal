@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PRESTIGE_NODES } from '../../components/modals/PrestigeTreeModal';
+import { PRESTIGE_NODES } from '../../data/prestige.constants';
 
 describe('Prestige System Logic', () => {
     it('calculates soul gain correctly based on boss level', () => {
