@@ -165,75 +165,38 @@ export const tickFakePlayers = (
 
 export const selectArenaOpponents = (
     bots: FakePlayer[], 
-    playerPower: number
+    currentRank: number = 1000
 ): import('./types').ArenaOpponent[] => {
     if (bots.length === 0) return [];
     
-    // Sort bots by power to find easy, normal, hard
-    const sorted = [...bots].sort((a, b) => a.power - b.power);
+    // Formula: 100 * (1.01) ** (1000 - currentRank)
+    const rankDiff = Math.max(0, 1000 - currentRank);
+    const basePower = Math.max(10, Math.floor(100 * Math.pow(1.01, rankDiff)));
     
-    // Easy: closest to 0.6 * playerPower
-    const easyTarget = playerPower * 0.6;
-    let easyBot = sorted[0];
-    let minEasyDiff = Math.abs(easyBot.power - easyTarget);
-    
-    // Normal: closest to 1.0 * playerPower
-    const normalTarget = playerPower * 1.0;
-    let normalBot = sorted[0];
-    let minNormalDiff = Math.abs(normalBot.power - normalTarget);
-    
-    // Hard: closest to 1.5 * playerPower
-    const hardTarget = playerPower * 1.5;
-    let hardBot = sorted[0];
-    let minHardDiff = Math.abs(hardBot.power - hardTarget);
-    
-    sorted.forEach(bot => {
-        const easyDiff = Math.abs(bot.power - easyTarget);
-        if (easyDiff < minEasyDiff) {
-            minEasyDiff = easyDiff;
-            easyBot = bot;
-        }
-        
-        const normalDiff = Math.abs(bot.power - normalTarget);
-        if (normalDiff < minNormalDiff) {
-            minNormalDiff = normalDiff;
-            normalBot = bot;
-        }
-        
-        const hardDiff = Math.abs(bot.power - hardTarget);
-        if (hardDiff < minHardDiff) {
-            minHardDiff = hardDiff;
-            hardBot = bot;
-        }
-    });
-    
-    // Ensure all 3 are distinct if bots length >= 3
-    if (bots.length >= 3) {
-        const selectedIds = new Set<string>([easyBot.id]);
-        
-        if (selectedIds.has(normalBot.id)) {
-            const candidates = sorted.filter(b => b.id !== easyBot.id);
-            normalBot = candidates.reduce((prev, curr) => 
-                Math.abs(curr.power - normalTarget) < Math.abs(prev.power - normalTarget) ? curr : prev
-            );
-        }
-        selectedIds.add(normalBot.id);
-        
-        if (selectedIds.has(hardBot.id)) {
-            const candidates = sorted.filter(b => b.id !== easyBot.id && b.id !== normalBot.id);
-            hardBot = candidates.reduce((prev, curr) => 
-                Math.abs(curr.power - hardTarget) < Math.abs(prev.power - hardTarget) ? curr : prev
-            );
-        }
-    }
+    const easyPower = Math.max(5, Math.floor(basePower * 0.6));
+    const normalPower = basePower;
+    const hardPower = Math.max(15, Math.floor(basePower * 1.5));
     
     // Sort global bots to calculate dynamic leaderboard rank
     const globalSorted = [...bots].sort((a, b) => b.power - a.power);
     const getRank = (botId: string) => globalSorted.findIndex(b => b.id === botId) + 1;
     
+    // Pick 3 distinct bots from the pool
+    const pool = [...bots];
+    const chosenBots: FakePlayer[] = [];
+    
+    for (let i = 0; i < Math.min(3, pool.length); i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        chosenBots.push(pool.splice(idx, 1)[0]);
+    }
+    
+    const easyBot = chosenBots[0] || bots[0];
+    const normalBot = chosenBots[1] || bots[0];
+    const hardBot = chosenBots[2] || bots[0];
+    
     return [
-        { id: easyBot.id, name: easyBot.name, avatar: easyBot.avatar, rank: getRank(easyBot.id), power: easyBot.power },
-        { id: normalBot.id, name: normalBot.name, avatar: normalBot.avatar, rank: getRank(normalBot.id), power: normalBot.power },
-        { id: hardBot.id, name: hardBot.name, avatar: hardBot.avatar, rank: getRank(hardBot.id), power: hardBot.power }
+        { id: easyBot.id, name: easyBot.name, avatar: easyBot.avatar, rank: getRank(easyBot.id), power: easyPower },
+        { id: normalBot.id, name: normalBot.name, avatar: normalBot.avatar, rank: getRank(normalBot.id), power: normalPower },
+        { id: hardBot.id, name: hardBot.name, avatar: hardBot.avatar, rank: getRank(hardBot.id), power: hardPower }
     ];
 };

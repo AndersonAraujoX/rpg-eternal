@@ -148,15 +148,21 @@ describe('Player Simulation Engine', () => {
             expect(uniqueIds.size).toBe(3);
         });
 
-        it('should calculate ranks correctly as dynamic leaderboard position', () => {
-            const bots = generateInitialBots(10);
-            const sortedBots = [...bots].sort((a, b) => b.power - a.power);
-            const opponents = selectArenaOpponents(bots, 1000);
+        it('should scale power using formula 100 * (1.01) ** (1000 - rank) across difficulty tiers', () => {
+            const bots = generateInitialBots(5);
+            
+            // At Rank 1000: Base = 100
+            const ops1000 = selectArenaOpponents(bots, 1000);
+            expect(ops1000[0].power).toBe(60);   // 60%
+            expect(ops1000[1].power).toBe(100);  // 100%
+            expect(ops1000[2].power).toBe(150);  // 150%
 
-            opponents.forEach(op => {
-                const expectedRank = sortedBots.findIndex(b => b.id === op.id) + 1;
-                expect(op.rank).toBe(expectedRank);
-            });
+            // At Rank 900: Base = 100 * (1.01)^100 = 270
+            const ops900 = selectArenaOpponents(bots, 900);
+            const expectedBase900 = Math.floor(100 * Math.pow(1.01, 100)); // 270
+            expect(ops900[0].power).toBe(Math.floor(expectedBase900 * 0.6));
+            expect(ops900[1].power).toBe(expectedBase900);
+            expect(ops900[2].power).toBe(Math.floor(expectedBase900 * 1.5));
         });
     });
 });

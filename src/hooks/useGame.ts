@@ -830,10 +830,9 @@ export const useGame = (
 
     useEffect(() => {
         if (arenaOpponents.length === 0 && fakePlayers.length > 0) {
-            const power = calculatedPartyPower || 100;
-            setArenaOpponents(selectArenaOpponents(fakePlayers, power));
+            setArenaOpponents(selectArenaOpponents(fakePlayers, arenaRank));
         }
-    }, [arenaOpponents.length, calculatedPartyPower, fakePlayers]);
+    }, [arenaOpponents.length, arenaRank, fakePlayers]);
 
     useEffect(() => {
         const dpsTimer = setInterval(() => {
@@ -1372,7 +1371,7 @@ export const useGame = (
                             }
                             return b;
                         });
-                        setArenaOpponents(selectArenaOpponents(updatedBots, stateRef.current.partyPower));
+                        setArenaOpponents(selectArenaOpponents(updatedBots, nextRank));
                         return updatedBots;
                     });
 
@@ -1389,7 +1388,7 @@ export const useGame = (
                             }
                             return b;
                         });
-                        setArenaOpponents(selectArenaOpponents(updatedBots, stateRef.current.partyPower));
+                        setArenaOpponents(selectArenaOpponents(updatedBots, nextRank));
                         return updatedBots;
                     });
                 }
