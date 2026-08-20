@@ -7,12 +7,13 @@ interface SettingsModalProps {
     onClose: () => void;
     actions: GameActions;
     autoSellRarity: 'none' | 'common' | 'rare';
+    autoFeedPets?: boolean;
     theme: string;
     importString: string;
     setImportString: (value: string) => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, actions, autoSellRarity, theme, importString, setImportString }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, actions, autoSellRarity, autoFeedPets = false, theme, importString, setImportString }) => {
     if (!isOpen) return null;
 
     return (
@@ -48,6 +49,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
                             <option value="common">Auto-Vender Comum</option>
                             <option value="rare">Auto-Vender Comum e Raro</option>
                         </select>
+                    </div>
+
+                    <div className="bg-gray-700 p-3 rounded text-left flex items-center justify-between">
+                        <div>
+                            <span className="text-xs font-bold text-white block">Alimentação Automática de Pets</span>
+                            <span className="text-[10px] text-gray-400 block">Consome 100 Ouro/s para subir nível dos mascotes</span>
+                        </div>
+                        <button
+                            onClick={() => actions.toggleAutoFeedPets ? actions.toggleAutoFeedPets() : actions.setAutoFeedPets && actions.setAutoFeedPets(!autoFeedPets)}
+                            className={`px-3 py-1 rounded text-xs font-bold transition-all border ${
+                                autoFeedPets
+                                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400'
+                                    : 'bg-gray-800 hover:bg-gray-600 text-gray-400 border-gray-600'
+                            }`}
+                        >
+                            {autoFeedPets ? 'LIGADO' : 'DESLIGADO'}
+                        </button>
                     </div>
 
                     <button onClick={() => { navigator.clipboard.writeText(actions.exportSave()); alert("Progresso copiado para a área de transferência!"); }} className="btn-retro bg-blue-600 text-white w-full py-3 flex items-center justify-center gap-2">

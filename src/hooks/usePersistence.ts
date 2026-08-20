@@ -61,6 +61,8 @@ export interface PersistenceProps {
     setStarlightUpgrades: React.Dispatch<React.SetStateAction<Record<string, number>>>;
     autoSellRarity: 'none' | 'common' | 'rare';
     setAutoSellRarity: React.Dispatch<React.SetStateAction<'none' | 'common' | 'rare'>>;
+    autoFeedPets?: boolean;
+    setAutoFeedPets?: React.Dispatch<React.SetStateAction<boolean>>;
     arenaOpponents: ArenaOpponent[];
     setArenaOpponents: React.Dispatch<React.SetStateAction<ArenaOpponent[]>>;
     theme: string;
@@ -214,6 +216,7 @@ export const usePersistence = (props: PersistenceProps) => {
         setStarlight,
         setStarlightUpgrades,
         setAutoSellRarity,
+        setAutoFeedPets,
         setArenaOpponents,
         setTheme,
         setGalaxy,
@@ -468,6 +471,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 }
                 if (state.dailyQuests) setDailyQuests(state.dailyQuests);
                 if (state.autoSellRarity) setAutoSellRarity(state.autoSellRarity);
+                if (typeof state.autoFeedPets === 'boolean' && setAutoFeedPets) setAutoFeedPets(state.autoFeedPets);
                 if (state.arenaOpponents) setArenaOpponents(state.arenaOpponents);
                 if (state.dailyLoginClaimed !== undefined) setDailyLoginClaimed(state.dailyLoginClaimed);
                 if (state.lastDailyReset) setLastDailyReset(state.lastDailyReset);
@@ -647,7 +651,7 @@ export const usePersistence = (props: PersistenceProps) => {
                 heroes: compactHeroes,
                 boss: p.boss, souls: p.souls, gold: p.gold, divinity: p.divinity, pets: p.pets, talents: p.talents, artifacts: p.artifacts, cards: p.cards, constellations: p.constellations, keys: p.keys,
                 resources: p.resources, tower: p.tower, towerBoss: p.towerBoss, guild: p.guild, voidMatter: p.voidMatter, arenaRank: p.arenaRank, glory: p.glory, quests: p.quests, achievements: p.achievements, starlight: p.starlight,
-                starlightUpgrades: p.starlightUpgrades, theme: p.theme, galaxy: p.galaxy, monsterKills: filteredKills, gameStats: p.gameStats, autoSellRarity: p.autoSellRarity,
+                starlightUpgrades: p.starlightUpgrades, theme: p.theme, galaxy: p.galaxy, monsterKills: filteredKills, gameStats: p.gameStats, autoSellRarity: p.autoSellRarity, autoFeedPets: p.autoFeedPets,
                 activeExpeditions: p.activeExpeditions, activePotions: p.activePotions, buildings: p.buildings,
                 dailyQuests: p.dailyQuests, dailyLoginClaimed: p.dailyLoginClaimed, lastDailyReset: p.lastDailyReset,
                 territories: p.territories, spaceship: p.spaceship, formations: p.formations, weather: p.weather,

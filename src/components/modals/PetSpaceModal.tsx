@@ -9,6 +9,8 @@ interface PetSpaceModalProps {
     pets: Pet[];
     gold: number;
     souls: number;
+    autoFeedPets?: boolean;
+    onToggleAutoFeed?: () => void;
     onFeedGold: (petId: string) => void;
     onFeedSouls: (petId: string) => void;
     onAssignPet: (petId: string, assignment: 'combat' | 'industry' | 'expedition') => void;
@@ -24,7 +26,7 @@ const RARITY_STYLE: Record<string, string> = {
 };
 
 export const PetSpaceModal: React.FC<PetSpaceModalProps> = ({
-    isOpen, onClose, pets, gold, souls, onFeedGold, onFeedSouls, onAssignPet, onBreed
+    isOpen, onClose, pets, gold, souls, autoFeedPets = false, onToggleAutoFeed, onFeedGold, onFeedSouls, onAssignPet, onBreed
 }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     if (!isOpen) return null;
@@ -45,10 +47,26 @@ export const PetSpaceModal: React.FC<PetSpaceModalProps> = ({
             <div className="bg-gray-900 border-2 border-purple-700/60 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden">
                 {/* Header */}
                 <div className="p-4 bg-gradient-to-r from-purple-950/50 to-gray-900 border-b border-purple-800/40 flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-purple-300 flex items-center gap-2">
-                        <PawPrint className="w-6 h-6" /> Espaço Pet
-                        <span className="text-sm text-gray-400 font-normal">({pets.length} pets)</span>
-                    </h2>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-purple-300 flex items-center gap-2">
+                            <PawPrint className="w-6 h-6" /> Espaço Pet
+                            <span className="text-sm text-gray-400 font-normal">({pets.length} pets)</span>
+                        </h2>
+                        {onToggleAutoFeed && (
+                            <button
+                                onClick={onToggleAutoFeed}
+                                className={`px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1 ${
+                                    autoFeedPets
+                                        ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                                        : 'bg-gray-800 border-gray-700 text-gray-400'
+                                }`}
+                                title="Alimentação Automática (-100 Ouro/s)"
+                            >
+                                <Zap size={11} className={autoFeedPets ? 'text-emerald-400' : ''} />
+                                Auto-Feed: {autoFeedPets ? 'ON' : 'OFF'}
+                            </button>
+                        )}
+                    </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-white text-lg font-bold">×</button>
                 </div>
 

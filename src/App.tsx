@@ -72,7 +72,7 @@ function App() {
     heroes, boss, logs, gameSpeed, isSoundOn, souls, gold, divinity, pets, offlineGains,
     talents, artifacts, cards, constellations, keys, dungeonActive, dungeonTimer, resources, items,
     ultimateCharge, raidActive, tower, towerBoss, guild, voidMatter, voidActive, voidTimer, worldBossCooldownUntil,
-    arenaRank, glory, quests, achievements, starlight, starlightUpgrades, autoSellRarity, arenaOpponents,
+    arenaRank, glory, quests, achievements, starlight, starlightUpgrades, autoSellRarity, autoFeedPets, arenaOpponents,
     victory, classMastery,
     actions, partyDps, partyPower, combatEvents, theme, galaxy, monsterKills, gameStats,
     outerSpaceUnlocked,
@@ -415,6 +415,7 @@ function App() {
                 actions={actions}
                 gold={gold}
                 souls={souls}
+                autoFeedPets={autoFeedPets}
               />
             )}
           </div>
@@ -438,7 +439,7 @@ function App() {
       <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />
       <StarChartModal isOpen={showStars} onClose={() => setShowStars(false)} divinity={divinity} constellations={constellations} actions={actions} />
       <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} theme={theme} />
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} autoFeedPets={autoFeedPets} theme={theme} />
       {showShop && <ShopModal isOpen={true} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />}
       {showTavern && <TavernModal heroes={heroes} gold={gold} tavernPurchases={gameStats.tavernPurchases || 0} heroPity={gameStats.heroPity || 0} petPity={gameStats.petPity || 0} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} onDiceWin={(actions as any).onDiceWin} onDicePerfectWin={(actions as any).onDicePerfectWin} backroomsFloor={backroomsFloor} isBackroomsUnlocked={isBackroomsUnlocked} />}
 
@@ -566,7 +567,7 @@ function App() {
         return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} gvgWarState={gvgWarState} onStartGvG={() => startGvGWar(guild?.name || 'Sua Guilda')} onPlayerGvGAttack={playerGvGAttack} patronDeity={patronDeity} activeEvent={activeEvent} />;
       })()}
 
-      {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onAssignPet={(id, assign) => actions.assignPet && actions.assignPet(id, assign)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
+      {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} autoFeedPets={autoFeedPets} onToggleAutoFeed={actions.toggleAutoFeedPets} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onAssignPet={(id, assign) => actions.assignPet && actions.assignPet(id, assign)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
       <TownModal
         isOpen={showTown}
         onClose={() => setShowTown(false)}

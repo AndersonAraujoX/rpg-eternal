@@ -1,4 +1,5 @@
 import React from 'react';
+import { Utensils, Zap, Power } from 'lucide-react';
 import type { Pet } from '../engine/types';
 import { formatNumber } from '../utils';
 
@@ -7,9 +8,10 @@ interface PetListProps {
     actions: any;
     gold: number;
     souls: number;
+    autoFeedPets?: boolean;
 }
 
-export const PetList: React.FC<PetListProps> = ({ pets, actions, gold, souls }) => {
+export const PetList: React.FC<PetListProps> = ({ pets, actions, gold, souls, autoFeedPets = false }) => {
     if (!pets || pets.length === 0) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-800 text-center text-gray-400">
@@ -23,7 +25,43 @@ export const PetList: React.FC<PetListProps> = ({ pets, actions, gold, souls }) 
     }
 
     return (
-        <div className="w-full bg-gray-800 p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="w-full bg-gray-800 p-3 flex flex-col gap-3">
+            {/* Auto-Feed Toggle Header */}
+            <div className="w-full bg-gray-900/80 border border-gray-700/80 rounded-xl p-2.5 flex items-center justify-between shadow-inner">
+                <div className="flex items-center gap-2.5">
+                    <div className={`p-2 rounded-lg border ${autoFeedPets ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' : 'bg-gray-800 border-gray-700 text-gray-400'}`}>
+                        <Utensils size={18} className={autoFeedPets ? 'animate-pulse' : ''} />
+                    </div>
+                    <div className="text-left">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white">Alimentação Automática</span>
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${autoFeedPets ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40 animate-pulse' : 'bg-gray-800 text-gray-400 border-gray-600'}`}>
+                                {autoFeedPets ? 'LIGADO' : 'DESLIGADO'}
+                            </span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                            {autoFeedPets 
+                                ? 'Upa o pet mais fraco automaticamente (-100 Ouro/s quando Ouro > 1.000)' 
+                                : 'Desativado: Ouro não é consumido automaticamente pelos pets'}
+                        </p>
+                    </div>
+                </div>
+
+                <button
+                    onClick={() => actions.toggleAutoFeedPets ? actions.toggleAutoFeedPets() : actions.setAutoFeedPets && actions.setAutoFeedPets(!autoFeedPets)}
+                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all border flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                        autoFeedPets
+                            ? 'bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white border-emerald-400 shadow-emerald-900/30'
+                            : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-600'
+                    }`}
+                    title={autoFeedPets ? 'Clique para desativar a alimentação automática' : 'Clique para ativar a alimentação automática'}
+                >
+                    <Power size={14} />
+                    <span>{autoFeedPets ? 'Ativado' : 'Desativado'}</span>
+                </button>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {pets.map(pet => {
                 const xpPercent = Math.min(100, Math.floor((pet.xp / pet.maxXp) * 100));
 
@@ -96,6 +134,7 @@ export const PetList: React.FC<PetListProps> = ({ pets, actions, gold, souls }) 
                     </div>
                 );
             })}
+            </div>
         </div>
     );
 };

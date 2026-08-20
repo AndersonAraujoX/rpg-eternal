@@ -753,6 +753,8 @@ export interface GameActions {
     breedPets: (parent1: Pet, parent2: Pet) => void;
     feedPet: (foodType: 'gold' | 'souls', petId?: string) => void;
     assignPet?: (petId: string, assignment: 'combat' | 'industry' | 'expedition') => void;
+    toggleAutoFeedPets?: () => void;
+    setAutoFeedPets?: (enabled: boolean) => void;
     winCardBattle: (opponentId: string, difficulty: number) => void;
     forgeUpgrade: (material: 'copper' | 'iron' | 'mithril') => void;
     craftStarForgedItem: (item: Item, goldCost: number, fragmentCost: number) => void;

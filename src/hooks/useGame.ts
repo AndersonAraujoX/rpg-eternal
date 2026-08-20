@@ -198,6 +198,7 @@ export const useGame = (
     const [isStarlightModalOpen, setIsStarlightModalOpen] = useState(false);
     const [theme, setTheme] = useState('default');
     const [autoSellRarity, setAutoSellRarity] = useState<'none' | 'common' | 'rare'>('none');
+    const [autoFeedPets, setAutoFeedPets] = useState<boolean>(false);
     const [showCampfire, setShowCampfire] = useState(false);
     const [bossTimer, setBossTimer] = useState<number>(60);
     const bossTimerRef = useRef<number>(60);
@@ -695,6 +696,7 @@ export const useGame = (
         activeExpeditions,
         theme,
         autoSellRarity,
+        autoFeedPets,
         offlineGains,
         voidActive,
         voidTimer,
@@ -768,6 +770,7 @@ export const useGame = (
             activeExpeditions,
             theme,
             autoSellRarity,
+            autoFeedPets,
             offlineGains,
             voidActive,
             voidTimer,
@@ -809,7 +812,7 @@ export const useGame = (
             // Quinta Camada
             voidOvergrowthActive
         };
-    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, voidOvergrowthActive]);
+    }, [heroes, souls, talents, constellations, artifacts, cards, achievements, petsState.pets, activeSynergies, boss, ultimateCharge, gold, gameSpeed, galaxyBuffs.damageMult, classMastery, artifactMultipliers, patronDeity, deityLevel, deityFavor, deityEnergy, divinity, resources, items, runes, world.tower, world.towerBoss, fakePlayers, gvgWarState, currentTutorialIndex, backrooms.backroomsUnlockedTechs, backrooms.backroomsFloor, teamMorale, prestigeNodes, activeEvent, town, marketTrend, arenaRank, glory, guildQueue, arenaOpponents, marketStock, quests, dailyQuests, activePotions, activeExpeditions, theme, autoSellRarity, autoFeedPets, offlineGains, voidActive, voidTimer, voidAscensions, raidActive, raidTimer, dailyLoginClaimed, townVisited, partyPower, monuments, buildings, voidMatter, lastDailyReset, starlightUpgrades, starlight, guildState.guild, galaxyState.territories, world.weather, gameStats, dungeonMastery, ownedRelics, equippedRelics, globalSynergies, galaxyState.galaxy, galaxyState.spaceship, cosmicDust, riftFragments, diceLuckUntil, dicePerfectWinUntil, dungeonFirstTickBuff, finalIndustryInventory, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, voidOvergrowthActive]);
 
     // Side Effects
     useEffect(() => {
@@ -1528,7 +1531,6 @@ export const useGame = (
                     return p;
                 }));
 
-                addLog(`Fed ${targetPet.name} with ${type}!`, 'action');
             },
             assignPet: (petId: string, assignment: 'combat' | 'industry' | 'expedition') => {
                 petsState.setPets(prev => prev.map(p => {
@@ -1542,6 +1544,8 @@ export const useGame = (
                 }));
                 addLog(`Mascote designado para ${assignment === 'industry' ? 'Indústria' : assignment === 'expedition' ? 'Expedição' : 'Combate'}!`, 'action');
             },
+            toggleAutoFeedPets: () => setAutoFeedPets(prev => !prev),
+            setAutoFeedPets: (enabled: boolean) => setAutoFeedPets(enabled),
             winCardBattle: (_o: string, d: number) => setGold(g => g + d * 10),
 
             // ── Sinergia 2: Sorte do Conquistador (Dados ⇄ Forja/Runas) ──
@@ -3253,8 +3257,8 @@ export const useGame = (
                 }));
             }
 
-            // Auto-feeding pets logic
-            if (stateRef.current.pets && stateRef.current.pets.length > 0) {
+            // Auto-feeding pets logic (only when enabled by player)
+            if (stateRef.current.autoFeedPets && stateRef.current.pets && stateRef.current.pets.length > 0) {
                 const currentGold = stateRef.current.gold - goldDeduction;
                 const currentSouls = stateRef.current.souls - soulsDeduction;
 
@@ -3558,7 +3562,7 @@ export const useGame = (
         constellations, setConstellations, keys, setKeys, resources, setResources, tower: world.tower, setTower: world.setTower,
         guild: guildState.guild, setGuild: guildState.setGuild, voidMatter, setVoidMatter, arenaRank, setArenaRank, glory, setGlory,
         quests, setQuests, runes, setRunes, achievements, setAchievements, starlight, setStarlight, starlightUpgrades, setStarlightUpgrades,
-        autoSellRarity, setAutoSellRarity, theme, setTheme, galaxy: galaxyState.galaxy, setGalaxy: galaxyState.setGalaxy,
+        autoSellRarity, setAutoSellRarity, autoFeedPets, setAutoFeedPets, theme, setTheme, galaxy: galaxyState.galaxy, setGalaxy: galaxyState.setGalaxy,
         monsterKills, setMonsterKills, gameStats, setGameStats, activeExpeditions, setActiveExpeditions, activePotions, setActivePotions,
         buildings, setBuildings, dailyQuests, setDailyQuests, dailyLoginClaimed, setDailyLoginClaimed, lastDailyReset, setLastDailyReset,
         territories: galaxyState.territories, setTerritories: galaxyState.setTerritories, spaceship: galaxyState.spaceship, setSpaceship: galaxyState.setSpaceship,
@@ -3695,7 +3699,7 @@ export const useGame = (
             raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys,
             monsterKills, activeExpeditions, activePotions, ultimateCharge, voidMatter, showCampfire,
             outerSpaceUnlocked, prestigeNodes, townVisited, portalConfig, guildQueue,
-            arenaRank, glory, quests, theme, autoSellRarity, arenaOpponents,
+            arenaRank, glory, quests, theme, autoSellRarity, autoFeedPets, setAutoFeedPets, arenaOpponents,
             starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive,
             fakePlayers, setFakePlayers,
             gvgWarState,
@@ -3855,7 +3859,7 @@ export const useGame = (
                 isWorldBossModalActive
             }),
         };
-    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, voidOvergrowthActive, mechanizedCardsFused, isWorldBossModalActive]);
+    }, [buildings, gold, items, heroes, souls, resources, divinity, activeEvent, starlight, starlightUpgrades, partyPower, artifacts, petsState, guildState, galaxyState, gameStats, activeHeroes, boss.level, lastDailyReset, voidMatter, voidActive, voidTimer, world, worldBossState, dungeonMastery, classMastery, town, marketTrend, teamMorale, heroBonds, monuments, patronDeity, deityLevel, deityFavor, deityEnergy, runes, roguelike.roguelikeRun, roguelike.emberFragments, roguelike.roguelikeUpgrades, roguelike.startPlanetaryRun, roguelike.preparePlanetaryRun, roguelike.clearPlanetaryExpedition, abandonRoguelikeRun, backrooms.backroomsExplorers, backrooms.backroomsOutpost, backrooms.backroomsResources, backrooms.backroomsLogs, backrooms.backroomsFloor, backrooms.backroomsFloorProgress, backrooms.backroomsBossHp, fakePlayers, currentTutorialIndex, globalSynergies, cosmicDust, riftFragments, diceLuckUntil, activeSynergies, finalIndustryInventory, setIndustryState, dungeonFirstTickBuff, isMiningFrenzy, starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive, hasDonatedHighTierIndustry, unpurifiedRelics, unlockedRiftPerks, voidOvergrowthActive, mechanizedCardsFused, isWorldBossModalActive, autoFeedPets]);
 
 
     return result;
