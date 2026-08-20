@@ -85,9 +85,9 @@ export const MACHINES: MachineInfo[] = [
 ];
 
 export const RECIPES: Recipe[] = [
-    { id: 'mine_copper', name: 'Mineração: Cobre', inputs: {}, outputs: { 'copper_ore': 1 }, time: 1, machineType: 'extractor', powerDraw: 10 },
-    { id: 'mine_iron', name: 'Mineração: Ferro', inputs: {}, outputs: { 'iron_ore': 1 }, time: 1, machineType: 'extractor', powerDraw: 10 },
-    { id: 'mine_coal', name: 'Mineração: Carvão', inputs: {}, outputs: { 'coal': 1 }, time: 1, machineType: 'extractor', powerDraw: 10 },
+    { id: 'mine_copper', name: 'Mineração: Cobre', inputs: {}, outputs: { 'copper_ore': 1 }, time: 1, machineType: 'extractor', powerDraw: 0 },
+    { id: 'mine_iron', name: 'Mineração: Ferro', inputs: {}, outputs: { 'iron_ore': 1 }, time: 1, machineType: 'extractor', powerDraw: 0 },
+    { id: 'mine_coal', name: 'Mineração: Carvão', inputs: {}, outputs: { 'coal': 1 }, time: 1, machineType: 'extractor', powerDraw: 0 },
 
     { id: 'smelt_copper', name: 'Fundição: Cobre', inputs: { 'copper_ore': 1 }, outputs: { 'copper_ingot': 1 }, time: 2, machineType: 'smelter', powerDraw: 20 },
     { id: 'smelt_iron', name: 'Fundição: Ferro', inputs: { 'iron_ore': 1 }, outputs: { 'iron_ingot': 1 }, time: 2, machineType: 'smelter', powerDraw: 20 },

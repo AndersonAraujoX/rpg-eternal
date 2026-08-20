@@ -159,7 +159,11 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, i
 
                                                 {currentRecipe && (
                                                     <div className="text-[10px] space-y-1">
-                                                        <div className="text-red-400">Gasto: {currentRecipe.powerDraw * node.count} MW</div>
+                                                        {currentRecipe.powerDraw > 0 ? (
+                                                            <div className="text-red-400">Gasto: {currentRecipe.powerDraw * node.count} MW</div>
+                                                        ) : (
+                                                            <div className="text-emerald-400 font-bold">Gasto: 0 MW (Autônomo)</div>
+                                                        )}
                                                         {Object.keys(currentRecipe.inputs).length > 0 && (
                                                             <div className="text-stone-400 truncate">
                                                                 In: {Object.entries(currentRecipe.inputs).map(([id, am]) => {

@@ -2,7 +2,7 @@ import { expect, test, describe } from 'vitest';
 import { simulateIndustryTick, type MachineNode } from '../../engine/industry';
 
 describe('Industry Production Logic', () => {
-    test('Basic mining fails without power', () => {
+    test('Basic mining runs autonomously without power grid', () => {
         const nodes: MachineNode[] = [
             { id: '1', machineId: 'burner_miner', recipeId: 'mine_copper', count: 1 }
         ];
@@ -11,31 +11,32 @@ describe('Industry Production Logic', () => {
         // 1 tick of 1 second
         const result = simulateIndustryTick(nodes, inventory, 1);
 
-        // No power generator = 0 efficiency.
-        expect(result.powerEfficiency).toBe(0);
-        expect(result.newInventory['copper_ore'] || 0).toBe(0);
+        // Basic miner has 0 power draw and runs autonomously
+        expect(result.powerConsumed).toBe(0);
+        expect(result.powerEfficiency).toBe(1);
+        expect(result.newInventory['copper_ore']).toBe(1);
     });
 
-    test('Production workflow with sufficient power', () => {
+    test('Downstream electric machines require power generated from mined coal', () => {
         const nodes: MachineNode[] = [
-            { id: '1', machineId: 'burner_miner', recipeId: 'mine_copper', count: 1 },
-            { id: '2', machineId: 'steam_engine', recipeId: 'gen_steam', count: 1 }
+            { id: '1', machineId: 'burner_miner', recipeId: 'mine_coal', count: 1 },
+            { id: '2', machineId: 'steam_engine', recipeId: 'gen_steam', count: 1 },
+            { id: '3', machineId: 'stone_furnace', recipeId: 'smelt_copper', count: 1 }
         ];
         const inventory: Record<string, number> = {
-            'coal': 10 // Needed to run the generator
+            'coal': 10,
+            'copper_ore': 5
         };
 
         const result = simulateIndustryTick(nodes, inventory, 1);
 
         expect(result.powerGenerated).toBe(500);
-        expect(result.powerConsumed).toBe(10);
+        expect(result.powerConsumed).toBe(20); // 20MW for stone_furnace, 0MW for burner_miner
         expect(result.powerEfficiency).toBe(1); // 100%
 
-        // Mine copper takes 1s to make 1 ore
-        expect(result.newInventory['copper_ore']).toBe(1);
-
-        // Gen steam takes 10s to burn 1 coal -> 0.1 coal per second
-        expect(result.newInventory['coal']).toBeCloseTo(9.9);
+        // Mine coal makes 1 coal/s
+        // Gen steam consumes 0.1 coal/s -> Net coal = 10 + 1 - 0.1 = 10.9
+        expect(result.newInventory['coal']).toBeCloseTo(10.9);
     });
 
     test('Limited inputs throttle downstream production', () => {
