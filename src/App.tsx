@@ -253,7 +253,7 @@ function App() {
       // Ignore if typing in an input
       if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
 
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' || e.key === 'Esc') {
         setShowShop(false); setShowTavern(false); setShowStars(false); setShowBestiary(false);
         setShowSettings(false); setShowForge(false); setShowInventory(false); setShowTower(false);
         setShowGuild(false); setShowVoid(false); setShowArena(false); setShowQuests(false);

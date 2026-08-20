@@ -42,57 +42,22 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
     const [selectedLevelForExp, setSelectedLevelForExp] = useState<Record<string, string>>({});
     const [activeTab, setActiveTab] = useState<'exploradores' | 'techTree' | 'marcos'>('exploradores');
     const [enableCrt, setEnableCrt] = useState<boolean>(true);
-    const [userZoom, setUserZoom] = useState<number>(() => {
-        try {
-            const saved = localStorage.getItem('backrooms_user_zoom');
-            return saved ? parseFloat(saved) : 1;
-        } catch {
-            return 1;
-        }
-    });
-    const [autoScale, setAutoScale] = useState<number>(1);
-
-    // Dynamic auto-scale based on user viewport size
-    useEffect(() => {
-        const calculateScale = () => {
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
-            const scaleW = (vw - 32) / 1120;
-            const scaleH = (vh - 32) / 800;
-            const s = Math.min(1, Math.min(scaleW, scaleH));
-            setAutoScale(Math.max(0.5, s));
-        };
-        calculateScale();
-        window.addEventListener('resize', calculateScale);
-        return () => window.removeEventListener('resize', calculateScale);
-    }, []);
-
-    // Save user zoom preference
-    useEffect(() => {
-        try {
-            localStorage.setItem('backrooms_user_zoom', userZoom.toString());
-        } catch {
-            // ignore
-        }
-    }, [userZoom]);
 
     // Support ESC key to exit Backrooms
     useEffect(() => {
         if (!isOpen) return;
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                e.stopPropagation();
+            if (e.key === 'Escape' || e.key === 'Esc') {
                 onClose();
             }
         };
-        window.addEventListener('keydown', handleKeyDown, true);
-        return () => window.removeEventListener('keydown', handleKeyDown, true);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
     const transitionBoss = getTransitionBoss(floor);
-    const effectiveScale = Number((autoScale * userZoom).toFixed(2));
 
     return (
         <div 
@@ -101,32 +66,11 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                     onClose();
                 }
             }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-1 sm:p-2 md:p-3 backdrop-blur-md animate-fade-in overflow-hidden"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto"
         >
-            {/* Pinned Screen-Level Emergency Exit Button (Guaranteed visible on ANY screen) */}
-            <button 
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onClose();
-                }}
-                className="fixed top-2 right-2 sm:top-4 sm:right-4 z-[999999] bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs sm:text-sm px-4 py-2 rounded-full shadow-[0_0_30px_rgba(239,68,68,0.9)] border-2 border-white flex items-center gap-2 cursor-pointer active:scale-95 transition-all hover:scale-105 select-none"
-                title="Fechar e Sair das Backrooms (ESC)"
-            >
-                <X size={18} className="stroke-[3] text-white" />
-                <span className="font-mono tracking-wider font-extrabold uppercase drop-shadow">FECHAR [ESC]</span>
-            </button>
-
-            {/* Main Terminal Container - Adaptive to any monitor height & resolution */}
+            {/* Main Terminal Container */}
             <div 
-                style={{
-                    transform: effectiveScale < 1 ? `scale(${effectiveScale})` : undefined,
-                    transformOrigin: 'center center',
-                    maxHeight: effectiveScale < 1 ? `${Math.floor(96 / effectiveScale)}vh` : '94vh',
-                    height: effectiveScale < 1 ? `${Math.floor(94 / effectiveScale)}vh` : '92vh',
-                    width: '100%',
-                    maxWidth: '1150px'
-                }}
-                className="bg-slate-950 border-4 border-amber-600 rounded-xl shadow-[0_0_50px_rgba(217,119,6,0.4)] relative text-amber-500 flex flex-col font-mono overflow-hidden transition-transform duration-150"
+                className="bg-slate-950 border-2 sm:border-4 border-amber-600 rounded-xl shadow-[0_0_50px_rgba(217,119,6,0.35)] relative text-amber-500 flex flex-col font-mono w-full max-w-6xl h-[92vh] max-h-[92vh] my-auto overflow-hidden animate-fade-in"
             >
                 
                 {/* CRT Scanline Effect (Togglable) */}
@@ -135,14 +79,14 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                 )}
 
                 {/* Fixed Top Header Bar */}
-                <div className="bg-gradient-to-r from-amber-950/90 via-stone-900/95 to-amber-950/90 px-3 md:px-4 py-2 border-b-4 border-amber-600 flex flex-wrap justify-between items-center gap-2 shrink-0 z-30 shadow-md">
+                <div className="bg-gradient-to-r from-amber-950/90 via-stone-900/95 to-amber-950/90 px-3 sm:px-4 py-2 sm:py-2.5 border-b-2 sm:border-b-4 border-amber-600 flex flex-wrap justify-between items-center gap-2 shrink-0 z-30 shadow-md">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded bg-amber-950 border border-amber-500 flex items-center justify-center text-base shadow-[0_0_10px_rgba(245,158,11,0.4)]">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded bg-amber-950 border border-amber-500 flex items-center justify-center text-sm sm:text-base shadow-[0_0_10px_rgba(245,158,11,0.4)]">
                             🏢
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-xs md:text-sm font-black uppercase tracking-widest text-amber-300">
+                                <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-300">
                                     Terminal M.E.G. - Posto Avançado
                                 </h2>
                                 <span className="text-[9px] bg-red-950/80 text-red-400 border border-red-800 px-1.5 py-0.2 rounded uppercase font-bold animate-pulse">
@@ -169,44 +113,27 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                             </span>
                         </div>
 
-                        {/* Monitor Zoom Controls */}
-                        <div className="flex items-center bg-black/80 border border-amber-700/80 rounded px-1.5 py-0.5 gap-1 text-[10px] text-amber-300" title="Ajuste de Zoom do Monitor">
-                            <button 
-                                onClick={() => setUserZoom(z => Math.max(0.5, Number((z - 0.1).toFixed(1))))}
-                                className="hover:text-white p-0.5 transition-colors" 
-                                title="Diminuir Zoom"
-                            >
-                                <ZoomOut size={12} />
-                            </button>
-                            <span className="font-mono text-[9px] px-1 font-bold select-none">{Math.round(effectiveScale * 100)}%</span>
-                            <button 
-                                onClick={() => setUserZoom(z => Math.min(1.3, Number((z + 0.1).toFixed(1))))}
-                                className="hover:text-white p-0.5 transition-colors" 
-                                title="Aumentar Zoom"
-                            >
-                                <ZoomIn size={12} />
-                            </button>
-                        </div>
-
                         {/* CRT Effect Toggle Button */}
                         <button 
                             onClick={() => setEnableCrt(prev => !prev)}
-                            className={`p-1 rounded border text-[9px] flex items-center gap-1 transition-all ${
+                            className={`p-1 sm:px-2 sm:py-1 rounded border text-[9px] flex items-center gap-1 transition-all ${
                                 enableCrt ? 'bg-amber-950 text-amber-300 border-amber-600' : 'bg-black/40 text-stone-600 border-stone-800'
                             }`}
                             title="Alternar efeito de monitor CRT"
                         >
                             <Tv size={13} />
+                            <span className="hidden md:inline">CRT</span>
                         </button>
 
                         {/* High Visibility Header Exit Button */}
                         <button 
                             onClick={onClose} 
-                            className="bg-red-950/80 hover:bg-red-900 text-red-200 hover:text-white px-3 py-1.5 rounded-lg border-2 border-red-600 hover:border-red-400 cursor-pointer shadow-md flex items-center gap-1.5 text-xs font-black tracking-wider active:scale-95 uppercase transition-all"
+                            className="bg-red-600 hover:bg-red-500 text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg border-2 border-red-400 hover:border-white cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.5)] flex items-center gap-1.5 text-xs font-black tracking-wider active:scale-95 uppercase transition-all shrink-0"
                             title="Fechar Terminal (ESC)"
                         >
-                            <X size={15} className="text-red-300" />
-                            <span>Sair [ESC]</span>
+                            <X size={16} className="stroke-[3] text-white" />
+                            <span>FECHAR</span>
+                            <span className="text-[9px] bg-red-950/80 px-1 py-0.2 rounded text-red-200 border border-red-800 font-mono">ESC</span>
                         </button>
                     </div>
                 </div>
