@@ -3089,10 +3089,13 @@ export const useGame = (
                         const xpMult = rivalXpMults.get(h.id) ?? finalXpMult;
 
                         const xpGain = Math.floor(currentBoss.level * 10 * xpMult * moraleXpMult);
-                        let newXp = (h.xp || 0) + xpGain;
-                        let newLevel = h.level || 1;
-                        let newMaxXp = h.maxXp || 100;
-                        let currentStatPoints = h.statPoints || 0;
+                        // Use oldHero (current state from prev) to avoid stale closure bug:
+                        // activeHeroesWithBonusStats is a memoized snapshot and combatHero.xp
+                        // could be the frozen initial value, causing XP to never accumulate.
+                        let newXp = (oldHero.xp || 0) + xpGain;
+                        let newLevel = oldHero.level || 1;
+                        let newMaxXp = oldHero.maxXp || 100;
+                        let currentStatPoints = oldHero.statPoints || 0;
 
                         while (newXp >= newMaxXp) {
                             newLevel++;
@@ -3100,7 +3103,7 @@ export const useGame = (
                             newMaxXp = Math.floor(newMaxXp * 1.5);
                             currentStatPoints += 5;
                         }
-                        if (newLevel !== h.level || newXp !== h.xp) {
+                        if (newLevel !== oldHero.level || newXp !== oldHero.xp) {
                             h = { ...h, xp: newXp, level: newLevel, maxXp: newMaxXp, statPoints: currentStatPoints };
                         }
                     }
