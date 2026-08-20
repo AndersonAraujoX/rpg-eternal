@@ -264,7 +264,13 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({ isOpen, onClose, i
                                             {currentRecipe && (
                                                 <div className="bg-black/40 p-2 rounded border border-emerald-900 text-[10px] space-y-1 mb-2">
                                                     <div className="text-green-400">Gera: {Math.abs(currentRecipe.powerDraw) * node.count} MW</div>
-                                                    <div className="text-stone-400 truncate">Consome: {Object.entries(currentRecipe.inputs).map(([id, am]) => `${Math.abs(am * node.count)}/s ${INDUSTRY_ITEMS.find(i => i.id === id)?.emoji}`).join(', ')}</div>
+                                                    <div className="text-stone-400 truncate">
+                                                        Consome: {Object.entries(currentRecipe.inputs).map(([id, am]) => {
+                                                            const ratePerSec = ((am / (currentRecipe.time || 1)) * node.count).toFixed(1);
+                                                            const item = INDUSTRY_ITEMS.find(i => i.id === id);
+                                                            return `${ratePerSec}/s ${item?.emoji || ''}`;
+                                                        }).join(', ')}
+                                                    </div>
                                                 </div>
                                             )}
                                             <button

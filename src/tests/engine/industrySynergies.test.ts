@@ -91,7 +91,7 @@ describe('Industry Global Synergies', () => {
 
         await new Promise(r => setTimeout(r, 10));
 
-        // Sell 50 copper ore. Price base: 10. Monopoly bonus: 1.5. Sell Price = 15. Total gold gained: 750.
+        // Sell 50 copper ore. Price base: 10. Monopoly bonus: 1.5. War Economy: 3.0. Sell Price = 45. Total gold gained: 2250.
         act(() => {
             result.current.sellOre('copper', 50);
         });
@@ -99,9 +99,9 @@ describe('Industry Global Synergies', () => {
         await new Promise(r => setTimeout(r, 10));
 
         expect(result.current.resources.copper).toBe(50);
-        expect(result.current.gold).toBe(750);
+        expect(result.current.gold).toBe(2250);
 
-        // Sell 50 iron ore. Price base: 20. Monopoly bonus: 1.5. Sell Price = 30. Total gold gained: 750 + 1500 = 2250.
+        // Sell 50 iron ore. Price base: 20. Monopoly bonus: 1.5. War Economy: 3.0. Sell Price = 90. Total gold gained: 2250 + 4500 = 6750.
         act(() => {
             result.current.sellOre('iron', 50);
         });
@@ -109,6 +109,6 @@ describe('Industry Global Synergies', () => {
         await new Promise(r => setTimeout(r, 10));
 
         expect(result.current.resources.iron).toBe(0);
-        expect(result.current.gold).toBe(2250);
+        expect(result.current.gold).toBe(6750);
     });
 });
