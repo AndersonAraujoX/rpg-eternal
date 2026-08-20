@@ -117,3 +117,6 @@ out
 # Build artifacts
 # dist/  <-- We kept dist ignored
 # docs/  <-- We want to commit docs, so ensuring it's not here (it wasn't by default usually, but checking)
+
+# Markdown files
+*.md
