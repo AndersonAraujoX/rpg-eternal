@@ -3069,29 +3069,28 @@ export const useGame = (
 
                 const nextHeroes = prev.map(oldHero => {
                     const combatHero = combatHeroMap.get(oldHero.id);
-                    let h = combatHero || oldHero;
-
-                    if (h.isDead) {
-                        const autoReviveSpeed = backrooms.backroomsUnlockedTechs.includes('silicon_network') ? 1.10 : 1.0;
-                        const hpRecover = Math.floor(h.stats.maxHp * 0.10 * autoReviveSpeed);
-                        const nextHp = Math.min(h.stats.maxHp, (h.stats.hp || 0) + hpRecover);
-                        let isDead: boolean = h.isDead;
-                        if (nextHp >= h.stats.maxHp) {
-                            isDead = false;
-                            addLog(`🛡️ Auto-Ressurreição: ${h.name} ressuscitou e está pronto para o combate!`, 'success');
+                    // CRITICAL: Always use oldHero (base truth) as the foundation.
+                    // combatHero is transient / contains item bonuses and stale closure properties.
+                    let h: Hero = {
+                        ...oldHero,
+                        insanity: combatHero?.insanity ?? oldHero.insanity ?? 0,
+                        isMutated: combatHero?.isMutated ?? oldHero.isMutated ?? false,
+                        mutationType: combatHero?.mutationType ?? oldHero.mutationType,
+                        skills: combatHero?.skills ?? oldHero.skills,
+                        isDead: false, // Heroes are immortal
+                        stats: {
+                            ...oldHero.stats,
+                            hp: bossDefeated
+                                ? (oldHero.stats.maxHp || 100) // Full heal on boss victory
+                                : Math.max(1, Math.min(oldHero.stats.maxHp || 100, (combatHero ? (combatHero.stats?.hp ?? oldHero.stats.hp ?? oldHero.stats.maxHp) : (oldHero.stats.hp ?? oldHero.stats.maxHp)) + Math.ceil((oldHero.stats.maxHp || 100) * 0.05))) // 5% passive regen per tick
                         }
-                        h = { ...h, isDead, stats: { ...h.stats, hp: nextHp } };
-                    }
-                    const now = Date.now();
+                    };
 
                     if (bossDefeated && combatHero) {
                         // Rivals bond: +20% XP
                         const xpMult = rivalXpMults.get(h.id) ?? finalXpMult;
 
-                        const xpGain = Math.floor(currentBoss.level * 10 * xpMult * moraleXpMult);
-                        // Use oldHero (current state from prev) to avoid stale closure bug:
-                        // activeHeroesWithBonusStats is a memoized snapshot and combatHero.xp
-                        // could be the frozen initial value, causing XP to never accumulate.
+                        const xpGain = Math.max(1, Math.floor(currentBoss.level * 10 * xpMult * moraleXpMult));
                         let newXp = (oldHero.xp || 0) + xpGain;
                         let newLevel = oldHero.level || 1;
                         let newMaxXp = oldHero.maxXp || 100;
@@ -3103,23 +3102,24 @@ export const useGame = (
                             newMaxXp = Math.floor(newMaxXp * 1.5);
                             currentStatPoints += 5;
                         }
-                        if (newLevel !== oldHero.level || newXp !== oldHero.xp) {
-                            h = { ...h, xp: newXp, level: newLevel, maxXp: newMaxXp, statPoints: currentStatPoints };
-                        }
+                        h.xp = newXp;
+                        h.level = newLevel;
+                        h.maxXp = newMaxXp;
+                        h.statPoints = currentStatPoints;
                     }
 
                     const fatigueDelta = h.assignment === 'combat' ? 0.1 : -1;
-                    const prevFatigue = h.fatigue || 0;
+                    const prevFatigue = oldHero.fatigue || 0;
                     const newFatigue = Math.max(0, Math.min(100, prevFatigue + fatigueDelta));
-
-                    if (newFatigue !== prevFatigue) {
-                        h = { ...h, fatigue: newFatigue };
-                    }
+                    h.fatigue = newFatigue;
 
                     // Auto-evolve if level >= 50 and prestige class is available
                     if (h.level >= 50 && (PRESTIGE_CLASSES as any)[h.class]) {
                         const nextClass = (PRESTIGE_CLASSES as any)[h.class];
-                        h = { ...h, class: nextClass, level: 1, xp: 0, maxXp: 100 };
+                        h.class = nextClass;
+                        h.level = 1;
+                        h.xp = 0;
+                        h.maxXp = 100;
                         addLog(`🚀 Evolução Automática: ${h.name} evoluiu para ${nextClass}!`, 'success');
                     }
 
@@ -3132,7 +3132,19 @@ export const useGame = (
                         h = initOrUpdateHeroPassiveTree(h);
                     }
 
-                    if (h !== oldHero) changed = true;
+                    if (
+                        h.xp !== oldHero.xp ||
+                        h.level !== oldHero.level ||
+                        h.statPoints !== oldHero.statPoints ||
+                        h.insanity !== oldHero.insanity ||
+                        h.isMutated !== oldHero.isMutated ||
+                        h.fatigue !== oldHero.fatigue ||
+                        h.stats.hp !== oldHero.stats.hp ||
+                        h.class !== oldHero.class ||
+                        h.skills !== oldHero.skills
+                    ) {
+                        changed = true;
+                    }
                     return h;
                 });
 

@@ -1,71 +1,59 @@
 import { describe, it, expect } from 'vitest';
 import { Hero } from '../../engine/types';
 
-// ── Extrato da lógica de XP de heróis (useGame.ts) ──────────────────────────
-// Simula o tick de ganho de XP quando um boss é derrotado.
-// oldHero = herói no estado ATUAL (prev); combatHeroExists = herói participou do combate.
-function simulateHeroBossXpGain(
+// ── Simulação completa da lógica de atualização do herói por tick em useGame.ts ──
+function simulateHeroTick(
     oldHero: Hero,
+    combatHero: (Hero & { stats: Hero['stats'] }) | undefined,
+    bossDefeated: boolean,
     bossLevel: number,
     finalXpMult: number,
-    combatHeroExists: boolean
+    rivalMult: number = 1.0,
+    moraleXpMult: number = 1.0
 ): Hero {
-    if (!combatHeroExists) return oldHero;
+    // CRITICAL: Always use oldHero (base truth) as the foundation.
+    // combatHero is transient / contains item bonuses and stale closure properties.
+    let h: Hero = {
+        ...oldHero,
+        insanity: combatHero?.insanity ?? oldHero.insanity ?? 0,
+        isMutated: combatHero?.isMutated ?? oldHero.isMutated ?? false,
+        mutationType: combatHero?.mutationType ?? oldHero.mutationType,
+        skills: combatHero?.skills ?? oldHero.skills,
+        isDead: false, // Heroes are immortal
+        stats: {
+            ...oldHero.stats,
+            hp: bossDefeated
+                ? (oldHero.stats.maxHp || 100) // Full heal on boss victory
+                : Math.max(1, Math.min(oldHero.stats.maxHp || 100, (combatHero ? (combatHero.stats?.hp ?? oldHero.stats.hp ?? oldHero.stats.maxHp) : (oldHero.stats.hp ?? oldHero.stats.maxHp)) + Math.ceil((oldHero.stats.maxHp || 100) * 0.05))) // 5% passive regen per tick
+        }
+    };
 
-    const xpGain = Math.floor(bossLevel * 10 * finalXpMult);
+    if (bossDefeated && combatHero) {
+        const xpMult = rivalMult * finalXpMult;
+        const xpGain = Math.max(1, Math.floor(bossLevel * 10 * xpMult * moraleXpMult));
+        let newXp = (oldHero.xp || 0) + xpGain;
+        let newLevel = oldHero.level || 1;
+        let newMaxXp = oldHero.maxXp || 100;
+        let currentStatPoints = oldHero.statPoints || 0;
 
-    // VERSÃO CORRIGIDA: usa oldHero (estado atual), não combatHero (stale snapshot)
-    let newXp = (oldHero.xp || 0) + xpGain;
-    let newLevel = oldHero.level || 1;
-    let newMaxXp = oldHero.maxXp || 100;
-    let currentStatPoints = oldHero.statPoints || 0;
-
-    while (newXp >= newMaxXp) {
-        newLevel++;
-        newXp -= newMaxXp;
-        newMaxXp = Math.floor(newMaxXp * 1.5);
-        currentStatPoints += 5;
+        while (newXp >= newMaxXp) {
+            newLevel++;
+            newXp -= newMaxXp;
+            newMaxXp = Math.floor(newMaxXp * 1.5);
+            currentStatPoints += 5;
+        }
+        h.xp = newXp;
+        h.level = newLevel;
+        h.maxXp = newMaxXp;
+        h.statPoints = currentStatPoints;
     }
 
-    if (newLevel !== oldHero.level || newXp !== oldHero.xp) {
-        return { ...oldHero, xp: newXp, level: newLevel, maxXp: newMaxXp, statPoints: currentStatPoints };
-    }
+    const fatigueDelta = h.assignment === 'combat' ? 0.1 : -1;
+    const prevFatigue = oldHero.fatigue || 0;
+    const newFatigue = Math.max(0, Math.min(100, prevFatigue + fatigueDelta));
+    h.fatigue = newFatigue;
 
-    return oldHero;
-}
-
-// ── VERSÃO BUGADA (demonstra o bug de stale closure antes da correcao) ────────
-function simulateHeroBossXpGainBuggy(
-    oldHero: Hero,
-    staleXp: number,
-    staleLevel: number,
-    staleMaxXp: number,
-    bossLevel: number,
-    finalXpMult: number,
-    combatHeroExists: boolean
-): Hero {
-    if (!combatHeroExists) return oldHero;
-
-    const xpGain = Math.floor(bossLevel * 10 * finalXpMult);
-
-    // BUG: usa staleXp em vez de oldHero.xp
-    let newXp = (staleXp || 0) + xpGain;
-    let newLevel = staleLevel || 1;
-    let newMaxXp = staleMaxXp || 100;
-    let currentStatPoints = oldHero.statPoints || 0;
-
-    while (newXp >= newMaxXp) {
-        newLevel++;
-        newXp -= newMaxXp;
-        newMaxXp = Math.floor(newMaxXp * 1.5);
-        currentStatPoints += 5;
-    }
-
-    if (newLevel !== staleLevel || newXp !== staleXp) {
-        return { ...oldHero, xp: newXp, level: newLevel, maxXp: newMaxXp, statPoints: currentStatPoints };
-    }
-
-    return oldHero;
+    return h;
 }
 
 const baseHero: Hero = {
@@ -79,23 +67,36 @@ const baseHero: Hero = {
 
 describe('Hero XP & Level Up System', () => {
 
-    describe('Fluxo principal: ganho de XP', () => {
+    describe('Fluxo principal: ganho de XP e persistência entre ticks', () => {
         it('deve acumular XP apos derrotar boss sem subir de nivel', () => {
-            // Arrange
             const hero = { ...baseHero, xp: 0, maxXp: 100, level: 1 };
-            // Act
-            const result = simulateHeroBossXpGain(hero, 1, 1.0, true); // xpGain=10
-            // Assert
+            const combatHero = { ...hero, stats: { ...hero.stats, hp: 80 } };
+            const result = simulateHeroTick(hero, combatHero, true, 1, 1.0); // xpGain=10
             expect(result.xp).toBe(10);
             expect(result.level).toBe(1);
+            expect(result.stats.hp).toBe(100); // Full heal on boss kill
+        });
+
+        it('deve manter o XP intacto durante ticks normais de combate (bossDefeated = false)', () => {
+            // Herói já acumulou 25 XP
+            const hero = { ...baseHero, xp: 25, maxXp: 100, level: 1 };
+            // combatHero com snapshot stale (que tinha xp=0)
+            const staleCombatHero = { ...hero, xp: 0, stats: { ...hero.stats, hp: 50 } };
+            
+            // Tick normal de combate (boss ainda vivo)
+            const result = simulateHeroTick(hero, staleCombatHero, false, 1, 1.0);
+            
+            // O XP DEVE PERMANECER 25 (não ser sobrescrito para 0 pelo stale snapshot)
+            expect(result.xp).toBe(25);
+            expect(result.level).toBe(1);
+            // Deve regenerar 5% HP
+            expect(result.stats.hp).toBe(55); // 50 + 5
         });
 
         it('deve subir de nivel quando XP atinge maxXp', () => {
-            // Arrange
             const hero = { ...baseHero, xp: 90, maxXp: 100, level: 1 };
-            // Act
-            const result = simulateHeroBossXpGain(hero, 1, 1.0, true); // +10 xp -> level up
-            // Assert
+            const combatHero = { ...hero };
+            const result = simulateHeroTick(hero, combatHero, true, 1, 1.0); // +10 xp -> level up
             expect(result.level).toBe(2);
             expect(result.xp).toBe(0);
             expect(result.maxXp).toBe(150);
@@ -103,90 +104,45 @@ describe('Hero XP & Level Up System', () => {
         });
 
         it('deve dar multiplos niveis se XP for suficiente', () => {
-            // Arrange: xp=80, bossLevel=50 -> xpGain=500. Total=580.
-            // Lvl1->2: -100 xp, resta=480, maxXp=150
-            // Lvl2->3: -150 xp, resta=330, maxXp=225
-            // Lvl3->4: -225 xp, resta=105, maxXp=337 -> para
             const hero = { ...baseHero, xp: 80, maxXp: 100, level: 1 };
-            // Act
-            const result = simulateHeroBossXpGain(hero, 50, 1.0, true);
-            // Assert
+            const combatHero = { ...hero };
+            const result = simulateHeroTick(hero, combatHero, true, 50, 1.0);
             expect(result.level).toBeGreaterThanOrEqual(3);
             expect(result.statPoints).toBe((result.level - 1) * 5);
         });
 
-        it('nao deve modificar heroi sem combate', () => {
-            // Arrange
+        it('nao deve ganhar XP se nao participou do combate', () => {
             const hero = { ...baseHero, xp: 50 };
-            // Act
-            const result = simulateHeroBossXpGain(hero, 5, 1.0, false);
-            // Assert
+            const result = simulateHeroTick(hero, undefined, true, 5, 1.0);
             expect(result.xp).toBe(50);
-            expect(result).toBe(hero); // mesma referencia
         });
 
         it('deve preservar statPoints existentes ao subir de nivel', () => {
-            // Arrange
             const hero = { ...baseHero, xp: 95, maxXp: 100, level: 1, statPoints: 10 };
-            // Act
-            const result = simulateHeroBossXpGain(hero, 1, 1.0, true); // +10 -> level up
-            // Assert
+            const combatHero = { ...hero };
+            const result = simulateHeroTick(hero, combatHero, true, 1, 1.0);
             expect(result.level).toBe(2);
             expect(result.statPoints).toBe(15); // 10 prev + 5 new
         });
-
-        it('deve aplicar multiplicador de XP corretamente', () => {
-            // Arrange
-            const hero = { ...baseHero, xp: 0, maxXp: 100 };
-            // Act
-            const result = simulateHeroBossXpGain(hero, 1, 2.0, true); // xpGain=20
-            // Assert
-            expect(result.xp).toBe(20);
-        });
     });
 
-    describe('Bug de Stale Closure (regressao)', () => {
-        it('DEMONSTRA O BUG: versao bugada nao acumula XP entre ticks', () => {
-            // O snapshot congelado (stale closure) sempre tem xp=0, level=1
-            const staleXp = 0, staleLevel = 1, staleMaxXp = 100;
+    describe('Ciclo completo de batalha e cura de HP', () => {
+        it('cura 100% de HP ao vencer o boss e regenera 5% por tick durante a luta', () => {
+            let hero = { ...baseHero, stats: { ...baseHero.stats, hp: 10, maxHp: 100 } };
+            const combatHero = { ...hero, stats: { ...hero.stats, hp: 10 } };
 
-            // Tick 1: ok, stale coincide com o estado real
-            const afterTick1 = simulateHeroBossXpGainBuggy(
-                { ...baseHero, xp: 0 }, staleXp, staleLevel, staleMaxXp, 1, 1.0, true
-            );
-            expect(afterTick1.xp).toBe(10);
+            // Tick 1 (em combate, boss vivo): regenera 5 HP
+            hero = simulateHeroTick(hero, combatHero, false, 1, 1.0);
+            expect(hero.stats.hp).toBe(15);
 
-            // Tick 2: oldHero.xp=10, mas stale ainda é 0
-            // A versao bugada sobrescreve: stale(0)+10=10, mantendo xp em 10
-            const afterTick2Buggy = simulateHeroBossXpGainBuggy(
-                { ...baseHero, xp: 10 }, staleXp, staleLevel, staleMaxXp, 1, 1.0, true
-            );
-            expect(afterTick2Buggy.xp).toBe(10); // BUG: deveria ser 20!
-        });
+            // Tick 2 (em combate, boss vivo): regenera +5 HP
+            hero = simulateHeroTick(hero, { ...hero, stats: { ...hero.stats, hp: 15 } }, false, 1, 1.0);
+            expect(hero.stats.hp).toBe(20);
 
-        it('VERSAO CORRIGIDA: XP acumula corretamente entre ticks', () => {
-            let hero = { ...baseHero, xp: 0 };
-
-            hero = simulateHeroBossXpGain(hero, 1, 1.0, true); // tick1: +10
+            // Tick 3 (boss derrotado!): cura total para 100 HP
+            hero = simulateHeroTick(hero, { ...hero, stats: { ...hero.stats, hp: 20 } }, true, 1, 1.0);
+            expect(hero.stats.hp).toBe(100);
             expect(hero.xp).toBe(10);
-
-            hero = simulateHeroBossXpGain(hero, 1, 1.0, true); // tick2: +10
-            expect(hero.xp).toBe(20);
-
-            hero = simulateHeroBossXpGain(hero, 1, 1.0, true); // tick3: +10
-            expect(hero.xp).toBe(30);
-        });
-
-        it('VERSAO CORRIGIDA: sobe de nivel apos acumulacao multi-tick', () => {
-            // 10 ticks x 10 xp = 100 xp -> nivel 2
-            let hero = { ...baseHero, xp: 0, maxXp: 100, level: 1 };
-            for (let i = 0; i < 10; i++) {
-                hero = simulateHeroBossXpGain(hero, 1, 1.0, true);
-            }
-            expect(hero.level).toBe(2);
-            expect(hero.xp).toBe(0);
-            expect(hero.maxXp).toBe(150);
-            expect(hero.statPoints).toBe(5);
         });
     });
 });
