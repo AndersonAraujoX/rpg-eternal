@@ -43,7 +43,8 @@ export const MILESTONES: Milestone[] = [
 ];
 
 // Helper mapping to determine the path priority for each class
-export const getClassPriority = (classType: string): 'defensive' | 'offensive' | 'utility' => {
+export const getClassPriority = (classType?: string): 'defensive' | 'offensive' | 'utility' => {
+    if (!classType || typeof classType !== 'string') return 'utility';
     const cls = classType.toLowerCase();
 
     // 1. Defensive Priority (Warriors, Paladins, Monks, etc.)
@@ -99,9 +100,9 @@ const OFFENSIVE_CYCLE = ['offensive', 'defensive', 'offensive', 'offensive', 'de
 const DEFENSIVE_CYCLE = ['defensive', 'offensive', 'defensive', 'defensive', 'offensive', 'defensive', 'utility', 'defensive', 'offensive', 'defensive'];
 const UTILITY_CYCLE = ['utility', 'offensive', 'utility', 'defensive', 'utility', 'utility', 'offensive', 'utility', 'defensive', 'utility'];
 
-export const getPointsAllocation = (classType: string, level: number) => {
+export const getPointsAllocation = (classType?: string, level: number = 1) => {
     // 1 point per level gained (level 1 = 0 points, level 100 = 99 points)
-    const totalPoints = Math.min(99, Math.max(0, level - 1));
+    const totalPoints = Math.min(99, Math.max(0, (level || 1) - 1));
     const priority = getClassPriority(classType);
 
     const cycle = priority === 'offensive' ? OFFENSIVE_CYCLE : priority === 'defensive' ? DEFENSIVE_CYCLE : UTILITY_CYCLE;
@@ -120,7 +121,7 @@ export const getPointsAllocation = (classType: string, level: number) => {
     return { offensivePoints, defensivePoints, utilityPoints, pointsSpent: totalPoints };
 };
 
-export const calculatePassiveModifiers = (classType: string, level: number): PassiveSkillModifiers => {
+export const calculatePassiveModifiers = (classType?: string, level: number = 1): PassiveSkillModifiers => {
     const { offensivePoints, defensivePoints, utilityPoints } = getPointsAllocation(classType, level);
 
     // Initial base multipliers
@@ -197,9 +198,11 @@ export const calculatePassiveModifiers = (classType: string, level: number): Pas
 };
 
 export const initOrUpdateHeroPassiveTree = (hero: Hero): Hero => {
+    if (!hero) return hero;
+    const heroClass = hero.class || (hero as any).classType || 'warrior';
     const lvl = hero.level || 1;
-    const { offensivePoints, defensivePoints, utilityPoints, pointsSpent } = getPointsAllocation(hero.class, lvl);
-    const modifiers = calculatePassiveModifiers(hero.class, lvl);
+    const { offensivePoints, defensivePoints, utilityPoints, pointsSpent } = getPointsAllocation(heroClass, lvl);
+    const modifiers = calculatePassiveModifiers(heroClass, lvl);
 
     const unlockedMilestones = MILESTONES.filter(m => lvl >= m.level).map(m => m.level);
 
@@ -215,6 +218,7 @@ export const initOrUpdateHeroPassiveTree = (hero: Hero): Hero => {
 
     return updateHeroSkills({
         ...hero,
+        class: heroClass,
         passiveSkillTree
     });
 };

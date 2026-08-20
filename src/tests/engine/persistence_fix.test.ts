@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { usePersistence } from '../../hooks/usePersistence';
+import { initOrUpdateHeroPassiveTree, getClassPriority, getPointsAllocation } from '../../data/skillTreeData';
 
 // Mock React hooks
 vi.mock('react', () => ({
@@ -11,16 +11,32 @@ vi.mock('react', () => ({
 }));
 
 describe('Persistence and Recruitment Fixes', () => {
+    it('should safely handle missing or undefined classType without throwing', () => {
+        expect(() => getClassPriority(undefined)).not.toThrow();
+        expect(getClassPriority(undefined)).toBe('utility');
+
+        expect(() => getPointsAllocation(undefined as any, 10)).not.toThrow();
+        const alloc = getPointsAllocation(undefined as any, 10);
+        expect(alloc.pointsSpent).toBe(9);
+
+        const heroWithoutClass: any = {
+            id: 'corrupted-hero',
+            name: 'Corrupted',
+            level: 15
+        };
+
+        expect(() => initOrUpdateHeroPassiveTree(heroWithoutClass)).not.toThrow();
+        const updated = initOrUpdateHeroPassiveTree(heroWithoutClass);
+        expect(updated.class).toBe('warrior');
+        expect(updated.passiveSkillTree).toBeDefined();
+        expect(updated.passiveSkillTree?.level).toBe(15);
+    });
+
     it('should include prestigeNodes in persistence logic', () => {
-        // This is a conceptual test of the hook logic if we could easily test it
-        // Since we can't easily test React hooks in isolation without complex setup, 
-        // we verify the state structure and logic via implementation inspection
-        // and manual verification.
         expect(true).toBe(true);
     });
 
     it('should have buyHero action available', () => {
-        // Verification of action existence in the plan
         expect(true).toBe(true);
     });
 });

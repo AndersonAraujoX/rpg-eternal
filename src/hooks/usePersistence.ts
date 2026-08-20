@@ -351,15 +351,16 @@ export const usePersistence = (props: PersistenceProps) => {
                 }
 
                 // Merge loaded heroes with new props (element, assignment)
-                const savedHeroes = state.heroes || [];
+                const savedHeroes = Array.isArray(state.heroes) ? state.heroes : [];
 
                 // 1. Merge Static Heroes (preserve unlocked status, level, etc. from save, but ensure all INITIAL_HEROES exist)
                 const staticHeroes = INITIAL_HEROES.map((initH) => {
-                    const savedH = savedHeroes.find((h: Hero) => h.id === initH.id);
+                    const savedH = savedHeroes.find((h: any) => h && h.id === initH.id);
                     if (savedH) {
                         return {
                             ...initH, // Get latest static data (stats, skills)
                             ...savedH, // Overwrite with saved progress (level, unlocked, equipment)
+                            class: savedH.class || (savedH as any).classType || initH.class || 'warrior',
                             element: savedH.element || initH.element,
                             assignment: savedH.assignment || 'none',
                             insanity: savedH.insanity ?? initH.insanity ?? 0,
@@ -377,9 +378,16 @@ export const usePersistence = (props: PersistenceProps) => {
 
                 // 2. Preserve Dynamic Heroes (Miners) - those not in INITIAL_HEROES
                 const dynamicHeroes = savedHeroes
-                    .filter((h: Hero) => !INITIAL_HEROES.some(initH => initH.id === h.id))
-                    .map((savedH: Partial<Hero> & { id: string }) => ({
+                    .filter((h: any) => h && typeof h === 'object' && h.id && !INITIAL_HEROES.some(initH => initH.id === h.id))
+                    .map((savedH: any) => ({
                         ...savedH,
+                        class: savedH.class || savedH.classType || 'miner',
+                        name: savedH.name || 'Minerador',
+                        emoji: savedH.emoji || '⛏️',
+                        level: savedH.level || 1,
+                        stats: savedH.stats || { maxHp: 100, attack: 10, defense: 5, magic: 0, speed: 10 },
+                        skills: savedH.skills || [],
+                        equipment: savedH.equipment || { weapon: null, armor: null, accessory: null },
                         insanity: savedH.insanity ?? 0,
                         fatigue: savedH.fatigue ?? 0,
                         isAwakened: savedH.isAwakened ?? false,
@@ -388,7 +396,9 @@ export const usePersistence = (props: PersistenceProps) => {
                         curses: savedH.curses || []
                     }));
 
-                const updatedHeroes = [...staticHeroes, ...dynamicHeroes].map(h => initOrUpdateHeroPassiveTree(h));
+                const updatedHeroes = [...staticHeroes, ...dynamicHeroes]
+                    .filter(Boolean)
+                    .map(h => initOrUpdateHeroPassiveTree(h));
 
 
                 setHeroes(updatedHeroes);
