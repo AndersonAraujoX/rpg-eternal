@@ -43,24 +43,36 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
     const [activeTab, setActiveTab] = useState<'exploradores' | 'techTree' | 'marcos'>('exploradores');
     const [enableCrt, setEnableCrt] = useState<boolean>(true);
 
+    // Support ESC key to exit Backrooms
+    React.useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     const transitionBoss = getTransitionBoss(floor);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-2 md:p-4 overflow-auto backdrop-blur-sm animate-fade-in">
-            {/* Main Terminal Container */}
-            <div className="bg-slate-950 border-4 border-amber-600 rounded-xl w-full max-w-5xl shadow-[0_0_40px_rgba(217,119,6,0.35)] relative text-amber-500 flex flex-col font-mono overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-1 sm:p-2 md:p-3 backdrop-blur-md animate-fade-in overflow-hidden">
+            {/* Main Terminal Container - Adaptive to any monitor height */}
+            <div className="bg-slate-950 border-4 border-amber-600 rounded-xl w-full max-w-6xl h-[96vh] max-h-[96vh] shadow-[0_0_50px_rgba(217,119,6,0.4)] relative text-amber-500 flex flex-col font-mono overflow-hidden">
                 
                 {/* CRT Scanline Effect (Togglable) */}
                 {enableCrt && (
                     <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.22)_50%),linear-gradient(90deg,rgba(255,0,0,0.04),rgba(0,255,0,0.02),rgba(0,0,255,0.04))] bg-[size:100%_4px,6px_100%] opacity-40 z-50" />
                 )}
 
-                {/* Top Header Bar */}
-                <div className="bg-gradient-to-r from-amber-950/80 via-stone-900/90 to-amber-950/80 px-4 py-3 border-b-4 border-amber-600 flex flex-wrap justify-between items-center gap-2 z-10">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-amber-950 border border-amber-500 flex items-center justify-center text-lg shadow-[0_0_10px_rgba(245,158,11,0.4)]">
+                {/* Fixed Top Header Bar */}
+                <div className="bg-gradient-to-r from-amber-950/90 via-stone-900/95 to-amber-950/90 px-3 md:px-4 py-2 border-b-4 border-amber-600 flex flex-wrap justify-between items-center gap-2 shrink-0 z-30 shadow-md">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded bg-amber-950 border border-amber-500 flex items-center justify-center text-base shadow-[0_0_10px_rgba(245,158,11,0.4)]">
                             🏢
                         </div>
                         <div>
@@ -72,22 +84,22 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                                     Classificado
                                 </span>
                             </div>
-                            <span className="text-[9px] text-amber-600 font-bold">
+                            <span className="text-[9px] text-amber-600 font-bold hidden sm:inline">
                                 Major Explorer Group • Matriz de Operações Liminares
                             </span>
                         </div>
                     </div>
 
                     {/* Resources & Action Header Controls */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         <div className="flex gap-1.5 text-xs font-bold">
-                            <span className="bg-black/70 px-2.5 py-1 rounded border border-amber-600 text-amber-400 flex items-center gap-1 shadow-sm" title="Sucata Metálica">
+                            <span className="bg-black/80 px-2 py-0.5 rounded border border-amber-600 text-amber-400 flex items-center gap-1 text-[11px]" title="Sucata Metálica">
                                 🔧 <span className="text-white font-black">{resources.scrap}</span>
                             </span>
-                            <span className="bg-black/70 px-2.5 py-1 rounded border border-emerald-600 text-emerald-400 flex items-center gap-1 shadow-sm" title="Água de Amêndoa">
+                            <span className="bg-black/80 px-2 py-0.5 rounded border border-emerald-600 text-emerald-400 flex items-center gap-1 text-[11px]" title="Água de Amêndoa">
                                 🧴 <span className="text-white font-black">{resources.almondWater}</span>
                             </span>
-                            <span className="bg-black/70 px-2.5 py-1 rounded border border-purple-600 text-purple-400 flex items-center gap-1 shadow-sm" title="Peças de Anomalia">
+                            <span className="bg-black/80 px-2 py-0.5 rounded border border-purple-600 text-purple-400 flex items-center gap-1 text-[11px]" title="Peças de Anomalia">
                                 🦠 <span className="text-white font-black">{resources.anomalyParts}</span>
                             </span>
                         </div>
@@ -103,86 +115,94 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                             <Tv size={13} />
                         </button>
 
+                        {/* High Visibility Exit Button */}
                         <button 
                             onClick={onClose} 
-                            className="text-amber-500 hover:text-amber-200 transition-colors bg-black/60 p-1.5 rounded border border-amber-600 hover:border-amber-400 cursor-pointer shadow-sm"
-                            title="Fechar Terminal"
+                            className="bg-red-950/80 hover:bg-red-900 text-red-200 hover:text-white px-3 py-1.5 rounded-lg border-2 border-red-600 hover:border-red-400 cursor-pointer shadow-md flex items-center gap-1.5 text-xs font-black tracking-wider active:scale-95 uppercase transition-all"
+                            title="Fechar Terminal (ESC)"
                         >
-                            <X size={16} />
+                            <X size={15} className="text-red-300" />
+                            <span>Sair [ESC]</span>
                         </button>
                     </div>
                 </div>
 
-                {/* Terminal Navigation Tabs */}
-                <div className="bg-black/90 px-4 py-2 border-b border-amber-800 flex flex-wrap gap-2 text-[10px] md:text-xs font-bold z-10">
-                    <button
-                        onClick={() => setActiveTab('exploradores')}
-                        className={`px-3 py-1.5 rounded-t border-t-2 border-x-2 transition-all flex items-center gap-1.5 ${
-                            activeTab === 'exploradores'
-                                ? 'bg-amber-600 text-black border-amber-300 font-black shadow-md'
-                                : 'bg-transparent text-amber-600 border-amber-950 hover:border-amber-800'
-                        }`}
-                    >
-                        <Radio size={13} /> [01] MONITOR DE ESQUADRÃO ({explorers.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('techTree')}
-                        className={`px-3 py-1.5 rounded-t border-t-2 border-x-2 transition-all flex items-center gap-1.5 ${
-                            activeTab === 'techTree'
-                                ? 'bg-amber-600 text-black border-amber-300 font-black shadow-md'
-                                : 'bg-transparent text-amber-600 border-amber-950 hover:border-amber-800'
-                        }`}
-                    >
-                        <Zap size={13} /> [02] ÁRVORE TECNOLÓGICA (M.E.G. TECH TREE)
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('marcos')}
-                        className={`px-3 py-1.5 rounded-t border-t-2 border-x-2 transition-all flex items-center gap-1.5 ${
-                            activeTab === 'marcos'
-                                ? 'bg-amber-600 text-black border-amber-300 font-black shadow-md'
-                                : 'bg-transparent text-amber-600 border-amber-950 hover:border-amber-800'
-                        }`}
-                    >
-                        <Award size={13} /> [03] MARCOS & SINERGIAS GLOBAIS
-                    </button>
-                </div>
-
-                {/* Status Bar: Depth & Exploration Progress */}
-                <div className="bg-amber-950/20 px-4 py-2 border-b border-amber-850 flex flex-col sm:flex-row sm:items-center justify-between gap-3 z-10 text-[10px] md:text-xs font-mono">
-                    <div className="flex items-center gap-2">
-                        <span className="text-amber-400 font-bold uppercase">Profundidade:</span>
-                        <span className="bg-amber-950/80 px-2.5 py-0.5 rounded border border-amber-700 text-amber-300 font-black tracking-wider">
-                            Andar {floor}/100
-                        </span>
+                {/* Fixed Terminal Navigation Tabs */}
+                <div className="bg-black/95 px-3 md:px-4 py-1.5 border-b border-amber-800 flex flex-wrap justify-between items-center gap-2 text-[10px] md:text-xs font-bold shrink-0 z-20">
+                    <div className="flex flex-wrap gap-1.5 md:gap-2">
+                        <button
+                            onClick={() => setActiveTab('exploradores')}
+                            className={`px-3 py-1 rounded-t border-t-2 border-x-2 transition-all flex items-center gap-1.5 ${
+                                activeTab === 'exploradores'
+                                    ? 'bg-amber-600 text-black border-amber-300 font-black shadow-md'
+                                    : 'bg-transparent text-amber-600 border-amber-950 hover:border-amber-800'
+                            }`}
+                        >
+                            <Radio size={13} /> [01] MONITOR DE ESQUADRÃO ({explorers.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('techTree')}
+                            className={`px-3 py-1 rounded-t border-t-2 border-x-2 transition-all flex items-center gap-1.5 ${
+                                activeTab === 'techTree'
+                                    ? 'bg-amber-600 text-black border-amber-300 font-black shadow-md'
+                                    : 'bg-transparent text-amber-600 border-amber-950 hover:border-amber-800'
+                            }`}
+                        >
+                            <Zap size={13} /> [02] ÁRVORE TECNOLÓGICA (M.E.G. TECH TREE)
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('marcos')}
+                            className={`px-3 py-1 rounded-t border-t-2 border-x-2 transition-all flex items-center gap-1.5 ${
+                                activeTab === 'marcos'
+                                    ? 'bg-amber-600 text-black border-amber-300 font-black shadow-md'
+                                    : 'bg-transparent text-amber-600 border-amber-950 hover:border-amber-800'
+                            }`}
+                        >
+                            <Award size={13} /> [03] MARCOS & SINERGIAS GLOBAIS
+                        </button>
                     </div>
 
-                    <div className="flex-1 max-w-md flex items-center gap-2">
-                        <span className="text-[10px] text-amber-500 uppercase font-bold">Mapeamento:</span>
-                        <div className="flex-1 bg-black/80 h-3.5 border border-amber-800 rounded-full overflow-hidden relative p-0.5">
-                            <div 
-                                className="bg-gradient-to-r from-amber-600 to-amber-400 h-full rounded-full transition-all duration-300"
-                                style={{ width: `${Math.min(100, floorProgress)}%` }}
-                            />
-                            <span className="absolute inset-0 flex items-center justify-center text-[9px] text-amber-100 font-black drop-shadow">
-                                {floorProgress.toFixed(1)}%
+                    {/* Status: Depth & Exploration Progress */}
+                    <div className="flex items-center gap-3 text-[10px] md:text-xs">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-amber-400 font-bold uppercase">Profundidade:</span>
+                            <span className="bg-amber-950/80 px-2 py-0.5 rounded border border-amber-700 text-amber-300 font-black tracking-wider text-[11px]">
+                                Andar {floor}/100
                             </span>
                         </div>
-                    </div>
-                    
-                    {/* Environmental Hazards */}
-                    <div className="flex items-center gap-2 text-[10px]">
-                        {floor >= 31 && floor <= 75 && (
-                            <span className="text-red-400 animate-pulse font-bold bg-red-950/40 px-2 py-0.5 border border-red-800 rounded flex items-center gap-1">
-                                <AlertTriangle size={12} /> PERIGO: AR TÓXICO (Traje Nv. 2)
-                            </span>
-                        )}
-                        {floor >= 76 && (
-                            <span className="text-red-400 animate-pulse font-bold bg-red-950/40 px-2 py-0.5 border border-red-800 rounded flex items-center gap-1">
-                                <AlertTriangle size={12} /> CRÍTICO: VÁCUO (Traje Nv. 3)
-                            </span>
-                        )}
+
+                        <div className="w-32 md:w-44 flex items-center gap-1.5">
+                            <div className="flex-1 bg-black/80 h-3 border border-amber-800 rounded-full overflow-hidden relative p-0.5">
+                                <div 
+                                    className="bg-gradient-to-r from-amber-600 to-amber-400 h-full rounded-full transition-all duration-300"
+                                    style={{ width: `${Math.min(100, floorProgress)}%` }}
+                                />
+                                <span className="absolute inset-0 flex items-center justify-center text-[8px] text-amber-100 font-black drop-shadow">
+                                    {floorProgress.toFixed(1)}%
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {/* Scrollable Body Container - Fits inside monitor height */}
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scroll bg-black flex flex-col z-10">
+                    
+                    {/* Environmental Hazards */}
+                    {(floor >= 31) && (
+                        <div className="bg-red-950/20 px-4 py-1 border-b border-red-900/50 flex items-center gap-2 text-[10px]">
+                            {floor >= 31 && floor <= 75 && (
+                                <span className="text-red-400 animate-pulse font-bold bg-red-950/40 px-2 py-0.5 border border-red-800 rounded flex items-center gap-1">
+                                    <AlertTriangle size={12} /> PERIGO: AR TÓXICO (Traje Nv. 2)
+                                </span>
+                            )}
+                            {floor >= 76 && (
+                                <span className="text-red-400 animate-pulse font-bold bg-red-950/40 px-2 py-0.5 border border-red-800 rounded flex items-center gap-1">
+                                    <AlertTriangle size={12} /> CRÍTICO: VÁCUO (Traje Nv. 3)
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                 {/* Boss Battle Conflict Banner */}
                 {bossHp !== null && transitionBoss && (
@@ -223,7 +243,7 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
 
                 {/* Tab 1: Monitor de Esquadrão & Base */}
                 {activeTab === 'exploradores' && (
-                    <div className="p-4 flex flex-col md:flex-row gap-4 overflow-y-auto max-h-[75vh] z-10 bg-black animate-fade-in custom-scroll">
+                    <div className="p-3 md:p-4 flex flex-col lg:flex-row gap-4 animate-fade-in">
                         
                         {/* Column 1: Explorers & Outpost Upgrades */}
                         <div className="flex-1 flex flex-col gap-4">
@@ -544,7 +564,7 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
 
                 {/* Tab 2: Backrooms Tech Tree */}
                 {activeTab === 'techTree' && (
-                    <div className="p-4 overflow-y-auto max-h-[80vh] z-10 bg-black animate-fade-in custom-scroll">
+                    <div className="p-3 md:p-4 animate-fade-in">
                         <BackroomsTechTree
                             floor={floor}
                             resources={resources}
@@ -556,13 +576,35 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
 
                 {/* Tab 3: Marcos & Sinergias Globais */}
                 {activeTab === 'marcos' && (
-                    <div className="p-4 overflow-y-auto max-h-[80vh] z-10 bg-black animate-fade-in custom-scroll">
+                    <div className="p-3 md:p-4 animate-fade-in">
                         <BackroomsMilestones
                             floor={floor}
                             isUnlocked={true}
                         />
                     </div>
                 )}
+                </div>
+
+                {/* Fixed Bottom Status & Emergency Exit Footer */}
+                <div className="bg-stone-950/95 px-4 py-2 border-t-2 border-amber-800/80 flex flex-wrap justify-between items-center gap-2 text-[10px] text-amber-500 font-mono shrink-0 z-30 shadow-lg">
+                    <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                            <Activity size={12} className="animate-pulse" /> SISTEMA OPERACIONAL M.E.G. ONLINE
+                        </span>
+                        <span className="text-stone-600 hidden sm:inline">•</span>
+                        <span className="text-amber-600 hidden sm:inline">
+                            Atalho: Pressione <kbd className="bg-black border border-amber-700 px-1 py-0.2 rounded text-[9px] text-amber-300 font-bold">ESC</kbd> para fechar a qualquer momento
+                        </span>
+                    </div>
+
+                    <button
+                        onClick={onClose}
+                        className="bg-red-950/90 hover:bg-red-900 text-red-200 hover:text-white border-2 border-red-600 hover:border-red-400 px-3 py-1 rounded-md text-[11px] font-black uppercase flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer ml-auto"
+                        title="Sair das Backrooms (ESC)"
+                    >
+                        <X size={14} className="text-red-400" /> Sair das Backrooms [ESC]
+                    </button>
+                </div>
             </div>
         </div>
     );
