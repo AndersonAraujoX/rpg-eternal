@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     X, Heart, Shield, RefreshCw, HardHat, Eye, Wrench, Thermometer, UserPlus, Compass,
     Zap, Award, Activity, Radio, AlertTriangle, Skull, CheckCircle2, ChevronRight,
-    Sparkles, Flame, BatteryCharging, Tv
+    Sparkles, Flame, BatteryCharging, Tv, ZoomIn, ZoomOut, Maximize2
 } from 'lucide-react';
 import type { 
     BackroomsExplorer, BackroomsOutpost, BackroomsResources 
@@ -42,27 +42,92 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
     const [selectedLevelForExp, setSelectedLevelForExp] = useState<Record<string, string>>({});
     const [activeTab, setActiveTab] = useState<'exploradores' | 'techTree' | 'marcos'>('exploradores');
     const [enableCrt, setEnableCrt] = useState<boolean>(true);
+    const [userZoom, setUserZoom] = useState<number>(() => {
+        try {
+            const saved = localStorage.getItem('backrooms_user_zoom');
+            return saved ? parseFloat(saved) : 1;
+        } catch {
+            return 1;
+        }
+    });
+    const [autoScale, setAutoScale] = useState<number>(1);
+
+    // Dynamic auto-scale based on user viewport size
+    useEffect(() => {
+        const calculateScale = () => {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const scaleW = (vw - 32) / 1120;
+            const scaleH = (vh - 32) / 800;
+            const s = Math.min(1, Math.min(scaleW, scaleH));
+            setAutoScale(Math.max(0.5, s));
+        };
+        calculateScale();
+        window.addEventListener('resize', calculateScale);
+        return () => window.removeEventListener('resize', calculateScale);
+    }, []);
+
+    // Save user zoom preference
+    useEffect(() => {
+        try {
+            localStorage.setItem('backrooms_user_zoom', userZoom.toString());
+        } catch {
+            // ignore
+        }
+    }, [userZoom]);
 
     // Support ESC key to exit Backrooms
-    React.useEffect(() => {
+    useEffect(() => {
         if (!isOpen) return;
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
+                e.stopPropagation();
                 onClose();
             }
         };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keydown', handleKeyDown, true);
+        return () => window.removeEventListener('keydown', handleKeyDown, true);
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
     const transitionBoss = getTransitionBoss(floor);
+    const effectiveScale = Number((autoScale * userZoom).toFixed(2));
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-1 sm:p-2 md:p-3 backdrop-blur-md animate-fade-in overflow-hidden">
-            {/* Main Terminal Container - Adaptive to any monitor height */}
-            <div className="bg-slate-950 border-4 border-amber-600 rounded-xl w-full max-w-6xl h-[96vh] max-h-[96vh] shadow-[0_0_50px_rgba(217,119,6,0.4)] relative text-amber-500 flex flex-col font-mono overflow-hidden">
+        <div 
+            onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                    onClose();
+                }
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-1 sm:p-2 md:p-3 backdrop-blur-md animate-fade-in overflow-hidden"
+        >
+            {/* Pinned Screen-Level Emergency Exit Button (Guaranteed visible on ANY screen) */}
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                }}
+                className="fixed top-2 right-2 sm:top-4 sm:right-4 z-[999999] bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs sm:text-sm px-4 py-2 rounded-full shadow-[0_0_30px_rgba(239,68,68,0.9)] border-2 border-white flex items-center gap-2 cursor-pointer active:scale-95 transition-all hover:scale-105 select-none"
+                title="Fechar e Sair das Backrooms (ESC)"
+            >
+                <X size={18} className="stroke-[3] text-white" />
+                <span className="font-mono tracking-wider font-extrabold uppercase drop-shadow">FECHAR [ESC]</span>
+            </button>
+
+            {/* Main Terminal Container - Adaptive to any monitor height & resolution */}
+            <div 
+                style={{
+                    transform: effectiveScale < 1 ? `scale(${effectiveScale})` : undefined,
+                    transformOrigin: 'center center',
+                    maxHeight: effectiveScale < 1 ? `${Math.floor(96 / effectiveScale)}vh` : '94vh',
+                    height: effectiveScale < 1 ? `${Math.floor(94 / effectiveScale)}vh` : '92vh',
+                    width: '100%',
+                    maxWidth: '1150px'
+                }}
+                className="bg-slate-950 border-4 border-amber-600 rounded-xl shadow-[0_0_50px_rgba(217,119,6,0.4)] relative text-amber-500 flex flex-col font-mono overflow-hidden transition-transform duration-150"
+            >
                 
                 {/* CRT Scanline Effect (Togglable) */}
                 {enableCrt && (
@@ -104,6 +169,25 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                             </span>
                         </div>
 
+                        {/* Monitor Zoom Controls */}
+                        <div className="flex items-center bg-black/80 border border-amber-700/80 rounded px-1.5 py-0.5 gap-1 text-[10px] text-amber-300" title="Ajuste de Zoom do Monitor">
+                            <button 
+                                onClick={() => setUserZoom(z => Math.max(0.5, Number((z - 0.1).toFixed(1))))}
+                                className="hover:text-white p-0.5 transition-colors" 
+                                title="Diminuir Zoom"
+                            >
+                                <ZoomOut size={12} />
+                            </button>
+                            <span className="font-mono text-[9px] px-1 font-bold select-none">{Math.round(effectiveScale * 100)}%</span>
+                            <button 
+                                onClick={() => setUserZoom(z => Math.min(1.3, Number((z + 0.1).toFixed(1))))}
+                                className="hover:text-white p-0.5 transition-colors" 
+                                title="Aumentar Zoom"
+                            >
+                                <ZoomIn size={12} />
+                            </button>
+                        </div>
+
                         {/* CRT Effect Toggle Button */}
                         <button 
                             onClick={() => setEnableCrt(prev => !prev)}
@@ -115,7 +199,7 @@ export const BackroomsManagerModal: React.FC<BackroomsManagerModalProps> = ({
                             <Tv size={13} />
                         </button>
 
-                        {/* High Visibility Exit Button */}
+                        {/* High Visibility Header Exit Button */}
                         <button 
                             onClick={onClose} 
                             className="bg-red-950/80 hover:bg-red-900 text-red-200 hover:text-white px-3 py-1.5 rounded-lg border-2 border-red-600 hover:border-red-400 cursor-pointer shadow-md flex items-center gap-1.5 text-xs font-black tracking-wider active:scale-95 uppercase transition-all"

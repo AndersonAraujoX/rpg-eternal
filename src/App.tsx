@@ -258,9 +258,14 @@ function App() {
         setShowSettings(false); setShowForge(false); setShowInventory(false); setShowTower(false);
         setShowGuild(false); setShowVoid(false); setShowArena(false); setShowQuests(false);
         setShowRunes(false); setShowAchievements(false); setShowStarlight(false); setShowHelp(false);
-        setShowGuild(false); setShowVoid(false); setShowArena(false); setShowQuests(false);
-        setShowRunes(false); setShowAchievements(false); setShowStarlight(false); setShowHelp(false);
         setShowLog(false); setShowFishing(false); setShowAlchemy(false); setShowExpeditions(false);
+        setShowBackrooms(false); setShowJourney(false); setShowGuildWar(false); setShowRoguelike(false);
+        setShowPetSpace(false); setShowBreedingModal(false); setShowGarden(false); setShowMuseum(false);
+        setShowElementalResonance(false); setShowRelicChamber(false); setShowVoidInfusion(false);
+        setShowTown(false); setShowIndustry(false); setShowCardBattle(false); setShowDailyRewards(false);
+        setShowMarket(false); setShowMastery(false); setShowRiftModal(false); setShowPrestigeTree(false);
+        setShowDevTools(false); setShowStats(false); setShowGalaxy(false); setShowStarForge(false);
+        setShowLeaderboard(false);
       }
       if (e.key.toLowerCase() === 's') setShowShop(prev => !prev);
       if (e.key.toLowerCase() === 'i') setShowInventory(prev => !prev);
