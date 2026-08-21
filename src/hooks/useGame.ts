@@ -304,11 +304,26 @@ export const useGame = (
         backrooms.researchTech(techId);
 
         if (!alreadyUnlocked && canAfford) {
-            if (techId === 'space_warp' || techId === 'space_tech') {
+            if (techId === 'superconductors_liminal') {
+                addLog("⚡ Supercondutores Liminares pesquisados! Módulo de Eficiência III (-50% MW) liberado na Indústria!", "achievement");
+            } else if (techId === 'liminal_beacons') {
+                addLog("📡 Balizas de Frequência Liminar pesquisadas! Balizas Industriais (+20% velocidade) liberadas na Indústria!", "achievement");
+            } else if (techId === 'quantum_automation') {
+                addLog("🤖 Automação Quântica pesquisada! Inseridores Quânticos e Esteiras Espaciais liberados na Indústria!", "achievement");
+            } else if (techId === 'dimensional_science_pack') {
+                addLog("🧪 Pacote de Ciência Dimensional pesquisado! Nova pesquisa científica liberada na Indústria!", "achievement");
+            } else if (techId === 'cosmic_radar') {
+                addLog("🛰️ Radar Cósmico Transdimensional ativo! Setores cósmicos profundos (Nv. 50-250) revelados na Galáxia!", "achievement");
+            } else if (techId === 'antimatter_reactor') {
+                addLog("⚛️ Reator de Antimatéria pesquisado! Gerador industrial de 5.000 MW liberado na Indústria!", "achievement");
+            } else if (techId === 'hyperdense_alloy_hull') {
+                addLog("🛸 Casco de Liga Hiper-Densa pesquisado! Couraçado Dreadnought liberado na Nave Espacial!", "achievement");
+            } else if (techId === 'space_warp' || techId === 'space_tech') {
                 setOuterSpaceUnlocked(true);
-                addLog("🚀 Estudos de Dobra Espacial concluídos! O Espaço Sideral foi desbloqueado!", "achievement");
-            }
-            if (techId === 'dimensional_singularity') {
+                addLog("🚀 Estudos de Dobra Espacial concluídos! Salto de Dobra Instantâneo e Espaço Sideral liberados!", "achievement");
+            } else if (techId === 'stellar_void_portal') {
+                addLog("🌌 Portal do Vazio Estelar sintonizado! Expedições galácticas coletam poeira cósmica e starlight!", "achievement");
+            } else if (techId === 'dimensional_singularity') {
                 setVictory(true);
                 addLog("🌀 Singularidade Inter-Dimensional ativada! Vitória dimensional suprema alcançada!", "achievement");
             }

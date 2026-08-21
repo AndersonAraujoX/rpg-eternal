@@ -22,6 +22,7 @@ interface IndustryModalProps {
     assignedPet?: any;
     costReduction?: number;
     backroomsFloor?: number;
+    backroomsUnlockedTechs?: string[];
 }
 
 export const IndustryModal: React.FC<IndustryModalProps> = ({ 
@@ -32,7 +33,8 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({
     buyMachine, 
     assignedPet, 
     costReduction = 0, 
-    backroomsFloor = 1 
+    backroomsFloor = 1,
+    backroomsUnlockedTechs = []
 }) => {
     const [activeTab, setActiveTab] = useState<'machines' | 'inventory' | 'research' | 'power' | 'rocket'>('machines');
     const [itemFilter, setItemFilter] = useState<'all' | 'raw' | 'intermediate' | 'science' | 'advanced'>('all');
@@ -74,8 +76,17 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({
         }
     };
 
-    // Filter recipes based on unlocked techs & backrooms floor
+    // Filter recipes based on unlocked techs & backrooms floor / cross-techs
     const isRecipeUnlocked = (recipeId: string) => {
+        const recipe = RECIPES.find(r => r.id === recipeId);
+        if (recipe && recipe.requiredBackroomsLevel !== undefined) {
+            if (recipeId === 'craft_eff_mod_3') return backroomsUnlockedTechs.includes('superconductors_liminal') || backroomsFloor >= 18;
+            if (recipeId === 'craft_liminal_beacon') return backroomsUnlockedTechs.includes('liminal_beacons') || backroomsFloor >= 28;
+            if (recipeId === 'craft_quantum_inserter' || recipeId === 'craft_space_matter_belt') return backroomsUnlockedTechs.includes('quantum_automation') || backroomsFloor >= 35;
+            if (recipeId === 'craft_science_dimensional') return backroomsUnlockedTechs.includes('dimensional_science_pack') || backroomsFloor >= 50;
+            if (recipeId === 'gen_antimatter') return backroomsUnlockedTechs.includes('antimatter_reactor') || backroomsFloor >= 72;
+            return backroomsFloor >= recipe.requiredBackroomsLevel;
+        }
         // Find if a tech unlocks this recipe
         const techThatUnlocks = FACTORIO_TECHS.find(t => t.unlockedRecipes.includes(recipeId));
         if (techThatUnlocks) {

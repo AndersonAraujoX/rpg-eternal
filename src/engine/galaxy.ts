@@ -19,6 +19,11 @@ export const INITIAL_GALAXY: GalaxySector[] = [
     { id: 'g13', name: 'Sirius B', description: 'White Dwarf.', x: -30, y: 40, level: 40, difficulty: 30000, reward: { type: 'mithril', value: 10 }, isOwned: false, type: 'star' },
     { id: 'g14', name: 'Pillars of Creation', description: 'Star factory.', x: 60, y: -60, level: 100, difficulty: 300000, reward: { type: 'souls', value: 10 }, isOwned: false, type: 'nebula' },
     { id: 'g15', name: 'Titan', description: 'Methane lakes.', x: -50, y: -50, level: 60, difficulty: 80000, reward: { type: 'gold', value: 1000 }, isOwned: false, type: 'planet' },
+
+    // ── Setores Cósmicos Ocultos (Desbloqueados por Radar Cósmico das Backrooms) ──
+    { id: 'g16', name: 'Nexus Transdimensional', description: 'Fenda cósmica unindo o espaço sideral às Backrooms.', x: 100, y: 100, level: 120, difficulty: 800000, reward: { type: 'starlight', value: 3 }, isOwned: false, type: 'nebula', hazardLevel: 'high' },
+    { id: 'g17', name: 'Cemitério Dreadnought', description: 'Ruínas de frotas de guerra titânicas ricas em ligas espaciais.', x: -90, y: 90, level: 180, difficulty: 2500000, reward: { type: 'global_damage', value: 0.25 }, isOwned: false, type: 'star', hazardLevel: 'extreme' },
+    { id: 'g18', name: 'Abismo da Singularidade', description: 'O horizonte de eventos cósmico final onde a realidade colapsa.', x: 120, y: -120, level: 250, difficulty: 6000000, reward: { type: 'global_xp', value: 0.50 }, isOwned: false, type: 'star', hazardLevel: 'extreme' }
 ];
 
 export const calculateGalaxyIncome = (galaxy: GalaxySector[]) => {

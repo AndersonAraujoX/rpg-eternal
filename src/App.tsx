@@ -618,6 +618,7 @@ function App() {
         assignedPet={pets.find(p => p.assignment === 'industry')}
         costReduction={town?.relics?.find(r => r.id === 'relic_gear')?.count ? (town.relics.find(r => r.id === 'relic_gear')!.count * 0.10) : 0} 
         backroomsFloor={backroomsFloor}
+        backroomsUnlockedTechs={backroomsUnlockedTechs}
       />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} relics={town?.relics || []} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} industryInventory={industry.inventory} mechanizedCardsFused={mechanizedCardsFused} fuseMechanizedCards={fuseMechanizedCards} />

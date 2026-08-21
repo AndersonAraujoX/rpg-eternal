@@ -16,23 +16,32 @@ export const useGalaxy = (
     const [spaceship, setSpaceship] = useState<Spaceship>(initialSpaceship);
 
 
-    const attackSector = (sectorId: string) => {
+    const attackSector = (sectorId: string, hasWarpDrive: boolean = false, hasDreadnought: boolean = false) => {
         const sector = galaxy.find(s => s.id === sectorId);
         if (!sector || sector.isOwned) return;
 
-        const fuelCost = 5;
+        const fuelCost = hasWarpDrive ? 2 : 5;
         if (spaceship.fuel < fuelCost) {
             addLog("Combustível insuficiente para o salto! Aguarde a regeneração.", 'error');
             return;
         }
 
-        if (spaceship.hull <= 0) {
+        if (spaceship.hull <= 0 && !hasDreadnought) {
             addLog("Casco destruído! Repare a nave antes de atacar.", 'error');
             return;
         }
 
-        setSpaceship(prev => ({ ...prev, fuel: prev.fuel - fuelCost }));
-        addLog(`Nave saltou para o setor ${sector.name}! Iniciando missão de conquista.`, 'info');
+        setSpaceship(prev => ({ 
+            ...prev, 
+            fuel: Math.max(0, prev.fuel - fuelCost),
+            maxHull: hasDreadnought ? Math.max(prev.maxHull, 500) : prev.maxHull
+        }));
+        
+        if (hasWarpDrive) {
+            addLog(`🌌 Salto de Dobra Espacial Instantâneo para o setor ${sector.name}!`, 'achievement');
+        } else {
+            addLog(`Nave saltou para o setor ${sector.name}! Iniciando missão de conquista.`, 'info');
+        }
     };
 
     const attackTerritory = (id: string) => {

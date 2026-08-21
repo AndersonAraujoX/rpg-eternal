@@ -509,12 +509,30 @@ export const BACKROOMS_RESEARCHES: BackroomsResearch[] = [
         era: 'Era Industrial & Vapor'
     },
     {
+        id: 'superconductors_liminal',
+        name: 'Supercondutores Liminares',
+        description: 'Materiais de resistência nula recuperados de salas liminares para redes elétricas perfeitas.',
+        cost: { scrap: 65, almondWater: 2, anomalyParts: 1 },
+        effectText: '🏭 Desbloqueia Módulo de Eficiência III (-50% consumo MW) na Indústria',
+        minFloor: 18,
+        era: 'Era Industrial & Vapor'
+    },
+    {
         id: 'large_mining',
         name: 'Extração de Larga Escala',
         description: 'Estabelece eixos de poços profundos com elevadores a vapor para exploração mineral em massa.',
         cost: { scrap: 80, almondWater: 3, anomalyParts: 2 },
         effectText: '+25% Velocidade de Mineração Global',
         minFloor: 22,
+        era: 'Era Industrial & Vapor'
+    },
+    {
+        id: 'liminal_beacons',
+        name: 'Balizas de Frequência Liminar',
+        description: 'Emissores de ressonância dimensional que aceleram máquinas industriais vizinhas.',
+        cost: { scrap: 95, almondWater: 3, anomalyParts: 2 },
+        effectText: '🏭 Desbloqueia Balizas Industriais (+20% velocidade em área)',
+        minFloor: 28,
         era: 'Era Industrial & Vapor'
     },
     // Era 3: Atômica
@@ -528,6 +546,15 @@ export const BACKROOMS_RESEARCHES: BackroomsResearch[] = [
         era: 'Era Atômica & Digital'
     },
     {
+        id: 'quantum_automation',
+        name: 'Automação Quântica',
+        description: 'Inseridores e esteiras sem atrito acelerados por micro-portais gravitacionais.',
+        cost: { scrap: 140, almondWater: 4, anomalyParts: 3 },
+        effectText: '🏭 Desbloqueia Inseridores Quânticos e Esteiras de Matéria Espacial (3× velocidade)',
+        minFloor: 35,
+        era: 'Era Atômica & Digital'
+    },
+    {
         id: 'silicon_network',
         name: 'Redes de Silício (Microchips)',
         description: 'Desenvolve chips lógicos de computação para coordenar ressurreições automáticas.',
@@ -538,10 +565,28 @@ export const BACKROOMS_RESEARCHES: BackroomsResearch[] = [
     },
     // Era 4: Quântica
     {
+        id: 'dimensional_science_pack',
+        name: 'Pacote de Ciência Dimensional',
+        description: 'Sintetiza pacotes de pesquisa contendo dados de microfendas liminares purificadas.',
+        cost: { scrap: 180, almondWater: 5, anomalyParts: 4 },
+        effectText: '🏭 Desbloqueia Pacote de Ciência Dimensional na Indústria',
+        minFloor: 50,
+        era: 'Era Quântica & Fusão'
+    },
+    {
+        id: 'cosmic_radar',
+        name: 'Radar Cósmico Transdimensional',
+        description: 'Sensores de longo alcance capazes de mapear setores estelares ocultos na Galáxia.',
+        cost: { scrap: 210, almondWater: 5, anomalyParts: 5 },
+        effectText: '🚀 Revela Setores Cósmicos Ocultos (Níveis 50 a 250) na Galáxia',
+        minFloor: 55,
+        era: 'Era Quântica & Fusão'
+    },
+    {
         id: 'clean_fusion',
         name: 'Fusão Limpa Comercial',
         description: 'Reatores de fusão estável fornecem eletricidade limpa ilimitada para o mercado.',
-        cost: { scrap: 200, almondWater: 5, anomalyParts: 5 },
+        cost: { scrap: 230, almondWater: 5, anomalyParts: 5 },
         effectText: '+20% Ganho de Ouro e Almas global',
         minFloor: 61,
         era: 'Era Quântica & Fusão'
@@ -557,12 +602,30 @@ export const BACKROOMS_RESEARCHES: BackroomsResearch[] = [
     },
     // Era 5: Espacial
     {
+        id: 'antimatter_reactor',
+        name: 'Reator de Antimatéria',
+        description: 'Gerador industrial de energia colossal gerada pela aniquilação controlada de matéria escura.',
+        cost: { scrap: 300, almondWater: 7, anomalyParts: 7 },
+        effectText: '🏭 Desbloqueia Gerador de 5.000 MW na Indústria (Matéria Escura + Urânio)',
+        minFloor: 72,
+        era: 'Era Espacial'
+    },
+    {
+        id: 'hyperdense_alloy_hull',
+        name: 'Casco de Liga Hiper-Densa',
+        description: 'Estrutura blindada forjada com partículas liminares para o Couraçado Dreadnought.',
+        cost: { scrap: 340, almondWater: 8, anomalyParts: 8 },
+        effectText: '🚀 Desbloqueia o Couraçado Dreadnought (5× poder de fogo e escudo) na Nave',
+        minFloor: 75,
+        era: 'Era Espacial'
+    },
+    {
         id: 'antimatter_prop',
         name: 'Propulsão de Antimatéria',
         description: 'Desenvolve propulsores que usam aniquilação de pósitrons para expedições interestelares rápidos.',
-        cost: { scrap: 350, almondWater: 8, anomalyParts: 8 },
+        cost: { scrap: 380, almondWater: 8, anomalyParts: 8 },
         effectText: '-25% Tempo de Expedições espaciais / da Galáxia',
-        minFloor: 76,
+        minFloor: 78,
         era: 'Era Espacial'
     },
     {
@@ -579,8 +642,17 @@ export const BACKROOMS_RESEARCHES: BackroomsResearch[] = [
         name: 'Estudos de Dobra Espacial',
         description: 'Estuda métricas de dobra Alcubierre para cruzar a galáxia instantaneamente.',
         cost: { scrap: 500, almondWater: 12, anomalyParts: 12 },
-        effectText: 'Desbloqueia a Galáxia e Viagem Espacial se bloqueado',
+        effectText: '🚀 Desbloqueia a Galáxia e Viagem Espacial Instantânea (Sem Delay)',
         minFloor: 86,
+        era: 'Era Espacial'
+    },
+    {
+        id: 'stellar_void_portal',
+        name: 'Portal do Vazio Estelar',
+        description: 'Canaliza o vácuo espacial profundo para colheita autônoma de Matéria do Vazio e Starlight.',
+        cost: { scrap: 600, almondWater: 14, anomalyParts: 14 },
+        effectText: '🌌 Expedições Galácticas Coletam Poeira Cósmica e Matéria do Vazio',
+        minFloor: 90,
         era: 'Era Espacial'
     },
     // Era 6: Inter-Dimensional

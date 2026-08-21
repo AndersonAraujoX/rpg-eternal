@@ -113,6 +113,7 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     { id: 'speed_module_1', name: 'Módulo de Velocidade I', description: '+20% de velocidade na máquina (+30% de consumo de energia).', emoji: '⚡', category: 'module' },
     { id: 'productivity_module_1', name: 'Módulo de Produtividade I', description: '+4% de produtos bônus grátis (-10% de velocidade).', emoji: '📦', category: 'module' },
     { id: 'efficiency_module_1', name: 'Módulo de Eficiência I', description: '-30% de consumo de energia da máquina.', emoji: '🌿', category: 'module' },
+    { id: 'efficiency_module_3', name: 'Módulo de Eficiência III', description: '-50% de consumo de energia elétrica da máquina.', emoji: '🌿', category: 'module' },
 
     // ── 7 Pacotes de Ciência (Science Packs) ─────────────────────────────────
     { id: 'science_red', name: 'Ciência de Automação (Vermelha)', description: '🔴 Pacote de ciência da era do vapor e engrenagens.', emoji: '🧪', category: 'science' },
@@ -122,6 +123,7 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     { id: 'science_purple', name: 'Ciência de Produção (Roxa)', description: '🟣 Pacote de ciência pesada para fornos elétricos e trilhos.', emoji: '🧪', category: 'science' },
     { id: 'science_yellow', name: 'Ciência Utilitária (Amarela)', description: '🟡 Pacote de ciência de alta tecnologia para robôs e voo.', emoji: '🧪', category: 'science' },
     { id: 'science_white', name: 'Ciência Espacial (Branca)', description: '⚪ Pacote gerado orbitalmente ao lançar foguetes com satélite!', emoji: '🧪', category: 'science' },
+    { id: 'science_dimensional', name: 'Ciência Dimensional (Liminar)', description: '💠 Pacote de dados sintéticos extraídos de fendas liminares das Backrooms.', emoji: '🧪', category: 'science' },
 
     // ── Equipamentos & Armas de Cerco ────────────────────────────────────────
     { id: 'siege_catapult', name: 'Catapulta de Cerco', description: 'Arma brutal de guerra. Diminui a dificuldade de territórios.', emoji: '🪨', category: 'advanced' },
@@ -134,6 +136,8 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     
     // ── Itens Tecnológicos das Backrooms ─────────────────────────────────────
     { id: 'liminal_scrap', name: 'Sucata Liminar', description: 'Sucata metálica liminar recuperada das Backrooms.', emoji: '⚙️', category: 'advanced' },
+    { id: 'almond_water', name: 'Água de Amêndoas', description: 'Líquido purificado das Backrooms para reações químicas e biológicas.', emoji: '🧴', category: 'raw' },
+    { id: 'anomaly_part', name: 'Parte Anômala', description: 'Tecido orgânico anômalo para estudos dimensionais.', emoji: '🦠', category: 'raw' },
     { id: 'dense_concrete', name: 'Concreto Denso', description: 'Bloco de concreto denso e pesado.', emoji: '🧱', category: 'advanced' },
     { id: 'dark_matter', name: 'Matéria Escura', description: 'Resíduo condensado de pura matéria escura.', emoji: '🌌', category: 'advanced' },
     { id: 'anomalous_microchip', name: 'Microchip Anômalo', description: 'Microchip que emite sinais de rádio em frequência anômala.', emoji: '💾', category: 'advanced' },
@@ -142,6 +146,9 @@ export const INDUSTRY_ITEMS: IndustryItem[] = [
     { id: 'scrap_press', name: 'Compactador de Sucata', description: 'Permite reciclagem sob alta pressão.', emoji: '🗜️', category: 'advanced' },
     { id: 'stellar_receptor', name: 'Painel Receptor Estelar', description: 'Sintoniza ondas cósmicas para coleta offline.', emoji: '📡', category: 'advanced' },
     { id: 'reality_anchor', name: 'Ancorador de Realidade', description: 'Protege heróis e prédios de resets de Rebirth.', emoji: '⚓', category: 'advanced' },
+    { id: 'quantum_inserter', name: 'Inseridor Quântico', description: 'Braço de inserção de velocidade instantânea com zero atrito.', emoji: '🦾', category: 'intermediate' },
+    { id: 'space_matter_belt', name: 'Esteira de Matéria Espacial', description: 'Esteira de transporte ultrarrápido (45 itens/s).', emoji: '🔵', category: 'intermediate' },
+    { id: 'liminal_beacon', name: 'Baliza Liminar', description: 'Transmissor dimensional que acelera máquinas vizinhas em +20%.', emoji: '📡', category: 'advanced' },
 
     // ── Sinergias Globais ───────────────────────────────────────────────────
     { id: 'portal_stabilizer', name: 'Estabilizador de Portal', description: 'Componente dimensional que mitiga o reset de prestígio.', emoji: '🌀', category: 'advanced' },
@@ -169,6 +176,7 @@ export const MACHINES: MachineInfo[] = [
     { id: 'assembler_1', name: 'Máquina de Montagem 1', description: 'Monta itens a partir de componentes básicos (30 MW).', type: 'assembler', emoji: '🏭', cost: { 'gold': 2500 }, speedMultiplier: 1.0 },
     { id: 'assembler_2', name: 'Máquina de Montagem 2', description: 'Montagem rápida com suporte a fluídos (50 MW).', type: 'assembler', emoji: '🏭', cost: { 'gold': 6000 }, speedMultiplier: 1.75, moduleSlots: 2 },
     { id: 'assembler_3', name: 'Máquina de Montagem 3', description: 'Pico da automação industrial (120 MW, 4 slots de módulos).', type: 'assembler', emoji: '🏭', cost: { 'gold': 18000 }, speedMultiplier: 2.5, moduleSlots: 4 },
+    { id: 'liminal_beacon_station', name: 'Baliza de Frequência Liminar', description: 'Emite ondas ressonantes acelerando todas as máquinas próximas (+20% velocidade).', type: 'assembler', emoji: '📡', cost: { 'gold': 80000 }, speedMultiplier: 2.0, moduleSlots: 2 },
 
     // ── Químicos & Nucleares ────────────────────────────────────────────────
     { id: 'oil_refinery', name: 'Refinaria de Petróleo', description: 'Fraciona Petróleo Bruto em Gás de Petróleo e óleos (200 MW).', type: 'refinery', emoji: '🏢', cost: { 'gold': 8000 }, speedMultiplier: 1.0 },
@@ -182,7 +190,8 @@ export const MACHINES: MachineInfo[] = [
     // ── Geradores de Energia ────────────────────────────────────────────────
     { id: 'steam_engine', name: 'Motor a Vapor', description: 'Queima 0.1 carvão/s para gerar +500 MW.', type: 'generator', emoji: '🚂', cost: { 'gold': 5000 } },
     { id: 'solar_panel', name: 'Painel Solar', description: 'Geração 100% limpa e contínua de +200 MW sem consumo de combustível.', type: 'generator', emoji: '☀️', cost: { 'gold': 12000 } },
-    { id: 'nuclear_reactor', name: 'Reator Nuclear', description: 'Fissão atômica massiva gerando +5.000 MW com 1 Célula de Urânio a cada 100s.', type: 'generator', emoji: '☢️', cost: { 'gold': 60000 } }
+    { id: 'nuclear_reactor', name: 'Reator Nuclear', description: 'Fissão atômica massiva gerando +5.000 MW com 1 Célula de Urânio a cada 100s.', type: 'generator', emoji: '☢️', cost: { 'gold': 60000 } },
+    { id: 'antimatter_reactor', name: 'Reator de Antimatéria', description: 'Geração colossal de +5.000 MW usando 1 Matéria Escura + 1 Célula de Urânio.', type: 'generator', emoji: '⚛️', cost: { 'gold': 150000 } }
 ];
 
 export const RECIPES: Recipe[] = [
@@ -267,6 +276,14 @@ export const RECIPES: Recipe[] = [
     { id: 'craft_scrap_press', name: 'Criar: Compactador de Sucata', inputs: { 'steel_plate': 30, 'dense_concrete': 20 }, outputs: { 'scrap_press': 1 }, time: 600, machineType: 'assembler', powerDraw: 200, requiredBackroomsLevel: 1 },
     { id: 'craft_stellar_receptor', name: 'Criar: Receptor Estelar', inputs: { 'anomalous_microchip': 10, 'basic_circuit': 30, 'copper_wire': 100 }, outputs: { 'stellar_receptor': 1 }, time: 1800, machineType: 'assembler', powerDraw: 350, requiredBackroomsLevel: 4 },
     { id: 'craft_reality_anchor', name: 'Criar: Ancorador de Realidade', inputs: { 'dark_matter': 5, 'magnetic_coil': 50 }, outputs: { 'reality_anchor': 1 }, time: 3600, machineType: 'assembler', powerDraw: 500, requiredBackroomsLevel: 8 },
+    
+    // ── Liminal & Quantum Cross Unlocks (Backrooms Integration) ──────────────
+    { id: 'craft_eff_mod_3', name: 'Montar: Módulo de Eficiência III', inputs: { 'advanced_circuit': 5, 'processing_unit': 2, 'efficiency_module_1': 2 }, outputs: { 'efficiency_module_3': 1 }, time: 20, machineType: 'assembler', powerDraw: 100, requiredBackroomsLevel: 18 },
+    { id: 'craft_liminal_beacon', name: 'Montar: Baliza Liminar', inputs: { 'processing_unit': 5, 'steel_plate': 10, 'liminal_scrap': 5 }, outputs: { 'liminal_beacon': 1 }, time: 20, machineType: 'assembler', powerDraw: 150, requiredBackroomsLevel: 28 },
+    { id: 'craft_quantum_inserter', name: 'Montar: Inseridor Quântico', inputs: { 'fast_inserter': 1, 'processing_unit': 1, 'liminal_scrap': 2 }, outputs: { 'quantum_inserter': 1 }, time: 5, machineType: 'assembler', powerDraw: 80, requiredBackroomsLevel: 35 },
+    { id: 'craft_space_matter_belt', name: 'Montar: Esteira de Matéria Espacial', inputs: { 'transport_belt': 2, 'processing_unit': 1, 'liminal_scrap': 2 }, outputs: { 'space_matter_belt': 2 }, time: 5, machineType: 'assembler', powerDraw: 80, requiredBackroomsLevel: 35 },
+    { id: 'craft_science_dimensional', name: 'Ciência: Dimensional (Liminar)', inputs: { 'almond_water': 1, 'processing_unit': 2, 'dark_matter': 1 }, outputs: { 'science_dimensional': 2 }, time: 25, machineType: 'assembler', powerDraw: 150, requiredBackroomsLevel: 50 },
+    { id: 'gen_antimatter', name: 'Geração de Antimatéria', inputs: { 'dark_matter': 1, 'uranium_fuel_cell': 1 }, outputs: {}, time: 120, machineType: 'generator', powerDraw: -5000, requiredBackroomsLevel: 72 },
 
     // ── Global Industry Synergy Recipes ─────────────────────────────────────
     { id: 'craft_portal_stabilizer', name: 'Criar: Estabilizador de Portal', inputs: { 'reinforced_alloy': 10, 'dark_matter': 3, 'anomalous_microchip': 5 }, outputs: { 'portal_stabilizer': 1 }, time: 1200, machineType: 'assembler', powerDraw: 400, requiredBackroomsLevel: 4 },
@@ -529,6 +546,9 @@ export function simulateIndustryTick(
             if (node.modules?.includes('efficiency_module_1')) {
                 effectivePowerDraw *= 0.70; // -30% power
             }
+            if (node.modules?.includes('efficiency_module_3')) {
+                effectivePowerDraw *= 0.50; // -50% power (Supercondutores Liminares)
+            }
             if (node.modules?.includes('speed_module_1')) {
                 effectivePowerDraw *= 1.30; // +30% power
             }
@@ -551,6 +571,15 @@ export function simulateIndustryTick(
 
         if (node.modules?.includes('speed_module_1')) {
             speedMult *= 1.20;
+        }
+        if (node.modules?.includes('quantum_inserter')) {
+            speedMult *= 1.30; // Automação Quântica instantânea
+        }
+        if (node.modules?.includes('space_matter_belt')) {
+            speedMult *= 1.25; // Esteira de Matéria Espacial
+        }
+        if (node.modules?.includes('liminal_beacon')) {
+            speedMult *= 1.20; // Baliza Liminar de Ressonância
         }
         if (node.modules?.includes('productivity_module_1')) {
             bonusProductivity += 0.04; // +4% free extra output
