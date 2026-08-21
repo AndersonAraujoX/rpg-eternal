@@ -63,31 +63,31 @@ export function getRoadTierStyle(tier: RoadTier, isNightOrDark: boolean = false)
     switch (tier) {
         case 'imperial_marble':
             return {
-                bg: 'bg-gradient-to-br from-amber-100 via-stone-200 to-amber-200',
-                border: 'border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]',
-                accent: 'text-amber-600',
+                bg: 'bg-gradient-to-br from-amber-200 via-amber-100 to-amber-300',
+                border: 'border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.4)]',
+                accent: 'text-amber-800 font-bold',
                 lampEmoji: '✨'
             };
         case 'stone_paved':
             return {
-                bg: 'bg-gradient-to-br from-stone-400 via-stone-500 to-stone-600',
-                border: 'border-stone-400 shadow-inner',
-                accent: 'text-stone-300',
+                bg: 'bg-gradient-to-br from-slate-600 via-stone-600 to-slate-700',
+                border: 'border-slate-400/70 shadow-sm',
+                accent: 'text-stone-200',
                 lampEmoji: '🏮'
             };
         case 'cobblestone':
             return {
-                bg: 'bg-stone-700',
-                border: 'border-stone-600',
-                accent: 'text-stone-400',
+                bg: 'bg-gradient-to-br from-stone-700 via-stone-750 to-stone-800',
+                border: 'border-stone-500/60',
+                accent: 'text-stone-300',
                 lampEmoji: '🔥'
             };
         case 'dirt':
         default:
             return {
-                bg: 'bg-amber-950/60',
-                border: 'border-amber-900/40',
-                accent: 'text-amber-800',
+                bg: 'bg-gradient-to-br from-amber-950/70 via-amber-900/50 to-stone-900',
+                border: 'border-amber-800/40',
+                accent: 'text-amber-600',
                 lampEmoji: '🪵'
             };
     }
