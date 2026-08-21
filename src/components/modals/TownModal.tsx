@@ -4,6 +4,7 @@ import type { Building } from '../../engine/types';
 import { formatNumber } from '../../utils';
 import { FEATURES_LIST } from '../../engine/features';
 import { IsometricTownGrid } from '../IsometricTownGrid';
+import { calculateTownMetrics, autoOrganizeTown } from '../../engine/townEngine';
 
 interface TownModalProps {
     isOpen: boolean;
@@ -287,22 +288,44 @@ export const TownModal: React.FC<TownModalProps> = ({
                             const unplacedBuildings = buildings.filter(b => b.level > 0 && !b.placed);
                             const clickedBuilding = clickedBuildingId ? buildings.find(b => b.id === clickedBuildingId) : null;
                             const isSelected = selectedBuildingId !== null;
+                            const townMetrics = calculateTownMetrics(buildings, heroes);
+
+                            const handleAutoOrganize = () => {
+                                if (setBuildings) {
+                                    const organized = autoOrganizeTown(buildings, 8);
+                                    setBuildings(organized);
+                                }
+                            };
 
                             return (
                                 <div className="flex-1 flex flex-col md:flex-row gap-6 min-w-0 min-h-0">
                                     {/* Left Area: Grid Map */}
-                                    <div className="flex-1 min-w-0 bg-stone-950/40 p-6 rounded-2xl border border-stone-900/60 shadow-inner flex flex-col items-center justify-center relative min-h-[300px] select-none">
-                                        <div className="absolute top-3 left-4 text-[10px] text-stone-500 font-bold uppercase tracking-wider font-mono">
-                                            🗺️ Grid de Construção 2D
+                                    <div className="flex-1 min-w-0 bg-stone-950/40 p-5 rounded-2xl border border-stone-900/60 shadow-inner flex flex-col items-center justify-center relative min-h-[300px] select-none">
+                                        <div className="w-full flex justify-between items-center mb-2 px-1">
+                                            <div className="flex items-center gap-2 text-xs text-amber-400 font-bold uppercase tracking-wider font-mono">
+                                                <span>🏰 Metrópole Viva</span>
+                                                <span className="text-[10px] bg-amber-950/80 text-amber-300 border border-amber-800/60 px-2 py-0.5 rounded-full">
+                                                    Pop: {formatNumber(townMetrics.population)}
+                                                </span>
+                                            </div>
+                                            {setBuildings && (
+                                                <button
+                                                    onClick={handleAutoOrganize}
+                                                    className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-stone-950 font-black text-[11px] px-3 py-1.5 rounded-xl shadow-md flex items-center gap-1.5 transition-all active:scale-95"
+                                                    title="Organiza automaticamente os prédios da cidade em distritos com melhores sinergias"
+                                                >
+                                                    <Sparkles size={13} /> Auto-Organizar Cidade
+                                                </button>
+                                            )}
                                         </div>
 
                                         {isSelected && (
-                                            <div className="absolute top-8 text-center text-xs text-green-400 font-bold animate-pulse z-20 bg-black/85 px-4 py-1.5 rounded-full border border-green-500/30">
+                                            <div className="absolute top-12 text-center text-xs text-green-400 font-bold animate-pulse z-20 bg-black/90 px-4 py-1.5 rounded-full border border-green-500/50 shadow-lg">
                                                 Colocando: {buildings.find(b => b.id === selectedBuildingId)?.name}. Clique em um lote do grid!
                                             </div>
                                         )}
 
-                                        <div className="w-full relative mt-4 flex justify-center">
+                                        <div className="w-full relative flex justify-center">
                                             <IsometricTownGrid
                                                 buildings={buildings}
                                                 gold={gold}
@@ -315,12 +338,17 @@ export const TownModal: React.FC<TownModalProps> = ({
                                                     setClickedBuildingId(buildingId);
                                                 }}
                                                 heroes={heroes}
+                                                onFountainClick={() => {
+                                                    if (setBuildings) {
+                                                        // Interactive fountain effect
+                                                    }
+                                                }}
                                             />
                                         </div>
                                     </div>
 
                                     {/* Right Area: Control Panel Sidebar */}
-                                    <div className="w-full md:w-80 flex-shrink-0 bg-stone-900/60 border border-stone-850 p-5 rounded-2xl flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-none">
+                                    <div className="w-full md:w-84 flex-shrink-0 bg-stone-900/70 border border-stone-800 p-5 rounded-2xl flex flex-col justify-between overflow-y-auto max-h-[55vh] md:max-h-none custom-scrollbar">
                                         {clickedBuilding ? (
                                             /* Details of a clicked building */
                                             <div className="flex flex-col h-full justify-between gap-4">
@@ -423,20 +451,81 @@ export const TownModal: React.FC<TownModalProps> = ({
                                                 </button>
                                             </div>
                                         ) : (
-                                            /* Sidebar showing unplaced buildings or general stats */
+                                            /* Sidebar showing SimCity town dashboard & unplaced buildings */
                                             <div className="flex flex-col h-full justify-between text-left gap-4">
+                                                {/* SimCity Town Metrics Card */}
+                                                <div className="bg-stone-950/90 p-4 rounded-2xl border border-amber-900/40 shadow-lg space-y-3">
+                                                    <div className="flex justify-between items-center border-b border-stone-800 pb-2">
+                                                        <span className="font-mono font-bold text-amber-400 uppercase text-[11px] flex items-center gap-1.5">
+                                                            📊 Gestão da Vila
+                                                        </span>
+                                                        <span className="text-[10px] bg-emerald-950 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-800">
+                                                            {townMetrics.prosperity}% Prosperidade
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Prosperity Progress Bar */}
+                                                    <div className="w-full bg-stone-900 rounded-full h-2 overflow-hidden border border-stone-800">
+                                                        <div 
+                                                            className="bg-gradient-to-r from-amber-500 via-emerald-400 to-green-400 h-full rounded-full transition-all duration-500"
+                                                            style={{ width: `${townMetrics.prosperity}%` }}
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                                                        <div className="bg-black/40 p-2 rounded-xl border border-stone-850">
+                                                            <div className="text-[10px] text-stone-500">População</div>
+                                                            <div className="text-white font-bold">{formatNumber(townMetrics.population)} hab.</div>
+                                                        </div>
+                                                        <div className="bg-black/40 p-2 rounded-xl border border-stone-850">
+                                                            <div className="text-[10px] text-stone-500">Impostos</div>
+                                                            <div className="text-yellow-400 font-bold">+{formatNumber(townMetrics.taxRatePerHour)}/h</div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Active Zoning Synergies */}
+                                                    <div className="pt-1">
+                                                        <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5 flex justify-between">
+                                                            <span>Sinergias de Bairro</span>
+                                                            <span className="text-emerald-400">{townMetrics.activeSynergiesCount} / {townMetrics.synergies.length}</span>
+                                                        </div>
+                                                        <div className="space-y-1 max-h-24 overflow-y-auto custom-scrollbar pr-1">
+                                                            {townMetrics.synergies.map(syn => (
+                                                                <div 
+                                                                    key={syn.id}
+                                                                    className={`p-1.5 rounded-lg text-[10px] flex items-center justify-between border ${
+                                                                        syn.active 
+                                                                            ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-300' 
+                                                                            : 'bg-stone-950/40 border-stone-850 text-stone-600'
+                                                                    }`}
+                                                                    title={syn.description}
+                                                                >
+                                                                    <span className="truncate">{syn.name}</span>
+                                                                    <span className="font-bold font-mono ml-1">
+                                                                        {syn.active ? `+${Math.round(syn.bonusValue * 100)}%` : 'Inativo'}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Unplaced Buildings Section */}
                                                 <div className="flex-1 flex flex-col min-h-0">
-                                                    <h4 className="text-xs font-bold uppercase text-stone-400 border-b border-stone-800 pb-2 mb-3">Prédios por Posicionar</h4>
+                                                    <h4 className="text-xs font-bold uppercase text-stone-400 border-b border-stone-800 pb-1.5 mb-2 flex justify-between items-center">
+                                                        <span>Prédios por Posicionar</span>
+                                                        <span className="text-[10px] text-amber-500 font-mono">({unplacedBuildings.length})</span>
+                                                    </h4>
                                                     {unplacedBuildings.length === 0 ? (
-                                                        <div className="text-xs text-stone-555 italic py-6 text-center bg-black/20 rounded-xl border border-stone-900">
-                                                            Nenhum prédio aguardando posicionamento. Tudo em ordem na Vila!
+                                                        <div className="text-xs text-stone-500 italic py-4 text-center bg-black/20 rounded-xl border border-stone-900">
+                                                            Todos os prédios foram posicionados!
                                                         </div>
                                                     ) : (
-                                                        <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
+                                                        <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-36">
                                                             {unplacedBuildings.map(b => (
-                                                                <div key={b.id} className="bg-black/35 border border-stone-850 p-2.5 rounded-xl flex items-center justify-between gap-3 group hover:border-amber-600/30 transition-colors">
+                                                                <div key={b.id} className="bg-black/35 border border-stone-850 p-2 rounded-xl flex items-center justify-between gap-2 group hover:border-amber-600/30 transition-colors">
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className="text-2xl">{b.emoji}</span>
+                                                                        <span className="text-xl">{b.emoji}</span>
                                                                         <div>
                                                                             <div className="font-bold text-xs text-stone-200 group-hover:text-amber-400 transition-colors">{b.name}</div>
                                                                             <span className="text-[9px] text-stone-500 font-semibold">Lvl {b.level}</span>
@@ -444,7 +533,7 @@ export const TownModal: React.FC<TownModalProps> = ({
                                                                     </div>
                                                                     <button
                                                                         onClick={() => setSelectedBuildingId(b.id)}
-                                                                        className="bg-amber-650 hover:bg-amber-600 text-stone-950 font-black px-2.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-all"
+                                                                        className="bg-amber-650 hover:bg-amber-600 text-stone-950 font-black px-2 py-1 rounded-lg text-[10px] uppercase tracking-wider transition-all"
                                                                     >
                                                                         Colocar
                                                                     </button>
@@ -452,20 +541,6 @@ export const TownModal: React.FC<TownModalProps> = ({
                                                             ))}
                                                         </div>
                                                     )}
-                                                </div>
-
-                                                <div className="bg-stone-950/80 p-3.5 rounded-xl border border-stone-850/60 text-xs">
-                                                    <div className="font-bold text-amber-500 uppercase tracking-widest text-[9px] mb-2 font-mono">📊 Métricas da Vila</div>
-                                                    <div className="space-y-1.5 text-[11px] text-stone-400">
-                                                        <div className="flex justify-between">
-                                                            <span>Prédios Totais:</span>
-                                                            <span className="text-stone-200 font-bold">{buildings.filter(b => b.level > 0).length} / {buildings.length}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span>Posicionados:</span>
-                                                            <span className="text-stone-200 font-bold">{buildings.filter(b => b.placed).length}</span>
-                                                        </div>
-                                                    </div>
                                                 </div>
                                             </div>
                                         )}

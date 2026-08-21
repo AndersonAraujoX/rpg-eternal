@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Building, Hero } from '../engine/types';
-import { getTileDecoration } from '../utils/isometric';
+import { generateRoadNetwork, getRoadTier, type RoadTileInfo, type RoadTier } from '../engine/townEngine';
+import { getTileDecoration, getRoadTierStyle } from '../utils/isometric';
+import { Sparkles, Coins, Hammer, Info, Flame, Sun, Moon } from 'lucide-react';
 
 interface IsometricTownGridProps {
     buildings: Building[];
@@ -10,6 +12,8 @@ interface IsometricTownGridProps {
     onTileClick: (x: number, y: number) => void;
     onBuildingClick: (buildingId: string) => void;
     heroes?: Hero[];
+    weather?: string;
+    onFountainClick?: () => void;
 }
 
 interface Walker {
@@ -26,16 +30,18 @@ interface Walker {
     flip: boolean;
     bubbleText: string | null;
     bubbleTimer: number;
+    currentActionEmote?: string | null;
 }
 
-const DIALOGUES = [
-    "A comida da taverna estava ótima!",
-    "Ouvi um zumbido estranho vindo do porão...",
-    "Preciso de mais ouro...",
-    "Hoje é um belo dia para treinar!",
-    "Aquela dungeon foi assustadora...",
-    "Será que tem monstros novos por perto?",
-    "Quem diria que a prefeitura ficaria tão bonita!"
+const RPG_DIALOGUES = [
+    "A cerveja da taverna hoje está divina! 🍺",
+    "Preciso reforçar minha armadura na forja! ⚔️",
+    "Quem diria que nossa cidade se tornaria tão próspera! 🏛️",
+    "Rezei no altar e sinto uma bênção protetora! ✨",
+    "Belo dia para explorar as dungeons da torre!",
+    "Os impostos da prefeitura estão rendendo bem!",
+    "Mais uma vitória gloriosa na arena!",
+    "Essa praça ficou espetacular!"
 ];
 
 export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
@@ -45,63 +51,86 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
     placeBuilding,
     onTileClick,
     onBuildingClick,
-    heroes = []
+    heroes = [],
+    weather = 'Sunny',
+    onFountainClick
 }) => {
     const GRID_SIZE = 8;
-    const CELL_SIZE = 52; // px
+    const CELL_SIZE = 54; // px
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
+    const [fountainSparkle, setFountainSparkle] = useState(false);
 
-    // Walker state
+    // Generate intelligent dynamic road network based on placed buildings
+    const roadNetwork = useMemo(() => {
+        return generateRoadNetwork(buildings, GRID_SIZE);
+    }, [buildings]);
+
+    const townHall = buildings.find(b => b.id === 'town_hall');
+    const roadTier: RoadTier = getRoadTier(townHall?.level || 0);
+    const isDarkWeather = weather === 'Eclipse' || weather === 'Rain' || weather === 'Blizzard';
+    const roadStyles = getRoadTierStyle(roadTier, isDarkWeather);
+
+    // Get list of road coordinates for pathfinding
+    const roadCoordinates = useMemo(() => {
+        const coords: { x: number; y: number }[] = [];
+        roadNetwork.forEach((info) => {
+            coords.push({ x: info.x, y: info.y });
+        });
+        return coords.length > 0 ? coords : [{ x: 3, y: 4 }];
+    }, [roadNetwork]);
+
+    // Walkers simulation (Heroes strolling strictly along roads)
     const [walkers, setWalkers] = useState<Walker[]>([]);
     const animationFrameId = useRef<number | null>(null);
     const walkersRef = useRef<Walker[]>([]);
 
-    // Get available heroes for walking
-    const availableHeroes = React.useMemo(() => {
+    const availableHeroes = useMemo(() => {
         let list = heroes.filter(h => h.unlocked && h.assignment !== 'combat');
         if (list.length === 0) {
             list = heroes.filter(h => h.unlocked);
         }
-        return list.slice(0, 5);
+        return list.slice(0, 6);
     }, [heroes]);
 
-    // Initialize walkers when available heroes list changes
+    // Initialize walkers along road network
     useEffect(() => {
-        const initialWalkers = availableHeroes.map(h => {
-            const startX = Math.floor(Math.random() * GRID_SIZE);
-            const startY = Math.floor(Math.random() * GRID_SIZE);
+        const initialWalkers = availableHeroes.map((h, idx) => {
+            const spawnPoint = roadCoordinates[idx % roadCoordinates.length] || { x: 3, y: 4 };
+            const targetPoint = roadCoordinates[Math.floor(Math.random() * roadCoordinates.length)] || spawnPoint;
+
             return {
                 id: h.id,
                 emoji: h.emoji,
                 name: h.name,
                 level: h.level,
-                x: startX,
-                y: startY,
-                targetX: Math.floor(Math.random() * GRID_SIZE),
-                targetY: Math.floor(Math.random() * GRID_SIZE),
+                x: spawnPoint.x,
+                y: spawnPoint.y,
+                targetX: targetPoint.x,
+                targetY: targetPoint.y,
                 isWaiting: false,
                 waitTimer: 0,
                 flip: false,
                 bubbleText: null,
-                bubbleTimer: 0
+                bubbleTimer: 0,
+                currentActionEmote: null
             };
         });
         setWalkers(initialWalkers);
         walkersRef.current = initialWalkers;
-    }, [availableHeroes]);
+    }, [availableHeroes, roadCoordinates]);
 
-    // Animation loop for walkers
+    // Walker animation loop
     useEffect(() => {
         const updateWalkers = () => {
             let changed = false;
             const updated = walkersRef.current.map(w => {
-                let { x, y, targetX, targetY, isWaiting, waitTimer, flip, bubbleText, bubbleTimer } = w;
+                let { x, y, targetX, targetY, isWaiting, waitTimer, flip, bubbleText, bubbleTimer, currentActionEmote } = w;
 
-                // Handle speech bubble timer
                 if (bubbleTimer > 0) {
                     bubbleTimer--;
                     if (bubbleTimer <= 0) {
                         bubbleText = null;
+                        currentActionEmote = null;
                         changed = true;
                     }
                 }
@@ -110,9 +139,9 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                     waitTimer--;
                     if (waitTimer <= 0) {
                         isWaiting = false;
-                        // Choose new target coordinate
-                        targetX = Math.floor(Math.random() * GRID_SIZE);
-                        targetY = Math.floor(Math.random() * GRID_SIZE);
+                        const nextTarget = roadCoordinates[Math.floor(Math.random() * roadCoordinates.length)] || { x: 3, y: 4 };
+                        targetX = nextTarget.x;
+                        targetY = nextTarget.y;
                         flip = targetX < x;
                         changed = true;
                     }
@@ -121,22 +150,21 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                     const dy = targetY - y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distance < 0.05) {
-                        // Reached target waypoint
+                    if (distance < 0.06) {
                         x = targetX;
                         y = targetY;
                         isWaiting = true;
-                        waitTimer = 60 + Math.floor(Math.random() * 90); // wait for 2-5 seconds (at ~30fps)
-                        
-                        // Small chance to say something
-                        if (Math.random() < 0.2) {
-                            bubbleText = DIALOGUES[Math.floor(Math.random() * DIALOGUES.length)];
-                            bubbleTimer = 90; // bubble lasts ~3 seconds
+                        waitTimer = 50 + Math.floor(Math.random() * 80);
+
+                        // Contextual emote / speech bubble when stopping
+                        if (Math.random() < 0.35) {
+                            bubbleText = RPG_DIALOGUES[Math.floor(Math.random() * RPG_DIALOGUES.length)];
+                            bubbleTimer = 100;
+                            currentActionEmote = Math.random() < 0.5 ? '💬' : '✨';
                         }
                         changed = true;
                     } else {
-                        // Move towards target
-                        const speed = 0.025; // units per frame
+                        const speed = 0.022;
                         x += (dx / distance) * speed;
                         y += (dy / distance) * speed;
                         flip = targetX < x;
@@ -154,7 +182,8 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                     waitTimer,
                     flip,
                     bubbleText,
-                    bubbleTimer
+                    bubbleTimer,
+                    currentActionEmote
                 };
             });
 
@@ -172,7 +201,7 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                 cancelAnimationFrame(animationFrameId.current);
             }
         };
-    }, []);
+    }, [roadCoordinates]);
 
     const getBuildingAt = (x: number, y: number): Building | undefined => {
         return buildings.find(b => {
@@ -192,13 +221,20 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
         return true;
     };
 
-    const isPathTile = (x: number, y: number): boolean => {
-        return x === 3 || y === 4;
-    };
-
     const placingBuilding = selectedBuildingId ? buildings.find(b => b.id === selectedBuildingId) : null;
 
-    // Grid rendering logic
+    const handleFountainClick = () => {
+        setFountainSparkle(true);
+        setTimeout(() => setFountainSparkle(false), 2000);
+        if (onFountainClick) onFountainClick();
+    };
+
+    // Precompute placed building list to avoid duplicate rendering over multi-tile footprints
+    const placedBuildingsList = useMemo(() => {
+        return buildings.filter(b => b.placed && b.x !== undefined && b.y !== undefined);
+    }, [buildings]);
+
+    // Grid coordinates
     const cells = [];
     for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
@@ -208,37 +244,52 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
 
     return (
         <div className="w-full flex flex-col items-center">
-            <div className="overflow-auto max-w-full p-4 bg-stone-955/65 border border-stone-850/80 rounded-2xl custom-scrollbar">
+            <div className="overflow-auto max-w-full p-4 bg-stone-950/80 border-2 border-stone-800/80 rounded-2xl shadow-2xl custom-scrollbar relative">
+                
+                {/* Visual Weather / Time Banner */}
+                <div className="flex justify-between items-center px-3 py-1.5 mb-3 bg-stone-900/90 rounded-xl border border-stone-700/60 text-xs font-mono">
+                    <div className="flex items-center gap-2">
+                        <span className="text-amber-400 font-bold flex items-center gap-1">
+                            🏛️ Pavimentação: <strong className="uppercase text-white">{roadTier.replace('_', ' ')}</strong>
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-stone-400">Clima Atual:</span>
+                        <span className="text-emerald-400 font-bold">{weather}</span>
+                    </div>
+                </div>
+
+                {/* ── MAP CONTAINER ────────────────────────────────────────── */}
                 <div 
-                    className="relative bg-emerald-950/40 rounded-xl border-2 border-stone-800/80 overflow-hidden shadow-2xl select-none mx-auto"
+                    className="relative bg-gradient-to-b from-emerald-950/60 via-stone-900 to-stone-950 rounded-xl border-2 border-amber-900/40 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.8)] select-none mx-auto"
                     style={{
                         width: `${GRID_SIZE * CELL_SIZE}px`,
                         height: `${GRID_SIZE * CELL_SIZE}px`,
                     }}
                 >
-                    {/* Render grid cells background */}
+                    {/* LAYER 0: TERRAIN & NATURAL GRASS */}
                     {cells.map(({ x, y }) => {
-                        const isPath = isPathTile(x, y);
-                        const decor = getTileDecoration(x, y);
-                        const hasBuilding = !!getBuildingAt(x, y);
+                        const roadInfo = roadNetwork.get(`${x},${y}`);
+                        const isRoad = !!roadInfo;
+                        const decor = getTileDecoration(x, y, isRoad);
                         const isHovered = hoveredTile?.x === x && hoveredTile?.y === y;
 
-                        // Calculate highlights for placing a building
-                        let cellBg = isPath ? 'bg-stone-750' : 'bg-emerald-900/10';
-                        let cellBorder = 'border-stone-900/30';
+                        let cellBg = isRoad ? roadStyles.bg : 'bg-emerald-950/30';
+                        let cellBorder = isRoad ? roadStyles.border : 'border-emerald-900/20';
 
                         if (placingBuilding && isHovered) {
                             const isValid = canPlaceBuildingAt(placingBuilding, x, y);
-                            cellBg = isValid ? 'bg-green-500/35' : 'bg-red-500/35';
-                            cellBorder = isValid ? 'border-green-400' : 'border-red-400';
+                            cellBg = isValid ? 'bg-emerald-500/40' : 'bg-red-500/40';
+                            cellBorder = isValid ? 'border-emerald-400 z-20 ring-2 ring-emerald-400' : 'border-red-400 z-20 ring-2 ring-red-400';
                         } else if (isHovered) {
-                            cellBorder = 'border-amber-500 z-10';
+                            cellBorder = 'border-amber-400 z-10 ring-1 ring-amber-400/50';
                         }
 
                         return (
                             <div
-                                key={`cell-${x}-${y}`}
-                                className={`absolute border transition-all duration-155 flex items-center justify-center cursor-pointer ${cellBg} ${cellBorder}`}
+                                key={`tile-${x}-${y}`}
+                                data-testid={`tile-${x}-${y}`}
+                                className={`absolute border transition-all duration-150 flex items-center justify-center cursor-pointer ${cellBg} ${cellBorder}`}
                                 style={{
                                     left: `${x * CELL_SIZE}px`,
                                     top: `${y * CELL_SIZE}px`,
@@ -248,126 +299,131 @@ export const IsometricTownGrid: React.FC<IsometricTownGridProps> = ({
                                 onMouseEnter={() => setHoveredTile({ x, y })}
                                 onMouseLeave={() => setHoveredTile(null)}
                                 onClick={() => {
-                                    if (placingBuilding) {
-                                        if (canPlaceBuildingAt(placingBuilding, x, y)) {
-                                            placeBuilding(placingBuilding.id, x, y);
-                                        }
-                                    } else if (!hasBuilding) {
+                                    if (selectedBuildingId) {
+                                        placeBuilding(selectedBuildingId, x, y);
+                                    } else {
                                         onTileClick(x, y);
                                     }
                                 }}
                             >
-                                {/* Path texturing / cobblestones */}
-                                {isPath && (
-                                    <div className="absolute inset-0.5 border border-stone-600/30 rounded bg-stone-700 flex flex-wrap gap-0.5 p-0.5 opacity-60">
-                                        <div className="w-1.5 h-1.5 bg-stone-600 rounded-sm"></div>
-                                        <div className="w-1.5 h-1.5 bg-stone-800 rounded-sm"></div>
-                                        <div className="w-1.5 h-1.5 bg-stone-600 rounded-sm"></div>
-                                        <div className="w-1.5 h-1.5 bg-stone-800 rounded-sm"></div>
+                                {/* Natural Flora / Rocks on non-road tiles */}
+                                {!isRoad && decor && (
+                                    <span className="text-base select-none opacity-85 hover:scale-125 transition-transform">
+                                        {decor}
+                                    </span>
+                                )}
+
+                                {/* Road Props: Street Torches, Lamps & Market Bazaars */}
+                                {isRoad && roadInfo?.hasLamp && (
+                                    <div className="absolute -top-1.5 -right-1.5 z-10 animate-bounce">
+                                        <span className="text-xs" title="Poste de Iluminação da Cidade">{roadStyles.lampEmoji}</span>
                                     </div>
                                 )}
-
-                                {/* Nature decorations */}
-                                {!isPath && decor && !hasBuilding && (
-                                    <span className="text-sm opacity-50 filter drop-shadow">{decor}</span>
-                                )}
-
-                                {/* Coordinates for hidden tests */}
-                                <span className="sr-only opacity-0 absolute pointer-events-none select-none text-[1px]">{x},{y}</span>
                             </div>
                         );
                     })}
 
-                    {/* Render placed buildings */}
-                    {buildings.filter(b => b.placed && b.x !== undefined && b.y !== undefined).map(b => {
-                        const bWidth = b.width * CELL_SIZE;
-                        const bHeight = b.height * CELL_SIZE;
-                        const bLeft = b.x! * CELL_SIZE;
-                        const bTop = b.y! * CELL_SIZE;
+                    {/* LAYER 1: CENTRAL INTERACTIVE PLAZA FOUNTAIN */}
+                    <div 
+                        onClick={handleFountainClick}
+                        className="absolute z-20 cursor-pointer flex flex-col items-center justify-center group"
+                        style={{
+                            left: `${3.5 * CELL_SIZE - 20}px`,
+                            top: `${4 * CELL_SIZE - 20}px`,
+                            width: '40px',
+                            height: '40px'
+                        }}
+                        title="Chafariz Central de Prosperidade (Clique para fazer um pedido!)"
+                    >
+                        <div className="text-2xl group-hover:scale-125 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]">
+                            ⛲
+                        </div>
+                        {fountainSparkle && (
+                            <span className="absolute -top-4 text-xs text-amber-300 font-mono font-bold animate-ping">
+                                +✨ Moeda da Sorte!
+                            </span>
+                        )}
+                    </div>
+
+                    {/* LAYER 2: PLACED BUILDINGS */}
+                    {placedBuildingsList.map(building => {
+                        const isTownHall = building.id === 'town_hall';
+                        const levelBadgeColor = building.level >= 10 
+                            ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-stone-950 font-black border-amber-300' 
+                            : building.level >= 5 
+                            ? 'bg-blue-600 text-white font-bold border-blue-400' 
+                            : 'bg-stone-800 text-stone-300 border-stone-600';
 
                         return (
                             <div
-                                key={`placed-${b.id}`}
-                                className="absolute p-0.5 group cursor-pointer transition-all duration-250 hover:scale-95"
-                                style={{
-                                    left: `${bLeft}px`,
-                                    top: `${bTop}px`,
-                                    width: `${bWidth}px`,
-                                    height: `${bHeight}px`,
-                                    zIndex: 20
-                                }}
+                                key={`placed-bld-${building.id}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onBuildingClick(b.id);
+                                    onBuildingClick(building.id);
+                                }}
+                                className="absolute z-30 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 group"
+                                style={{
+                                    left: `${building.x! * CELL_SIZE}px`,
+                                    top: `${building.y! * CELL_SIZE}px`,
+                                    width: `${building.width * CELL_SIZE}px`,
+                                    height: `${building.height * CELL_SIZE}px`,
                                 }}
                             >
-                                <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 border-2 border-amber-600/50 rounded-xl flex flex-col items-center justify-center relative shadow-lg group-hover:border-amber-400 group-hover:shadow-[0_0_12px_rgba(245,158,11,0.3)] transition-all">
-                                    {/* Building Emoji */}
-                                    <span className="text-2xl filter drop-shadow select-none group-hover:scale-110 transition-transform duration-300">
-                                        {b.emoji}
-                                    </span>
-
-                                    {/* Level Badge */}
-                                    <div className="absolute -bottom-1 bg-amber-600 text-stone-950 text-[8px] font-black px-1 py-0.5 rounded-md border border-stone-900 shadow-sm leading-none">
-                                        L{b.level}
+                                {/* Shadow and Building Base */}
+                                <div className="absolute inset-1 rounded-xl bg-stone-900/90 border-2 border-amber-600/60 group-hover:border-amber-400 group-hover:shadow-[0_0_25px_rgba(245,158,11,0.5)] transition-all flex flex-col items-center justify-center p-1 overflow-hidden">
+                                    <div className="text-3xl mb-0.5 group-hover:scale-110 transition-transform">
+                                        {building.emoji}
                                     </div>
-                                    
-                                    {/* Name indicator if large enough */}
-                                    {b.width >= 2 && (
-                                        <span className="absolute top-1 text-[7px] text-amber-400 font-bold uppercase tracking-wider px-1 text-center truncate max-w-full">
-                                            {b.name}
-                                        </span>
-                                    )}
+                                    <span className="text-[10px] font-bold text-stone-200 truncate max-w-full px-1 text-center font-mono leading-none">
+                                        {building.name}
+                                    </span>
                                 </div>
+
+                                {/* Building Level Badge */}
+                                <span className={`absolute -top-2 -right-2 text-[9px] px-1.5 py-0.5 rounded-full border shadow-md font-mono z-40 ${levelBadgeColor}`}>
+                                    Lvl {building.level}
+                                </span>
                             </div>
                         );
                     })}
 
-                    {/* Ambient / Idle Characters (Town Walkers Layer) */}
-                    {walkers.map(w => {
-                        const posX = w.x * CELL_SIZE;
-                        const posY = w.y * CELL_SIZE;
-
+                    {/* LAYER 3: CITIZENS & HERO WALKERS (MMORPG LIFE) */}
+                    {walkers.map(walker => {
                         return (
                             <div
-                                key={`walker-${w.id}`}
-                                className="absolute flex flex-col items-center pointer-events-none select-none transition-all duration-300 ease-linear z-30"
+                                key={`walker-${walker.id}`}
+                                className="absolute z-35 flex flex-col items-center pointer-events-none transition-transform duration-75"
                                 style={{
-                                    left: `${posX}px`,
-                                    top: `${posY}px`,
-                                    width: `${CELL_SIZE}px`,
-                                    height: `${CELL_SIZE}px`,
+                                    left: `${walker.x * CELL_SIZE + (CELL_SIZE / 2) - 16}px`,
+                                    top: `${walker.y * CELL_SIZE + (CELL_SIZE / 2) - 24}px`,
+                                    width: '32px',
+                                    height: '32px',
                                 }}
                             >
-                                {/* Tooltip / Badge for Hero Name & Level */}
-                                <div className="absolute -top-7 bg-stone-900/90 border border-amber-650/40 px-1 py-0.5 rounded shadow text-[7px] font-bold text-amber-400 flex flex-col items-center pointer-events-none whitespace-nowrap">
-                                    <span>{w.name}</span>
-                                    <span className="text-[6px] text-stone-400">Lvl {w.level}</span>
-                                </div>
-
-                                {/* Speech Bubble Overlay */}
-                                {w.bubbleText && (
-                                    <div className="absolute -top-16 bg-white border border-stone-300 text-stone-900 text-[8px] font-black px-2 py-1 rounded-lg shadow-md max-w-[120px] text-center leading-tight animate-bounce z-40">
-                                        {w.bubbleText}
-                                        <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-white border-r border-b border-stone-300 rotate-45"></div>
+                                {/* Hero Chat Speech Bubble */}
+                                {walker.bubbleText && (
+                                    <div className="absolute -top-8 bg-black/90 text-amber-200 border border-amber-500/60 text-[9px] font-mono px-2 py-0.5 rounded-lg whitespace-nowrap shadow-lg animate-fade-in z-50">
+                                        {walker.bubbleText}
                                     </div>
                                 )}
 
-                                {/* Animated Hero Sprite */}
+                                {/* Hero Avatar Sprite */}
                                 <div 
-                                    className={`text-2xl mt-1.5 transition-transform duration-300 flex items-center justify-center
-                                        ${w.isWaiting ? 'animate-pulse' : 'animate-bounce'}
-                                        ${w.flip ? 'scale-x-[-1]' : 'scale-x-[1]'}
-                                    `}
-                                    style={{
-                                        animationDuration: w.isWaiting ? '2s' : '0.6s'
-                                    }}
+                                    className="text-2xl transition-transform"
+                                    style={{ transform: walker.flip ? 'scaleX(-1)' : 'scaleX(1)' }}
+                                    title={`${walker.name} (Lvl ${walker.level})`}
                                 >
-                                    {w.emoji}
+                                    {walker.emoji}
                                 </div>
+
+                                {/* Hero Name Tag */}
+                                <span className="text-[8px] font-mono font-bold text-white bg-black/70 px-1 rounded -mt-1 leading-none shadow">
+                                    {walker.name}
+                                </span>
                             </div>
                         );
                     })}
+
                 </div>
             </div>
         </div>

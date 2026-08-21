@@ -114,7 +114,7 @@ describe('TownModal', () => {
         fireEvent.click(colocarBtn);
 
         // Click the empty slot coords to place it (e.g. at 0, 0)
-        const emptyCell = screen.getByText('0,0');
+        const emptyCell = screen.getByTestId('tile-0-0');
         fireEvent.click(emptyCell);
 
         expect(setBuildingsMock).toHaveBeenCalled();
