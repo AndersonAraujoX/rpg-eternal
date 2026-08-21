@@ -45,6 +45,8 @@ export interface PersistenceProps {
     setTower: React.Dispatch<React.SetStateAction<Tower>>;
     guild: Guild | null;
     setGuild: React.Dispatch<React.SetStateAction<Guild | null>>;
+    guildQueue?: { name: string; emoji: string; power: number }[];
+    setGuildQueue?: React.Dispatch<React.SetStateAction<{ name: string; emoji: string; power: number }[]>>;
     voidMatter: number;
     setVoidMatter: React.Dispatch<React.SetStateAction<number>>;
     arenaRank: number;
@@ -210,7 +212,7 @@ export const usePersistence = (props: PersistenceProps) => {
         setHeroes, setBoss, setItems, setSouls, setGold,
         setDivinity, setPets, setTalents, setArtifacts,
         setCards, setConstellations, setKeys, setResources,
-        setTower, setTowerBoss, setGuild, setVoidMatter,
+        setTower, setTowerBoss, setGuild, setGuildQueue, setVoidMatter,
         setArenaRank, setGlory, setQuests,
         setAchievements,
         setStarlight,
@@ -441,6 +443,9 @@ export const usePersistence = (props: PersistenceProps) => {
                     if (loadedGuild.totalContribution === undefined) loadedGuild.totalContribution = 0;
                     setGuild(loadedGuild);
                 }
+                if (Array.isArray(state.guildQueue) && setGuildQueue) {
+                    setGuildQueue(state.guildQueue);
+                }
                 if (state.voidMatter) setVoidMatter(state.voidMatter);
                 if (state.arenaRank) setArenaRank(state.arenaRank);
                 if (state.glory) setGlory(state.glory);
@@ -660,7 +665,7 @@ export const usePersistence = (props: PersistenceProps) => {
             const state = {
                 heroes: compactHeroes,
                 boss: p.boss, souls: p.souls, gold: p.gold, divinity: p.divinity, pets: p.pets, talents: p.talents, artifacts: p.artifacts, cards: p.cards, constellations: p.constellations, keys: p.keys,
-                resources: p.resources, tower: p.tower, towerBoss: p.towerBoss, guild: p.guild, voidMatter: p.voidMatter, arenaRank: p.arenaRank, glory: p.glory, quests: p.quests, achievements: p.achievements, starlight: p.starlight,
+                resources: p.resources, tower: p.tower, towerBoss: p.towerBoss, guild: p.guild, guildQueue: p.guildQueue || [], voidMatter: p.voidMatter, arenaRank: p.arenaRank, glory: p.glory, quests: p.quests, achievements: p.achievements, starlight: p.starlight,
                 starlightUpgrades: p.starlightUpgrades, theme: p.theme, galaxy: p.galaxy, monsterKills: filteredKills, gameStats: p.gameStats, autoSellRarity: p.autoSellRarity, autoFeedPets: p.autoFeedPets,
                 activeExpeditions: p.activeExpeditions, activePotions: p.activePotions, buildings: p.buildings,
                 dailyQuests: p.dailyQuests, dailyLoginClaimed: p.dailyLoginClaimed, lastDailyReset: p.lastDailyReset,

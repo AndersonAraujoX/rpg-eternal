@@ -762,6 +762,7 @@ export interface GameActions {
     // Social/Guild
     joinGuild: (guildName: string) => void;
     contributeGuild: (amount: number) => void;
+    claimGuildRecruits?: () => void;
     summonTavernLine: (amount: number) => void;
 
     // Town

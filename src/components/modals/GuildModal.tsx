@@ -177,24 +177,38 @@ export const GuildModal: React.FC<GuildModalProps> = ({ isOpen, onClose, guild, 
                 {/* Guild Queue (Arena Fighters) */}
                 {guildQueue.length > 0 && (
                     <div className="mt-6 bg-orange-950/30 border border-orange-800/50 p-4 rounded-lg">
-                        <h4 className="text-orange-400 font-bold mb-3 flex items-center gap-2">
-                            <Users size={16} /> Fila de Recrutas ({guildQueue.length})
-                        </h4>
-                        {!isLeader && (
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                            <h4 className="text-orange-400 font-bold flex items-center gap-2">
+                                <Users size={16} /> Fila de Recrutas da Arena ({guildQueue.length})
+                            </h4>
+                            {guild && (
+                                <button
+                                    onClick={() => actions.claimGuildRecruits && actions.claimGuildRecruits()}
+                                    className="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md flex items-center gap-1.5 transition-all active:scale-95 animate-pulse"
+                                >
+                                    <Users size={14} /> Aceitar Todos (+{guildQueue.length * 500} XP da Guilda)
+                                </button>
+                            )}
+                        </div>
+                        {!guild ? (
                             <p className="text-xs text-gray-400 mb-3 italic">
-                                Torne-se Líder (contribua 10.000 Ouro) para aceitar os recrutas.
+                                Junte-se a uma Guilda acima para aceitar os lutadores recrutados na Arena!
+                            </p>
+                        ) : (
+                            <p className="text-xs text-green-300/80 mb-3">
+                                Lutadores derrotados na Arena prontos para fortalecer os quadros da sua guilda.
                             </p>
                         )}
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                        <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
                             {guildQueue.map((r, i) => (
-                                <div key={i} className="flex items-center justify-between bg-gray-800 p-2 rounded text-sm">
+                                <div key={i} className="flex items-center justify-between bg-gray-800/90 border border-gray-700 p-2 rounded-lg text-sm">
                                     <div className="flex items-center gap-2">
-                                        <span>{r.emoji}</span>
+                                        <span className="text-xl">{r.emoji}</span>
                                         <span className="text-white font-medium">{r.name}</span>
                                     </div>
-                                    <div className="flex items-center gap-1 text-gray-400 text-xs">
-                                        <Sword size={10} className="text-red-400" />
-                                        {formatNumber(r.power)}
+                                    <div className="flex items-center gap-1 text-gray-400 text-xs font-mono">
+                                        <Sword size={11} className="text-red-400" />
+                                        {formatNumber(r.power)} Poder
                                     </div>
                                 </div>
                             ))}

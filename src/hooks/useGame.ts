@@ -1354,13 +1354,21 @@ export const useGame = (
                     setGold(g => g + goldReward);
 
                     // Defeated fighter always joins guild (or waits in queue)
-                    const isLeader = stateRef.current.guild && (stateRef.current.guild.totalContribution || 0) >= 10000;
-                    if (isLeader) {
-                        guildState.setGuild((g: any) => g ? { ...g, xp: Math.min(g.xp + 500, g.maxXp), members: g.members + 1 } : g);
-                        addLog(`⚔️ ${opponent.name} foi derrotado e juntou-se à sua Guilda! +500 XP. +${gloryGain} Glória, +${goldReward} Ouro.`, 'achievement');
+                    if (stateRef.current.guild) {
+                        guildState.setGuild((g: any) => g ? { ...g, xp: g.xp + 500, members: (g.members || 1) + 1 } : g);
+                        addLog(`⚔️ ${opponent.name} foi derrotado e juntou-se à sua Guilda! (+1 Membro, +500 XP da Guilda, +${gloryGain} Glória, +${goldReward} Ouro)`, 'achievement');
                     } else {
                         setGuildQueue(q => [...q, { name: opponent.name, emoji: opponent.avatar, power: opponent.power }]);
-                        addLog(`⚔️ ${opponent.name} aguarda na Fila de Recrutas até você virar Líder! +${gloryGain} Glória, +${goldReward} Ouro.`, 'achievement');
+                        addLog(`⚔️ ${opponent.name} foi derrotado e aguarda na Fila de Recrutas! Junte-se a uma Guilda para aceitá-lo (+${gloryGain} Glória, +${goldReward} Ouro).`, 'achievement');
+                    }
+
+                    // 25% chance of unlocking a locked hero from the hero roster (Party Recruitment)
+                    const lockedHeroes = stateRef.current.heroes.filter(h => !h.unlocked);
+                    if (lockedHeroes.length > 0 && Math.random() < 0.25) {
+                        const randomLockedHero = lockedHeroes[Math.floor(Math.random() * lockedHeroes.length)];
+                        setHeroes(prev => prev.map(h => h.id === randomLockedHero.id ? { ...h, unlocked: true } : h));
+                        addLog(`🎉 RECRUTAMENTO DE HERÓI! ${randomLockedHero.name} (${randomLockedHero.class}) ${randomLockedHero.emoji} juntou-se ao seu grupo de heróis!`, 'achievement');
+                        soundManager.playLevelUp();
                     }
 
                     // Update bot stats and select new arena opponents
@@ -1824,6 +1832,15 @@ export const useGame = (
             },
             joinGuild: (name: string) => guildState.joinGuild(name),
             contributeGuild: (amt: number) => guildState.contributeGuild(amt),
+            claimGuildRecruits: () => {
+                if (!stateRef.current.guild || stateRef.current.guildQueue.length === 0) return;
+                const count = stateRef.current.guildQueue.length;
+                const xpGain = count * 500;
+                guildState.setGuild((g: any) => g ? { ...g, members: (g.members || 1) + count, xp: g.xp + xpGain } : g);
+                setGuildQueue([]);
+                addLog(`🎖️ ${count} lutador(es) da Arena foram aceitos na sua Guilda! (+${count} Membros, +${xpGain} XP da Guilda)`, 'achievement');
+                soundManager.playLevelUp();
+            },
             summonTavernLine: (amount: number) => {
                 const res = simulateTavernSummon(amount, stateRef.current.gold, stateRef.current.gameStats.tavernPurchases || 0, stateRef.current.heroes, stateRef.current.artifacts, stateRef.current.pets, 1, stateRef.current.gameStats.heroPity || 0, stateRef.current.gameStats.petPity || 0);
                 if (res.success) {
@@ -3559,7 +3576,7 @@ export const useGame = (
         heroes, setHeroes, boss, setBoss, towerBoss: world.towerBoss, setTowerBoss: world.setTowerBoss, items, setItems, souls, setSouls, gold, setGold, divinity, setDivinity,
         pets: petsState.pets, setPets: petsState.setPets, talents, setTalents, artifacts, setArtifacts, cards, setCards,
         constellations, setConstellations, keys, setKeys, resources, setResources, tower: world.tower, setTower: world.setTower,
-        guild: guildState.guild, setGuild: guildState.setGuild, voidMatter, setVoidMatter, arenaRank, setArenaRank, glory, setGlory,
+        guild: guildState.guild, setGuild: guildState.setGuild, guildQueue, setGuildQueue, voidMatter, setVoidMatter, arenaRank, setArenaRank, glory, setGlory,
         quests, setQuests, runes, setRunes, achievements, setAchievements, starlight, setStarlight, starlightUpgrades, setStarlightUpgrades,
         autoSellRarity, setAutoSellRarity, autoFeedPets, setAutoFeedPets, theme, setTheme, galaxy: galaxyState.galaxy, setGalaxy: galaxyState.setGalaxy,
         monsterKills, setMonsterKills, gameStats, setGameStats, activeExpeditions, setActiveExpeditions, activePotions, setActivePotions,
