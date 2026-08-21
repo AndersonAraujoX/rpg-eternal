@@ -816,375 +816,439 @@ export const TownModal: React.FC<TownModalProps> = ({
 
                 {viewMode === 'deities' && (
                     <div className="flex-1 flex flex-col min-h-0">
-                        {/* If no patron deity is chosen */}
+                        {/* ── Selection Mode (No Patron Chosen) ─────────────────── */}
                         {!patronDeity ? (
-                            <div className="flex-1 flex flex-col justify-center overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
-                                <div className="text-center mb-8">
-                                    <h3 className="text-2xl font-black text-amber-500 mb-2">ESCOLHA SEU DEUS PADROEIRO</h3>
-                                    <p className="text-stone-400 text-sm max-w-xl mx-auto">
-                                        Preste juramento a uma das divindades eternas. Cada deus concede uma magia de combate automática devastadora e poderosos efeitos passivos que crescem à medida que você aumenta seu favor.
+                            <div className="flex-1 flex flex-col justify-center overflow-y-auto max-h-[62vh] pr-2 custom-scrollbar">
+                                <div className="text-center mb-6">
+                                    <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full text-[11px] font-mono font-bold text-amber-400 uppercase tracking-widest mb-2 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                                        <Sparkles size={13} className="text-amber-400 animate-spin" /> Santuário Celestial
+                                    </div>
+                                    <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 tracking-tight">
+                                        ESCOLHA SEU DEUS PADROEIRO
+                                    </h3>
+                                    <p className="text-stone-400 text-xs max-w-xl mx-auto mt-1 leading-relaxed">
+                                        Preste juramento solene a uma das entidades eternas. Cada divindade concede uma bênção passiva permanente, habilidades de combate devastadoras e rituais climáticos.
                                     </p>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto w-full">
-                                    {/* Aurelius */}
-                                    <div className="bg-gradient-to-b from-amber-950/40 via-stone-900 to-black border-2 border-amber-600/30 rounded-2xl p-6 flex flex-col justify-between hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all duration-300 group">
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto w-full pb-2">
+                                    {/* ☀️ Aurelius */}
+                                    <div className="relative bg-gradient-to-b from-amber-950/40 via-stone-900/90 to-stone-950 border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-amber-400 hover:shadow-[0_0_30px_rgba(245,158,11,0.25)] transition-all duration-300 group overflow-hidden">
+                                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all" />
                                         <div>
-                                            <div className="text-5xl text-center mb-4 group-hover:scale-110 transition-transform duration-300">☀️</div>
-                                            <h4 className="text-xl font-bold text-amber-400 text-center mb-2">Aurelius</h4>
-                                            <p className="text-stone-500 text-center text-xs uppercase tracking-widest font-semibold mb-4">Pai do Sol</p>
-                                            <div className="space-y-4 text-sm text-stone-300">
-                                                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                                                    <span className="font-bold text-yellow-400 text-xs uppercase block mb-1">Efeito Passivo</span>
-                                                    <span>+15% Dano de Ataque Global (+5% / Lvl) & +20% Eficácia de Bombardeio GvG</span>
+                                            <div className="relative flex justify-center mb-3">
+                                                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-4xl shadow-[0_0_20px_rgba(245,158,11,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(245,158,11,0.4)] transition-all duration-300">
+                                                    ☀️
                                                 </div>
-                                                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                                                    <span className="font-bold text-yellow-400 text-xs uppercase block mb-1">Magia Ativa (100% Carga)</span>
-                                                    <span className="text-xs text-stone-400">Meteoro Solar: Causa dano massivo de fogo baseado no ataque médio da equipe.</span>
+                                                <span className="absolute -bottom-2 bg-amber-500/20 text-amber-300 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-amber-500/40">
+                                                    SOL & FOGO
+                                                </span>
+                                            </div>
+                                            <h4 className="text-xl font-black text-amber-400 text-center mt-2">Aurelius</h4>
+                                            <p className="text-stone-500 text-center text-[10px] uppercase tracking-widest font-bold mb-3">Pai do Sol Cósmico</p>
+
+                                            <div className="space-y-2.5 text-xs text-stone-300">
+                                                <div className="bg-black/60 p-3 rounded-xl border border-amber-500/20 text-left">
+                                                    <span className="font-bold text-amber-400 text-[10px] uppercase font-mono block mb-0.5 flex items-center gap-1">
+                                                        👑 Bênção Passiva
+                                                    </span>
+                                                    <span className="text-stone-200 leading-tight block">
+                                                        <strong className="text-amber-300">+15% Dano Global</strong> (+5%/Lvl) e <strong className="text-amber-300">+20% Eficácia GvG</strong>
+                                                    </span>
+                                                </div>
+                                                <div className="bg-black/60 p-3 rounded-xl border border-amber-500/20 text-left">
+                                                    <span className="font-bold text-amber-400 text-[10px] uppercase font-mono block mb-0.5 flex items-center gap-1">
+                                                        ⚡ Magia de Combate (100%)
+                                                    </span>
+                                                    <span className="text-stone-400 text-[11px] leading-tight block">
+                                                        <strong className="text-stone-200">Meteoro Solar:</strong> Invoca chuva de fogo massiva baseada no ataque do grupo.
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <button
                                             onClick={() => pledgeDeity('aurelius')}
-                                            className="w-full mt-6 py-3 bg-amber-600 hover:bg-amber-500 text-stone-950 font-black rounded-xl text-xs uppercase tracking-widest transition-all duration-300 active:scale-95 shadow-md shadow-amber-900/40"
+                                            className="w-full mt-4 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-stone-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-amber-950/50 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] active:scale-95"
                                         >
-                                            Consagrar-se
+                                            Consagrar a Aurelius
                                         </button>
                                     </div>
 
-                                    {/* Tenebris */}
-                                    <div className="bg-gradient-to-b from-purple-950/40 via-stone-900 to-black border-2 border-purple-900/30 rounded-2xl p-6 flex flex-col justify-between hover:border-purple-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] transition-all duration-300 group">
+                                    {/* 🌌 Tenebris */}
+                                    <div className="relative bg-gradient-to-b from-purple-950/40 via-stone-900/90 to-stone-950 border-2 border-purple-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-purple-400 hover:shadow-[0_0_30px_rgba(168,85,247,0.25)] transition-all duration-300 group overflow-hidden">
+                                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all" />
                                         <div>
-                                            <div className="text-5xl text-center mb-4 group-hover:scale-110 transition-transform duration-300">🌌</div>
-                                            <h4 className="text-xl font-bold text-purple-400 text-center mb-2">Tenebris</h4>
-                                            <p className="text-stone-500 text-center text-xs uppercase tracking-widest font-semibold mb-4">Tecelão do Vazio</p>
-                                            <div className="space-y-4 text-sm text-stone-300">
-                                                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                                                    <span className="font-bold text-purple-400 text-xs uppercase block mb-1">Efeito Passivo</span>
-                                                    <span>+15% Roubo de Vida Global (+5% / Lvl)</span>
+                                            <div className="relative flex justify-center mb-3">
+                                                <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-4xl shadow-[0_0_20px_rgba(168,85,247,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] transition-all duration-300">
+                                                    🌌
                                                 </div>
-                                                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                                                    <span className="font-bold text-purple-400 text-xs uppercase block mb-1">Magia Ativa (100% Carga)</span>
-                                                    <span className="text-xs text-stone-400">Barreira Entrópica: Cura e protege a equipe em combate em 30% do HP Máximo por nível.</span>
+                                                <span className="absolute -bottom-2 bg-purple-500/20 text-purple-300 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-purple-500/40">
+                                                    VAZIO & ENTROPIA
+                                                </span>
+                                            </div>
+                                            <h4 className="text-xl font-black text-purple-400 text-center mt-2">Tenebris</h4>
+                                            <p className="text-stone-500 text-center text-[10px] uppercase tracking-widest font-bold mb-3">Tecelão do Vazio</p>
+
+                                            <div className="space-y-2.5 text-xs text-stone-300">
+                                                <div className="bg-black/60 p-3 rounded-xl border border-purple-500/20 text-left">
+                                                    <span className="font-bold text-purple-400 text-[10px] uppercase font-mono block mb-0.5 flex items-center gap-1">
+                                                        👑 Bênção Passiva
+                                                    </span>
+                                                    <span className="text-stone-200 leading-tight block">
+                                                        <strong className="text-purple-300">+15% Roubo de Vida Global</strong> (+5%/Lvl) e sustentação cósmica
+                                                    </span>
+                                                </div>
+                                                <div className="bg-black/60 p-3 rounded-xl border border-purple-500/20 text-left">
+                                                    <span className="font-bold text-purple-400 text-[10px] uppercase font-mono block mb-0.5 flex items-center gap-1">
+                                                        ⚡ Magia de Combate (100%)
+                                                    </span>
+                                                    <span className="text-stone-400 text-[11px] leading-tight block">
+                                                        <strong className="text-stone-200">Barreira Entrópica:</strong> Concede escudo e cura a equipe em 30% do HP Máx por nível.
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <button
                                             onClick={() => pledgeDeity('tenebris')}
-                                            className="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-black rounded-xl text-xs uppercase tracking-widest transition-all duration-300 active:scale-95 shadow-md shadow-purple-950/50"
+                                            className="w-full mt-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-purple-950/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] active:scale-95"
                                         >
-                                            Consagrar-se
+                                            Consagrar a Tenebris
                                         </button>
                                     </div>
 
-                                    {/* Gaya */}
-                                    <div className="bg-gradient-to-b from-green-950/40 via-stone-900 to-black border-2 border-green-900/30 rounded-2xl p-6 flex flex-col justify-between hover:border-green-500 hover:shadow-[0_0_20px_rgba(34,197,94,0.2)] transition-all duration-300 group">
+                                    {/* 🌿 Gaya */}
+                                    <div className="relative bg-gradient-to-b from-emerald-950/40 via-stone-900/90 to-stone-950 border-2 border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-400 hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] transition-all duration-300 group overflow-hidden">
+                                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all" />
                                         <div>
-                                            <div className="text-5xl text-center mb-4 group-hover:scale-110 transition-transform duration-300">🌿</div>
-                                            <h4 className="text-xl font-bold text-green-400 text-center mb-2">Gaya</h4>
-                                            <p className="text-stone-500 text-center text-xs uppercase tracking-widest font-semibold mb-4">Matriarca da Terra</p>
-                                            <div className="space-y-4 text-sm text-stone-300">
-                                                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                                                    <span className="font-bold text-green-400 text-xs uppercase block mb-1">Efeito Passivo</span>
-                                                    <span>+15% HP Máximo, Ouro e Velocidade do Jardim (+5% / Lvl)</span>
+                                            <div className="relative flex justify-center mb-3">
+                                                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-4xl shadow-[0_0_20px_rgba(16,185,129,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300">
+                                                    🌿
                                                 </div>
-                                                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                                                    <span className="font-bold text-green-400 text-xs uppercase block mb-1">Magia Ativa (100% Carga)</span>
-                                                    <span className="text-xs text-stone-400">Rejuvenescimento Telúrico: Cura completamente o HP e MP de toda a equipe em combate.</span>
+                                                <span className="absolute -bottom-2 bg-emerald-500/20 text-emerald-300 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/40">
+                                                    TERRA & VIDA
+                                                </span>
+                                            </div>
+                                            <h4 className="text-xl font-black text-emerald-400 text-center mt-2">Gaya</h4>
+                                            <p className="text-stone-500 text-center text-[10px] uppercase tracking-widest font-bold mb-3">Matriarca da Terra</p>
+
+                                            <div className="space-y-2.5 text-xs text-stone-300">
+                                                <div className="bg-black/60 p-3 rounded-xl border border-emerald-500/20 text-left">
+                                                    <span className="font-bold text-emerald-400 text-[10px] uppercase font-mono block mb-0.5 flex items-center gap-1">
+                                                        👑 Bênção Passiva
+                                                    </span>
+                                                    <span className="text-stone-200 leading-tight block">
+                                                        <strong className="text-emerald-300">+15% HP, Ouro & Jardim</strong> (+5%/Lvl) para abundância contínua
+                                                    </span>
+                                                </div>
+                                                <div className="bg-black/60 p-3 rounded-xl border border-emerald-500/20 text-left">
+                                                    <span className="font-bold text-emerald-400 text-[10px] uppercase font-mono block mb-0.5 flex items-center gap-1">
+                                                        ⚡ Magia de Combate (100%)
+                                                    </span>
+                                                    <span className="text-stone-400 text-[11px] leading-tight block">
+                                                        <strong className="text-stone-200">Rejuvenescimento Telúrico:</strong> Cura e restaura 100% de HP e MP de toda a equipe.
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <button
                                             onClick={() => pledgeDeity('gaya')}
-                                            className="w-full mt-6 py-3 bg-green-600 hover:bg-green-500 text-stone-950 font-black rounded-xl text-xs uppercase tracking-widest transition-all duration-300 active:scale-95 shadow-md shadow-green-900/40"
+                                            className="w-full mt-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-stone-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-emerald-950/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95"
                                         >
-                                            Consagrar-se
+                                            Consagrar a Gaya
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         ) : (
-                            /* If a deity is chosen, show details and management screen */
-                            <div className="flex-1 flex flex-col md:flex-row gap-6 max-w-4xl mx-auto w-full min-h-0 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
-                                {/* Left Side: Deity Info & Buffs */}
-                                <div className="flex-1 bg-stone-900/60 border border-stone-850 p-6 rounded-2xl flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="text-6xl p-3 bg-stone-950 rounded-2xl border border-stone-800">
-                                                {patronDeity === 'aurelius' ? '☀️' : patronDeity === 'tenebris' ? '🌌' : '🌿'}
+                            /* ── Active Patron Screen ─────────────────────────────── */
+                            <div className="flex-1 flex flex-col gap-4 max-w-5xl mx-auto w-full min-h-0 overflow-y-auto max-h-[62vh] pr-1.5 custom-scrollbar">
+                                {/* Top Grand Header Banner */}
+                                {(() => {
+                                    const isAurelius = patronDeity === 'aurelius';
+                                    const isTenebris = patronDeity === 'tenebris';
+                                    const deityName = isAurelius ? 'Aurelius' : isTenebris ? 'Tenebris' : 'Gaya';
+                                    const deityTitle = isAurelius ? 'Pai do Sol Cósmico' : isTenebris ? 'Tecelão do Vazio Infinito' : 'Matriarca da Terra & Abundância';
+                                    const deityEmoji = isAurelius ? '☀️' : isTenebris ? '🌌' : '🌿';
+                                    const themeGradient = isAurelius 
+                                        ? 'from-amber-950/60 via-stone-900 to-stone-950 border-amber-500/40 shadow-[0_0_30px_rgba(245,158,11,0.2)]' 
+                                        : isTenebris 
+                                        ? 'from-purple-950/60 via-stone-900 to-stone-950 border-purple-500/40 shadow-[0_0_30px_rgba(168,85,247,0.2)]' 
+                                        : 'from-emerald-950/60 via-stone-900 to-stone-950 border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.2)]';
+                                    const favorPercent = Math.min(100, (deityFavor / (deityLevel * 1000)) * 100);
+
+                                    return (
+                                        <div className={`bg-gradient-to-r ${themeGradient} border-2 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden`}>
+                                            <div className="flex items-center gap-4 z-10">
+                                                <div className="w-20 h-20 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center text-5xl shadow-inner">
+                                                    {deityEmoji}
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-2xl font-black text-white tracking-tight">{deityName}</h3>
+                                                        <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] px-2.5 py-0.5 rounded-full font-mono font-black uppercase">
+                                                            Nível {deityLevel}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-stone-400 text-xs font-mono font-bold mt-0.5">{deityTitle}</p>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <span className="text-[10px] text-stone-500 font-mono">Bônus por Nível:</span>
+                                                        <span className="text-[10px] font-bold font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded">
+                                                            +{(15 + (deityLevel - 1) * 5)}% Efeitos Ativos
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-left">
-                                                <h3 className="text-2xl font-black text-white">
-                                                    {patronDeity === 'aurelius' ? 'Aurelius' : patronDeity === 'tenebris' ? 'Tenebris' : 'Gaya'}
-                                                </h3>
-                                                <p className="text-stone-500 text-xs uppercase tracking-widest font-bold">
-                                                    {patronDeity === 'aurelius' ? 'Pai do Sol' : patronDeity === 'tenebris' ? 'Tecelão do Vazio' : 'Matriarca da Terra'}
-                                                </p>
-                                                <span className="mt-1 inline-block bg-amber-500/10 text-amber-400 text-xs px-3 py-0.5 rounded-full font-black border border-amber-500/20">
-                                                    NÍVEL PADROEIRO {deityLevel}
-                                                </span>
+
+                                            {/* Dual Gauges: Favor & Energy */}
+                                            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto z-10">
+                                                {/* Favor Gauge */}
+                                                <div className="bg-black/60 border border-stone-800 p-3 rounded-xl min-w-[200px] flex flex-col justify-between">
+                                                    <div className="flex justify-between items-center text-xs mb-1">
+                                                        <span className="text-stone-400 font-mono text-[10px] uppercase font-bold">Favor Divino</span>
+                                                        <span className="text-amber-400 font-mono font-bold text-xs">{deityFavor} / {deityLevel * 1000}</span>
+                                                    </div>
+                                                    <div className="w-full bg-stone-950 h-2.5 rounded-full border border-stone-800 overflow-hidden">
+                                                        <div
+                                                            className="bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-300"
+                                                            style={{ width: `${favorPercent}%` }}
+                                                        />
+                                                    </div>
+                                                    <div className="text-[9px] font-mono text-stone-500 mt-1 text-right">{favorPercent.toFixed(1)}% para Nível {deityLevel + 1}</div>
+                                                </div>
+
+                                                {/* Energy Ultimate Gauge */}
+                                                <div className="bg-black/60 border border-stone-800 p-3 rounded-xl min-w-[200px] flex flex-col justify-between">
+                                                    <div className="flex justify-between items-center text-xs mb-1">
+                                                        <span className="text-stone-400 font-mono text-[10px] uppercase font-bold flex items-center gap-1">
+                                                            <Sparkles size={11} className="text-yellow-400 animate-pulse" /> Magia de Combate
+                                                        </span>
+                                                        <span className="text-yellow-400 font-mono font-bold text-xs">{deityEnergy}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-stone-950 h-2.5 rounded-full border border-stone-800 overflow-hidden relative">
+                                                        <div
+                                                            className="bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-300 h-full rounded-full transition-all duration-300"
+                                                            style={{ width: `${deityEnergy}%` }}
+                                                        />
+                                                    </div>
+                                                    <div className={`text-[9px] font-mono font-black mt-1 text-right ${deityEnergy >= 100 ? 'text-cyan-400 animate-pulse' : 'text-stone-500'}`}>
+                                                        {deityEnergy >= 100 ? '⚡ CONJURAÇÃO IMINENTE!' : 'CARREGANDO NO LOOP'}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
+                                    );
+                                })()}
 
-                                        {/* Favor Progress */}
-                                        <div className="mb-6">
-                                            <div className="flex justify-between items-center text-xs mb-2">
-                                                <span className="text-stone-400 font-bold uppercase tracking-wider">Favor Divino</span>
-                                                <span className="text-amber-500 font-mono font-bold">{deityFavor} / {deityLevel * 1000}</span>
-                                            </div>
-                                            <div className="w-full bg-stone-950 h-3 rounded-full border border-stone-850 overflow-hidden p-0.5">
-                                                <div
-                                                    className="bg-gradient-to-r from-amber-600 to-yellow-500 h-full rounded-full transition-all duration-300"
-                                                    style={{ width: `${Math.min(100, (deityFavor / (deityLevel * 1000)) * 100)}%` }}
-                                                />
-                                            </div>
-                                            <p className="text-[10px] text-stone-500 mt-1 italic text-left">Ofereça almas ou divindade para aumentar seu favor e elevar o nível do deus.</p>
-                                        </div>
-
-                                        {/* Deity Energy / Charge */}
-                                        <div className="mb-6 bg-black/40 p-4 rounded-xl border border-white/5">
-                                            <div className="flex justify-between items-center text-xs mb-2">
-                                                <span className="text-stone-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                                                    <Sparkles size={14} className="text-yellow-400 animate-pulse" /> Carga da Magia Ativa
-                                                </span>
-                                                <span className="text-yellow-400 font-mono font-bold">{deityEnergy}%</span>
-                                            </div>
-                                            <div className="w-full bg-stone-955 h-4 rounded-full border border-stone-800 overflow-hidden p-0.5 relative">
-                                                <div
-                                                    className="bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-400 h-full rounded-full transition-all duration-300"
-                                                    style={{ width: `${deityEnergy}%` }}
-                                                />
-                                                <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-black tracking-widest uppercase">
-                                                    {deityEnergy >= 100 ? 'CONJURAÇÃO IMINENTE!' : 'CARREGANDO EM COMBATE'}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Active bonuses */}
+                                {/* Main Grid: Left Side Buffs & Right Side Actions */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    {/* Left: Active Buffs & Ultimate Spell Details */}
+                                    <div className="lg:col-span-1 bg-stone-900/80 border border-stone-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
                                         <div className="space-y-3">
-                                            <h4 className="text-xs text-stone-400 font-bold uppercase tracking-wider text-left">Efeitos Ativos no Nível {deityLevel}</h4>
-                                            <div className="bg-black/50 p-4 rounded-xl border border-stone-850 space-y-2 text-sm text-left">
+                                            <div className="text-xs font-bold text-amber-400 font-mono uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-800 pb-2">
+                                                <Sparkles size={13} /> Bênçãos Ativas no Nível {deityLevel}
+                                            </div>
+
+                                            <div className="space-y-2 text-xs">
                                                 {patronDeity === 'aurelius' && (
-                                                     <>
-                                                         <div className="flex justify-between items-center border-b border-stone-850/50 pb-2">
-                                                             <span className="text-stone-400">Dano de Ataque Global</span>
-                                                             <span className="text-yellow-400 font-bold">+{(15 + (deityLevel - 1) * 5)}%</span>
-                                                         </div>
-                                                         <div className="flex justify-between items-center">
-                                                             <span className="text-stone-400">Eficácia de Bombardeio GvG</span>
-                                                             <span className="text-amber-400 font-bold">+20%</span>
-                                                         </div>
-                                                     </>
+                                                    <>
+                                                        <div className="bg-black/50 p-2.5 rounded-lg border border-amber-500/20 flex justify-between items-center text-left">
+                                                            <span className="text-stone-300">Dano de Ataque Global</span>
+                                                            <span className="text-amber-400 font-bold font-mono">+{15 + (deityLevel - 1) * 5}%</span>
+                                                        </div>
+                                                        <div className="bg-black/50 p-2.5 rounded-lg border border-amber-500/20 flex justify-between items-center text-left">
+                                                            <span className="text-stone-300">Eficácia Bombardeio GvG</span>
+                                                            <span className="text-yellow-400 font-bold font-mono">+20%</span>
+                                                        </div>
+                                                        <div className="bg-amber-950/30 p-2.5 rounded-lg border border-amber-500/30 text-left text-[11px] text-amber-300">
+                                                            <strong className="block text-amber-400 mb-0.5">☄️ Magia: Meteoro Solar</strong>
+                                                            Causa dano massivo de fogo no boss com base no poder médio da equipe.
+                                                        </div>
+                                                    </>
                                                 )}
                                                 {patronDeity === 'tenebris' && (
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-stone-400">Roubo de Vida Global</span>
-                                                        <span className="text-purple-400 font-bold">+{(15 + (deityLevel - 1) * 5)}%</span>
-                                                    </div>
+                                                    <>
+                                                        <div className="bg-black/50 p-2.5 rounded-lg border border-purple-500/20 flex justify-between items-center text-left">
+                                                            <span className="text-stone-300">Roubo de Vida Global</span>
+                                                            <span className="text-purple-400 font-bold font-mono">+{15 + (deityLevel - 1) * 5}%</span>
+                                                        </div>
+                                                        <div className="bg-purple-950/30 p-2.5 rounded-lg border border-purple-500/30 text-left text-[11px] text-purple-300">
+                                                            <strong className="block text-purple-400 mb-0.5">🌌 Magia: Barreira Entrópica</strong>
+                                                            Gera um escudo protetor e cura {30 * deityLevel}% do HP Máximo em combate.
+                                                        </div>
+                                                    </>
                                                 )}
                                                 {patronDeity === 'gaya' && (
                                                     <>
-                                                        <div className="flex justify-between items-center border-b border-stone-850/50 pb-2">
-                                                            <span className="text-stone-400">HP Máximo Global</span>
-                                                            <span className="text-green-400 font-bold">+{(15 + (deityLevel - 1) * 5)}%</span>
+                                                        <div className="bg-black/50 p-2.5 rounded-lg border border-emerald-500/20 flex justify-between items-center text-left">
+                                                            <span className="text-stone-300">HP Máximo Global</span>
+                                                            <span className="text-emerald-400 font-bold font-mono">+{15 + (deityLevel - 1) * 5}%</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center border-b border-stone-850/50 pb-2">
-                                                            <span className="text-stone-400">Ouro Ganho</span>
-                                                            <span className="text-yellow-500 font-bold">+{(15 + (deityLevel - 1) * 5)}%</span>
+                                                        <div className="bg-black/50 p-2.5 rounded-lg border border-emerald-500/20 flex justify-between items-center text-left">
+                                                            <span className="text-stone-300">Ouro Ganho</span>
+                                                            <span className="text-yellow-400 font-bold font-mono">+{15 + (deityLevel - 1) * 5}%</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-stone-400">Velocidade do Jardim</span>
-                                                            <span className="text-emerald-400 font-bold">+{(15 + (deityLevel - 1) * 5)}%</span>
+                                                        <div className="bg-black/50 p-2.5 rounded-lg border border-emerald-500/20 flex justify-between items-center text-left">
+                                                            <span className="text-stone-300">Velocidade do Jardim</span>
+                                                            <span className="text-green-400 font-bold font-mono">+{15 + (deityLevel - 1) * 5}%</span>
+                                                        </div>
+                                                        <div className="bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-500/30 text-left text-[11px] text-emerald-300">
+                                                            <strong className="block text-emerald-400 mb-0.5">🌿 Magia: Rejuvenescimento Telúrico</strong>
+                                                            Restaura 100% do HP e MP de toda a equipe instantaneamente.
                                                         </div>
                                                     </>
                                                 )}
                                             </div>
                                         </div>
+
+                                        <button
+                                            onClick={() => {
+                                                if (confirm('Tem certeza que deseja renegar seu deus? Todo o favor acumulado e nível serão zerados!')) {
+                                                    pledgeDeity(null);
+                                                }
+                                            }}
+                                            className="w-full mt-4 py-2 bg-red-950/30 hover:bg-red-900/50 border border-red-800/40 text-red-400 hover:text-red-200 font-mono text-[11px] font-bold rounded-lg transition-colors"
+                                        >
+                                            Abandonar Deus Padroeiro
+                                        </button>
                                     </div>
 
-                                    {/* Renounce Button */}
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Tem certeza que deseja renegando seu deus? Você perderá todo o favor acumulado e nível com ele!')) {
-                                                pledgeDeity(null);
-                                            }
-                                        }}
-                                        className="w-full mt-6 py-3 bg-red-955/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 hover:text-red-200 font-bold rounded-xl text-xs uppercase tracking-widest transition-all duration-300"
-                                    >
-                                        Abandonar Deus Padroeiro
-                                    </button>
-                                </div>
-
-                                {/* Right Side: Offerings Section */}
-                                <div className="w-full md:w-80 bg-stone-900/60 border border-stone-850 p-6 rounded-2xl flex flex-col justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-black text-white mb-2 text-left">TRIBUTOS E OFERENDAS</h3>
-                                        <p className="text-stone-400 text-xs leading-relaxed mb-6 text-left">
-                                            Agrade seu deus oferecendo recursos raros para ganhar favor divino e aumentar os bônus globais e o poder de conjuração do padroeiro.
-                                        </p>
-
-                                        <div className="space-y-4">
-                                            {/* Offer Souls */}
-                                            <div className="bg-black/50 p-4 rounded-xl border border-stone-850 flex flex-col gap-3">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-xs text-stone-400 uppercase font-black">Almas de Monstros</span>
-                                                    <span className="text-cyan-400 font-mono text-xs">{formatNumber(souls)}</span>
+                                    {/* Center & Right: Offerings & Weather Rituals */}
+                                    <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {/* Offerings Shrine */}
+                                        <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+                                            <div>
+                                                <div className="text-xs font-bold text-cyan-400 font-mono uppercase tracking-wider border-b border-stone-800 pb-2 mb-3 flex items-center gap-1.5">
+                                                    <span>🎁</span>
+                                                    <span>TRIBUTOS E OFERENDAS</span>
                                                 </div>
-                                                <button
-                                                    onClick={() => offerToDeity('souls')}
-                                                    disabled={souls < 5000}
-                                                    className={`w-full py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300
-                                                        ${souls >= 5000
-                                                            ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-900/30 active:scale-95'
-                                                            : 'bg-stone-800 text-stone-500 cursor-not-allowed border border-stone-850'
-                                                        }`}
-                                                >
-                                                    Oferecer 5.000 Almas
-                                                </button>
-                                                <span className="text-[9px] text-stone-500 text-center">+500 Favor</span>
-                                            </div>
 
-                                            {/* Offer Divinity */}
-                                            <div className="bg-black/50 p-4 rounded-xl border border-stone-850 flex flex-col gap-3">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-xs text-stone-400 uppercase font-black">Divindade</span>
-                                                    <span className="text-yellow-550 font-mono text-xs">{formatNumber(divinity)}</span>
-                                                </div>
-                                                <button
-                                                    onClick={() => offerToDeity('divinity')}
-                                                    disabled={divinity < 100}
-                                                    className={`w-full py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300
-                                                        ${divinity >= 100
-                                                            ? 'bg-yellow-600 hover:bg-yellow-500 text-stone-950 shadow-md shadow-amber-900/30 active:scale-95'
-                                                            : 'bg-stone-800 text-stone-500 cursor-not-allowed border border-stone-850'
-                                                        }`}
-                                                >
-                                                    Oferecer 100 Divindade
-                                                </button>
-                                                <span className="text-[9px] text-stone-500 text-center">+500 Favor</span>
-                                            </div>
-                                            
-                                            {/* Offer High-Tier Industry */}
-                                            <div className="bg-black/50 p-4 rounded-xl border border-stone-850 flex flex-col gap-3">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-xs text-stone-400 uppercase font-black">Devoção Tecnológica</span>
-                                                    {hasDonatedHighTierIndustry ? (
-                                                        <span className="text-green-400 font-mono text-xs font-bold">Ativo (+25% Favor)</span>
-                                                    ) : (
-                                                        <span className="text-orange-400 font-mono text-xs">Pendente</span>
-                                                    )}
-                                                </div>
-                                                {hasDonatedHighTierIndustry ? (
-                                                    <div className="text-[10px] text-green-300 text-left bg-green-950/20 border border-green-900/30 p-2 rounded-lg leading-relaxed">
-                                                        ⚡ Oferenda concluída! Ganhos de favor divino acelerados em +25% e efeito 'divine_retribution' desbloqueado no loop de combate!
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <div className="text-[10px] text-stone-400 text-left leading-relaxed">
-                                                            Doe uma receita industrial de alto Tier (ex: Canhão de Plasma, Estabilizador de Portal, Templo Automatizado, Catalisador de Plasma, Âncora de Realidade ou Receptor Estelar) para satisfazer o Deus.
-                                                        </div>
-                                                        {(() => {
-                                                            const highTierItems = ['plasma_cannon', 'portal_stabilizer', 'automated_temple', 'plasma_catalyst', 'reality_anchor', 'stellar_receptor'];
-                                                            const itemLabels: Record<string, string> = {
-                                                                plasma_cannon: 'Canhão de Plasma',
-                                                                portal_stabilizer: 'Estabilizador de Portal',
-                                                                automated_temple: 'Templo Automatizado',
-                                                                plasma_catalyst: 'Catalisador de Plasma',
-                                                                reality_anchor: 'Âncora de Realidade',
-                                                                stellar_receptor: 'Receptor Estelar'
-                                                            };
-                                                            const available = highTierItems.filter(item => (industryInventory?.[item] || 0) >= 1);
-                                                            if (available.length > 0) {
-                                                                return (
-                                                                    <div className="flex flex-col gap-2">
-                                                                        <button
-                                                                            onClick={() => offerToDeity('high_tier_industry')}
-                                                                            className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 active:scale-95"
-                                                                        >
-                                                                            Oferecer Item de Alto Tier
-                                                                        </button>
-                                                                        <div className="text-[9px] text-stone-500 text-center leading-normal">
-                                                                            Disponível: {available.map(item => `${itemLabels[item] || item} (${industryInventory?.[item]})`).join(', ')}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            } else {
-                                                                return (
-                                                                    <button
-                                                                        disabled
-                                                                        className="w-full py-3 bg-stone-800 text-stone-500 rounded-lg font-bold text-xs uppercase tracking-wider border border-stone-850 cursor-not-allowed"
-                                                                    >
-                                                                        Sem item de alto Tier
-                                                                    </button>
-                                                                );
-                                                            }
-                                                        })()}
-                                                    </>
-                                                )}
-                                                <span className="text-[9px] text-stone-500 text-center">+2000 Favor & Aceleração</span>
-                                            </div>
-                                            {/* Quick Info Box */}
-                                            <div className="bg-black/35 p-3 rounded-lg border border-white/5 text-[10px] text-stone-500 mt-6 leading-relaxed text-left">
-                                                ⚠️ **Aviso de Renegação**: Se você decidir abandonar seu deus atual, todo o favor e nível serão completamente perdidos. Escolha sabiamente.
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Weather Rituals Panel */}
-                                <div className="w-full md:w-80 bg-stone-900/60 border border-stone-850 p-6 rounded-2xl flex flex-col justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-black text-white mb-2 text-left">RITUAL DO CLIMA</h3>
-                                        <p className="text-stone-400 text-xs leading-relaxed mb-4 text-left">
-                                            Canalize o poder elemental do padroeiro para mudar o clima mundial por 5 minutos.
-                                        </p>
-                                        
-                                        <div className="bg-black/35 p-3 rounded-lg border border-white/5 mb-4 text-xs text-left">
-                                            <div className="flex justify-between items-center text-stone-400 mb-1">
-                                                <span>Ervas:</span>
-                                                <span className={`font-bold ${(resources.herbs || 0) >= 10 ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {resources.herbs || 0} / 10
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-stone-400">
-                                                <span>Almas:</span>
-                                                <span className={`font-bold ${souls >= 100 ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {formatNumber(souls)} / 100
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
-                                            {[
-                                                { type: 'Rain', icon: '🌧️', name: 'Estação das Chuvas', desc: '+50% Pesca / Bônus Água' },
-                                                { type: 'Eclipse', icon: '🌑', name: 'Eclipse Solar', desc: 'Bônus Trevas / Guerra +30% Ouro' },
-                                                { type: 'Aurora', icon: '🌌', name: 'Aurora Boreal', desc: 'Bônus Luz / Guerra +50% XP' },
-                                                { type: 'Blizzard', icon: '❄️', name: 'Era do Gelo', desc: 'Bônus Frio / Guerra -20% XP' },
-                                                { type: 'Heatwave', icon: '🔥', name: 'Onda de Calor', desc: 'Bônus Fogo / Guerra +20% Ouro' }
-                                            ].map(w => {
-                                                const hasResources = (resources.herbs || 0) >= 10 && souls >= 100;
-                                                return (
-                                                    <div key={w.type} className="bg-black/40 p-2 rounded-lg border border-stone-850/60 flex flex-col justify-between gap-1 text-xs text-left">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-lg">{w.icon}</span>
-                                                            <div>
-                                                                <div className="font-bold text-stone-200">{w.name}</div>
-                                                                <div className="text-[10px] text-stone-400">{w.desc}</div>
-                                                            </div>
+                                                <div className="space-y-2.5">
+                                                    {/* Souls Offering */}
+                                                    <div className="bg-black/50 p-2.5 rounded-xl border border-stone-800 flex items-center justify-between gap-2">
+                                                        <div className="text-left">
+                                                            <div className="text-[11px] font-bold text-stone-300">Almas de Monstros</div>
+                                                            <div className="text-[9px] font-mono text-cyan-400">+500 Favor (Possui: {formatNumber(souls)})</div>
                                                         </div>
                                                         <button
-                                                            onClick={() => invokeWeather(w.type as any)}
-                                                            disabled={!hasResources}
-                                                            className={`w-full mt-1.5 py-1 rounded font-bold text-[10px] uppercase tracking-wider transition-all duration-300
-                                                                ${hasResources
-                                                                    ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 active:scale-95'
-                                                                    : 'bg-stone-850 text-stone-600 cursor-not-allowed border border-stone-850'
-                                                                }`}
+                                                            onClick={() => offerToDeity('souls')}
+                                                            disabled={souls < 5000}
+                                                            className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-mono font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
                                                         >
-                                                            Invocação Elemental
+                                                            Oferecer 5.000 Almas
                                                         </button>
                                                     </div>
-                                                );
-                                            })}
+
+                                                    {/* Divinity Offering */}
+                                                    <div className="bg-black/50 p-2.5 rounded-xl border border-stone-800 flex items-center justify-between gap-2">
+                                                        <div className="text-left">
+                                                            <div className="text-[11px] font-bold text-stone-300">Divindade</div>
+                                                            <div className="text-[9px] font-mono text-yellow-400">+500 Favor (Possui: {formatNumber(divinity)})</div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => offerToDeity('divinity')}
+                                                            disabled={divinity < 100}
+                                                            className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 text-stone-950 rounded-lg text-xs font-mono font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                                                        >
+                                                            Oferecer 100 Divindade
+                                                        </button>
+                                                    </div>
+
+                                                    {/* High-tier Industry Offering */}
+                                                    <div className="bg-black/50 p-2.5 rounded-xl border border-stone-800 space-y-2">
+                                                        <div className="flex justify-between items-center text-left">
+                                                            <div className="text-[11px] font-bold text-stone-300">Devoção Tecnológica</div>
+                                                            {hasDonatedHighTierIndustry ? (
+                                                                <span className="text-emerald-400 font-mono text-[10px] font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
+                                                                    ✓ Ativo (+25% Favor)
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-amber-400 font-mono text-[10px] font-bold bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded">
+                                                                    Pendente
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {hasDonatedHighTierIndustry ? (
+                                                            <div className="text-[10px] text-emerald-300 bg-emerald-950/20 border border-emerald-800/30 p-2 rounded-lg text-left leading-tight">
+                                                                ⚡ Bênção ativada! Retribuição divina habilitada em combate.
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="text-[10px] text-stone-400 text-left leading-tight">
+                                                                    Doe um item industrial de alto nível (ex: Canhão de Plasma, Estabilizador, Templo ou Satélite) para ganhar +2000 de favor e aceleração permanente de +25%!
+                                                                </div>
+                                                                {(() => {
+                                                                    const highTierItems = ['plasma_cannon', 'portal_stabilizer', 'automated_temple', 'plasma_catalyst', 'reality_anchor', 'stellar_receptor', 'satellite'];
+                                                                    const available = highTierItems.filter(item => (industryInventory?.[item] || 0) >= 1);
+                                                                    if (available.length > 0) {
+                                                                        return (
+                                                                            <button
+                                                                                onClick={() => offerToDeity('high_tier_industry')}
+                                                                                className="w-full py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-xs font-mono font-bold transition-all shadow-sm"
+                                                                            >
+                                                                                Oferecer Item Industrial Disponível
+                                                                            </button>
+                                                                        );
+                                                                    } else {
+                                                                        return (
+                                                                            <div className="text-[10px] text-stone-500 font-mono bg-stone-950 p-1.5 rounded text-center border border-stone-850">
+                                                                                Sem itens de alto Tier no estoque
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                })()}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Weather Rituals Panel */}
+                                        <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+                                            <div>
+                                                <div className="text-xs font-bold text-amber-400 font-mono uppercase tracking-wider border-b border-stone-800 pb-2 mb-3 flex items-center gap-1.5">
+                                                    <span>🌦️</span>
+                                                    <span>RITUAL DO CLIMA</span>
+                                                </div>
+
+                                                <div className="bg-black/50 p-2.5 rounded-xl border border-stone-800 mb-3 text-xs flex justify-between">
+                                                    <span className="text-stone-400 font-mono">Ervas: <strong className={(resources.herbs || 0) >= 10 ? 'text-emerald-400' : 'text-red-400'}>{resources.herbs || 0}/10</strong></span>
+                                                    <span className="text-stone-400 font-mono">Almas: <strong className={souls >= 100 ? 'text-emerald-400' : 'text-red-400'}>{formatNumber(souls)}/100</strong></span>
+                                                </div>
+
+                                                <div className="space-y-1.5 overflow-y-auto max-h-[190px] pr-1 custom-scrollbar">
+                                                    {[
+                                                        { type: 'Rain', icon: '🌧️', name: 'Estação das Chuvas', desc: '+50% Pesca / Água' },
+                                                        { type: 'Eclipse', icon: '🌑', name: 'Eclipse Solar', desc: 'Trevas & Guerra (+30% Ouro)' },
+                                                        { type: 'Aurora', icon: '🌌', name: 'Aurora Boreal', desc: 'Luz Celestial (+50% XP)' },
+                                                        { type: 'Blizzard', icon: '❄️', name: 'Nevasca Ártica', desc: 'Frio Extremo' },
+                                                        { type: 'Heatwave', icon: '🔥', name: 'Onda de Calor', desc: 'Fogo (+20% Ouro)' }
+                                                    ].map(w => {
+                                                        const hasResources = (resources.herbs || 0) >= 10 && souls >= 100;
+                                                        return (
+                                                            <div key={w.type} className="bg-black/40 p-2 rounded-lg border border-stone-800 flex items-center justify-between gap-2 text-xs">
+                                                                <div className="flex items-center gap-2 text-left">
+                                                                    <span className="text-lg">{w.icon}</span>
+                                                                    <div>
+                                                                        <div className="font-bold text-stone-200 text-[11px] leading-none">{w.name}</div>
+                                                                        <div className="text-[9px] text-stone-500 font-mono mt-0.5">{w.desc}</div>
+                                                                    </div>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => invokeWeather(w.type as any)}
+                                                                    disabled={!hasResources}
+                                                                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-stone-950 rounded text-[10px] font-mono font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                                                >
+                                                                    Invocar
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
