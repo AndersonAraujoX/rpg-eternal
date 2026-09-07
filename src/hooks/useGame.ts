@@ -48,6 +48,17 @@ import { INITIAL_GALAXY } from '../engine/galaxy';
 import { calculateWinChance } from '../engine/arena';
 import { INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege, initGvGWar, simulateGvGTick, playerAttackTower } from '../engine/guildWar';
 import type { GvGWarState } from '../engine/guildWar';
+import {
+    initGuildWarMobaBattle,
+    simulateGuildWarMobaTick,
+    setMobaTacticalStance,
+    executeMobaCommanderAbility,
+    executeMobaManualStrike,
+    type GuildWarMobaState,
+    type MobaTacticalStance,
+    type MobaCommanderAbilities,
+    type MobaLane
+} from '../engine/guildWarMoba';
 import type { IndustryState } from './useIndustry';
 import { INITIAL_TOWN, INITIAL_MARKET_TREND, ANCIENT_RELICS } from '../engine/initialData';
 import { generateRandomTrend, MARKET_TRENDS } from '../engine/marketDynamics';
@@ -156,6 +167,7 @@ export const useGame = (
     const [mechanizedCardsFused, setMechanizedCardsFused] = useState<boolean>(false);
     const [fakePlayers, setFakePlayers] = useState<FakePlayer[]>(() => generateInitialBots(20));
     const [gvgWarState, setGvgWarState] = useState<GvGWarState | null>(null);
+    const [mobaWarState, setMobaWarState] = useState<GuildWarMobaState | null>(null);
     const [currentTutorialIndex, setCurrentTutorialIndex] = useState<number>(0);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<import('../engine/types').Talent[]>([]);
@@ -692,6 +704,8 @@ export const useGame = (
         towerBoss: world.towerBoss,
         fakePlayers,
         gvgWarState,
+        mobaWarState: null as GuildWarMobaState | null,
+        activeHeroes: [] as Hero[],
         currentTutorialIndex,
         backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
         backroomsFloor: backrooms.backroomsFloor,
@@ -766,6 +780,8 @@ export const useGame = (
             towerBoss: world.towerBoss,
             fakePlayers,
             gvgWarState,
+            mobaWarState,
+            activeHeroes,
             currentTutorialIndex,
             backroomsUnlockedTechs: backrooms.backroomsUnlockedTechs,
             backroomsFloor: backrooms.backroomsFloor,
@@ -1494,6 +1510,42 @@ export const useGame = (
                 const newMap = generateGuildWarMap(stateRef.current.partyPower);
                 galaxyState.setTerritories(newMap);
                 addLog("O exército da guilda marchou para uma nova e perigosa fronteira!", "achievement");
+            },
+            startMobaWar: (territoryId: string) => {
+                const t = stateRef.current.territories.find((x: any) => x.id === territoryId);
+                if (!t) return;
+                const newBattle = initGuildWarMobaBattle(
+                    t,
+                    stateRef.current.activeHeroes,
+                    stateRef.current.fakePlayers,
+                    guildState.guild?.name || 'Sua Guilda',
+                    stateRef.current.partyPower
+                );
+                setMobaWarState(newBattle);
+                addLog(`⚔️ Batalha MOBA iniciada pela conquista de ${t.name}!`, 'achievement');
+            },
+            setMobaStance: (stance: MobaTacticalStance) => {
+                setMobaWarState(prev => prev ? setMobaTacticalStance(prev, stance) : null);
+            },
+            useMobaAbility: (abilityId: keyof MobaCommanderAbilities, options?: { targetLane?: MobaLane }) => {
+                setMobaWarState(prev => {
+                    if (!prev) return null;
+                    const res = executeMobaCommanderAbility(prev, abilityId, options);
+                    if (res.updatedState.warLogs[0]) {
+                        addLog(`[MOBA] ${res.updatedState.warLogs[0].message}`, res.updatedState.warLogs[0].type as any);
+                    }
+                    return res.updatedState;
+                });
+            },
+            strikeMobaTarget: (targetId: string) => {
+                setMobaWarState(prev => {
+                    if (!prev) return null;
+                    const res = executeMobaManualStrike(prev, targetId, stateRef.current.partyPower);
+                    if (res.updatedState.warLogs[0]) {
+                        addLog(`[MOBA] ${res.updatedState.warLogs[0].message}`, res.updatedState.warLogs[0].type as any);
+                    }
+                    return res.updatedState;
+                });
             },
             unlockOuterSpace: () => {
                 setOuterSpaceUnlocked(true);
@@ -3533,6 +3585,40 @@ export const useGame = (
                 }
             }
 
+            // Guild War MOBA + CTF Simulation Tick (every ~1 second)
+            if (stateRef.current.mobaWarState?.battleActive) {
+                const mobaNow = Date.now();
+                const mobaLast = stateRef.current.mobaWarState.lastTickTime || 0;
+                if (mobaNow - mobaLast >= 1000) {
+                    const mobaResult = simulateGuildWarMobaTick(stateRef.current.mobaWarState, 1);
+                    setMobaWarState(mobaResult);
+
+                    // Check if battle just concluded
+                    if (!mobaResult.battleActive && mobaResult.winner) {
+                        if (mobaResult.winner === 'allied') {
+                            galaxyState.setTerritories((prev: any[]) => prev.map((pt: any) => pt.id === mobaResult.territoryId ? { ...pt, owner: 'player' } : pt));
+                            const t = stateRef.current.territories.find((x: any) => x.id === mobaResult.territoryId);
+                            const diff = t?.difficulty || mobaResult.territoryDifficulty || 1000;
+                            const goldReward = diff * 3;
+                            const xpReward = Math.floor(diff * 1.5);
+                            setGold(g => g + goldReward);
+                            guildState.setGuild((g: any) => g ? { ...g, xp: g.xp + xpReward } : g);
+                            addLog(`👑 Vitória Épica no MOBA! Território ${mobaResult.territoryName} conquistado! +${goldReward} Ouro, +${xpReward} XP da Guilda!`, 'achievement');
+
+                            if (mobaResult.territoryName.includes('Fortaleza de Ferro')) {
+                                const relic = ANCIENT_RELICS.find(r => r.id === 'relic_banner');
+                                if (relic) ACTIONS.collectRelic(relic);
+                            } else if (mobaResult.territoryName.includes('Acampamento Titã')) {
+                                const relic = ANCIENT_RELICS.find(r => r.id === 'relic_gear');
+                                if (relic) ACTIONS.collectRelic(relic);
+                            }
+                        } else {
+                            addLog(`💀 Derrota no confronto MOBA em ${mobaResult.territoryName}. A guilda rival manteve o controle.`, 'danger');
+                        }
+                    }
+                }
+            }
+
             // Backrooms Simulation Tick
             backrooms.processBackroomsTick(1, globalSynergies.some(s => s.id === 'global_synergy_explorers'));
 
@@ -3752,6 +3838,44 @@ export const useGame = (
                 if (latestLog) {
                     addLog(`[GvG] ${latestLog.message}`, latestLog.type as any);
                 }
+            },
+            mobaWarState,
+            setMobaWarState,
+            startMobaWar: (territoryId: string) => {
+                const t = stateRef.current.territories.find((x: any) => x.id === territoryId);
+                if (!t) return;
+                const newBattle = initGuildWarMobaBattle(
+                    t,
+                    stateRef.current.activeHeroes,
+                    stateRef.current.fakePlayers,
+                    guildState.guild?.name || 'Sua Guilda',
+                    stateRef.current.partyPower
+                );
+                setMobaWarState(newBattle);
+                addLog(`⚔️ Batalha MOBA iniciada pela conquista de ${t.name}!`, 'achievement');
+            },
+            setMobaStance: (stance: MobaTacticalStance) => {
+                setMobaWarState(prev => prev ? setMobaTacticalStance(prev, stance) : null);
+            },
+            useMobaAbility: (abilityId: keyof MobaCommanderAbilities, options?: { targetLane?: MobaLane }) => {
+                setMobaWarState(prev => {
+                    if (!prev) return null;
+                    const res = executeMobaCommanderAbility(prev, abilityId, options);
+                    if (res.updatedState.warLogs[0]) {
+                        addLog(`[MOBA] ${res.updatedState.warLogs[0].message}`, res.updatedState.warLogs[0].type as any);
+                    }
+                    return res.updatedState;
+                });
+            },
+            strikeMobaTarget: (targetId: string) => {
+                setMobaWarState(prev => {
+                    if (!prev) return null;
+                    const res = executeMobaManualStrike(prev, targetId, stateRef.current.partyPower);
+                    if (res.updatedState.warLogs[0]) {
+                        addLog(`[MOBA] ${res.updatedState.warLogs[0].message}`, res.updatedState.warLogs[0].type as any);
+                    }
+                    return res.updatedState;
+                });
             },
 
 

@@ -463,3 +463,9 @@ export const playerAttackTower = (
         damage
     };
 };
+
+// ═══════════════════════════════════════════════════════════════
+// Re-export do Sistema Unificado MOBA + Pega-Bandeira
+// ═══════════════════════════════════════════════════════════════
+
+export * from './guildWarMoba';

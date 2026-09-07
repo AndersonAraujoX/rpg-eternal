@@ -118,6 +118,7 @@ function App() {
     fakePlayers,
     elementalResonance, elementalEssences, ownedRelics, equippedRelics,
     gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex, town,
+    mobaWarState, activeHeroes,
     globalModifiers, sellOre,
     isMiningFrenzy, setIsMiningFrenzy,
     starForgeDailyUses, lastStarForgeResetDate, arenaAdrenalineActive,
@@ -631,7 +632,31 @@ function App() {
             actions.bombardTerritory(id, multiplier, weaponName);
           }
         };
-        return <GuildWarModal onClose={() => setShowGuildWar(false)} territories={territories} onAttack={attackTerritory} onUpgrade={actions.upgradeTerritory} onAdvanceMap={actions.advanceGuildWarMap} partyPower={partyPower} guild={guild} gold={gold} industryInventory={industry.inventory} onBombard={handleBombard} gvgWarState={gvgWarState} onStartGvG={() => startGvGWar(guild?.name || 'Sua Guilda')} onPlayerGvGAttack={playerGvGAttack} patronDeity={patronDeity} activeEvent={activeEvent} />;
+        return (
+          <GuildWarModal
+            onClose={() => setShowGuildWar(false)}
+            territories={territories}
+            onAttack={attackTerritory}
+            onUpgrade={actions.upgradeTerritory}
+            onAdvanceMap={actions.advanceGuildWarMap}
+            partyPower={partyPower}
+            guild={guild}
+            gold={gold}
+            industryInventory={industry.inventory}
+            onBombard={handleBombard}
+            gvgWarState={gvgWarState}
+            onStartGvG={() => startGvGWar(guild?.name || 'Sua Guilda')}
+            onPlayerGvGAttack={playerGvGAttack}
+            patronDeity={patronDeity}
+            activeEvent={activeEvent}
+            mobaWarState={mobaWarState}
+            onStartMobaWar={(id) => actions.startMobaWar?.(id)}
+            onSetMobaStance={(stance) => actions.setMobaStance?.(stance)}
+            onUseMobaAbility={(abilityId, options) => actions.useMobaAbility?.(abilityId, options)}
+            onMobaManualStrike={(targetId) => actions.strikeMobaTarget?.(targetId)}
+            activeHeroes={activeHeroes}
+          />
+        );
       })()}
 
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} autoFeedPets={autoFeedPets} onToggleAutoFeed={actions.toggleAutoFeedPets} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onAssignPet={(id, assign) => actions.assignPet && actions.assignPet(id, assign)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}

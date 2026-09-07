@@ -739,6 +739,10 @@ export interface GameActions {
     bombardTerritory: (id: string, multiplier: number, weaponName: string) => void;
     upgradeTerritory: (id: string) => void;
     advanceGuildWarMap: () => void;
+    startMobaWar?: (territoryId: string) => void;
+    setMobaStance?: (stance: import('./guildWarMoba').MobaTacticalStance) => void;
+    useMobaAbility?: (abilityId: keyof import('./guildWarMoba').MobaCommanderAbilities, options?: { targetLane?: import('./guildWarMoba').MobaLane }) => void;
+    strikeMobaTarget?: (targetId: string) => void;
     unlockOuterSpace: () => void;
     triggerRebirth: () => void;
     confirmRebirth: (preservedBuildingIds?: string[], preservedHeroId?: string) => void;
