@@ -54,6 +54,8 @@ import { IndustryModal } from './components/modals/IndustryModal';
 import { RoguelikeModal } from './components/modals/RoguelikeModal';
 import { BackroomsManagerModal } from './components/modals/BackroomsManagerModal';
 import { NpcTutorialGuide } from './components/NpcTutorialGuide';
+import { NpcGuideTab } from './components/NpcGuideTab';
+import { TUTORIAL_STEPS } from './data/npcTutorial';
 
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
@@ -187,7 +189,7 @@ function App() {
   const [showElementalResonance, setShowElementalResonance] = useState(false);
   const [showRelicChamber, setShowRelicChamber] = useState(false);
   const [showVoidInfusion, setShowVoidInfusion] = useState(false);
-  const [bottomTab, setBottomTab] = useState<'heroes' | 'pets'>('heroes');
+  const [bottomTab, setBottomTab] = useState<'heroes' | 'pets' | 'guide'>('heroes');
 
   const [importString, setImportString] = useState('');
 
@@ -392,29 +394,31 @@ function App() {
           tower={tower}
         />
 
-        {/* NPC TUTORIAL COMPANION */}
-        <div className="px-3 py-1 flex-shrink-0">
-          <NpcTutorialGuide
-            currentTutorialIndex={currentTutorialIndex}
-            gameState={{
-              gold,
-              souls,
-              buildings,
-              heroes,
-              boss,
-              backroomsUnlockedTechs,
-              backroomsFloor
-            }}
-            onOpenModal={(targetModal) => {
-              if (targetModal === 'town') { actions.visitTown(); setShowTown(true); }
-              else if (targetModal === 'backrooms') setShowBackrooms(true);
-              else if (targetModal === 'tavern') setShowTavern(true);
-              else if (targetModal === 'forge') setShowForge(true);
-              else if (targetModal === 'shop') setShowShop(true);
-              else if (targetModal === 'inventory') setShowInventory(true);
-            }}
-          />
-        </div>
+        {/* NPC TUTORIAL COMPANION (exibido fora da aba da Aria) */}
+        {bottomTab !== 'guide' && (
+          <div className="px-3 py-1 flex-shrink-0">
+            <NpcTutorialGuide
+              currentTutorialIndex={currentTutorialIndex}
+              gameState={{
+                gold,
+                souls,
+                buildings,
+                heroes,
+                boss,
+                backroomsUnlockedTechs,
+                backroomsFloor
+              }}
+              onOpenModal={(targetModal) => {
+                if (targetModal === 'town') { actions.visitTown(); setShowTown(true); }
+                else if (targetModal === 'backrooms') setShowBackrooms(true);
+                else if (targetModal === 'tavern') setShowTavern(true);
+                else if (targetModal === 'forge') setShowForge(true);
+                else if (targetModal === 'shop') setShowShop(true);
+                else if (targetModal === 'inventory') setShowInventory(true);
+              }}
+            />
+          </div>
+        )}
 
         <div className="flex-1 flex flex-col min-h-0 bg-gray-800 border-t-4 border-gray-600">
           <div className="flex border-b border-gray-700 bg-gray-900/40 p-1 gap-1">
@@ -430,9 +434,18 @@ function App() {
             >
               🐾 Mascotes ({pets.length})
             </button>
+            <button
+              onClick={() => setBottomTab('guide')}
+              className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 relative flex items-center justify-center gap-1.5 ${bottomTab === 'guide' ? 'bg-amber-600 text-stone-950 font-black shadow-md' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'}`}
+            >
+              <span>🧝‍♀️ Aria</span>
+              {currentTutorialIndex < TUTORIAL_STEPS.length && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block" />
+              )}
+            </button>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto">
-            {bottomTab === 'heroes' ? (
+            {bottomTab === 'heroes' && (
               <HeroList
                 heroes={heroes}
                 activeSynergies={synergies}
@@ -440,13 +453,36 @@ function App() {
                 buildings={buildings}
                 heroBonds={heroBonds}
               />
-            ) : (
+            )}
+            {bottomTab === 'pets' && (
               <PetList
                 pets={pets}
                 actions={actions}
                 gold={gold}
                 souls={souls}
                 autoFeedPets={autoFeedPets}
+              />
+            )}
+            {bottomTab === 'guide' && (
+              <NpcGuideTab
+                currentTutorialIndex={currentTutorialIndex}
+                gameState={{
+                  gold,
+                  souls,
+                  buildings,
+                  heroes,
+                  boss,
+                  backroomsUnlockedTechs,
+                  backroomsFloor
+                }}
+                onOpenModal={(targetModal) => {
+                  if (targetModal === 'town') { actions.visitTown(); setShowTown(true); }
+                  else if (targetModal === 'backrooms') setShowBackrooms(true);
+                  else if (targetModal === 'tavern') setShowTavern(true);
+                  else if (targetModal === 'forge') setShowForge(true);
+                  else if (targetModal === 'shop') setShowShop(true);
+                  else if (targetModal === 'inventory') setShowInventory(true);
+                }}
               />
             )}
           </div>

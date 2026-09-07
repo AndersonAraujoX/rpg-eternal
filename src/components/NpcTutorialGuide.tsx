@@ -31,6 +31,7 @@ export const NpcTutorialGuide: React.FC<NpcTutorialGuideProps> = ({
 }) => {
     const [isMinimized, setIsMinimized] = useState<boolean>(isCompactDefault);
     const [showHint, setShowHint] = useState<boolean>(false);
+    const [imgError, setImgError] = useState<boolean>(false);
 
     const isCompleted = currentTutorialIndex >= TUTORIAL_STEPS.length;
     const currentStep = !isCompleted ? TUTORIAL_STEPS[currentTutorialIndex] : null;
@@ -49,8 +50,13 @@ export const NpcTutorialGuide: React.FC<NpcTutorialGuideProps> = ({
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-emerald-950/80 border-2 border-emerald-400 flex items-center justify-center text-xl shadow-[0_0_10px_rgba(16,185,129,0.5)] flex-shrink-0">
-                            {TUTORIAL_NPC.image ? (
-                                <img src={TUTORIAL_NPC.image} alt={TUTORIAL_NPC.name} className="w-full h-full object-cover object-top" />
+                            {TUTORIAL_NPC.image && !imgError ? (
+                                <img 
+                                    src={TUTORIAL_NPC.image} 
+                                    alt={TUTORIAL_NPC.name} 
+                                    className="w-full h-full object-cover object-top" 
+                                    onError={() => setImgError(true)}
+                                />
                             ) : (
                                 <span>{TUTORIAL_NPC.avatar}</span>
                             )}
@@ -106,8 +112,13 @@ export const NpcTutorialGuide: React.FC<NpcTutorialGuideProps> = ({
                 <div className="flex items-center gap-2 overflow-hidden">
                     <div className="relative flex-shrink-0">
                         <div className="w-7 h-7 rounded-full overflow-hidden border border-amber-400 bg-amber-950 flex items-center justify-center">
-                            {npcImage ? (
-                                <img src={npcImage} alt={TUTORIAL_NPC.name} className="w-full h-full object-cover object-top" />
+                            {npcImage && !imgError ? (
+                                <img 
+                                    src={npcImage} 
+                                    alt={TUTORIAL_NPC.name} 
+                                    className="w-full h-full object-cover object-top" 
+                                    onError={() => setImgError(true)}
+                                />
                             ) : (
                                 <span className="text-sm">{avatar}</span>
                             )}
@@ -149,11 +160,12 @@ export const NpcTutorialGuide: React.FC<NpcTutorialGuideProps> = ({
                 <div className="flex items-center gap-3">
                     <div className="relative flex-shrink-0">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-amber-950/90 border-2 border-amber-400 flex items-center justify-center text-xl shadow-[0_0_14px_rgba(245,158,11,0.45)]">
-                            {npcImage ? (
+                            {npcImage && !imgError ? (
                                 <img 
                                     src={npcImage} 
                                     alt={currentStep.npcName} 
                                     className="w-full h-full object-cover object-top hover:scale-110 transition-transform duration-300" 
+                                    onError={() => setImgError(true)}
                                 />
                             ) : (
                                 <span>{avatar}</span>

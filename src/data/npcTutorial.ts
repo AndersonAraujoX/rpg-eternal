@@ -1,3 +1,5 @@
+import ariaGuideImg from '../assets/npc/aria_guide.jpg';
+
 export interface TutorialStepReward {
     gold?: number;
     souls?: number;
@@ -35,7 +37,7 @@ export const TUTORIAL_NPC = {
     fullName: 'Aria, a Guia dos Aventureiros',
     title: 'Instrutora Real da Guilda',
     avatar: '🧝‍♀️',
-    image: '/assets/npc/aria_guide.jpg',
+    image: ariaGuideImg,
     greeting: 'Saudações, herói! Eu sou Aria, sua instrutora e guia nestas terras desconhecidas.',
     completedBanner: 'Todas as diretrizes do tutorial foram concluídas com êxito! Continue evoluindo sua guilda e dominando as dimensões.',
     tips: [
@@ -51,7 +53,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         id: 'gold_accumulation',
         npcName: 'Aria (Guia dos Aventureiros)',
         npcAvatar: '🧝‍♀️',
-        npcImage: '/assets/npc/aria_guide.jpg',
+        npcImage: ariaGuideImg,
         npcRole: 'Guia do Reino & Instrutora',
         dialogue: 'Saudações, explorador! Eu sou Aria, sua guia. Nossos sensores detectaram perturbações quânticas atípicas se abrindo sob a Arena. Precisamos estabelecer o Posto Avançado M.E.G. para rastrear essas anomalias. Reúna 40.000 moedas de ouro para construir a base na Vila!',
         hint: 'Derrote monstros e chefes para acumular ouro, ou compre o Posto Avançado M.E.G. na Vila.',

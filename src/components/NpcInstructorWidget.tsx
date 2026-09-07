@@ -8,6 +8,7 @@ interface NpcInstructorWidgetProps {
 
 export const NpcInstructorWidget: React.FC<NpcInstructorWidgetProps> = ({ currentTutorialIndex }) => {
     const [showHint, setShowHint] = useState<boolean>(false);
+    const [imgError, setImgError] = useState<boolean>(false);
     const isCompleted = currentTutorialIndex >= TUTORIAL_STEPS.length;
     const currentStep = !isCompleted ? TUTORIAL_STEPS[currentTutorialIndex] : null;
 
@@ -19,8 +20,12 @@ export const NpcInstructorWidget: React.FC<NpcInstructorWidgetProps> = ({ curren
                     SISTEMA SEGURO
                 </div>
                 <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-emerald-950/80 border border-emerald-500 flex items-center justify-center text-lg flex-shrink-0">
-                        {TUTORIAL_NPC.avatar}
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-emerald-950/80 border border-emerald-500 flex items-center justify-center text-lg flex-shrink-0">
+                        {TUTORIAL_NPC.image && !imgError ? (
+                            <img src={TUTORIAL_NPC.image} alt={TUTORIAL_NPC.name} className="w-full h-full object-cover object-top" onError={() => setImgError(true)} />
+                        ) : (
+                            <span>{TUTORIAL_NPC.avatar}</span>
+                        )}
                     </div>
                     <div>
                         <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -55,8 +60,8 @@ export const NpcInstructorWidget: React.FC<NpcInstructorWidgetProps> = ({ curren
                 <div className="flex items-center justify-between border-b border-amber-800/25 pb-1.5">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full overflow-hidden bg-amber-200 border border-amber-700 flex items-center justify-center text-sm shadow-sm flex-shrink-0">
-                            {npcImage ? (
-                                <img src={npcImage} alt={currentStep.npcName} className="w-full h-full object-cover object-top" />
+                            {npcImage && !imgError ? (
+                                <img src={npcImage} alt={currentStep.npcName} className="w-full h-full object-cover object-top" onError={() => setImgError(true)} />
                             ) : (
                                 <span>{avatar}</span>
                             )}
