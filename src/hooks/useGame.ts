@@ -3542,6 +3542,9 @@ export const useGame = (
                 const currentStep = TUTORIAL_STEPS[tutorialIdx];
                 const fullState = {
                     gold: stateRef.current.gold,
+                    souls: stateRef.current.souls,
+                    heroes: stateRef.current.heroes,
+                    boss: stateRef.current.boss,
                     buildings: stateRef.current.buildings,
                     backroomsUnlockedTechs: stateRef.current.backroomsUnlockedTechs,
                     backroomsFloor: stateRef.current.backroomsFloor

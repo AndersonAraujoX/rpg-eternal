@@ -53,6 +53,7 @@ import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
 import { IndustryModal } from './components/modals/IndustryModal';
 import { RoguelikeModal } from './components/modals/RoguelikeModal';
 import { BackroomsManagerModal } from './components/modals/BackroomsManagerModal';
+import { NpcTutorialGuide } from './components/NpcTutorialGuide';
 
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
@@ -390,6 +391,31 @@ function App() {
           bossTimer={bossTimer}
           tower={tower}
         />
+
+        {/* NPC TUTORIAL COMPANION */}
+        <div className="px-3 py-1 flex-shrink-0">
+          <NpcTutorialGuide
+            currentTutorialIndex={currentTutorialIndex}
+            gameState={{
+              gold,
+              souls,
+              buildings,
+              heroes,
+              boss,
+              backroomsUnlockedTechs,
+              backroomsFloor
+            }}
+            onOpenModal={(targetModal) => {
+              if (targetModal === 'town') { actions.visitTown(); setShowTown(true); }
+              else if (targetModal === 'backrooms') setShowBackrooms(true);
+              else if (targetModal === 'tavern') setShowTavern(true);
+              else if (targetModal === 'forge') setShowForge(true);
+              else if (targetModal === 'shop') setShowShop(true);
+              else if (targetModal === 'inventory') setShowInventory(true);
+            }}
+          />
+        </div>
+
         <div className="flex-1 flex flex-col min-h-0 bg-gray-800 border-t-4 border-gray-600">
           <div className="flex border-b border-gray-700 bg-gray-900/40 p-1 gap-1">
             <button

@@ -1,12 +1,13 @@
-import React from 'react';
-import { TUTORIAL_STEPS } from '../data/npcTutorial';
-import { MessageSquare, Award, Terminal, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { TUTORIAL_STEPS, TUTORIAL_NPC } from '../data/npcTutorial';
+import { MessageSquare, Terminal, CheckCircle2, Lightbulb } from 'lucide-react';
 
 interface NpcInstructorWidgetProps {
     currentTutorialIndex: number;
 }
 
 export const NpcInstructorWidget: React.FC<NpcInstructorWidgetProps> = ({ currentTutorialIndex }) => {
+    const [showHint, setShowHint] = useState<boolean>(false);
     const isCompleted = currentTutorialIndex >= TUTORIAL_STEPS.length;
     const currentStep = !isCompleted ? TUTORIAL_STEPS[currentTutorialIndex] : null;
 
@@ -18,15 +19,15 @@ export const NpcInstructorWidget: React.FC<NpcInstructorWidgetProps> = ({ curren
                     SISTEMA SEGURO
                 </div>
                 <div className="flex items-start gap-3">
-                    <div className="p-2 rounded bg-emerald-950/50 border border-emerald-500 text-emerald-400">
-                        <CheckCircle2 size={24} className="animate-pulse" />
+                    <div className="w-9 h-9 rounded-full bg-emerald-950/80 border border-emerald-500 flex items-center justify-center text-lg flex-shrink-0">
+                        {TUTORIAL_NPC.avatar}
                     </div>
                     <div>
                         <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
-                            ✔ DIRETRIZ M.E.G. CONCLUÍDA
+                            <CheckCircle2 size={16} className="animate-pulse" /> DIRETRIZ TUTORIAL CONCLUÍDA
                         </h4>
                         <p className="text-[10px] text-amber-500/80 leading-relaxed mt-1">
-                            Todas as tarefas de transição e estabelecimento do terminal foram concluídas com sucesso. O setor está estabilizado e sob controle da sua guilda. Continue coletando sucatas e explorando andares mais profundos.
+                            {TUTORIAL_NPC.completedBanner} Todas as tarefas de transição e estabelecimento do terminal foram concluídas com sucesso. O setor está estabilizado.
                         </p>
                     </div>
                 </div>
@@ -35,6 +36,9 @@ export const NpcInstructorWidget: React.FC<NpcInstructorWidgetProps> = ({ curren
     }
 
     if (!currentStep) return null;
+
+    const avatar = currentStep.npcAvatar || TUTORIAL_NPC.avatar;
+    const npcImage = currentStep.npcImage || TUTORIAL_NPC.image;
 
     return (
         <div className="mx-4 mt-4 bg-amber-100 text-amber-950 border-4 border-amber-600 rounded-lg p-4 relative font-mono shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_0_15px_rgba(217,119,6,0.15)] overflow-hidden">
@@ -48,19 +52,52 @@ export const NpcInstructorWidget: React.FC<NpcInstructorWidgetProps> = ({ curren
 
             <div className="flex flex-col gap-3 relative z-10">
                 {/* Header (NPC Identity) */}
-                <div className="flex items-center gap-2 border-b border-amber-800/25 pb-1.5">
-                    <div className="p-1 rounded bg-amber-250 border border-amber-700 text-amber-805">
-                        <Terminal size={14} />
+                <div className="flex items-center justify-between border-b border-amber-800/25 pb-1.5">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-amber-200 border border-amber-700 flex items-center justify-center text-sm shadow-sm flex-shrink-0">
+                            {npcImage ? (
+                                <img src={npcImage} alt={currentStep.npcName} className="w-full h-full object-cover object-top" />
+                            ) : (
+                                <span>{avatar}</span>
+                            )}
+                        </div>
+                        <div>
+                            <span className="text-xs font-black uppercase tracking-wider text-amber-900 block">
+                                {currentStep.npcName}
+                            </span>
+                            {currentStep.npcRole && (
+                                <span className="text-[9px] text-amber-800 font-bold block">
+                                    {currentStep.npcRole}
+                                </span>
+                            )}
+                        </div>
                     </div>
-                    <span className="text-xs font-black uppercase tracking-wider text-amber-900">
-                        💬 {currentStep.npcName}
-                    </span>
+
+                    {currentStep.hint && (
+                        <button
+                            onClick={() => setShowHint(!showHint)}
+                            className="text-[9px] font-bold bg-amber-200 hover:bg-amber-300 text-amber-900 border border-amber-600/40 px-2 py-0.5 rounded flex items-center gap-1 transition-colors"
+                        >
+                            <Lightbulb size={11} />
+                            <span>{showHint ? 'Ocultar Dica' : 'Ver Dica'}</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Dialogue Area */}
                 <div className="text-[11px] leading-relaxed text-amber-900 italic font-medium bg-amber-200/50 p-2.5 rounded border border-amber-700/10">
                     "{currentStep.dialogue}"
                 </div>
+
+                {/* Optional Hint Box */}
+                {showHint && currentStep.hint && (
+                    <div className="text-[10px] bg-amber-300/40 border border-amber-600/30 p-2 rounded text-amber-950 flex items-start gap-1.5">
+                        <Lightbulb size={12} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <strong>Dica da Guia:</strong> {currentStep.hint}
+                        </div>
+                    </div>
+                )}
 
                 {/* Highlighted Objective Box */}
                 <div className="bg-amber-950 text-amber-400 p-2.5 rounded border-2 border-amber-600 shadow-[inset_0_0_8px_rgba(217,119,6,0.3)]">
@@ -102,3 +139,4 @@ export const NpcInstructorWidget: React.FC<NpcInstructorWidgetProps> = ({ curren
         </div>
     );
 };
+
