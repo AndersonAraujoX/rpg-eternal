@@ -31,6 +31,7 @@ export interface ProgressionNode {
     checkUnlocked: (state: ProgressionGameState) => boolean;
     getProgress: (state: ProgressionGameState) => { current: number; max: number; percentage: number };
     navigationTarget?: string; // Modal or screen trigger
+    ariaAdvice?: string; // Dica e aconselhamento exclusivo da Aria para liberar e conquistar o modo
 }
 
 export interface EvaluatedProgressionNode extends ProgressionNode {
@@ -61,6 +62,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: null,
         unlockRequirementText: 'Disponível no início',
         navigationTarget: 'tower',
+        ariaAdvice: 'Suba os andares da Torre Infinita para acumular poder inicial e ouro. Ao atingir o Andar 10, você encontrará a Vila da Aliança!',
         checkUnlocked: () => true,
         getProgress: (state) => {
             const current = Math.max(1, state.highestFloor ?? 1);
@@ -78,6 +80,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'tower',
         unlockRequirementText: 'Alcançar Andar 10 na Torre ou Chefe Nv. 10',
         navigationTarget: 'town',
+        ariaAdvice: 'A Vila é o ponto de conexão de todo o reino! A partir dela surgem os dois grandes caminhos: as Guildas e as Backrooms, além do Boss Mundial.',
         checkUnlocked: (state) => {
             const floor = state.highestFloor ?? 1;
             const boss = state.bossLevel ?? 0;
@@ -101,6 +104,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'town',
         unlockRequirementText: 'Vila Ativa + Atingir Chefe Nv. 150',
         navigationTarget: 'world_boss',
+        ariaAdvice: 'Com a Vila ativa e alcançando o Chefe Nv. 150, Titãs colossais surgem em reides mundiais! Reúna seu melhor esquadrão.',
         checkUnlocked: (state) => {
             const townUnlocked = (state.highestFloor ?? 1) >= 10 || (state.bossLevel ?? 0) >= 10;
             const boss = state.bossLevel ?? 0;
@@ -127,6 +131,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'town',
         unlockRequirementText: 'Vila Ativa + Andar 80 da Torre ou Salão de Guilda',
         navigationTarget: 'guild',
+        ariaAdvice: 'Alcançando o Andar 80 da Torre ou construindo o Salão na Vila, você funda sua guilda para disputar territórios e guerras!',
         checkUnlocked: (state) => {
             const townUnlocked = (state.highestFloor ?? 1) >= 10 || (state.bossLevel ?? 0) >= 10;
             if (!townUnlocked) return false;
@@ -151,6 +156,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'guilds',
         unlockRequirementText: 'Guilda Desbloqueada + Convocação de Guerra',
         navigationTarget: 'guild_war',
+        ariaAdvice: 'Modo MOBA de Guerra de Guilda! Destrua as torres adversárias, defenda as rotas e capture a bandeira da vitória!',
         checkUnlocked: (state) => {
             const guildsUnlocked = PROGRESSION_NODES.find(n => n.id === 'guilds')?.checkUnlocked(state) ?? false;
             return guildsUnlocked;
@@ -171,6 +177,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'guilds',
         unlockRequirementText: 'Guilda Desbloqueada + Mapa de Territórios',
         navigationTarget: 'guild_war',
+        ariaAdvice: 'Conquiste andares e territórios no mapa estratégico da guilda para arrecadar tributos e fortalecer todos os membros!',
         checkUnlocked: (state) => {
             const guildsUnlocked = PROGRESSION_NODES.find(n => n.id === 'guilds')?.checkUnlocked(state) ?? false;
             return guildsUnlocked;
@@ -201,6 +208,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'town',
         unlockRequirementText: 'Vila Ativa + Posto M.E.G. (Chefe Nv. 30)',
         navigationTarget: 'backrooms',
+        ariaAdvice: 'Cuidado onde pisa! Estabeleça o Posto M.E.G. na Vila (Chefe Nv. 30) para explorar salas liminares e recuperar artefatos dimensionais.',
         checkUnlocked: (state) => {
             const townUnlocked = (state.highestFloor ?? 1) >= 10 || (state.bossLevel ?? 0) >= 10;
             if (!townUnlocked) return false;
@@ -225,6 +233,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'backroom',
         unlockRequirementText: 'Backroom Desbloqueada + Expedição de Andares',
         navigationTarget: 'backrooms',
+        ariaAdvice: 'Desbrave os andares liminares perigosos (Níveis 0 a 8). Use Água de Amêndoa para manter a sanidade dos seus exploradores!',
         checkUnlocked: (state) => {
             const backroomUnlocked = PROGRESSION_NODES.find(n => n.id === 'backroom')?.checkUnlocked(state) ?? false;
             return backroomUnlocked;
@@ -251,6 +260,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'backroom',
         unlockRequirementText: 'Backroom Desbloqueada + Pesquisa Científica',
         navigationTarget: 'backrooms',
+        ariaAdvice: 'Pesquise nanociência e antimatéria no laboratório M.E.G. O Pacote Dimensional abrirá o caminho para a Indústria pesada!',
         checkUnlocked: (state) => {
             const backroomUnlocked = PROGRESSION_NODES.find(n => n.id === 'backroom')?.checkUnlocked(state) ?? false;
             return backroomUnlocked;
@@ -277,6 +287,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'backrooms_tech',
         unlockRequirementText: 'Tecnologia M.E.G. + Construção Industrial na Vila',
         navigationTarget: 'industry',
+        ariaAdvice: 'Automação industrial e fundição pesada! A Indústria manufatura as ligas essenciais para a construção da nave estelar.',
         checkUnlocked: (state) => {
             const techUnlocked = PROGRESSION_NODES.find(n => n.id === 'backrooms_tech')?.checkUnlocked(state) ?? false;
             if (!techUnlocked) return false;
@@ -309,6 +320,7 @@ export const PROGRESSION_NODES: ProgressionNode[] = [
         parentId: 'industry',
         unlockRequirementText: 'Indústria Ativa + Pesquisa de Dobra Espacial (Space Tech)',
         navigationTarget: 'galaxy',
+        ariaAdvice: 'O ápice da tecnologia! Com a Dobra Espacial e a Indústria pesada, viaje pelo cosmos, conquiste setores e forje naves capitânia!',
         checkUnlocked: (state) => {
             const industryUnlocked = PROGRESSION_NODES.find(n => n.id === 'industry')?.checkUnlocked(state) ?? false;
             if (!industryUnlocked) return false;

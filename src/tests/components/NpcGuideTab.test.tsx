@@ -5,86 +5,152 @@ import { NpcGuideTab } from '../../components/NpcGuideTab';
 import { TUTORIAL_NPC, TUTORIAL_STEPS } from '../../data/npcTutorial';
 
 describe('NpcGuideTab Component (AAA Pattern)', () => {
-    describe('Happy Path: Rendering Aria Profile & Active Tutorial Directive', () => {
-        it('should render Aria header, title, greeting, and active directive details', () => {
+    describe('Árvore de Conquista dos Modos (Novo Fluxo da Aria)', () => {
+        it('deve renderizar a Árvore de Conquista por padrão com as 3 ramificações (Caminho Feliz)', () => {
             // Arrange
             const currentTutorialIndex = 0;
-            const gameState = { gold: 20000, buildings: [] };
+            const gameState = {
+                highestFloor: 15,
+                bossLevel: 10,
+                buildings: []
+            };
 
             // Act
             render(
-                <NpcGuideTab 
+                <NpcGuideTab
                     currentTutorialIndex={currentTutorialIndex}
                     gameState={gameState}
                 />
             );
 
             // Assert
-            expect(screen.getByTestId('npc-guide-tab')).toBeDefined();
-            expect(screen.getByText(TUTORIAL_NPC.fullName)).toBeDefined();
-            expect(screen.getByText(TUTORIAL_NPC.title)).toBeDefined();
-            expect(screen.getByText(new RegExp(TUTORIAL_NPC.greeting, 'i'))).toBeDefined();
-            expect(screen.getByTestId('guide-tab-active-step')).toBeDefined();
-            expect(screen.getAllByText(TUTORIAL_STEPS[0].objectiveDescription).length).toBeGreaterThanOrEqual(1);
+            expect(screen.getByTestId('npc-guide-tab')).toBeInTheDocument();
+            expect(screen.getByText(TUTORIAL_NPC.fullName)).toBeInTheDocument();
+            expect(screen.getByTestId('aria-conquest-tree-section')).toBeInTheDocument();
+
+            // Linha Superior
+            expect(screen.getByText('Linha Superior (Fluxo Principal)')).toBeInTheDocument();
+            expect(screen.getAllByText('Torre Infinita').length).toBeGreaterThanOrEqual(1);
+            expect(screen.getAllByText('Vila').length).toBeGreaterThanOrEqual(1);
+            expect(screen.getAllByText('Boss Mundial').length).toBeGreaterThanOrEqual(1);
+
+            // Ramificação Esquerda
+            expect(screen.getByText(/Ramificação Esquerda/i)).toBeInTheDocument();
+            expect(screen.getAllByText('Guildas').length).toBeGreaterThanOrEqual(1);
+            expect(screen.getAllByText('GVG').length).toBeGreaterThanOrEqual(1);
+
+            // Ramificação Direita
+            expect(screen.getByText(/Ramificação Direita/i)).toBeInTheDocument();
+            expect(screen.getAllByText('Backroom').length).toBeGreaterThanOrEqual(1);
+            expect(screen.getAllByText('Tecnologia').length).toBeGreaterThanOrEqual(1);
+            expect(screen.getAllByText('Indústria').length).toBeGreaterThanOrEqual(1);
+            expect(screen.getAllByText('Galáxia').length).toBeGreaterThanOrEqual(1);
         });
 
-        it('should render the directives timeline checklist with correct state', () => {
+        it('deve exibir o painel de conselho detalhado da Aria ao selecionar um modo', () => {
             // Arrange
-            const currentTutorialIndex = 1;
+            render(<NpcGuideTab currentTutorialIndex={0} gameState={{ highestFloor: 20 }} />);
 
-            // Act
+            // Act - O nó inicial padrão é a Torre Infinita
+            expect(screen.getByTestId('aria-focused-mode-inspector')).toBeInTheDocument();
+            expect(screen.getByText(/Como Conquistar este Modo \(Dica da Aria\):/i)).toBeInTheDocument();
+
+            // Clica no card da Vila
+            fireEvent.click(screen.getByTestId('aria-node-town'));
+
+            // Assert
+            expect(screen.getByText(/A Vila é o ponto de conexão de todo o reino!/i)).toBeInTheDocument();
+        });
+
+        it('deve invocar onOpenModal com o destino correto ao clicar em entrar/abrir um modo', () => {
+            // Arrange
+            const onOpenModalMock = vi.fn();
             render(
-                <NpcGuideTab 
-                    currentTutorialIndex={currentTutorialIndex}
-                    gameState={{ gold: 40000 }}
+                <NpcGuideTab
+                    currentTutorialIndex={0}
+                    gameState={{ highestFloor: 5 }}
+                    onOpenModal={onOpenModalMock}
                 />
             );
 
+            // Act - A Torre Infinita está desbloqueada
+            const enterModeBtn = screen.getByRole('button', { name: /entrar no modo/i });
+            fireEvent.click(enterModeBtn);
+
             // Assert
-            expect(screen.getByText(/Linha do Tempo das Diretrizes/i)).toBeDefined();
-            expect(screen.getByText(/Concluído/i)).toBeDefined();
-            expect(screen.getByText(/Em Curso/i)).toBeDefined();
-            expect(screen.getByText(/Bloqueado/i)).toBeDefined();
+            expect(onOpenModalMock).toHaveBeenCalledWith('tower');
+        });
+
+        it('deve permitir abrir a Jornada Completa em tela cheia', () => {
+            // Arrange
+            const onOpenModalMock = vi.fn();
+            render(
+                <NpcGuideTab
+                    currentTutorialIndex={0}
+                    onOpenModal={onOpenModalMock}
+                />
+            );
+
+            // Act
+            const journeyBtn = screen.getByRole('button', { name: /ver jornada completa/i });
+            fireEvent.click(journeyBtn);
+
+            // Assert
+            expect(onOpenModalMock).toHaveBeenCalledWith('journey');
         });
     });
 
-    describe('Interactive Behavior: Hint Toggling, Action Button & Compendium Articles', () => {
-        it('should toggle detailed hint on and off when clicking hint button', () => {
+    describe('Seção de Diretrizes do Tutorial e Comportamento Interativo', () => {
+        it('deve alternar para a aba de Diretrizes e exibir o passo ativo', () => {
             // Arrange
-            const currentTutorialIndex = 0;
+            render(<NpcGuideTab currentTutorialIndex={0} gameState={{ gold: 20000 }} />);
+
+            // Act - Clica na aba de Diretrizes
+            const directivesTabBtn = screen.getByTestId('aria-tab-directives-btn');
+            fireEvent.click(directivesTabBtn);
+
+            // Assert
+            expect(screen.getByTestId('aria-directives-section')).toBeInTheDocument();
+            expect(screen.getByTestId('guide-tab-active-step')).toBeInTheDocument();
+            expect(screen.getAllByText(TUTORIAL_STEPS[0].objectiveDescription).length).toBeGreaterThanOrEqual(1);
+        });
+
+        it('deve alternar a exibição da dica de Aria dentro da aba de Diretrizes', () => {
+            // Arrange
             render(
-                <NpcGuideTab 
-                    currentTutorialIndex={currentTutorialIndex}
+                <NpcGuideTab
+                    currentTutorialIndex={0}
                     gameState={{ gold: 1000 }}
+                    initialSection="directives"
                 />
             );
 
-            // Act 1: Initially hint is shown by default in the full tab
-            expect(screen.getByTestId('guide-tab-hint-content')).toBeDefined();
+            // Act 1: Dica visível inicialmente
+            expect(screen.getByTestId('guide-tab-hint-content')).toBeInTheDocument();
 
-            // Act 2: Click to toggle off
+            // Act 2: Clica para ocultar dica
             const hintToggle = screen.getByTestId('guide-tab-hint-toggle');
             fireEvent.click(hintToggle);
 
-            // Assert 2: Hint content is hidden
+            // Assert 2: Dica ocultada
             expect(screen.queryByTestId('guide-tab-hint-content')).toBeNull();
 
-            // Act 3: Click to toggle back on
+            // Act 3: Clica para reexibir
             fireEvent.click(hintToggle);
 
-            // Assert 3: Hint content is visible again
-            expect(screen.getByTestId('guide-tab-hint-content')).toBeDefined();
+            // Assert 3: Dica reexibida
+            expect(screen.getByTestId('guide-tab-hint-content')).toBeInTheDocument();
         });
 
-        it('should trigger onOpenModal when clicking directive action shortcut', () => {
+        it('deve acionar o atalho onOpenModal na diretriz ativa', () => {
             // Arrange
-            const currentTutorialIndex = 0;
             const onOpenModalMock = vi.fn();
             render(
-                <NpcGuideTab 
-                    currentTutorialIndex={currentTutorialIndex}
+                <NpcGuideTab
+                    currentTutorialIndex={0}
                     gameState={{ gold: 1000 }}
                     onOpenModal={onOpenModalMock}
+                    initialSection="directives"
                 />
             );
 
@@ -93,52 +159,59 @@ describe('NpcGuideTab Component (AAA Pattern)', () => {
             fireEvent.click(actionBtn);
 
             // Assert
-            expect(onOpenModalMock).toHaveBeenCalledTimes(1);
             expect(onOpenModalMock).toHaveBeenCalledWith('town');
-        });
-
-        it('should switch between knowledge compendium articles when clicking article tabs', () => {
-            // Arrange
-            render(<NpcGuideTab currentTutorialIndex={0} />);
-
-            // Assert default article (Combate e Chefes) is displayed
-            expect(screen.getByText(/Seus heróis atacam continuamente de forma automática/i)).toBeDefined();
-
-            // Act: Click on Taverna article
-            const tavernBtn = screen.getByRole('button', { name: /Taverna e Recrutamento/i });
-            fireEvent.click(tavernBtn);
-
-            // Assert: Taverna article is displayed
-            expect(screen.getByText(/Visite a Taverna para recrutar novos aventureiros com ouro/i)).toBeDefined();
         });
     });
 
-    describe('Edge Cases & Completion States', () => {
-        it('should render congratulatory completed card when index is >= tutorial steps', () => {
+    describe('Seção de Compêndio de Conhecimento', () => {
+        it('deve alternar para o Compêndio e trocar de artigo ao clicar nas abas', () => {
+            // Arrange
+            render(<NpcGuideTab currentTutorialIndex={0} initialSection="compendium" />);
+
+            // Assert - Artigo inicial (Combate)
+            expect(screen.getByText(/Seus heróis atacam continuamente de forma automática/i)).toBeInTheDocument();
+
+            // Act - Clica no artigo da Taverna
+            const tavernBtn = screen.getByRole('button', { name: /Taverna e Recrutamento/i });
+            fireEvent.click(tavernBtn);
+
+            // Assert - Artigo da Taverna exibido
+            expect(screen.getByText(/Visite a Taverna para recrutar novos aventureiros com ouro/i)).toBeInTheDocument();
+        });
+    });
+
+    describe('Casos de Borda e Estados de Conclusão', () => {
+        it('deve renderizar card de conclusão nas Diretrizes quando índice ultrapassar o total', () => {
             // Arrange
             const completedIndex = TUTORIAL_STEPS.length;
 
             // Act
-            render(<NpcGuideTab currentTutorialIndex={completedIndex} />);
+            render(
+                <NpcGuideTab
+                    currentTutorialIndex={completedIndex}
+                    initialSection="directives"
+                />
+            );
 
             // Assert
-            expect(screen.getByTestId('guide-tab-completed')).toBeDefined();
-            expect(screen.getByText(/Todas as Diretrizes Iniciais Concluídas!/i)).toBeDefined();
+            expect(screen.getByTestId('guide-tab-completed')).toBeInTheDocument();
+            expect(screen.getByText(/Todas as Diretrizes Iniciais Concluídas!/i)).toBeInTheDocument();
             expect(screen.queryByTestId('guide-tab-active-step')).toBeNull();
         });
 
-        it('should gracefully handle null/empty gameState without throwing errors', () => {
+        it('deve lidar graciosamente com gameState nulo ou vazio sem lançar exceções', () => {
             // Arrange & Act
             const { container } = render(
-                <NpcGuideTab 
-                    currentTutorialIndex={0} 
-                    gameState={null} 
+                <NpcGuideTab
+                    currentTutorialIndex={0}
+                    gameState={null}
                 />
             );
 
             // Assert
             expect(container).toBeDefined();
-            expect(screen.getByTestId('npc-guide-tab')).toBeDefined();
+            expect(screen.getByTestId('npc-guide-tab')).toBeInTheDocument();
+            expect(screen.getByTestId('aria-conquest-tree-section')).toBeInTheDocument();
         });
     });
 });

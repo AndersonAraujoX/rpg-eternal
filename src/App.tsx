@@ -473,12 +473,27 @@ function App() {
                   buildings,
                   heroes,
                   boss,
+                  bossLevel: boss.level,
+                  highestFloor: tower.maxFloor || 1,
+                  tower,
                   backroomsUnlockedTechs,
-                  backroomsFloor
+                  backroomsFloor,
+                  outerSpaceUnlocked,
+                  hasGuild: !!buildings.find(b => b.id === 'guild_hall' && b.level > 0),
+                  mobaWarActive: mobaWarState?.battleActive,
+                  playerTerritoriesCount: (territories || []).filter(t => t.owner === 'player').length,
+                  industryUnlocked: !!buildings.find(b => b.id === 'industry' && b.level > 0)
                 }}
                 onOpenModal={(targetModal) => {
                   if (targetModal === 'town') { actions.visitTown(); setShowTown(true); }
+                  else if (targetModal === 'tower') setShowTower(true);
+                  else if (targetModal === 'world_boss') setShowWorldBoss(true);
+                  else if (targetModal === 'guild') setShowGuild(true);
+                  else if (targetModal === 'guild_war') setShowGuildWar(true);
                   else if (targetModal === 'backrooms') setShowBackrooms(true);
+                  else if (targetModal === 'industry') setShowIndustry(true);
+                  else if (targetModal === 'galaxy') setShowGalaxy(true);
+                  else if (targetModal === 'journey') setShowJourney(true);
                   else if (targetModal === 'tavern') setShowTavern(true);
                   else if (targetModal === 'forge') setShowForge(true);
                   else if (targetModal === 'shop') setShowShop(true);
