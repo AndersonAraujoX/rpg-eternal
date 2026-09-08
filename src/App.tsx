@@ -55,6 +55,7 @@ import { RoguelikeModal } from './components/modals/RoguelikeModal';
 import { BackroomsManagerModal } from './components/modals/BackroomsManagerModal';
 import { NpcTutorialGuide } from './components/NpcTutorialGuide';
 import { NpcGuideTab } from './components/NpcGuideTab';
+import { AriaSidebar } from './components/AriaSidebar';
 import { TUTORIAL_STEPS } from './data/npcTutorial';
 
 import './index.css';
@@ -193,6 +194,7 @@ function App() {
   const [showRelicChamber, setShowRelicChamber] = useState(false);
   const [showVoidInfusion, setShowVoidInfusion] = useState(false);
   const [bottomTab, setBottomTab] = useState<'heroes' | 'pets' | 'guide'>('heroes');
+  const [isAriaSidebarOpen, setIsAriaSidebarOpen] = useState(false);
 
   const [importString, setImportString] = useState('');
 
@@ -272,6 +274,7 @@ function App() {
         setShowMarket(false); setShowMastery(false); setShowRiftModal(false); setShowPrestigeTree(false);
         setShowDevTools(false); setShowStats(false); setShowGalaxy(false); setShowStarForge(false);
         setShowLeaderboard(false);
+        setIsAriaSidebarOpen(false);
       }
       if (e.key.toLowerCase() === 's') setShowShop(prev => !prev);
       if (e.key.toLowerCase() === 'i') setShowInventory(prev => !prev);
@@ -281,6 +284,7 @@ function App() {
       if (e.key.toLowerCase() === 'g') setShowGuild(prev => !prev);
       if (e.key.toLowerCase() === 'r') setShowRunes(prev => !prev);
       if (e.key.toLowerCase() === 'a') setShowAchievements(prev => !prev);
+      if (e.key.toLowerCase() === 'j') setIsAriaSidebarOpen(prev => !prev);
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -518,6 +522,45 @@ function App() {
       </div>
 
       {/* MODALS RENDER */}
+      <AriaSidebar
+        isOpen={isAriaSidebarOpen}
+        onToggle={setIsAriaSidebarOpen}
+        currentTutorialIndex={currentTutorialIndex}
+        gameState={{
+          gold,
+          souls,
+          resources,
+          buildings,
+          heroes,
+          boss,
+          bossLevel: boss.level,
+          highestFloor: tower.maxFloor || 1,
+          tower,
+          backroomsUnlockedTechs,
+          backroomsFloor,
+          outerSpaceUnlocked,
+          hasGuild: !!buildings.find(b => b.id === 'guild_hall' && b.level > 0),
+          mobaWarActive: mobaWarState?.battleActive,
+          playerTerritoriesCount: (territories || []).filter(t => t.owner === 'player').length,
+          industryUnlocked: !!buildings.find(b => b.id === 'industry' && b.level > 0)
+        }}
+        onOpenModal={(targetModal) => {
+          if (targetModal === 'town') { actions.visitTown(); setShowTown(true); }
+          else if (targetModal === 'tower') setShowTower(true);
+          else if (targetModal === 'world_boss') setShowWorldBoss(true);
+          else if (targetModal === 'guild') setShowGuild(true);
+          else if (targetModal === 'guild_war') setShowGuildWar(true);
+          else if (targetModal === 'backrooms') setShowBackrooms(true);
+          else if (targetModal === 'industry') setShowIndustry(true);
+          else if (targetModal === 'galaxy') setShowGalaxy(true);
+          else if (targetModal === 'journey') setShowJourney(true);
+          else if (targetModal === 'tavern') setShowTavern(true);
+          else if (targetModal === 'forge') setShowForge(true);
+          else if (targetModal === 'shop') setShowShop(true);
+          else if (targetModal === 'inventory') setShowInventory(true);
+          else if (targetModal === 'guide') setBottomTab('guide');
+        }}
+      />
       <VictoryModal isOpen={victory} playTime={gameStats.playTime} ascensions={voidAscensions} onContinue={() => actions.setVictory(false)} />
       <LogModal isOpen={showLog} onClose={() => setShowLog(false)} logs={logs} />
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
