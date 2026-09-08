@@ -7,7 +7,16 @@ export interface GameStateForUnlocks {
     buildings: Building[];
     outerSpaceUnlocked: boolean;
     riftsUnlocked?: boolean;
+    backroomsUnlockedTechs?: string[];
+    backroomsFloor?: number;
+    hasGuild?: boolean;
+    guildLevel?: number;
+    mobaWarActive?: boolean;
+    playerTerritoriesCount?: number;
+    industryUnlocked?: boolean;
 }
+
+export * from './progressionTree';
 
 export interface FeatureDefinition {
     id: string;

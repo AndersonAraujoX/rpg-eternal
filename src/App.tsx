@@ -889,7 +889,23 @@ function App() {
           voidAscensions,
           buildings,
           outerSpaceUnlocked,
-          riftsUnlocked: backroomsUnlockedTechs.includes('rift_tech')
+          riftsUnlocked: backroomsUnlockedTechs.includes('rift_tech'),
+          backroomsUnlockedTechs,
+          backroomsFloor: backroomsFloor || 1,
+          hasGuild: !!buildings.find(b => b.id === 'guild_hall' && b.level > 0),
+          mobaWarActive: mobaWarState?.battleActive,
+          playerTerritoriesCount: (territories || []).filter(t => t.owner === 'player').length,
+          industryUnlocked: !!buildings.find(b => b.id === 'industry' && b.level > 0)
+        }}
+        onNavigate={(destination) => {
+          if (destination === 'town') { actions.visitTown(); setShowTown(true); }
+          else if (destination === 'tower') setShowTower(true);
+          else if (destination === 'world_boss') setShowWorldBoss(true);
+          else if (destination === 'guild') setShowGuild(true);
+          else if (destination === 'guild_war') setShowGuildWar(true);
+          else if (destination === 'backrooms') setShowBackrooms(true);
+          else if (destination === 'industry') setShowIndustry(true);
+          else if (destination === 'galaxy') setShowGalaxy(true);
         }}
       />
 
