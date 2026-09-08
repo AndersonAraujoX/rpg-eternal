@@ -115,6 +115,8 @@ function App() {
     upgradeOutpost, craftGear,
     backroomsUnlockedTechs, researchTech,
     backroomsFloor, isBackroomsUnlocked, backroomsFloorProgress, backroomsBossHp,
+    containedEntities, sectorModules, activeNoclipEvent, dimensionalInstability,
+    captureEntity, resolveNoclip, upgradeSectorModule, sealDimensionalRift, unlockExplorerTalent,
     fakePlayers,
     elementalResonance, elementalEssences, ownedRelics, equippedRelics,
     gvgWarState, startGvGWar, playerGvGAttack, currentTutorialIndex, town,
@@ -883,6 +885,11 @@ function App() {
         floor={backroomsFloor}
         floorProgress={backroomsFloorProgress}
         bossHp={backroomsBossHp}
+        containedEntities={containedEntities}
+        sectorModules={sectorModules}
+        activeNoclipEvent={activeNoclipEvent}
+        dimensionalInstability={dimensionalInstability}
+        heroPower={partyPower}
         actions={{
           recruitExplorer,
           sendExplorer,
@@ -891,7 +898,12 @@ function App() {
           useAlmondWater,
           upgradeOutpost,
           craftGear,
-          researchTech
+          researchTech,
+          captureEntity,
+          resolveNoclip,
+          upgradeSectorModule,
+          sealDimensionalRift,
+          unlockExplorerTalent
         }}
       />
 

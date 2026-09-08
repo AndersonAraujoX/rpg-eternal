@@ -1,9 +1,13 @@
 import { useState, useCallback } from 'react';
 import type { 
-    BackroomsExplorer, BackroomsOutpost, BackroomsResources 
+    BackroomsExplorer, BackroomsOutpost, BackroomsResources, ContainedEntity, SectorModules, NoclipEvent 
 } from '../engine/backrooms';
 import { 
-    createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS, BACKROOMS_RESEARCHES, getTransitionBoss, INITIAL_BACKROOMS_EXPLORERS, INITIAL_BACKROOMS_OUTPOST, INITIAL_BACKROOMS_RESOURCES
+    createRandomExplorer, simulateBackroomsTick, BACKROOMS_LEVELS, BACKROOMS_RESEARCHES, getTransitionBoss, 
+    INITIAL_BACKROOMS_EXPLORERS, INITIAL_BACKROOMS_OUTPOST, INITIAL_BACKROOMS_RESOURCES,
+    captureEntity as engineCaptureEntity, resolveNoclipEvent as engineResolveNoclipEvent,
+    upgradeSectorModule as engineUpgradeSectorModule, sealDimensionalRift as engineSealDimensionalRift,
+    unlockExplorerTalent as engineUnlockExplorerTalent
 } from '../engine/backrooms';
 
 export function useBackrooms() {
@@ -16,8 +20,14 @@ export function useBackrooms() {
     const [backroomsFloorProgress, setBackroomsFloorProgress] = useState<number>(0);
     const [backroomsBossHp, setBackroomsBossHp] = useState<number | null>(null);
 
+    // M.E.G. V2.0 Expansões: Entidades, Módulos de Conquista, Noclip, Instabilidade
+    const [containedEntities, setContainedEntities] = useState<ContainedEntity[]>([]);
+    const [sectorModules, setSectorModules] = useState<Record<string, SectorModules>>({});
+    const [activeNoclipEvent, setActiveNoclipEvent] = useState<NoclipEvent | null>(null);
+    const [dimensionalInstability, setDimensionalInstability] = useState<number>(0);
+
     const [backroomsLogs, setBackroomsLogs] = useState<string[]>([
-        `[${new Date().toLocaleTimeString()}] Posto Avançado M.E.G. inicializado. Pronto para exploração.`
+        `[${new Date().toLocaleTimeString()}] Posto Avançado M.E.G. inicializado. Protocolos V2.0 ativos.`
     ]);
 
     const addLog = useCallback((msg: string) => {
@@ -180,6 +190,69 @@ export function useBackrooms() {
         }
     };
 
+    // Novas Ações M.E.G. V2.0
+    const captureEntity = (entityId: string) => {
+        const result = engineCaptureEntity(entityId, backroomsResources, containedEntities);
+        if (result.success) {
+            setBackroomsResources(result.newResources);
+            setContainedEntities(result.newCaptured);
+            addLog(`🔮 ${result.message}`);
+            return true;
+        } else {
+            addLog(`❌ ${result.message}`);
+            return false;
+        }
+    };
+
+    const resolveNoclip = (choice: 'enter' | 'ignore') => {
+        if (!activeNoclipEvent) return;
+        const result = engineResolveNoclipEvent(activeNoclipEvent, choice, backroomsExplorers, backroomsResources);
+        setBackroomsExplorers(result.updatedExplorers);
+        setBackroomsResources(result.updatedResources);
+        addLog(result.log);
+        setActiveNoclipEvent(null);
+    };
+
+    const upgradeSectorModule = (sectorId: string, moduleType: keyof SectorModules) => {
+        const result = engineUpgradeSectorModule(sectorId, moduleType, sectorModules, backroomsResources);
+        if (result.success) {
+            setBackroomsResources(result.newResources);
+            setSectorModules(result.newModules);
+            addLog(`🏗️ ${result.message}`);
+            return true;
+        } else {
+            addLog(`❌ ${result.message}`);
+            return false;
+        }
+    };
+
+    const sealDimensionalRift = (method: 'scrap' | 'heroCombat', heroPower: number = 50) => {
+        const result = engineSealDimensionalRift(method, backroomsResources, heroPower, dimensionalInstability);
+        if (result.success) {
+            setBackroomsResources(result.newResources);
+            setDimensionalInstability(result.newInstability);
+            addLog(`🛡️ ${result.message}`);
+            return true;
+        } else {
+            addLog(`❌ ${result.message}`);
+            return false;
+        }
+    };
+
+    const unlockExplorerTalent = (explorerId: string, talentId: string) => {
+        const exp = backroomsExplorers.find(e => e.id === explorerId);
+        if (!exp) return false;
+        const result = engineUnlockExplorerTalent(exp, talentId);
+        if (result.success) {
+            setBackroomsExplorers(prev => prev.map(e => e.id === explorerId ? result.updatedExplorer : e));
+            addLog(`⭐ ${result.message}`);
+            return true;
+        } else {
+            addLog(`❌ ${result.message}`);
+            return false;
+        }
+    };
+
     const processBackroomsTick = useCallback((deltaSeconds: number, isExploradoresOcultosActive: boolean = false) => {
         setBackroomsExplorers(prevExplorers => {
             const isTransitionFloor = [15, 30, 45, 60, 75, 90, 100].includes(backroomsFloor);
@@ -195,7 +268,10 @@ export function useBackrooms() {
                 }
             }
 
-            const { updatedExplorers, gainedResources, newLogs, progressGained, bossHpDamage } = simulateBackroomsTick(
+            const { 
+                updatedExplorers, gainedResources, newLogs, progressGained, bossHpDamage,
+                noclipTriggered, instabilityDelta
+            } = simulateBackroomsTick(
                 prevExplorers,
                 backroomsOutpost,
                 backroomsResources,
@@ -203,8 +279,30 @@ export function useBackrooms() {
                 deltaSeconds,
                 backroomsFloor,
                 activeBossHp,
-                isExploradoresOcultosActive
+                isExploradoresOcultosActive,
+                {
+                    containedEntities,
+                    sectorModules,
+                    dimensionalInstability,
+                    activeNoclipEvent
+                }
             );
+
+            // Noclip trigger
+            if (noclipTriggered && !activeNoclipEvent) {
+                setActiveNoclipEvent(noclipTriggered);
+            }
+
+            // Instabilidade dimensional
+            if (instabilityDelta) {
+                setDimensionalInstability(prev => {
+                    const next = Math.min(100, Math.max(0, prev + instabilityDelta));
+                    if (prev < 80 && next >= 80) {
+                        addLog(`⚠️ [ALERTA DE FENDA] A integridade dimensional caiu drasticamente! Fenda instável ameaça invadir a Vila!`);
+                    }
+                    return next;
+                });
+            }
 
             // Update boss HP if combat occurred
             if (activeBossHp !== null && bossHpDamage > 0) {
@@ -226,7 +324,6 @@ export function useBackrooms() {
 
             // Update exploration progress if not at 100% on a transition floor
             if (progressGained > 0) {
-                // If it's a transition floor, cap progress at 100
                 if (isTransitionFloor) {
                     setBackroomsFloorProgress(prev => {
                         const next = Math.min(100, prev + progressGained);
@@ -240,7 +337,6 @@ export function useBackrooms() {
                         return next;
                     });
                 } else {
-                    // Normal floor: progress can cause floor level up
                     setBackroomsFloorProgress(prev => {
                         const next = prev + progressGained;
                         if (next >= 100) {
@@ -271,11 +367,16 @@ export function useBackrooms() {
             }
 
             // Add resources
-            if (gainedResources.scrap || gainedResources.almondWater || gainedResources.anomalyParts) {
+            if (
+                gainedResources.scrap || gainedResources.almondWater || gainedResources.anomalyParts ||
+                gainedResources.liminalFluid || gainedResources.voidAlloy
+            ) {
                 setBackroomsResources(prev => ({
                     scrap: prev.scrap + (gainedResources.scrap || 0),
                     almondWater: prev.almondWater + (gainedResources.almondWater || 0),
-                    anomalyParts: prev.anomalyParts + (gainedResources.anomalyParts || 0)
+                    anomalyParts: prev.anomalyParts + (gainedResources.anomalyParts || 0),
+                    liminalFluid: (prev.liminalFluid || 0) + (gainedResources.liminalFluid || 0),
+                    voidAlloy: (prev.voidAlloy || 0) + (gainedResources.voidAlloy || 0)
                 }));
             }
 
@@ -289,7 +390,10 @@ export function useBackrooms() {
 
             return updatedExplorers;
         });
-    }, [backroomsFloor, backroomsFloorProgress, backroomsBossHp, backroomsOutpost, backroomsResources, addLog]);
+    }, [
+        backroomsFloor, backroomsFloorProgress, backroomsBossHp, backroomsOutpost, backroomsResources,
+        containedEntities, sectorModules, dimensionalInstability, activeNoclipEvent, addLog
+    ]);
 
     return {
         backroomsExplorers,
@@ -308,6 +412,16 @@ export function useBackrooms() {
         setBackroomsFloorProgress,
         backroomsBossHp,
         setBackroomsBossHp,
+        // M.E.G. V2.0 States
+        containedEntities,
+        setContainedEntities,
+        sectorModules,
+        setSectorModules,
+        activeNoclipEvent,
+        setActiveNoclipEvent,
+        dimensionalInstability,
+        setDimensionalInstability,
+        // Actions
         recruitExplorer,
         sendExplorer,
         recallExplorer,
@@ -316,6 +430,11 @@ export function useBackrooms() {
         upgradeOutpost,
         craftGear,
         researchTech,
+        captureEntity,
+        resolveNoclip,
+        upgradeSectorModule,
+        sealDimensionalRift,
+        unlockExplorerTalent,
         processBackroomsTick
     };
 }

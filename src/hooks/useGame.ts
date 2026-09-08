@@ -3966,6 +3966,15 @@ export const useGame = (
             isBackroomsUnlocked,
             backroomsFloorProgress: backrooms.backroomsFloorProgress,
             backroomsBossHp: backrooms.backroomsBossHp,
+            containedEntities: backrooms.containedEntities,
+            sectorModules: backrooms.sectorModules,
+            activeNoclipEvent: backrooms.activeNoclipEvent,
+            dimensionalInstability: backrooms.dimensionalInstability,
+            captureEntity: backrooms.captureEntity,
+            resolveNoclip: backrooms.resolveNoclip,
+            upgradeSectorModule: backrooms.upgradeSectorModule,
+            sealDimensionalRift: (method: 'scrap' | 'heroCombat') => backrooms.sealDimensionalRift(method, partyPower),
+            unlockExplorerTalent: backrooms.unlockExplorerTalent,
             currentTutorialIndex,
 
             // ── Sinergias Transversais Globais (modifiersManager) ──
