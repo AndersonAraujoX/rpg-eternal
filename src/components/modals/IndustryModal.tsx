@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Settings, Zap, Package, Beaker, Plus, Trash2, Cpu, Rocket, CheckCircle2, Lock, Play, Layers } from 'lucide-react';
+import { Settings, Zap, Package, Beaker, Plus, Trash2, Cpu, Rocket, CheckCircle2, Lock, Play, Layers, ShieldAlert, AlertTriangle, Activity, Skull, Flame, Radio, Wrench } from 'lucide-react';
 import { MACHINES, RECIPES, INDUSTRY_ITEMS, FACTORIO_TECHS, type MachineNode, type TechNode } from '../../engine/industry';
 import type { IndustryState } from '../../hooks/useIndustry';
+import type { Scp914Mode, ScpAnomaly } from '../../engine/types';
+import { INITIAL_SCP_STATE, checkScpUnlockCondition, calculateScpPassiveBuffs } from '../../engine/scpFoundation';
 
 interface IndustryModalProps {
     isOpen: boolean;
@@ -16,6 +18,11 @@ interface IndustryModalProps {
         launchRocket: () => boolean;
         setBeltTier: (tier: 'yellow' | 'red' | 'blue') => void;
         setInserterTier: (tier: 'basic' | 'fast' | 'stack') => void;
+        toggleScpChamber?: (anomalyId: string) => void;
+        assignHeroToScp?: (anomalyId: string, heroId: string | null) => void;
+        executeScp914?: (inputItemId: string, mode: Scp914Mode) => any;
+        respondToBreach?: (anomalyId: string, method: 'blast_doors' | 'mtf_strike' | 'sedative', partyPower?: number) => { success: boolean; message: string };
+        unlockScpSite?: () => void;
     };
     gold: number;
     buyMachine: (cost: number, execute: () => void) => void;
@@ -23,6 +30,8 @@ interface IndustryModalProps {
     costReduction?: number;
     backroomsFloor?: number;
     backroomsUnlockedTechs?: string[];
+    heroes?: any[];
+    partyPower?: number;
 }
 
 export const IndustryModal: React.FC<IndustryModalProps> = ({ 
@@ -34,11 +43,17 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({
     assignedPet, 
     costReduction = 0, 
     backroomsFloor = 1,
-    backroomsUnlockedTechs = []
+    backroomsUnlockedTechs = [],
+    heroes = [],
+    partyPower = 1000
 }) => {
-    const [activeTab, setActiveTab] = useState<'machines' | 'inventory' | 'research' | 'power' | 'rocket'>('machines');
+    const [activeTab, setActiveTab] = useState<'machines' | 'inventory' | 'research' | 'power' | 'rocket' | 'scp_site'>('machines');
     const [itemFilter, setItemFilter] = useState<'all' | 'raw' | 'intermediate' | 'science' | 'advanced'>('all');
     const [launchMessage, setLaunchMessage] = useState<string | null>(null);
+    const [scp914Item, setScp914Item] = useState<string>('iron_ingot');
+    const [scp914Mode, setScp914Mode] = useState<Scp914Mode>('Fine');
+    const [scp914Message, setScp914Message] = useState<string | null>(null);
+    const [breachResponseMsg, setBreachResponseMsg] = useState<string | null>(null);
 
     if (!isOpen) return null;
 
@@ -56,8 +71,20 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({
         updateNode, 
         startResearch, 
         buildRocketPart, 
-        launchRocket 
+        launchRocket,
+        toggleScpChamber,
+        assignHeroToScp,
+        executeScp914,
+        respondToBreach,
+        unlockScpSite
     } = industryState;
+
+    const scpFoundation = industryState.scpFoundation || INITIAL_SCP_STATE;
+    const isScpUnlocked = Boolean(
+        scpFoundation.unlocked ||
+        checkScpUnlockCondition({ nodes, unlockedTechs }, [], backroomsFloor)
+    );
+    const scpPassiveBuffs = calculateScpPassiveBuffs(scpFoundation.anomalies);
 
     const activeTech = activeResearch ? FACTORIO_TECHS.find(t => t.id === activeResearch) : null;
     const activeProgress = activeTech ? (researchProgress[activeTech.id] || 0) : 0;
@@ -185,6 +212,33 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({
                         <Rocket size={16} /> Silo de Foguete
                         {rocketPartsBuilt >= 100 && (
                             <span className="bg-purple-400 text-black text-[9px] font-black px-1.5 rounded-full">PRONTO</span>
+                        )}
+                    </button>
+                    <button 
+                        data-testid="industry-scp-tab-btn"
+                        onClick={() => {
+                            if (isScpUnlocked) {
+                                setActiveTab('scp_site');
+                                if (!scpFoundation.unlocked) {
+                                    unlockScpSite?.();
+                                }
+                            }
+                        }} 
+                        disabled={!isScpUnlocked}
+                        title={isScpUnlocked ? "Acessar Instalação Subterrânea de Contenção SCP" : "Requer Automação I ou ao menos 1 Máquina Operacional"}
+                        className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all relative ${
+                            !isScpUnlocked
+                                ? 'bg-stone-900/60 text-stone-600 border border-stone-800 cursor-not-allowed opacity-60'
+                                : activeTab === 'scp_site'
+                                    ? 'bg-red-700 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)] border border-red-500'
+                                    : 'bg-stone-800/80 text-red-300 border border-red-950 hover:bg-red-950/40 hover:text-red-200'
+                        }`}
+                    >
+                        <ShieldAlert size={16} className={isScpUnlocked ? 'text-red-400' : 'text-stone-600'} />
+                        <span>Subsolo: Sítio-19</span>
+                        {!isScpUnlocked && <Lock size={12} className="text-stone-500" />}
+                        {isScpUnlocked && scpFoundation.activeBreach && (
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                         )}
                     </button>
                 </div>
@@ -626,6 +680,398 @@ export const IndustryModal: React.FC<IndustryModalProps> = ({
                                     >
                                         <Rocket size={16} /> LANÇAR FOGUETE COM SATÉLITE
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── TAB 6: SUBSOLO SÍTIO-19 (CONTENÇÃO SCP) ────────────────── */}
+                    {activeTab === 'scp_site' && (
+                        <div className="space-y-6">
+                            {/* Header do Sítio-19 */}
+                            <div className="bg-gradient-to-r from-red-950/80 via-stone-900 to-black p-4 rounded-xl border border-red-900/60 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-red-950 border border-red-500/60 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+                                        🛡️
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-lg font-black text-red-400 font-mono tracking-wider uppercase">
+                                                SÍTIO-19 • INSTALAÇÃO SUBTERRÂNEA SCP
+                                            </h3>
+                                            <span className="text-[10px] bg-red-900/60 text-red-200 border border-red-700/50 px-2 py-0.5 rounded font-mono font-bold">
+                                                NÍVEL -4 FACTORIO
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-stone-400 font-mono">
+                                            Contenção de Anomalias • Estação de Transmutação SCP-914 • Comandantes MTF
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Status em tempo real do Sítio */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="bg-black/60 px-3 py-1.5 rounded-lg border border-red-900/50 text-center">
+                                        <div className="text-[9px] text-stone-400 font-mono uppercase">Câmaras Ativas</div>
+                                        <div className="text-sm font-bold font-mono text-red-300">
+                                            {scpFoundation.anomalies.filter(a => a.active).length} / {scpFoundation.anomalies.length}
+                                        </div>
+                                    </div>
+                                    <div className="bg-black/60 px-3 py-1.5 rounded-lg border border-red-900/50 text-center">
+                                        <div className="text-[9px] text-stone-400 font-mono uppercase">Dreno da Rede</div>
+                                        <div className="text-sm font-bold font-mono text-amber-400">
+                                            {scpFoundation.anomalies.filter(a => a.active).reduce((sum, a) => sum + a.powerRequired, 0)} MW
+                                        </div>
+                                    </div>
+                                    <div className="bg-black/60 px-3 py-1.5 rounded-lg border border-red-900/50 text-center">
+                                        <div className="text-[9px] text-stone-400 font-mono uppercase">Status de Alerta</div>
+                                        <div className={`text-sm font-bold font-mono ${scpFoundation.activeBreach ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
+                                            {scpFoundation.activeBreach ? '🚨 BRECHA ATIVA' : '🔒 CONTIDO'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Bônus Passivos Globais Ativos */}
+                            <div className="bg-stone-900/80 border border-stone-800 p-3 rounded-lg flex items-center justify-between gap-2 text-xs font-mono text-stone-300 flex-wrap">
+                                <span className="font-bold text-stone-400 uppercase flex items-center gap-1.5">
+                                    <Activity size={14} className="text-red-400" /> Bônus Globais do Sítio:
+                                </span>
+                                <div className="flex gap-4 flex-wrap">
+                                    <span className={scpPassiveBuffs.attackSpeedBonus > 0 ? 'text-emerald-400' : 'text-stone-500'}>
+                                        ⚡ +{(scpPassiveBuffs.attackSpeedBonus * 100).toFixed(0)}% Velocidade (SCP-999)
+                                    </span>
+                                    <span className={scpPassiveBuffs.defenseBonus > 0 ? 'text-cyan-400' : 'text-stone-500'}>
+                                        🛡️ +{(scpPassiveBuffs.defenseBonus * 100).toFixed(0)}% Defesa (SCP-173)
+                                    </span>
+                                    <span className={scpPassiveBuffs.lifestealBonus > 0 ? 'text-purple-400' : 'text-stone-500'}>
+                                        🩸 +{(scpPassiveBuffs.lifestealBonus * 100).toFixed(0)}% Roubo de Vida (SCP-049)
+                                    </span>
+                                    <span className={scpPassiveBuffs.siegeDamageBonus > 0 ? 'text-red-400' : 'text-stone-500'}>
+                                        💥 +{(scpPassiveBuffs.siegeDamageBonus * 100).toFixed(0)}% Cerco (SCP-682)
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Banner de Brecha de Contenção (Se Ativa) */}
+                            {scpFoundation.activeBreach && (
+                                <div className="bg-red-950/90 border-2 border-red-500 p-4 rounded-xl shadow-[0_0_30px_rgba(239,68,68,0.5)] animate-pulse space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <AlertTriangle size={24} className="text-red-400 animate-bounce" />
+                                            <div>
+                                                <h4 className="text-sm font-black text-white font-mono uppercase tracking-wider">
+                                                    ALARME CÓDIGO VERMELHO: BRECHA DE CONTENÇÃO ATIVA!
+                                                </h4>
+                                                <p className="text-xs text-red-300 font-mono">
+                                                    {scpFoundation.activeBreach.penaltyDescription}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-black/80 px-3 py-1.5 rounded-lg border border-red-500 font-mono text-center">
+                                            <div className="text-[9px] text-stone-400 uppercase">Tempo Restante</div>
+                                            <div className="text-lg font-black text-red-400">
+                                                {Math.ceil(scpFoundation.activeBreach.timer)}s
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Botões Táticos de Intervenção */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-2">
+                                        <button
+                                            data-testid="breach-blast-doors-btn"
+                                            onClick={() => {
+                                                const res = respondToBreach?.(scpFoundation.activeBreach!.anomalyId, 'blast_doors', partyPower);
+                                                if (res) setBreachResponseMsg(res.message);
+                                            }}
+                                            className="bg-stone-900 hover:bg-stone-800 border border-red-700/80 p-2.5 rounded-lg flex flex-col items-center text-center transition-all group"
+                                        >
+                                            <span className="text-sm">🛡️ Comportas Pneumáticas</span>
+                                            <span className="text-[10px] text-stone-400 font-mono mt-0.5">Custo: 15 Placas de Aço</span>
+                                        </button>
+
+                                        <button
+                                            data-testid="breach-mtf-strike-btn"
+                                            onClick={() => {
+                                                const res = respondToBreach?.(scpFoundation.activeBreach!.anomalyId, 'mtf_strike', partyPower);
+                                                if (res) setBreachResponseMsg(res.message);
+                                            }}
+                                            className="bg-stone-900 hover:bg-stone-800 border border-red-700/80 p-2.5 rounded-lg flex flex-col items-center text-center transition-all group"
+                                        >
+                                            <span className="text-sm">🪖 Força-Tarefa MTF</span>
+                                            <span className="text-[10px] text-stone-400 font-mono mt-0.5">Requer: Poder {partyPower}/800</span>
+                                        </button>
+
+                                        <button
+                                            data-testid="breach-sedative-btn"
+                                            onClick={() => {
+                                                const res = respondToBreach?.(scpFoundation.activeBreach!.anomalyId, 'sedative', partyPower);
+                                                if (res) setBreachResponseMsg(res.message);
+                                            }}
+                                            className="bg-stone-900 hover:bg-stone-800 border border-red-700/80 p-2.5 rounded-lg flex flex-col items-center text-center transition-all group"
+                                        >
+                                            <span className="text-sm">🧪 Sedativo Químico</span>
+                                            <span className="text-[10px] text-stone-400 font-mono mt-0.5">Custo: 5 Ácido Sulfúrico</span>
+                                        </button>
+                                    </div>
+
+                                    {breachResponseMsg && (
+                                        <div className="text-xs font-mono text-center p-2 rounded bg-black/60 border border-red-800/80 text-white">
+                                            {breachResponseMsg}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Câmaras de Contenção Especial */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-bold text-stone-400 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                                        <Radio size={14} className="text-red-400" /> Câmaras de Contenção de Anomalias:
+                                    </h4>
+                                    <span className="text-[10px] font-mono text-stone-500">
+                                        Mantenha a rede elétrica estável para evitar perdas de contenção.
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {scpFoundation.anomalies.map(anomaly => {
+                                        const classColor = 
+                                            anomaly.classification === 'Safe' 
+                                                ? 'bg-emerald-950 text-emerald-300 border-emerald-500/50' 
+                                                : anomaly.classification === 'Euclid' 
+                                                    ? 'bg-amber-950 text-amber-300 border-amber-500/50' 
+                                                    : 'bg-red-950 text-red-300 border-red-500/50';
+
+                                        const stabilityColor = 
+                                            anomaly.stability > 60 
+                                                ? 'from-emerald-500 to-green-400' 
+                                                : anomaly.stability > 30 
+                                                    ? 'from-amber-500 to-yellow-400' 
+                                                    : 'from-red-600 to-red-400';
+
+                                        return (
+                                            <div
+                                                key={anomaly.id}
+                                                className={`bg-stone-900/90 border rounded-xl p-3.5 flex flex-col justify-between transition-all ${
+                                                    anomaly.breached 
+                                                        ? 'border-red-500 ring-2 ring-red-500/50 shadow-lg shadow-red-900/30 animate-pulse' 
+                                                        : anomaly.active 
+                                                            ? 'border-stone-700 shadow-md' 
+                                                            : 'border-stone-800 opacity-65'
+                                                }`}
+                                            >
+                                                <div className="space-y-2">
+                                                    {/* Top Bar com Classificação */}
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xl">{anomaly.icon}</span>
+                                                            <div>
+                                                                <div className="text-xs font-black font-mono text-white flex items-center gap-1.5">
+                                                                    <span>{anomaly.itemNumber}</span>
+                                                                    <span className="text-[10px] text-stone-400 truncate max-w-[120px] font-normal">{anomaly.name}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${classColor}`}>
+                                                            {anomaly.classification}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Descrição & Efeito */}
+                                                    <p className="text-[10px] text-stone-400 leading-tight">
+                                                        {anomaly.description}
+                                                    </p>
+
+                                                    {/* Barra de Estabilidade */}
+                                                    <div className="space-y-1 pt-1">
+                                                        <div className="flex justify-between text-[9px] font-mono">
+                                                            <span className="text-stone-400">Estabilidade da Câmara:</span>
+                                                            <span className={anomaly.stability < 30 ? 'text-red-400 font-bold' : 'text-stone-300'}>
+                                                                {anomaly.stability.toFixed(0)}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full bg-stone-950 rounded-full h-1.5 overflow-hidden border border-stone-800">
+                                                            <div
+                                                                className={`h-full bg-gradient-to-r ${stabilityColor} transition-all duration-300`}
+                                                                style={{ width: `${Math.max(0, Math.min(100, anomaly.stability))}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Requisitos & Produção */}
+                                                    <div className="bg-black/50 p-2 rounded-lg border border-stone-800/80 space-y-1 text-[10px] font-mono">
+                                                        <div className="flex justify-between text-stone-400">
+                                                            <span>Consumo de Energia:</span>
+                                                            <span className="text-amber-400 font-bold">{anomaly.powerRequired} MW</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-stone-400">
+                                                            <span>Subproduto:</span>
+                                                            <span className="text-emerald-300 font-bold">
+                                                                {anomaly.outputItemIcon} {anomaly.outputItemName} (+{anomaly.outputRate})
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between text-stone-400 pt-0.5 border-t border-stone-850">
+                                                            <span>No Estoque:</span>
+                                                            <span className="text-white font-bold">{inventory[anomaly.outputItemId] || 0}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Oficial MTF Designado */}
+                                                    <div className="pt-1">
+                                                        <label className="text-[9px] text-stone-400 font-mono uppercase block mb-1">
+                                                            Oficial MTF Designado:
+                                                        </label>
+                                                        <select
+                                                            value={anomaly.assignedHeroId || ''}
+                                                            onChange={(e) => assignHeroToScp?.(anomaly.id, e.target.value || null)}
+                                                            className="w-full bg-stone-950 border border-stone-700 text-stone-200 text-xs rounded p-1.5 font-mono focus:outline-none focus:border-red-500"
+                                                        >
+                                                            <option value="">Nenhum Oficial Designado</option>
+                                                            {heroes.map(hero => (
+                                                                <option key={hero.id} value={hero.id}>
+                                                                    {hero.name} ({hero.class || 'Herói'})
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                {/* Botão Ligar/Desligar */}
+                                                <button
+                                                    onClick={() => toggleScpChamber?.(anomaly.id)}
+                                                    className={`mt-3 w-full py-1.5 rounded-lg font-mono text-xs font-bold transition-all ${
+                                                        anomaly.active
+                                                            ? 'bg-red-950/80 hover:bg-red-900 border border-red-700 text-red-200'
+                                                            : 'bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-300'
+                                                    }`}
+                                                >
+                                                    {anomaly.active ? 'DESLIGAR CÂMARA' : 'ATIVAR CONTENÇÃO'}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* ── SEÇÃO 2: ESTAÇÃO SCP-914 (THE CLOCKWORKS) ── */}
+                            <div className="bg-stone-900/90 border-2 border-amber-800/70 p-4 rounded-xl space-y-4 shadow-lg shadow-amber-950/20">
+                                <div className="flex items-center justify-between border-b border-amber-900/50 pb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-amber-950 border border-amber-600/50 flex items-center justify-center text-xl">
+                                            ⚙️
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-black text-amber-400 font-mono tracking-wider uppercase">
+                                                SCP-914 • "O MECANISMO DE TRANSMUTAÇÃO"
+                                            </h4>
+                                            <p className="text-xs text-stone-400 font-mono">
+                                                Insira um item industrial no compartimento de entrada e regule o mostrador mecânico.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-mono text-amber-300 bg-amber-950/60 px-3 py-1 rounded border border-amber-700/50">
+                                        CLASSIFICAÇÃO: SAFE
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Entrada & Mostrador */}
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-xs font-mono text-stone-300 block mb-1 font-bold">
+                                                1. Compartimento de Entrada (Item a Inserir):
+                                            </label>
+                                            <select
+                                                data-testid="scp914-item-select"
+                                                value={scp914Item}
+                                                onChange={(e) => setScp914Item(e.target.value)}
+                                                className="w-full bg-stone-950 border border-stone-700 text-stone-200 text-xs rounded-lg p-2 font-mono focus:outline-none focus:border-amber-500"
+                                            >
+                                                {Object.keys(inventory).filter(k => (inventory[k] || 0) > 0 && k !== 'gold').map(k => (
+                                                    <option key={k} value={k}>
+                                                        {k} (Disponível: {inventory[k]})
+                                                    </option>
+                                                ))}
+                                                {Object.keys(inventory).filter(k => (inventory[k] || 0) > 0 && k !== 'gold').length === 0 && (
+                                                    <option value="">Nenhum item industrial no estoque</option>
+                                                )}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs font-mono text-stone-300 block mb-1 font-bold">
+                                                2. Regulagem da Chave (Mostrador dos 5 Modos):
+                                            </label>
+                                            <div className="grid grid-cols-5 gap-1.5">
+                                                {(['Rough', 'Coarse', '1:1', 'Fine', 'Very Fine'] as Scp914Mode[]).map(mode => (
+                                                    <button
+                                                        key={mode}
+                                                        data-testid={`scp914-mode-${mode.toLowerCase().replace(' ', '-')}`}
+                                                        onClick={() => setScp914Mode(mode)}
+                                                        className={`py-2 px-1 rounded-lg text-xs font-mono font-bold transition-all border text-center ${
+                                                            scp914Mode === mode
+                                                                ? 'bg-amber-600 text-black border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
+                                                                : 'bg-stone-950 text-stone-400 border-stone-800 hover:text-white hover:bg-stone-800'
+                                                        }`}
+                                                    >
+                                                        {mode}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Botão Girar a Chave */}
+                                        <button
+                                            data-testid="scp914-transmute-btn"
+                                            onClick={() => {
+                                                if (!scp914Item) return;
+                                                const res = executeScp914?.(scp914Item, scp914Mode);
+                                                if (res) {
+                                                    setScp914Message(res.message);
+                                                }
+                                            }}
+                                            disabled={!scp914Item || (inventory[scp914Item] || 0) < 1}
+                                            className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-black font-mono font-black py-2.5 rounded-lg text-xs uppercase tracking-wider transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            <Wrench size={16} /> GIRAR A CHAVE DO SCP-914
+                                        </button>
+                                    </div>
+
+                                    {/* Saída & Histórico */}
+                                    <div className="bg-black/60 p-3 rounded-lg border border-stone-800 flex flex-col justify-between space-y-2 font-mono">
+                                        <div className="text-xs font-bold text-stone-400 uppercase tracking-wider">
+                                            Resultado da Câmara de Saída:
+                                        </div>
+
+                                        <div className="flex-1 flex items-center justify-center p-3 text-center rounded bg-stone-950 border border-stone-850">
+                                            {scp914Message ? (
+                                                <div className="text-xs text-amber-200">
+                                                    {scp914Message}
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-stone-600">
+                                                    Aguardando acionamento da engrenagem central...
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Histórico recente */}
+                                        <div className="pt-2 border-t border-stone-850">
+                                            <div className="text-[9px] text-stone-500 uppercase mb-1">Últimos Registros:</div>
+                                            <div className="space-y-1 max-h-20 overflow-y-auto">
+                                                {(scpFoundation.transmuterHistory || []).slice(0, 3).map((hist, idx) => (
+                                                    <div key={idx} className="text-[9px] text-stone-400 flex justify-between">
+                                                        <span>{hist.inputItem} ➔ {hist.outputItem}</span>
+                                                        <span className="text-amber-400 font-bold">[{hist.mode}]</span>
+                                                    </div>
+                                                ))}
+                                                {(scpFoundation.transmuterHistory || []).length === 0 && (
+                                                    <div className="text-[9px] text-stone-600">Nenhuma transmutação no registro.</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

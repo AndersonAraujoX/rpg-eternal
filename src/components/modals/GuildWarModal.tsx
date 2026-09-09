@@ -35,6 +35,13 @@ interface GuildWarModalProps {
     onUseMobaAbility?: (abilityId: keyof MobaCommanderAbilities, options?: { targetLane?: MobaLane }) => void;
     onMobaManualStrike?: (targetId: string) => void;
     activeHeroes?: Hero[];
+    // Backrooms & Liminal Expansion Integration
+    backroomsResources?: { scrap?: number; almondWater?: number; liminalFluid?: number; voidAlloy?: number };
+    containedEntities?: any[];
+    onUpgradeTerritoryModule?: (territoryId: string, moduleType: 'radioTower' | 'waterCondenser' | 'guardSoldiers') => void;
+    onSummonMobaEntity?: (entityId: any, lane: MobaLane) => void;
+    onMobaNoclipFlank?: (lane?: MobaLane) => void;
+    onMobaAlmondSurge?: () => void;
 }
 
 export function GuildWarModal({
@@ -53,7 +60,13 @@ export function GuildWarModal({
     onSetMobaStance,
     onUseMobaAbility,
     onMobaManualStrike,
-    activeHeroes = []
+    activeHeroes = [],
+    backroomsResources = {},
+    containedEntities = [],
+    onUpgradeTerritoryModule,
+    onSummonMobaEntity,
+    onMobaNoclipFlank,
+    onMobaAlmondSurge
 }: GuildWarModalProps) {
     const [activeTab, setActiveTab] = useState<'battle' | 'map'>('battle');
     const [selectedTargetTerritoryId, setSelectedTargetTerritoryId] = useState<string>(() => {
@@ -183,6 +196,11 @@ export function GuildWarModal({
                             onManualStrike={(targetId) => onMobaManualStrike?.(targetId)}
                             onReturnToMap={() => setActiveTab('map')}
                             partyPower={partyPower}
+                            liminalFluid={backroomsResources.liminalFluid || 0}
+                            containedEntities={containedEntities}
+                            onSummonEntity={onSummonMobaEntity}
+                            onNoclipFlank={onMobaNoclipFlank}
+                            onAlmondSurge={onMobaAlmondSurge}
                         />
                     ) : (
                         /* Briefing Room / Standby Screen */
@@ -271,6 +289,8 @@ export function GuildWarModal({
                         onUpgrade={onUpgrade}
                         onAdvanceMap={onAdvanceMap}
                         onBombard={onBombard}
+                        backroomsResources={backroomsResources}
+                        onUpgradeTerritoryModule={onUpgradeTerritoryModule}
                     />
                 )}
             </div>

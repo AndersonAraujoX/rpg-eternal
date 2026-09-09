@@ -715,6 +715,12 @@ function App() {
             onUseMobaAbility={(abilityId, options) => actions.useMobaAbility?.(abilityId, options)}
             onMobaManualStrike={(targetId) => actions.strikeMobaTarget?.(targetId)}
             activeHeroes={activeHeroes}
+            backroomsResources={backroomsResources}
+            containedEntities={containedEntities.map((e: any) => e.id || e.entityId || e)}
+            onUpgradeTerritoryModule={actions.upgradeTerritoryModule}
+            onSummonMobaEntity={actions.summonMobaEntity}
+            onMobaNoclipFlank={actions.mobaNoclipFlank}
+            onMobaAlmondSurge={actions.mobaAlmondSurge}
           />
         );
       })()}
@@ -766,6 +772,8 @@ function App() {
         costReduction={town?.relics?.find(r => r.id === 'relic_gear')?.count ? (town.relics.find(r => r.id === 'relic_gear')!.count * 0.10) : 0} 
         backroomsFloor={backroomsFloor}
         backroomsUnlockedTechs={backroomsUnlockedTechs}
+        heroes={heroes}
+        partyPower={partyPower}
       />
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} relics={town?.relics || []} />}
       <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} industryInventory={industry.inventory} mechanizedCardsFused={mechanizedCardsFused} fuseMechanizedCards={fuseMechanizedCards} />

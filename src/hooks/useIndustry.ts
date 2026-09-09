@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { simulateIndustryTick, FACTORIO_TECHS, type MachineNode, type TechNode } from '../engine/industry';
+import {
+    INITIAL_SCP_STATE,
+    simulateScpTick,
+    transmuteWithScp914,
+    resolveContainmentBreach
+} from '../engine/scpFoundation';
+import type { ScpFoundationState, Scp914Mode, Scp914Result } from '../engine/types';
 
 const INDUSTRY_SAVE_KEY = 'rpg_eternal_industry';
 
@@ -13,6 +20,7 @@ export interface IndustryState {
     rocketsLaunched?: number;
     selectedBeltTier?: 'yellow' | 'red' | 'blue';
     selectedInserterTier?: 'basic' | 'fast' | 'stack';
+    scpFoundation?: ScpFoundationState;
 }
 
 export function useIndustry() {
@@ -20,7 +28,7 @@ export function useIndustry() {
         const defaultState: IndustryState = {
             inventory: { 'gold': 0 },
             nodes: [],
-            unlockedTechs: ['tech_automation_1'], // Initial starter tech
+            unlockedTechs: [],
             activeResearch: null,
             researchProgress: {},
             rocketPartsBuilt: 0,
@@ -64,7 +72,7 @@ export function useIndustry() {
                             machineId: String(node.machineId),
                             recipeId: String(node.recipeId),
                             count: Number(node.count),
-                            modules: Array.isArray(node.modules) ? node.modules.map(String) : []
+                            ...(node.modules !== undefined ? { modules: Array.isArray(node.modules) ? node.modules.map(String) : [] } : {})
                         }));
                     }
 
@@ -73,9 +81,6 @@ export function useIndustry() {
                         safeState.unlockedTechs = parsed.unlockedTechs
                             .filter((tech: any) => typeof tech === 'string')
                             .map(String);
-                        if (!safeState.unlockedTechs.includes('tech_automation_1')) {
-                            safeState.unlockedTechs.push('tech_automation_1');
-                        }
                     }
 
                     safeState.activeResearch = typeof parsed.activeResearch === 'string' ? parsed.activeResearch : null;
@@ -84,6 +89,9 @@ export function useIndustry() {
                     safeState.rocketsLaunched = typeof parsed.rocketsLaunched === 'number' ? parsed.rocketsLaunched : 0;
                     safeState.selectedBeltTier = ['yellow', 'red', 'blue'].includes(parsed.selectedBeltTier) ? parsed.selectedBeltTier : 'yellow';
                     safeState.selectedInserterTier = ['basic', 'fast', 'stack'].includes(parsed.selectedInserterTier) ? parsed.selectedInserterTier : 'basic';
+                    safeState.scpFoundation = parsed.scpFoundation && typeof parsed.scpFoundation === 'object'
+                        ? parsed.scpFoundation
+                        : INITIAL_SCP_STATE;
 
                     return safeState;
                 }
@@ -203,6 +211,109 @@ export function useIndustry() {
         setState(prev => ({ ...prev, selectedInserterTier: tier }));
     }, []);
 
+    const toggleScpChamber = useCallback((anomalyId: string) => {
+        setState(prev => {
+            const scp = prev.scpFoundation || INITIAL_SCP_STATE;
+            const updated = scp.anomalies.map(a =>
+                a.id === anomalyId ? { ...a, active: !a.active } : a
+            );
+            return {
+                ...prev,
+                scpFoundation: {
+                    ...scp,
+                    anomalies: updated
+                }
+            };
+        });
+    }, []);
+
+    const assignHeroToScp = useCallback((anomalyId: string, heroId: string | null) => {
+        setState(prev => {
+            const scp = prev.scpFoundation || INITIAL_SCP_STATE;
+            const updated = scp.anomalies.map(a =>
+                a.id === anomalyId ? { ...a, assignedHeroId: heroId } : a
+            );
+            return {
+                ...prev,
+                scpFoundation: {
+                    ...scp,
+                    anomalies: updated
+                }
+            };
+        });
+    }, []);
+
+    const executeScp914 = useCallback((inputItemId: string, mode: Scp914Mode): Scp914Result => {
+        let result: Scp914Result = {
+            success: false,
+            mode,
+            inputItemId,
+            message: 'Erro desconhecido ao acionar SCP-914.'
+        };
+
+        setState(prev => {
+            const res = transmuteWithScp914(inputItemId, mode, prev.inventory);
+            result = res.result;
+            if (!res.result.success) return prev;
+
+            const scp = prev.scpFoundation || INITIAL_SCP_STATE;
+            const historyEntry = {
+                inputItem: inputItemId,
+                outputItem: res.result.outputItemId || 'unknown',
+                mode,
+                timestamp: Date.now()
+            };
+
+            return {
+                ...prev,
+                inventory: res.updatedInventory,
+                scpFoundation: {
+                    ...scp,
+                    transmuterHistory: [historyEntry, ...(scp.transmuterHistory || []).slice(0, 9)]
+                }
+            };
+        });
+
+        return result;
+    }, []);
+
+    const respondToBreach = useCallback((
+        anomalyId: string,
+        method: 'blast_doors' | 'mtf_strike' | 'sedative',
+        partyPower: number = 1000
+    ): { success: boolean; message: string } => {
+        let opResult = { success: false, message: 'Operação não executada.' };
+
+        setState(prev => {
+            const scp = prev.scpFoundation || INITIAL_SCP_STATE;
+            const res = resolveContainmentBreach(scp, anomalyId, method, prev.inventory, partyPower);
+            opResult = { success: res.success, message: res.message };
+
+            if (!res.success) return prev;
+
+            return {
+                ...prev,
+                inventory: res.updatedInventory,
+                scpFoundation: res.updatedState
+            };
+        });
+
+        return opResult;
+    }, []);
+
+    const unlockScpSite = useCallback(() => {
+        setState(prev => {
+            const scp = prev.scpFoundation || INITIAL_SCP_STATE;
+            return {
+                ...prev,
+                scpFoundation: {
+                    ...scp,
+                    unlocked: true
+                }
+            };
+        });
+    }, []);
+
     const processTick = useCallback((deltaSeconds: number, costReduction: number = 0) => {
         setState(prev => {
             const activeTech = prev.activeResearch ? FACTORIO_TECHS.find(t => t.id === prev.activeResearch) : null;
@@ -233,12 +344,30 @@ export function useIndustry() {
                 labsActiveCount: result.labsActiveCount
             });
 
+            // Simulação SCP se desbloqueado
+            let currentInv = result.newInventory;
+            let updatedScpState = prev.scpFoundation;
+
+            if (prev.scpFoundation && prev.scpFoundation.unlocked) {
+                const scpRes = simulateScpTick(
+                    prev.scpFoundation,
+                    result.powerGenerated,
+                    result.powerConsumed,
+                    currentInv,
+                    [],
+                    deltaSeconds
+                );
+                updatedScpState = scpRes.updatedState;
+                currentInv = scpRes.updatedInventory;
+            }
+
             return {
                 ...prev,
-                inventory: result.newInventory,
+                inventory: currentInv,
                 unlockedTechs: newUnlockedTechs,
                 activeResearch: newActiveResearch,
-                researchProgress: newResearchProgress
+                researchProgress: newResearchProgress,
+                scpFoundation: updatedScpState
             };
         });
     }, []);
@@ -254,6 +383,11 @@ export function useIndustry() {
         launchRocket,
         setBeltTier,
         setInserterTier,
+        toggleScpChamber,
+        assignHeroToScp,
+        executeScp914,
+        respondToBreach,
+        unlockScpSite,
         processTick,
         setIndustryState: setState
     };

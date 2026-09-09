@@ -29,6 +29,20 @@ export interface Territory {
         value: number;
     };
     coordinates: { x: number; y: number };
+    isLiminalRift?: boolean;
+    riftLevel?: number;
+    exoticYield?: {
+        liminalFluid?: number;
+        voidAlloy?: number;
+        backroomsScrap?: number;
+    };
+    modules?: {
+        radioTower?: number;
+        waterCondenser?: number;
+        guardSoldiers?: number;
+    };
+    defenseBonus?: number;
+    isLevelExclamation?: boolean;
 }
 
 export interface Entity {
@@ -743,6 +757,10 @@ export interface GameActions {
     setMobaStance?: (stance: import('./guildWarMoba').MobaTacticalStance) => void;
     useMobaAbility?: (abilityId: keyof import('./guildWarMoba').MobaCommanderAbilities, options?: { targetLane?: import('./guildWarMoba').MobaLane }) => void;
     strikeMobaTarget?: (targetId: string) => void;
+    upgradeTerritoryModule?: (territoryId: string, moduleType: 'radioTower' | 'waterCondenser' | 'guardSoldiers') => void;
+    summonMobaEntity?: (entityId: string, lane: import('./guildWarMoba').MobaLane) => void;
+    mobaNoclipFlank?: () => void;
+    mobaAlmondSurge?: () => void;
     unlockOuterSpace: () => void;
     triggerRebirth: () => void;
     confirmRebirth: (preservedBuildingIds?: string[], preservedHeroId?: string) => void;
@@ -936,4 +954,62 @@ export interface IndustryLayer6Modifiers {
     fieldShieldMitigation: number;
     /** Indica se há Injetores de Matéria Hidráulica disponíveis na Indústria */
     hasHydraulicInjectors: boolean;
+}
+
+// ── Modo SCP: Sítio-19 (Contenção Industrial) ──────────────────────────
+
+export type ScpClassification = 'Safe' | 'Euclid' | 'Keter' | 'Thaumiel';
+
+export type Scp914Mode = 'Rough' | 'Coarse' | '1:1' | 'Fine' | 'Very Fine';
+
+export interface ScpAnomaly {
+    id: string;
+    itemNumber: string; // Ex: 'SCP-999'
+    name: string;
+    classification: ScpClassification;
+    description: string;
+    icon: string;
+    powerRequired: number; // MW consumidos da rede industrial
+    materialsRequired?: Record<string, number>; // Itens da indústria consumidos periodicamente
+    outputItemId: string; // ID do subproduto anômalo gerado
+    outputItemName: string;
+    outputItemIcon: string;
+    outputRate: number; // Quantidade gerada por ciclo
+    stability: number; // 0 a 100%
+    active: boolean; // Se a câmara está ligada
+    assignedHeroId?: string | null; // Herói operando como Oficial MTF
+    breached: boolean; // Se a anomalia escapou
+    passiveEffectDescription: string;
+}
+
+export interface ScpBreachEvent {
+    active: boolean;
+    anomalyId: string;
+    timer: number; // Segundos restantes para conter
+    maxTimer: number;
+    penaltyDescription: string;
+}
+
+export interface Scp914Result {
+    success: boolean;
+    mode: Scp914Mode;
+    inputItemId: string;
+    outputItemId?: string;
+    outputItemName?: string;
+    outputAmount?: number;
+    message: string;
+    isCatastrophicFailure?: boolean;
+    isAnomalousMasterpiece?: boolean;
+}
+
+export interface ScpFoundationState {
+    unlocked: boolean;
+    anomalies: ScpAnomaly[];
+    activeBreach: ScpBreachEvent | null;
+    transmuterHistory: Array<{
+        inputItem: string;
+        outputItem: string;
+        mode: Scp914Mode;
+        timestamp: number;
+    }>;
 }

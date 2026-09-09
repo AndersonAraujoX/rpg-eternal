@@ -651,7 +651,7 @@ export const processCombatTurn = (
 
     if (pets && pets.length > 0) {
         pets.forEach(p => {
-            totalDmg += Math.max(0, Math.floor(p.stats.attack * (boss.level * 0.5)));
+            totalDmg += Math.max(0, Math.floor((p.stats?.attack || 0) * (boss.level * 0.5)));
         });
     }
 

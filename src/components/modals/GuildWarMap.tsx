@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sword, Shield, Flag, Coins, Activity, TrendingUp, Star } from 'lucide-react';
+import { Sword, Shield, Flag, Coins, Activity, TrendingUp, Star, Radio, Droplets, ShieldAlert } from 'lucide-react';
 import type { Territory } from '../../engine/types';
+import { TERRITORY_MODULE_UPGRADE_COSTS } from '../../engine/guildWar';
 import { formatNumber } from '../../utils';
 
 interface GuildWarMapProps {
@@ -12,6 +13,8 @@ interface GuildWarMapProps {
     onUpgrade: (territoryId: string) => void;
     onAdvanceMap: () => void;
     onBombard?: (territoryId: string, weaponId: 'siege_catapult' | 'plasma_cannon') => void;
+    backroomsResources?: { scrap?: number; almondWater?: number; liminalFluid?: number; voidAlloy?: number };
+    onUpgradeTerritoryModule?: (territoryId: string, moduleType: 'radioTower' | 'waterCondenser' | 'guardSoldiers') => void;
 }
 
 export function GuildWarMap({
@@ -22,7 +25,9 @@ export function GuildWarMap({
     onAttack,
     onUpgrade,
     onAdvanceMap,
-    onBombard
+    onBombard,
+    backroomsResources = {},
+    onUpgradeTerritoryModule
 }: GuildWarMapProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -132,18 +137,29 @@ export function GuildWarMap({
 
                     {territories.map(t => {
                         const wc = winChanceLabel(t.difficulty);
+                        const isRift = t.isLiminalRift;
+                        const isExclamation = t.isLevelExclamation;
                         return (
                             <button
                                 key={t.id}
                                 onClick={() => setSelectedId(t.id)}
-                                title={`${t.name} — ${wc.text}`}
+                                title={`${t.name} — ${wc.text}${isRift ? ' (Fenda Liminar)' : ''}`}
                                 className={`absolute w-14 h-14 -ml-7 -mt-7 rounded-full border-4 flex flex-col items-center justify-center transition-all hover:scale-110 shadow-lg
                                     ${ownerColor(t.owner)}
+                                    ${isRift ? 'ring-2 ring-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.7)]' : ''}
+                                    ${isExclamation ? 'ring-4 ring-red-500 shadow-[0_0_20px_rgba(239,68,68,0.9)] animate-pulse' : ''}
                                     ${selectedId === t.id ? 'ring-4 ring-white scale-110 z-10' : ''}
                                 `}
                                 style={{ left: `${(t.coordinates.x + 10) * 5}%`, top: `${(t.coordinates.y + 10) * 5}%` }}
                             >
-                                <Flag className="w-4 h-4" />
+                                <div className="relative flex items-center justify-center">
+                                    <Flag className="w-4 h-4" />
+                                    {isRift && (
+                                        <span className="absolute -top-3 -right-3 text-[11px] animate-spin" style={{ animationDuration: '4s' }}>
+                                            🌀
+                                        </span>
+                                    )}
+                                </div>
                                 {t.level > 1 && <span className="text-[9px] font-bold leading-none">Lv{t.level}</span>}
                             </button>
                         );
@@ -212,12 +228,48 @@ export function GuildWarMap({
                             </div>
                         </div>
 
+                        {/* Liminal Rift Banner if Active */}
+                        {selected.isLiminalRift && (
+                            <div className="bg-gradient-to-br from-purple-950/80 via-purple-900/40 to-indigo-950/70 p-3 rounded-xl border border-purple-500/50 space-y-2 shadow-lg shadow-purple-950/40">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                                        🌀 Fenda Liminar Ativa
+                                    </span>
+                                    <span className="text-[10px] bg-purple-900/90 text-purple-200 px-2 py-0.5 rounded-full font-mono font-bold border border-purple-400/40">
+                                        Rift Lv.{selected.riftLevel || 1}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-purple-200/90 leading-relaxed">
+                                    {selected.isLevelExclamation
+                                        ? '⚠️ Fenda Crítica do Nível ! (Corredor Carmim). Risco extremo, rendimento quântico estelar!'
+                                        : 'Ruptura dimensional conectada às Backrooms. Produz recursos raros contínuos para a guilda.'}
+                                </p>
+                                {selected.exoticYield && (
+                                    <div className="grid grid-cols-3 gap-1.5 pt-1 text-center font-mono text-[10px]">
+                                        <div className="bg-purple-950/80 p-1.5 rounded-lg border border-purple-700/40">
+                                            <div className="text-purple-300 font-bold">+{selected.exoticYield.liminalFluid}</div>
+                                            <div className="text-gray-400 text-[8px]">Fluido/min</div>
+                                        </div>
+                                        <div className="bg-purple-950/80 p-1.5 rounded-lg border border-purple-700/40">
+                                            <div className="text-cyan-300 font-bold">+{selected.exoticYield.voidAlloy}</div>
+                                            <div className="text-gray-400 text-[8px]">Liga Vazio/min</div>
+                                        </div>
+                                        <div className="bg-purple-950/80 p-1.5 rounded-lg border border-purple-700/40">
+                                            <div className="text-amber-300 font-bold">+{selected.exoticYield.backroomsScrap}</div>
+                                            <div className="text-gray-400 text-[8px]">Sucata/min</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Defense */}
                         <div className="space-y-1">
                             <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Defesas</div>
                             {[
                                 ['Poder de Defesa', formatNumber(selected.difficulty), 'text-white'],
                                 ['Chance de Vitória', winChanceLabel(selected.difficulty).text, winChanceLabel(selected.difficulty).color],
+                                ...(selected.defenseBonus ? [['Bônus M.E.G.', `+${(selected.defenseBonus * 100).toFixed(0)}%`, 'text-purple-400']] : [])
                             ].map(([label, val, cls]) => (
                                 <div key={label} className="flex justify-between items-center bg-gray-800 p-2 rounded text-sm">
                                     <span className="text-gray-300">{label}</span>
@@ -230,7 +282,7 @@ export function GuildWarMap({
                         {selected.owner === 'player' && (
                             <div className="bg-gray-800 p-3 rounded border border-orange-800/40 space-y-2">
                                 <div className="text-xs text-gray-400 font-bold uppercase flex items-center gap-2">
-                                    <TrendingUp className="w-4 h-4 text-orange-400" /> Melhorias
+                                    <TrendingUp className="w-4 h-4 text-orange-400" /> Melhorias de Território
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-300">Nível atual</span>
@@ -255,6 +307,123 @@ export function GuildWarMap({
                                     <TrendingUp className="w-4 h-4" />
                                     Melhorar — {formatNumber(selected.upgradeCost)} Ouro
                                 </button>
+                            </div>
+                        )}
+
+                        {/* M.E.G. Outpost Fortifications (player-owned only) */}
+                        {selected.owner === 'player' && onUpgradeTerritoryModule && (
+                            <div className="bg-gray-850 p-3 rounded-xl border border-purple-800/40 space-y-2.5">
+                                <div className="text-xs text-purple-300 font-bold uppercase flex items-center gap-2">
+                                    <ShieldAlert className="w-4 h-4 text-purple-400" /> Módulos M.E.G. de Fortificação
+                                </div>
+                                <p className="text-[10px] text-gray-400">
+                                    Instale defesas liminares para mitigar invasões rivais e colapsos dimensionais.
+                                </p>
+
+                                <div className="space-y-2">
+                                    {/* Radio Tower */}
+                                    {(() => {
+                                        const lvl = selected.modules?.radioTower || 0;
+                                        const cost = TERRITORY_MODULE_UPGRADE_COSTS.radioTower;
+                                        const canAfford = (backroomsResources.scrap || 0) >= cost.scrap &&
+                                            (backroomsResources.almondWater || 0) >= cost.almondWater;
+                                        const isMax = lvl >= 5;
+                                        return (
+                                            <div className="bg-gray-900 p-2 rounded-lg border border-gray-800 flex items-center justify-between text-xs">
+                                                <div className="space-y-0.5">
+                                                    <div className="text-white font-bold flex items-center gap-1.5">
+                                                        <Radio className="w-3.5 h-3.5 text-cyan-400" /> Torre de Rádio
+                                                        <span className="text-[10px] text-gray-400 font-mono">Lv.{lvl}/5</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400">
+                                                        +{lvl * 15}% Defesa ({cost.scrap} Suc / {cost.almondWater} Água)
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => onUpgradeTerritoryModule(selected.id, 'radioTower')}
+                                                    disabled={isMax || !canAfford}
+                                                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${isMax
+                                                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                                        : canAfford
+                                                            ? 'bg-purple-700 hover:bg-purple-600 text-white'
+                                                            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    {isMax ? 'MAX' : 'Aprimorar'}
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Water Condenser */}
+                                    {(() => {
+                                        const lvl = selected.modules?.waterCondenser || 0;
+                                        const cost = TERRITORY_MODULE_UPGRADE_COSTS.waterCondenser;
+                                        const canAfford = (backroomsResources.scrap || 0) >= cost.scrap &&
+                                            (backroomsResources.almondWater || 0) >= cost.almondWater;
+                                        const isMax = lvl >= 5;
+                                        return (
+                                            <div className="bg-gray-900 p-2 rounded-lg border border-gray-800 flex items-center justify-between text-xs">
+                                                <div className="space-y-0.5">
+                                                    <div className="text-white font-bold flex items-center gap-1.5">
+                                                        <Droplets className="w-3.5 h-3.5 text-blue-400" /> Condensador Água
+                                                        <span className="text-[10px] text-gray-400 font-mono">Lv.{lvl}/5</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400">
+                                                        +{lvl} Água/min ({cost.scrap} Suc / {cost.almondWater} Água)
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => onUpgradeTerritoryModule(selected.id, 'waterCondenser')}
+                                                    disabled={isMax || !canAfford}
+                                                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${isMax
+                                                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                                        : canAfford
+                                                            ? 'bg-blue-700 hover:bg-blue-600 text-white'
+                                                            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    {isMax ? 'MAX' : 'Aprimorar'}
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Guard Soldiers */}
+                                    {(() => {
+                                        const lvl = selected.modules?.guardSoldiers || 0;
+                                        const cost = TERRITORY_MODULE_UPGRADE_COSTS.guardSoldiers;
+                                        const canAfford = (backroomsResources.scrap || 0) >= cost.scrap &&
+                                            (backroomsResources.almondWater || 0) >= cost.almondWater &&
+                                            (backroomsResources.liminalFluid || 0) >= (cost.liminalFluid || 0);
+                                        const isMax = lvl >= 5;
+                                        return (
+                                            <div className="bg-gray-900 p-2 rounded-lg border border-gray-800 flex items-center justify-between text-xs">
+                                                <div className="space-y-0.5">
+                                                    <div className="text-white font-bold flex items-center gap-1.5">
+                                                        <Shield className="w-3.5 h-3.5 text-amber-400" /> Guardas M.E.G.
+                                                        <span className="text-[10px] text-gray-400 font-mono">Lv.{lvl}/5</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400">
+                                                        +{lvl * 10}% Resistência ({cost.scrap} Suc / {cost.liminalFluid || 0} Fluido)
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => onUpgradeTerritoryModule(selected.id, 'guardSoldiers')}
+                                                    disabled={isMax || !canAfford}
+                                                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${isMax
+                                                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                                        : canAfford
+                                                            ? 'bg-amber-700 hover:bg-amber-600 text-white'
+                                                            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    {isMax ? 'MAX' : 'Aprimorar'}
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         )}
 

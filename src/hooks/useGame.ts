@@ -46,7 +46,10 @@ import { INITIAL_HEROES, INITIAL_BOSS, INITIAL_ACHIEVEMENTS, INITIAL_GAME_STATS,
 import { INITIAL_BUILDINGS } from '../data/buildings';
 import { INITIAL_GALAXY } from '../engine/galaxy';
 import { calculateWinChance } from '../engine/arena';
-import { INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege, initGvGWar, simulateGvGTick, playerAttackTower } from '../engine/guildWar';
+import {
+    INITIAL_TERRITORIES, applyTerritoryUpgrade, generateGuildWarMap, simulateSiege, initGvGWar, simulateGvGTick, playerAttackTower,
+    upgradeTerritoryMegModule, calculateTerritoryLiminalYield, corruptTerritoryWithRift, spawnLevelExclamationRift
+} from '../engine/guildWar';
 import type { GvGWarState } from '../engine/guildWar';
 import {
     initGuildWarMobaBattle,
@@ -54,6 +57,9 @@ import {
     setMobaTacticalStance,
     executeMobaCommanderAbility,
     executeMobaManualStrike,
+    summonLiminalEntity,
+    executeNoclipFlank,
+    executeAlmondCurativeSurge,
     type GuildWarMobaState,
     type MobaTacticalStance,
     type MobaCommanderAbilities,
@@ -168,6 +174,7 @@ export const useGame = (
     const [fakePlayers, setFakePlayers] = useState<FakePlayer[]>(() => generateInitialBots(20));
     const [gvgWarState, setGvgWarState] = useState<GvGWarState | null>(null);
     const [mobaWarState, setMobaWarState] = useState<GuildWarMobaState | null>(null);
+    const lastLiminalTickRef = useRef<number>(0);
     const [currentTutorialIndex, setCurrentTutorialIndex] = useState<number>(0);
     const [offlineGains, setOfflineGains] = useState<string | null>(null);
     const [talents, setTalents] = useState<import('../engine/types').Talent[]>([]);
@@ -1544,6 +1551,61 @@ export const useGame = (
                     if (res.updatedState.warLogs[0]) {
                         addLog(`[MOBA] ${res.updatedState.warLogs[0].message}`, res.updatedState.warLogs[0].type as any);
                     }
+                    return res.updatedState;
+                });
+            },
+            upgradeTerritoryModule: (territoryId: string, moduleType: 'radioTower' | 'waterCondenser' | 'guardSoldiers') => {
+                const t = stateRef.current.territories.find((x: any) => x.id === territoryId);
+                if (!t || t.owner !== 'player') return;
+                const result = upgradeTerritoryMegModule(t, moduleType, backrooms.backroomsResources);
+                if (result.success) {
+                    galaxyState.setTerritories((prev: any[]) => prev.map((ter: any) =>
+                        ter.id === territoryId ? result.updatedTerritory : ter
+                    ));
+                    backrooms.setBackroomsResources((prev: any) => ({
+                        ...prev,
+                        ...result.updatedResources
+                    }));
+                    addLog(`🏗️ ${result.message}`, 'success');
+                } else {
+                    addLog(`❌ ${result.message}`, 'danger');
+                }
+            },
+            summonMobaEntity: (entityId: any, lane: MobaLane = 'mid') => {
+                setMobaWarState(prev => {
+                    if (!prev) return null;
+                    const cost = 2;
+                    const currentFluid = backrooms.backroomsResources.liminalFluid || 0;
+                    if (currentFluid < cost) {
+                        addLog(`❌ Fluido Liminar insuficiente! Requer ${cost} para invocar entidade.`, 'danger');
+                        return prev;
+                    }
+                    backrooms.setBackroomsResources((r: any) => ({ ...r, liminalFluid: Math.max(0, (r.liminalFluid || 0) - cost) }));
+                    const res = summonLiminalEntity(prev, entityId, lane);
+                    if (res.updatedState.warLogs[0]) addLog(`[MOBA] ${res.updatedState.warLogs[0].message}`, res.updatedState.warLogs[0].type as any);
+                    return res.updatedState;
+                });
+            },
+            mobaNoclipFlank: (lane: MobaLane = 'mid') => {
+                setMobaWarState(prev => {
+                    if (!prev) return null;
+                    const res = executeNoclipFlank(prev, lane);
+                    if (res.updatedState.warLogs[0]) addLog(`[MOBA] ${res.updatedState.warLogs[0].message}`, res.updatedState.warLogs[0].type as any);
+                    return res.updatedState;
+                });
+            },
+            mobaAlmondSurge: () => {
+                setMobaWarState(prev => {
+                    if (!prev) return null;
+                    const cost = 2;
+                    const currentWater = backrooms.backroomsResources.almondWater || 0;
+                    if (currentWater < cost) {
+                        addLog(`❌ Água de Amêndoa insuficiente! Requer ${cost} frascos para Cura Liminar.`, 'danger');
+                        return prev;
+                    }
+                    backrooms.setBackroomsResources((r: any) => ({ ...r, almondWater: Math.max(0, r.almondWater - cost) }));
+                    const res = executeAlmondCurativeSurge(prev);
+                    if (res.updatedState.warLogs[0]) addLog(`[MOBA] ${res.updatedState.warLogs[0].message}`, res.updatedState.warLogs[0].type as any);
                     return res.updatedState;
                 });
             },
@@ -3622,6 +3684,44 @@ export const useGame = (
             // Backrooms Simulation Tick
             backrooms.processBackroomsTick(1, globalSynergies.some(s => s.id === 'global_synergy_explorers'));
 
+            // Liminal Territory Yield & Instability Transflow (every 5 seconds)
+            const liminalTickNow = Date.now();
+            if (!lastLiminalTickRef.current || liminalTickNow - lastLiminalTickRef.current >= 5000) {
+                lastLiminalTickRef.current = liminalTickNow;
+                const liminalYield = calculateTerritoryLiminalYield(stateRef.current.territories || []);
+                if (liminalYield.liminalFluid > 0 || liminalYield.voidAlloy > 0 || liminalYield.backroomsScrap > 0 || liminalYield.almondWater > 0) {
+                    backrooms.setBackroomsResources((prev: any) => ({
+                        ...prev,
+                        liminalFluid: (prev.liminalFluid || 0) + liminalYield.liminalFluid,
+                        voidAlloy: (prev.voidAlloy || 0) + liminalYield.voidAlloy,
+                        scrap: (prev.scrap || 0) + liminalYield.backroomsScrap,
+                        almondWater: (prev.almondWater || 0) + liminalYield.almondWater
+                    }));
+                }
+
+                // Dimensional Instability overflow to territories
+                if (backrooms.dimensionalInstability >= 100) {
+                    const hasExclamation = (stateRef.current.territories || []).some((t: any) => t.isLevelExclamation);
+                    if (!hasExclamation) {
+                        const { updatedTerritories, eventTerritory } = spawnLevelExclamationRift(stateRef.current.territories || []);
+                        if (eventTerritory) {
+                            galaxyState.setTerritories(updatedTerritories);
+                            addLog(`🚨 EVENTO GLOBAL: A Fenda do Nível ! abriu-se em ${eventTerritory.name}! Dispute o núcleo dimensional!`, 'danger');
+                        }
+                    }
+                } else if (backrooms.dimensionalInstability >= 50 && Math.random() < 0.2) {
+                    const uncorrupted = (stateRef.current.territories || []).filter((t: any) => !t.isLiminalRift && t.owner !== 'Ocean');
+                    if (uncorrupted.length > 0) {
+                        const target = uncorrupted[Math.floor(Math.random() * uncorrupted.length)];
+                        const { updatedTerritories, corruptedTerritory } = corruptTerritoryWithRift(stateRef.current.territories || [], target.id, 1);
+                        if (corruptedTerritory) {
+                            galaxyState.setTerritories(updatedTerritories);
+                            addLog(`🌀 Instabilidade dimensional transbordou! Fenda Liminar detectada em ${corruptedTerritory.name}!`, 'info');
+                        }
+                    }
+                }
+            }
+
             // Tutorial progress check
             const tutorialIdx = stateRef.current.currentTutorialIndex;
             if (tutorialIdx !== undefined && tutorialIdx < TUTORIAL_STEPS.length) {
@@ -3877,7 +3977,10 @@ export const useGame = (
                     return res.updatedState;
                 });
             },
-
+            upgradeTerritoryModule: ACTIONS.upgradeTerritoryModule,
+            summonMobaEntity: ACTIONS.summonMobaEntity,
+            mobaNoclipFlank: ACTIONS.mobaNoclipFlank,
+            mobaAlmondSurge: ACTIONS.mobaAlmondSurge,
 
             // App.tsx State
             gameSpeed, pets: petsState.pets, artifacts, talents, classMastery,

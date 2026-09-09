@@ -7,7 +7,7 @@ import type { FakePlayer } from './playerSimulation';
 
 export type MobaLane = 'top' | 'mid' | 'bot';
 export type MobaSide = 'allied' | 'rival';
-export type MobaUnitType = 'hero' | 'guild_bot' | 'minion';
+export type MobaUnitType = 'hero' | 'guild_bot' | 'minion' | 'liminal_entity';
 export type MobaTacticalStance = 'push' | 'flag' | 'defend';
 
 export interface MobaUnit {
@@ -28,6 +28,9 @@ export interface MobaUnit {
     isCarrier: boolean;
     kills: number;
     role?: 'tank' | 'dps' | 'support' | 'carry';
+    specialEffect?: 'blind_towers' | 'hunt_carrier' | 'stealth_ambush' | 'party_chaos';
+    stealthRemaining?: number;
+    noclipTimer?: number;
 }
 
 export interface MobaTower {
@@ -62,6 +65,9 @@ export interface MobaCommanderAbilities {
     tactical_bombard: { cooldown: number; maxCooldown: number };
     battle_cry: { cooldown: number; maxCooldown: number; activeUntil: number };
     emergency_heal: { cooldown: number; maxCooldown: number };
+    summon_entity: { cooldown: number; maxCooldown: number; activeEntityId?: string };
+    noclip_flank: { cooldown: number; maxCooldown: number; inProgress?: boolean; timer?: number; unitId?: string; targetLane?: MobaLane };
+    almond_curative_surge: { cooldown: number; maxCooldown: number };
 }
 
 export interface GuildWarMobaState {
@@ -364,7 +370,10 @@ export const initGuildWarMobaBattle = (
         abilities: {
             tactical_bombard: { cooldown: 0, maxCooldown: 15 },
             battle_cry: { cooldown: 0, maxCooldown: 25, activeUntil: 0 },
-            emergency_heal: { cooldown: 0, maxCooldown: 20 }
+            emergency_heal: { cooldown: 0, maxCooldown: 20 },
+            summon_entity: { cooldown: 0, maxCooldown: 25 },
+            noclip_flank: { cooldown: 0, maxCooldown: 30 },
+            almond_curative_surge: { cooldown: 0, maxCooldown: 20 }
         },
         warLogs: initialLogs,
         tickCount: 0,
@@ -409,15 +418,27 @@ export const simulateGuildWarMobaTick = (
     const updatedAbilities: MobaCommanderAbilities = {
         tactical_bombard: {
             ...state.abilities.tactical_bombard,
-            cooldown: Math.max(0, state.abilities.tactical_bombard.cooldown - dt)
+            cooldown: Math.max(0, (state.abilities.tactical_bombard?.cooldown || 0) - dt)
         },
         battle_cry: {
             ...state.abilities.battle_cry,
-            cooldown: Math.max(0, state.abilities.battle_cry.cooldown - dt)
+            cooldown: Math.max(0, (state.abilities.battle_cry?.cooldown || 0) - dt)
         },
         emergency_heal: {
             ...state.abilities.emergency_heal,
-            cooldown: Math.max(0, state.abilities.emergency_heal.cooldown - dt)
+            cooldown: Math.max(0, (state.abilities.emergency_heal?.cooldown || 0) - dt)
+        },
+        summon_entity: {
+            ...(state.abilities.summon_entity || { maxCooldown: 25 }),
+            cooldown: Math.max(0, (state.abilities.summon_entity?.cooldown || 0) - dt)
+        },
+        noclip_flank: {
+            ...(state.abilities.noclip_flank || { maxCooldown: 30 }),
+            cooldown: Math.max(0, (state.abilities.noclip_flank?.cooldown || 0) - dt)
+        },
+        almond_curative_surge: {
+            ...(state.abilities.almond_curative_surge || { maxCooldown: 20 }),
+            cooldown: Math.max(0, (state.abilities.almond_curative_surge?.cooldown || 0) - dt)
         }
     };
 
@@ -427,7 +448,7 @@ export const simulateGuildWarMobaTick = (
     // 3. Atualização das Unidades (Respawn, Movimentação, Combate)
     let units = state.units.map(u => ({ ...u }));
 
-    // Renascer heróis/bots caídos
+    // Renascer heróis/bots caídos e atualizar status especiais
     units.forEach(u => {
         if (u.isDead && u.type !== 'minion') {
             u.respawnTimer = Math.max(0, u.respawnTimer - dt);
@@ -442,6 +463,23 @@ export const simulateGuildWarMobaTick = (
                     timestamp: now
                 });
             }
+        }
+        // Atualizar travessia do Túnel Noclip
+        if ((u.noclipTimer || 0) > 0) {
+            u.noclipTimer = Math.max(0, (u.noclipTimer || 0) - dt);
+            if (u.noclipTimer === 0) {
+                u.position = 85; // Reaparece atrás da linha de defesa rival!
+                newLogs.push({
+                    id: `noclip-emerge-${u.id}-${now}`,
+                    message: `🌀 ${u.name} emergiu do Túnel Noclip diretamente atrás das defesas rivais!`,
+                    type: 'achievement',
+                    timestamp: now
+                });
+            }
+        }
+        // Atualizar tempo de stealth
+        if ((u.stealthRemaining || 0) > 0) {
+            u.stealthRemaining = Math.max(0, (u.stealthRemaining || 0) - dt);
         }
     });
 
@@ -535,9 +573,12 @@ export const simulateGuildWarMobaTick = (
 
         // --- Movimentação e Combate dos Aliados ---
         laneAllies.forEach(ally => {
+            if ((ally.noclipTimer || 0) > 0) return; // Em travessia no Túnel Noclip
+
             let speedMult = 1.0;
             if (isBattleCry) speedMult *= 1.35;
             if (isAlliedSurge) speedMult *= 1.25;
+            if (ally.specialEffect === 'hunt_carrier') speedMult *= 1.45; // Hound ultra-veloz
             if (ally.isCarrier) speedMult *= 0.85; // Leve penalidade ao carregar a bandeira
 
             const step = ally.speed * speedMult * dt;
@@ -747,10 +788,21 @@ export const simulateGuildWarMobaTick = (
         const standingTowersOnLane = towers.filter(t => !t.destroyed && (t.lane === lane || t.isNexus));
         standingTowersOnLane.forEach(tower => {
             const isAlliedTower = tower.side === 'allied';
+
+            // Smiler cega torres inimigas da rota
+            if (!isAlliedTower) {
+                const smilerActive = laneAllies.some(a => !a.isDead && a.type === 'liminal_entity' && a.specialEffect === 'blind_towers');
+                if (smilerActive) return; // Torre rival cegada pelo Smiler!
+            }
+
             const targets = isAlliedTower ? laneRivals : laneAllies;
 
-            // Alvo dentro do alcance da torre (12% de distância)
-            const targetInRange = targets.find(u => Math.abs(u.position - tower.position) <= 12);
+            // Alvo dentro do alcance da torre (12% de distância, ignora stealth e noclip)
+            const targetInRange = targets.find(u => {
+                if ((u.stealthRemaining || 0) > 0) return false;
+                if ((u.noclipTimer || 0) > 0) return false;
+                return Math.abs(u.position - tower.position) <= 12;
+            });
             if (targetInRange) {
                 const towerDmg = Math.max(15, Math.floor(tower.attack));
                 targetInRange.hp = Math.max(0, targetInRange.hp - towerDmg);
@@ -968,6 +1020,73 @@ export const executeMobaCommanderAbility = (
             type: 'success',
             timestamp: now
         });
+    } else if (abilityId === 'summon_entity') {
+        const entityKey = (options as any)?.entityId || 'smiler';
+        const targetLane = options?.targetLane || 'mid';
+        const entityDefinitions: Record<string, { name: string; avatar: string; specialEffect: 'blind_towers' | 'hunt_carrier' | 'stealth_ambush' | 'party_chaos'; hpMult: number; atkMult: number; speed: number; desc: string }> = {
+            smiler: { name: 'Smiler Voraz', avatar: '😈', specialEffect: 'blind_towers', hpMult: 1.6, atkMult: 1.4, speed: 3.8, desc: 'Torres inimigas da rota cegadas!' },
+            hound: { name: 'Hound Caçador', avatar: '🐕', specialEffect: 'hunt_carrier', hpMult: 1.3, atkMult: 1.8, speed: 5.2, desc: 'Caçando vorazmente o portador da bandeira!' },
+            skin_stealer: { name: 'Skin-Stealer Infiltrador', avatar: '👤', specialEffect: 'stealth_ambush', hpMult: 1.4, atkMult: 1.5, speed: 4.2, desc: 'Avanço invisível atrás das defesas!' },
+            partygoer: { name: 'Partygoer Anômalo', avatar: '🎈', specialEffect: 'party_chaos', hpMult: 1.5, atkMult: 1.3, speed: 3.5, desc: 'Distribuindo balões e corrupção liminar!' }
+        };
+        const def = entityDefinitions[entityKey] || entityDefinitions.smiler;
+        const benchmarkPower = Math.max(500, state.territoryDifficulty || 1000);
+        const entityUnit: MobaUnit = {
+            id: `liminal-${entityKey}-${now}`,
+            name: def.name,
+            avatar: def.avatar,
+            side: 'allied',
+            type: 'liminal_entity',
+            lane: targetLane,
+            position: 10,
+            maxHp: Math.floor(benchmarkPower * def.hpMult),
+            hp: Math.floor(benchmarkPower * def.hpMult),
+            attack: Math.floor(benchmarkPower * 0.25 * def.atkMult),
+            defense: Math.floor(benchmarkPower * 0.1),
+            speed: def.speed,
+            isDead: false,
+            respawnTimer: 0,
+            isCarrier: false,
+            kills: 0,
+            specialEffect: def.specialEffect,
+            stealthRemaining: def.specialEffect === 'stealth_ambush' ? 10 : 0
+        };
+        units.push(entityUnit);
+        newLogs.push({
+            id: `summon-entity-${now}`,
+            message: `🧬 ARMA LIMINAR: ${def.name} foi libertado na rota ${targetLane.toUpperCase()}! ${def.desc}`,
+            type: 'achievement',
+            timestamp: now
+        });
+    } else if (abilityId === 'noclip_flank') {
+        const targetLane = options?.targetLane || 'mid';
+        const candidate = units.find(u => !u.isDead && u.side === 'allied' && u.type === 'hero' && !u.isCarrier && !(u.noclipTimer && u.noclipTimer > 0));
+        if (candidate) {
+            const isScout = Boolean((options as any)?.isScout);
+            candidate.noclipTimer = isScout ? 3 : 6;
+            candidate.lane = targetLane;
+            newLogs.push({
+                id: `noclip-enter-${candidate.id}-${now}`,
+                message: `🚪 TÚNEL NOCLIP: ${candidate.name} adentrou a fenda dimensional para flanquear a rota ${targetLane.toUpperCase()}!`,
+                type: 'achievement',
+                timestamp: now
+            });
+        } else {
+            return { updatedState: state, success: false, message: 'Nenhum herói disponível para flanco Noclip.' };
+        }
+    } else if (abilityId === 'almond_curative_surge') {
+        units.forEach(u => {
+            if (!u.isDead && u.side === 'allied') {
+                const healAmt = Math.floor(u.maxHp * 0.5);
+                u.hp = Math.min(u.maxHp, u.hp + healAmt);
+            }
+        });
+        newLogs.push({
+            id: `almond-surge-${now}`,
+            message: `🥛 CURA LIMINAR DE AMÊNDOA: Regenerou 50% de HP de toda a equipe e concedeu foco de sanidade!`,
+            type: 'achievement',
+            timestamp: now
+        });
     }
 
     return {
@@ -983,6 +1102,31 @@ export const executeMobaCommanderAbility = (
         message: 'Habilidade executada com sucesso!'
     };
 };
+
+/**
+ * Ativa invocação de uma entidade liminar contida no MOBA
+ */
+export const summonLiminalEntity = (
+    state: GuildWarMobaState,
+    entityId: 'smiler' | 'hound' | 'skin_stealer' | 'partygoer',
+    lane: MobaLane = 'mid'
+) => executeMobaCommanderAbility(state, 'summon_entity', { targetLane: lane, entityId } as any);
+
+/**
+ * Ativa o Túnel Noclip para flanco surpresa de herói/batedor
+ */
+export const executeNoclipFlank = (
+    state: GuildWarMobaState,
+    lane: MobaLane = 'mid',
+    isScout: boolean = false
+) => executeMobaCommanderAbility(state, 'noclip_flank', { targetLane: lane, isScout } as any);
+
+/**
+ * Ativa a Cura Liminar com Água de Amêndoa para todas as tropas aliadas
+ */
+export const executeAlmondCurativeSurge = (
+    state: GuildWarMobaState
+) => executeMobaCommanderAbility(state, 'almond_curative_surge');
 
 /**
  * Ataque Manual Potente do Jogador contra uma torre ou campeão rival específico.

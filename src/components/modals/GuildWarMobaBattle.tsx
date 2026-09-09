@@ -21,10 +21,15 @@ import { formatNumber } from '../../utils';
 interface GuildWarMobaBattleProps {
     battleState: GuildWarMobaState;
     onSetStance: (stance: MobaTacticalStance) => void;
-    onUseAbility: (abilityId: keyof MobaCommanderAbilities, options?: { targetLane?: MobaLane }) => void;
+    onUseAbility: (abilityId: keyof MobaCommanderAbilities, options?: { targetLane?: MobaLane; entityId?: any; isScout?: boolean }) => void;
     onManualStrike: (targetId: string) => void;
     onReturnToMap: () => void;
     partyPower: number;
+    liminalFluid?: number;
+    containedEntities?: any[];
+    onSummonEntity?: (entityId: any, lane: MobaLane) => void;
+    onNoclipFlank?: (lane?: MobaLane) => void;
+    onAlmondSurge?: () => void;
 }
 
 export function GuildWarMobaBattle({
@@ -33,9 +38,15 @@ export function GuildWarMobaBattle({
     onUseAbility,
     onManualStrike,
     onReturnToMap,
-    partyPower
+    partyPower,
+    liminalFluid,
+    containedEntities = [],
+    onSummonEntity,
+    onNoclipFlank,
+    onAlmondSurge
 }: GuildWarMobaBattleProps) {
     const [selectedLane, setSelectedLane] = useState<MobaLane>('mid');
+    const [selectedEntity, setSelectedEntity] = useState<'smiler' | 'hound' | 'skin_stealer' | 'partygoer'>('smiler');
     const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
     const logContainerRef = useRef<HTMLDivElement>(null);
 
@@ -316,21 +327,31 @@ export function GuildWarMobaBattle({
                                                 {/* Mini Barra de Vida */}
                                                 <div className="w-6 h-1 bg-gray-800 rounded-full overflow-hidden mb-0.5">
                                                     <div
-                                                        className={`h-full ${isAlly ? 'bg-green-400' : 'bg-red-400'}`}
+                                                        className={`h-full ${isAlly ? (unit.type === 'liminal_entity' ? 'bg-purple-400' : 'bg-green-400') : 'bg-red-400'}`}
                                                         style={{ width: `${hpPct}%` }}
                                                     />
                                                 </div>
 
                                                 {/* Avatar com Borda Colorida */}
                                                 <div
-                                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md border ${isAlly
-                                                        ? 'bg-green-950/80 border-green-400 text-white'
-                                                        : 'bg-red-950/80 border-red-500 text-white'
+                                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md border ${
+                                                        unit.type === 'liminal_entity'
+                                                            ? 'bg-purple-950/90 border-purple-400 text-purple-200 ring-2 ring-purple-500/50 animate-pulse'
+                                                            : isAlly
+                                                                ? 'bg-green-950/80 border-green-400 text-white'
+                                                                : 'bg-red-950/80 border-red-500 text-white'
                                                         } ${unit.isCarrier ? 'ring-2 ring-yellow-400 animate-pulse' : ''}`}
                                                     title={`${unit.name} (${hpPct}% HP)`}
                                                 >
                                                     {unit.avatar}
                                                 </div>
+
+                                                {/* Indicador de Túnel Noclip */}
+                                                {(unit.noclipTimer || 0) > 0 && (
+                                                    <div className="absolute -bottom-3 px-1 rounded bg-indigo-950 text-indigo-300 border border-indigo-500 text-[7px] font-mono whitespace-nowrap animate-pulse">
+                                                        🌀 Noclip {Math.ceil(unit.noclipTimer || 0)}s
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -470,6 +491,105 @@ export function GuildWarMobaBattle({
                                     {battleState.abilities.emergency_heal.cooldown === 0 ? 'Pronto' : `${battleState.abilities.emergency_heal.cooldown}s`}
                                 </span>
                             </button>
+                        </div>
+
+                        {/* Armas Liminares das Backrooms (M.E.G.) */}
+                        <div className="pt-2 border-t border-gray-800 space-y-1.5">
+                            <div className="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex items-center justify-between">
+                                <span className="flex items-center gap-1">🧬 Armas Liminares M.E.G.</span>
+                                {liminalFluid !== undefined && (
+                                    <span className="text-[9px] text-cyan-300 font-mono">🧪 {liminalFluid} Fluidos</span>
+                                )}
+                            </div>
+
+                            {/* Seletor Rápido de Entidade */}
+                            <div className="grid grid-cols-4 gap-1">
+                                {[
+                                    { id: 'smiler' as const, name: 'Smiler', icon: '😈', title: 'Cega torres da rota' },
+                                    { id: 'hound' as const, name: 'Hound', icon: '🐕', title: 'Caça o portador da bandeira' },
+                                    { id: 'skin_stealer' as const, name: 'Stealer', icon: '👤', title: 'Avanço invisível até o Nexus' },
+                                    { id: 'partygoer' as const, name: 'Party', icon: '🎈', title: 'Caos e bônus de score' }
+                                ].map(ent => (
+                                    <button
+                                        key={ent.id}
+                                        type="button"
+                                        onClick={() => setSelectedEntity(ent.id)}
+                                        className={`py-1 px-1 rounded border text-center transition-all ${selectedEntity === ent.id
+                                            ? 'bg-purple-900 text-white border-purple-400 shadow-md'
+                                            : 'bg-gray-850 text-gray-400 border-gray-800 hover:text-white hover:bg-gray-800'
+                                            }`}
+                                        title={ent.title}
+                                    >
+                                        <div className="text-sm">{ent.icon}</div>
+                                        <div className="text-[8px] font-bold truncate">{ent.name}</div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {/* Botão Invocar Entidade */}
+                                <button
+                                    type="button"
+                                    data-testid="moba-summon-entity-btn"
+                                    onClick={() => {
+                                        if (onSummonEntity) onSummonEntity(selectedEntity, selectedLane);
+                                        else onUseAbility('summon_entity', { targetLane: selectedLane, entityId: selectedEntity } as any);
+                                    }}
+                                    disabled={(battleState.abilities.summon_entity?.cooldown || 0) > 0 || (liminalFluid !== undefined && liminalFluid < 2)}
+                                    className={`p-1.5 rounded-lg border text-left flex flex-col items-center justify-center transition-all ${(battleState.abilities.summon_entity?.cooldown || 0) === 0 && (liminalFluid === undefined || liminalFluid >= 2)
+                                        ? 'bg-purple-950/80 border-purple-500 hover:bg-purple-900 text-purple-200 shadow-md'
+                                        : 'bg-gray-850 border-gray-800 text-gray-600 cursor-not-allowed opacity-60'
+                                        }`}
+                                >
+                                    <span className="text-base">🧬</span>
+                                    <span className="text-[9px] font-bold">Invocar</span>
+                                    <span className="text-[8px] font-mono text-gray-400">
+                                        {(battleState.abilities.summon_entity?.cooldown || 0) === 0 ? 'Pronto' : `${Math.ceil(battleState.abilities.summon_entity?.cooldown || 0)}s`}
+                                    </span>
+                                </button>
+
+                                {/* Botão Flanco Noclip */}
+                                <button
+                                    type="button"
+                                    data-testid="moba-noclip-flank-btn"
+                                    onClick={() => {
+                                        if (onNoclipFlank) onNoclipFlank(selectedLane);
+                                        else onUseAbility('noclip_flank', { targetLane: selectedLane } as any);
+                                    }}
+                                    disabled={(battleState.abilities.noclip_flank?.cooldown || 0) > 0}
+                                    className={`p-1.5 rounded-lg border text-left flex flex-col items-center justify-center transition-all ${(battleState.abilities.noclip_flank?.cooldown || 0) === 0
+                                        ? 'bg-indigo-950/80 border-indigo-500 hover:bg-indigo-900 text-indigo-200 shadow-md'
+                                        : 'bg-gray-850 border-gray-800 text-gray-600 cursor-not-allowed opacity-60'
+                                        }`}
+                                >
+                                    <span className="text-base">🚪</span>
+                                    <span className="text-[9px] font-bold">Túnel Noclip</span>
+                                    <span className="text-[8px] font-mono text-gray-400">
+                                        {(battleState.abilities.noclip_flank?.cooldown || 0) === 0 ? 'Pronto' : `${Math.ceil(battleState.abilities.noclip_flank?.cooldown || 0)}s`}
+                                    </span>
+                                </button>
+
+                                {/* Botão Cura Liminar */}
+                                <button
+                                    type="button"
+                                    data-testid="moba-almond-surge-btn"
+                                    onClick={() => {
+                                        if (onAlmondSurge) onAlmondSurge();
+                                        else onUseAbility('almond_curative_surge');
+                                    }}
+                                    disabled={(battleState.abilities.almond_curative_surge?.cooldown || 0) > 0}
+                                    className={`p-1.5 rounded-lg border text-left flex flex-col items-center justify-center transition-all ${(battleState.abilities.almond_curative_surge?.cooldown || 0) === 0
+                                        ? 'bg-cyan-950/80 border-cyan-500 hover:bg-cyan-900 text-cyan-200 shadow-md'
+                                        : 'bg-gray-850 border-gray-800 text-gray-600 cursor-not-allowed opacity-60'
+                                        }`}
+                                >
+                                    <span className="text-base">🥛</span>
+                                    <span className="text-[9px] font-bold">Cura Amêndoa</span>
+                                    <span className="text-[8px] font-mono text-gray-400">
+                                        {(battleState.abilities.almond_curative_surge?.cooldown || 0) === 0 ? 'Pronto' : `${Math.ceil(battleState.abilities.almond_curative_surge?.cooldown || 0)}s`}
+                                    </span>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Botão de Ataque Manual */}

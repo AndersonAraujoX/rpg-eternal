@@ -465,7 +465,178 @@ export const playerAttackTower = (
 };
 
 // ═══════════════════════════════════════════════════════════════
+// Sistema de Territórios Liminares & Módulos M.E.G.
+// ═══════════════════════════════════════════════════════════════
+
+export interface TerritoryModuleCosts {
+    scrap: number;
+    almondWater: number;
+    liminalFluid?: number;
+}
+
+export const TERRITORY_MODULE_UPGRADE_COSTS: Record<'radioTower' | 'waterCondenser' | 'guardSoldiers', TerritoryModuleCosts> = {
+    radioTower: { scrap: 30, almondWater: 5, liminalFluid: 2 },
+    waterCondenser: { scrap: 25, almondWater: 10, liminalFluid: 1 },
+    guardSoldiers: { scrap: 40, almondWater: 8, liminalFluid: 3 }
+};
+
+/**
+ * Aplica corrupção dimensional de fenda em um território
+ */
+export const corruptTerritoryWithRift = (
+    territories: Territory[],
+    territoryId: string,
+    riftLevel: number = 1
+): { updatedTerritories: Territory[]; corruptedTerritory: Territory | null } => {
+    let corrupted: Territory | null = null;
+    const updated = territories.map(t => {
+        if (t.id === territoryId && t.owner !== 'Ocean') {
+            const exoticYield = {
+                liminalFluid: riftLevel * 2,
+                voidAlloy: Math.max(1, Math.floor(riftLevel / 2)),
+                backroomsScrap: riftLevel * 10
+            };
+            corrupted = {
+                ...t,
+                isLiminalRift: true,
+                riftLevel,
+                exoticYield,
+                difficulty: Math.floor(t.difficulty * (1 + riftLevel * 0.2))
+            };
+            return corrupted;
+        }
+        return t;
+    });
+    return { updatedTerritories: updated, corruptedTerritory: corrupted };
+};
+
+/**
+ * Aprimora um módulo defensivo M.E.G. em um território possuído
+ */
+export const upgradeTerritoryMegModule = (
+    territory: Territory,
+    moduleType: 'radioTower' | 'waterCondenser' | 'guardSoldiers',
+    currentResources: { scrap?: number; almondWater?: number; liminalFluid?: number }
+): { updatedTerritory: Territory; updatedResources: typeof currentResources; success: boolean; message: string } => {
+    const costs = TERRITORY_MODULE_UPGRADE_COSTS[moduleType];
+    const currentScrap = currentResources.scrap ?? 0;
+    const currentWater = currentResources.almondWater ?? 0;
+    const currentFluid = currentResources.liminalFluid ?? 0;
+
+    if (currentScrap < costs.scrap || currentWater < costs.almondWater || currentFluid < (costs.liminalFluid || 0)) {
+        return {
+            updatedTerritory: territory,
+            updatedResources: currentResources,
+            success: false,
+            message: `Recursos insuficientes para aprimorar ${moduleType}.`
+        };
+    }
+
+    const currentLevel = territory.modules?.[moduleType] || 0;
+    if (currentLevel >= 5) {
+        return {
+            updatedTerritory: territory,
+            updatedResources: currentResources,
+            success: false,
+            message: `Módulo ${moduleType} já atingiu o nível máximo (5).`
+        };
+    }
+
+    const updatedModules = {
+        ...(territory.modules || {}),
+        [moduleType]: currentLevel + 1
+    };
+
+    const radioBonus = (updatedModules.radioTower || 0) * 0.15;
+    const soldierBonus = (updatedModules.guardSoldiers || 0) * 0.10;
+    const totalDefenseBonus = Number((radioBonus + soldierBonus).toFixed(2));
+
+    const updatedTerritory: Territory = {
+        ...territory,
+        modules: updatedModules,
+        defenseBonus: totalDefenseBonus
+    };
+
+    const updatedResources = {
+        ...currentResources,
+        scrap: currentScrap - costs.scrap,
+        almondWater: currentWater - costs.almondWater,
+        liminalFluid: currentFluid - (costs.liminalFluid || 0)
+    };
+
+    return {
+        updatedTerritory,
+        updatedResources,
+        success: true,
+        message: `Módulo ${moduleType} aprimorado com sucesso para o Nível ${currentLevel + 1}!`
+    };
+};
+
+/**
+ * Calcula o rendimento passivo exótico gerado pelos territórios do jogador
+ */
+export const calculateTerritoryLiminalYield = (
+    territories: Territory[]
+): { liminalFluid: number; voidAlloy: number; backroomsScrap: number; almondWater: number } => {
+    let liminalFluid = 0;
+    let voidAlloy = 0;
+    let backroomsScrap = 0;
+    let almondWater = 0;
+
+    territories.forEach(t => {
+        if (t.owner === 'player') {
+            if (t.isLiminalRift && t.exoticYield) {
+                liminalFluid += t.exoticYield.liminalFluid || 0;
+                voidAlloy += t.exoticYield.voidAlloy || 0;
+                backroomsScrap += t.exoticYield.backroomsScrap || 0;
+            }
+            if (t.modules?.waterCondenser) {
+                almondWater += t.modules.waterCondenser * 1;
+            }
+        }
+    });
+
+    return { liminalFluid, voidAlloy, backroomsScrap, almondWater };
+};
+
+/**
+ * Gera evento da Fenda do Nível ! (Corredor Carmim) no mapa de territórios
+ */
+export const spawnLevelExclamationRift = (
+    territories: Territory[]
+): { updatedTerritories: Territory[]; eventTerritory: Territory | null } => {
+    const candidates = territories.filter(t => t.owner !== 'Ocean');
+    if (candidates.length === 0) return { updatedTerritories: territories, eventTerritory: null };
+
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    let eventTerritory: Territory | null = null;
+
+    const updated = territories.map(t => {
+        if (t.id === chosen.id) {
+            eventTerritory = {
+                ...t,
+                name: `🚨 Nível ! (Fenda Carmim) - ${t.name}`,
+                description: 'Um corredor carmesim de alerta máximo se abriu neste território. Fuga e cerco iminente!',
+                isLiminalRift: true,
+                riftLevel: 5,
+                exoticYield: {
+                    liminalFluid: 15,
+                    voidAlloy: 8,
+                    backroomsScrap: 100
+                },
+                difficulty: Math.floor(t.difficulty * 2.2)
+            };
+            return eventTerritory;
+        }
+        return t;
+    });
+
+    return { updatedTerritories: updated, eventTerritory };
+};
+
+// ═══════════════════════════════════════════════════════════════
 // Re-export do Sistema Unificado MOBA + Pega-Bandeira
 // ═══════════════════════════════════════════════════════════════
 
 export * from './guildWarMoba';
+
