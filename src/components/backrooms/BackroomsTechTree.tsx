@@ -62,6 +62,14 @@ const ERA_CONFIG: Record<string, { icon: string; color: string; border: string; 
         bg: 'bg-fuchsia-950/20',
         accent: '#c026d3',
         label: 'Era 6: Inter-Dimensional'
+    },
+    'Inovações Liminares': {
+        icon: '🌌',
+        color: 'text-rose-400',
+        border: 'border-rose-700/60',
+        bg: 'bg-rose-950/20',
+        accent: '#f43f5e',
+        label: 'Era 7: Inovações Liminares'
     }
 };
 
@@ -89,7 +97,12 @@ const TECH_META: Record<string, { icon: string; category: 'Economia' | 'Combate'
     space_warp: { icon: '🌌', category: 'Cósmico', targetModule: 'galaxy' },
     stellar_void_portal: { icon: '🌌', category: 'Cósmico', targetModule: 'galaxy' },
     vacuum_siphon: { icon: '🕳️', category: 'Cósmico', targetModule: 'cosmic' },
-    dimensional_singularity: { icon: '👁️', category: 'Cósmico', targetModule: 'cosmic' }
+    dimensional_singularity: { icon: '👁️', category: 'Cósmico', targetModule: 'cosmic' },
+    tech_black_market: { icon: '🕶️', category: 'Economia', targetModule: 'economy' },
+    tech_deep_dive: { icon: '🧭', category: 'Exploração', targetModule: 'combat' },
+    tech_pet_bioengineering: { icon: '🧬', category: 'Exploração', targetModule: 'economy' },
+    tech_colosseum: { icon: '🏛️', category: 'Combate', targetModule: 'combat' },
+    tech_cosmic_fleets: { icon: '🚀', category: 'Cósmico', targetModule: 'galaxy' }
 };
 
 // Tech branch lineage / flow connections
@@ -113,6 +126,12 @@ const TECH_FLOW: { from: string; to: string }[] = [
     { from: 'asteroid_mining', to: 'space_warp' },
     { from: 'space_warp', to: 'stellar_void_portal' },
     { from: 'stellar_void_portal', to: 'vacuum_siphon' },
+    { from: 'superconductors_liminal', to: 'tech_black_market' },
+    { from: 'tech_black_market', to: 'tech_deep_dive' },
+    { from: 'tech_deep_dive', to: 'tech_pet_bioengineering' },
+    { from: 'tech_pet_bioengineering', to: 'tech_colosseum' },
+    { from: 'space_warp', to: 'tech_cosmic_fleets' },
+    { from: 'tech_colosseum', to: 'tech_cosmic_fleets' },
     { from: 'vacuum_siphon', to: 'dimensional_singularity' }
 ];
 

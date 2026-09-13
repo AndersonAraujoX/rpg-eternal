@@ -1035,6 +1035,52 @@ export const BACKROOMS_RESEARCHES: BackroomsResearch[] = [
         effectText: 'Ativa o Portal Final (Vitória do Jogo)',
         minFloor: 100,
         era: 'Era Inter-Dimensional'
+    },
+    // Era 7: Inovações Liminares & Grandes Projetos
+    {
+        id: 'tech_black_market',
+        name: 'Rotas do Mercado Negro',
+        description: 'Mapeia rotas de contrabando através de fendas liminares para estabelecer o Mercado Negro interdimensional.',
+        cost: { scrap: 50, almondWater: 2, anomalyParts: 0 },
+        effectText: '🕶️ Desbloqueia o Mercado Negro Clandestino (Leilões rápidos e comboios)',
+        minFloor: 15,
+        era: 'Inovações Liminares'
+    },
+    {
+        id: 'tech_deep_dive',
+        name: 'Operação Deep-Dive Roguelike',
+        description: 'Protocolo de incursão ativa com esquadrão tático de 3 heróis nas salas mais profundas das Backrooms.',
+        cost: { scrap: 80, almondWater: 3, anomalyParts: 1 },
+        effectText: '🧭 Desbloqueia a Operação Deep-Dive Roguelike com Heróis',
+        minFloor: 25,
+        era: 'Inovações Liminares'
+    },
+    {
+        id: 'tech_pet_bioengineering',
+        name: 'Bio-Engenharia Quimérica de Pets',
+        description: 'Infunde DNA de mascotes com Fluido Liminar e amostras biológicas do SCP-999 e SCP-682.',
+        cost: { scrap: 120, almondWater: 3, anomalyParts: 3 },
+        effectText: '🧬 Desbloqueia o Laboratório Quimérico de Pets com infusões anômalas',
+        minFloor: 35,
+        era: 'Inovações Liminares'
+    },
+    {
+        id: 'tech_colosseum',
+        name: 'Coliseu das Lendas Dimensionais',
+        description: 'Arena tática com grade de posicionamento em Vanguarda, Meio e Retaguarda para duelos de heróis.',
+        cost: { scrap: 160, almondWater: 4, anomalyParts: 4 },
+        effectText: '🏛️ Desbloqueia o Coliseu das Lendas (Formações táticas e glória de guilda)',
+        minFloor: 45,
+        era: 'Inovações Liminares'
+    },
+    {
+        id: 'tech_cosmic_fleets',
+        name: 'Armada de Frotas Cósmicas',
+        description: 'Hangar orbital para forjar naves capitânia com Ligas Hiper-Densas e heróis como Almirantes de Bordo.',
+        cost: { scrap: 220, almondWater: 5, anomalyParts: 5 },
+        effectText: '🚀 Desbloqueia a Armada de Frotas Cósmicas na Galáxia',
+        minFloor: 55,
+        era: 'Inovações Liminares'
     }
 ];
 
