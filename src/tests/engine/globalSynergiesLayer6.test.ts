@@ -123,7 +123,13 @@ describe('6ª Camada de Sinergias Globais (Indústria)', () => {
             // Boss attack is 50 * 2 = 100. Hero defense is 10. Damage = 90.
             // With mitigation of 15% (0.85): Warrior/Paladin dmg = 90 * 0.85 = 76. hp = 100 - 76 = 24.
             // Mage damage is not mitigated = 90. hp = 100 - 90 = 10.
-            const result = processCombatTurn([warrior, paladin, mage], boss, 1, 0, false, ['escudos_de_cerco_ativo']);
+            const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+            const result = processCombatTurn(
+                [warrior, paladin, mage], boss, 1, 0, false,
+                [], 1000, 1, [], undefined, undefined, undefined, 0, undefined, undefined, [],
+                ['escudos_de_cerco_ativo']
+            );
+            randomSpy.mockRestore();
             
             const updatedWarrior = result.updatedHeroes.find(h => h.class === 'Warrior');
             const updatedPaladin = result.updatedHeroes.find(h => h.class === 'Paladin');

@@ -228,5 +228,50 @@ describe('AriaSidebar Component (AAA Pattern)', () => {
             expect(screen.getByText(/Objetivo Prioritário/i)).toBeDefined();
             expect(screen.getByTestId('aria-primary-action-button')).toBeDefined();
         });
+
+        it('should render Journey milestone card and navigate to target modal when clicked', () => {
+            // Arrange
+            const onOpenModalMock = vi.fn();
+            render(
+                <AriaSidebar
+                    currentTutorialIndex={0}
+                    isOpen={true}
+                    gameState={{ highestFloor: 2 }}
+                    onOpenModal={onOpenModalMock}
+                />
+            );
+
+            // Assert & Act
+            expect(screen.getByTestId('aria-journey-card')).toBeInTheDocument();
+            expect(screen.getByText(/Jornada: Passo 1 de 7/i)).toBeInTheDocument();
+            
+            const journeyBtn = screen.getByTestId('aria-journey-action-btn');
+            fireEvent.click(journeyBtn);
+
+            expect(onOpenModalMock).toHaveBeenCalledWith('tower');
+        });
+
+        it('should render Bottlenecks radar alert when power deficit is detected', () => {
+            // Arrange
+            const onOpenModalMock = vi.fn();
+            const crisisState = {
+                highestFloor: 15,
+                industryMetrics: { powerGenerated: 10, powerConsumed: 80 }
+            };
+
+            // Act
+            render(
+                <AriaSidebar
+                    currentTutorialIndex={0}
+                    isOpen={true}
+                    gameState={crisisState}
+                    onOpenModal={onOpenModalMock}
+                />
+            );
+
+            // Assert
+            expect(screen.getByTestId('aria-bottlenecks-container')).toBeInTheDocument();
+            expect(screen.getByText(/Déficit Elétrico Industrial/i)).toBeInTheDocument();
+        });
     });
 });

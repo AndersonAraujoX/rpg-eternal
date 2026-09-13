@@ -58,6 +58,16 @@ import { NpcGuideTab } from './components/NpcGuideTab';
 import { AriaSidebar } from './components/AriaSidebar';
 import { TUTORIAL_STEPS } from './data/npcTutorial';
 
+import { GlobalDock } from './components/common/GlobalDock';
+import {
+  evaluateJourneyProgress,
+  detectActiveBottlenecks,
+  claimAllTerritoryTributes,
+  autoEquipBestItems,
+  feedAllPets,
+  quickSanityRestore
+} from './engine/smartTutorial';
+
 import './index.css';
 import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
 import { DevToolsModal } from './components/modals/DevToolsModal'; // Dev Tools
@@ -255,6 +265,94 @@ function App() {
     return () => clearInterval(interval);
   }, [pets, industry, town, globalSynergies, setGold, setResources]);
 
+  const handleOpenDockModal = (destination: string) => {
+    if (destination === 'town') { actions.visitTown(); setShowTown(true); }
+    else if (destination === 'tower') setShowTower(true);
+    else if (destination === 'world_boss') setShowWorldBoss(true);
+    else if (destination === 'guild') setShowGuild(true);
+    else if (destination === 'guild_war') setShowGuildWar(true);
+    else if (destination === 'backrooms') setShowBackrooms(true);
+    else if (destination === 'industry' || destination === 'industry_scp') setShowIndustry(true);
+    else if (destination === 'galaxy') setShowGalaxy(true);
+    else if (destination === 'journey') setShowJourney(true);
+    else if (destination === 'tavern') setShowTavern(true);
+    else if (destination === 'forge') setShowForge(true);
+    else if (destination === 'shop') setShowShop(true);
+    else if (destination === 'market') setShowMarket(true);
+    else if (destination === 'inventory') setShowInventory(true);
+  };
+
+  const handleQuickAction = (action: 'claim_tributes' | 'auto_equip' | 'feed_pets' | 'quick_sanity') => {
+    if (action === 'claim_tributes') {
+      const res = claimAllTerritoryTributes(territories || [], {
+        gold,
+        liminalFluid: resources?.liminalFluid || 0,
+        voidAlloy: resources?.voidAlloy || 0,
+        backroomsScrap: backroomsResources?.scrap || 0
+      });
+      if (res.claimedGold > 0) setGold(prev => prev + res.claimedGold);
+      if (res.claimedFluid > 0 && setResources) {
+        setResources((prev: any) => ({
+          ...prev,
+          liminalFluid: (prev.liminalFluid || 0) + res.claimedFluid,
+          voidAlloy: (prev.voidAlloy || 0) + res.claimedVoidAlloy
+        }));
+      }
+      (actions as any).addLog?.(res.message);
+    } else if (action === 'auto_equip') {
+      const res = autoEquipBestItems(heroes, items);
+      if (res.equippedCount > 0) {
+        res.updatedHeroes.forEach(updated => {
+          const hero = heroes.find(h => h.id === updated.id);
+          if (hero) hero.equipment = updated.equipment;
+        });
+        setItems(res.remainingItems);
+      }
+      (actions as any).addLog?.(res.message);
+    } else if (action === 'feed_pets') {
+      const foodCount = resources?.food || 10;
+      const res = feedAllPets(pets, foodCount);
+      if (res.fedCount > 0 && setResources) {
+        setResources((prev: any) => ({ ...prev, food: Math.max(0, (prev.food || 0) - res.consumedFood) }));
+      }
+      (actions as any).addLog?.(res.message);
+    } else if (action === 'quick_sanity') {
+      const waterCount = backroomsResources?.almondWater || 0;
+      const res = quickSanityRestore(backroomsExplorers || [], waterCount);
+      if (res.restoredCount > 0) {
+        (actions as any).addLog?.(res.message);
+      }
+    }
+  };
+
+  const fullGameState = {
+    gold,
+    souls,
+    resources,
+    buildings,
+    heroes,
+    boss,
+    bossLevel: boss.level,
+    highestFloor: tower.maxFloor || 1,
+    tower,
+    backroomsUnlockedTechs,
+    backroomsFloor,
+    backroomsResources,
+    backroomsExplorers,
+    outerSpaceUnlocked,
+    hasGuild: !!buildings.find(b => b.id === 'guild_hall' && b.level > 0),
+    mobaWarActive: mobaWarState?.battleActive,
+    playerTerritoriesCount: (territories || []).filter(t => t.owner === 'player').length,
+    territories: territories || [],
+    industryUnlocked: !!buildings.find(b => b.id === 'industry' && b.level > 0),
+    industryMetrics: industry.metrics,
+    scpFoundation: industry.scpFoundation,
+    rocketPartsBuilt: industry.rocketPartsBuilt || 0
+  };
+
+  const activeBottlenecks = detectActiveBottlenecks(fullGameState);
+  const currentJourney = evaluateJourneyProgress(fullGameState);
+
   // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -285,6 +383,9 @@ function App() {
       if (e.key.toLowerCase() === 'r') setShowRunes(prev => !prev);
       if (e.key.toLowerCase() === 'a') setShowAchievements(prev => !prev);
       if (e.key.toLowerCase() === 'j') setIsAriaSidebarOpen(prev => !prev);
+      if (e.key.toLowerCase() === 'b') setShowBackrooms(prev => !prev);
+      if (e.key.toLowerCase() === 'm') setShowMarket(prev => !prev);
+      if (e.key.toLowerCase() === 'w') setShowGuildWar(prev => !prev);
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -526,40 +627,8 @@ function App() {
         isOpen={isAriaSidebarOpen}
         onToggle={setIsAriaSidebarOpen}
         currentTutorialIndex={currentTutorialIndex}
-        gameState={{
-          gold,
-          souls,
-          resources,
-          buildings,
-          heroes,
-          boss,
-          bossLevel: boss.level,
-          highestFloor: tower.maxFloor || 1,
-          tower,
-          backroomsUnlockedTechs,
-          backroomsFloor,
-          outerSpaceUnlocked,
-          hasGuild: !!buildings.find(b => b.id === 'guild_hall' && b.level > 0),
-          mobaWarActive: mobaWarState?.battleActive,
-          playerTerritoriesCount: (territories || []).filter(t => t.owner === 'player').length,
-          industryUnlocked: !!buildings.find(b => b.id === 'industry' && b.level > 0)
-        }}
-        onOpenModal={(targetModal) => {
-          if (targetModal === 'town') { actions.visitTown(); setShowTown(true); }
-          else if (targetModal === 'tower') setShowTower(true);
-          else if (targetModal === 'world_boss') setShowWorldBoss(true);
-          else if (targetModal === 'guild') setShowGuild(true);
-          else if (targetModal === 'guild_war') setShowGuildWar(true);
-          else if (targetModal === 'backrooms') setShowBackrooms(true);
-          else if (targetModal === 'industry') setShowIndustry(true);
-          else if (targetModal === 'galaxy') setShowGalaxy(true);
-          else if (targetModal === 'journey') setShowJourney(true);
-          else if (targetModal === 'tavern') setShowTavern(true);
-          else if (targetModal === 'forge') setShowForge(true);
-          else if (targetModal === 'shop') setShowShop(true);
-          else if (targetModal === 'inventory') setShowInventory(true);
-          else if (targetModal === 'guide') setBottomTab('guide');
-        }}
+        gameState={fullGameState}
+        onOpenModal={handleOpenDockModal}
       />
       <VictoryModal isOpen={victory} playTime={gameStats.playTime} ascensions={voidAscensions} onContinue={() => actions.setVictory(false)} />
       <LogModal isOpen={showLog} onClose={() => setShowLog(false)} logs={logs} />
@@ -1016,6 +1085,25 @@ function App() {
         voidMatter={voidMatter}
         actions={actions}
         industryInventory={industry.inventory}
+      />
+
+      {/* GLOBAL COMMAND & NAVIGATION DOCK */}
+      <GlobalDock
+        onOpenModal={handleOpenDockModal}
+        towerFloor={tower.maxFloor || 1}
+        backroomsFloor={backroomsFloor || 1}
+        backroomsScrap={backroomsResources?.scrap || 0}
+        industryMetrics={industry.metrics}
+        isScpUnlocked={Boolean(industry.scpFoundation?.unlocked)}
+        scpActiveBreach={Boolean(industry.scpFoundation?.activeBreach)}
+        playerTerritoriesCount={(territories || []).filter(t => t.owner === 'player').length}
+        hasTributesReady={(territories || []).some(t => t.owner === 'player' && ((t.defenseBonus || 0) > 0 || t.isLiminalRift))}
+        outerSpaceUnlocked={Boolean(outerSpaceUnlocked)}
+        currentJourneyStep={{ title: currentJourney.currentStep.title, stepNumber: currentJourney.currentStep.stepNumber }}
+        bottlenecksCount={activeBottlenecks.length}
+        onQuickAction={handleQuickAction}
+        isAriaOpen={isAriaSidebarOpen}
+        onToggleAria={setIsAriaSidebarOpen}
       />
     </div>
   );

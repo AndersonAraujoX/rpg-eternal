@@ -361,6 +361,7 @@ export interface Hero extends Entity {
     passiveSkillTree?: PassiveSkillTreeState;
     skillTreeNodes?: SkillTreeNode[];
     quantumStealth?: boolean;
+    equipment?: Record<string, any>;
 }
 
 
@@ -505,6 +506,10 @@ export type Resources = {
     overchargedAmmo?: number;
     starlightMicrochips?: number;
     magneticCoils?: number;
+    liminalFluid?: number;
+    voidAlloy?: number;
+    backroomsScrap?: number;
+    food?: number;
 };
 
 export interface DungeonMastery {
@@ -681,6 +686,7 @@ export interface Pet extends Entity {
     chimera?: boolean;
     parents?: string[];
     fusionCount?: number;
+    affinity?: number;
 }
 export interface RiftBlessing {
     id: string;

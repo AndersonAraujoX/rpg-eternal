@@ -13,10 +13,12 @@ import {
     Coins,
     Shield,
     Layers,
-    Play
+    Play,
+    AlertTriangle
 } from 'lucide-react';
 import ariaGuideImg from '../assets/npc/aria_guide.jpg';
 import { generateAriaAdvice, type NextStepSummary, type TacticalAction } from '../engine/ariaAdvisor';
+import { evaluateJourneyProgress, detectActiveBottlenecks } from '../engine/smartTutorial';
 
 export interface AriaSidebarProps {
     currentTutorialIndex: number;
@@ -52,6 +54,8 @@ export const AriaSidebar: React.FC<AriaSidebarProps> = ({
 
     // Gera os conselhos e próximos passos em tempo real
     const advice: NextStepSummary = generateAriaAdvice(gameState, currentTutorialIndex);
+    const journey = evaluateJourneyProgress(gameState);
+    const bottlenecks = detectActiveBottlenecks(gameState);
 
     // Fechar ao pressionar tecla Escape
     useEffect(() => {
@@ -201,6 +205,71 @@ export const AriaSidebar: React.FC<AriaSidebarProps> = ({
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    {/* RADAR TÁTICO DE GARGALOS */}
+                    {bottlenecks.length > 0 && (
+                        <div data-testid="aria-bottlenecks-container" className="bg-red-950/40 border-2 border-red-500/60 rounded-xl p-3 shadow-md space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 text-red-400 font-bold uppercase text-[10px] tracking-wide">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+                                    <span>Radar de Gargalos ({bottlenecks.length})</span>
+                                </div>
+                                <span className="text-[9px] bg-red-900/80 text-red-200 px-1.5 py-0.5 rounded border border-red-600 font-bold">
+                                    Ação Urgente
+                                </span>
+                            </div>
+                            {bottlenecks.map(b => (
+                                <div key={b.id} className="bg-black/60 border border-red-900/50 rounded-lg p-2 flex items-center justify-between gap-2">
+                                    <div className="flex items-start gap-2 min-w-0">
+                                        <span className="text-base">{b.icon}</span>
+                                        <div className="min-w-0">
+                                            <h5 className="font-bold text-[11px] text-red-300 truncate">{b.title}</h5>
+                                            <p className="text-[10px] text-stone-300 line-clamp-2">{b.message}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleActionClick(b.targetModal)}
+                                        className="px-2 py-1 rounded bg-red-800 hover:bg-red-700 text-white font-bold text-[10px] whitespace-nowrap transition-colors"
+                                    >
+                                        {b.actionLabel}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* A JORNADA DO CONQUISTADOR (BREADCRUMB MILESTONE) */}
+                    <div data-testid="aria-journey-card" className="bg-stone-950/90 border-2 border-amber-500/70 rounded-xl p-3.5 shadow-lg relative overflow-hidden">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-1.5 text-amber-400 font-black uppercase text-[11px] tracking-wide">
+                                <Target className="w-4 h-4 text-amber-400" />
+                                <span>Jornada: Passo {journey.currentStep.stepNumber} de 7</span>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                {journey.progressPercentage}% Concluído
+                            </span>
+                        </div>
+                        <h3 className="text-xs font-black text-stone-100 mb-1">
+                            {journey.currentStep.title}
+                        </h3>
+                        <p className="text-[11px] text-stone-300 mb-2 leading-relaxed">
+                            {journey.currentStep.description}
+                        </p>
+                        <div className="bg-amber-950/30 border border-amber-500/30 rounded-lg p-2 text-[10px] text-amber-200/90 mb-3 flex items-start gap-1.5">
+                            <Lightbulb className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+                            <span>{journey.currentStep.advice}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => handleActionClick(journey.currentStep.targetModal)}
+                            data-testid="aria-journey-action-btn"
+                            className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all transform active:scale-95"
+                        >
+                            <span>Ir para {journey.currentStep.actionLabel}</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
                     </div>
 
                     {/* SEÇÃO 2: 🎯 OBJETIVO PRIORITÁRIO (PASSO PRINCIPAL) */}

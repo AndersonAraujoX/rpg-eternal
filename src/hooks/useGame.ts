@@ -3913,7 +3913,7 @@ export const useGame = (
             gold, souls, divinity, starlight, heroes, items, inventory: items, runes,
             mechanizedCardsFused,
             dungeonMastery, gardenPlots, lastDailyReset, dailyLoginClaimed, dailyQuests, gameStats,
-            guild: guildState.guild, activeHeroes, partyPower, partyDps, activeEvent,
+            guild: guildState.guild, activeHeroes: activeHeroesWithBonusStats, partyPower, partyDps, activeEvent,
             victory, boss, resources, starlightUpgrades, achievements, combatEvents,
             logs, isSoundOn, voidAscensions, offlineGains, marketStock, marketTimer, raidActive,
             raidTimer, voidActive, voidTimer, isStarlightModalOpen, cards, constellations, keys,
