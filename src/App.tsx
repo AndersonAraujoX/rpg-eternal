@@ -1,64 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useGame } from './hooks/useGame';
 import { useIndustry } from './hooks/useIndustry';
 import { Header } from './components/Header';
 import { HeroList } from './components/HeroList';
 import { BattleArea } from './components/BattleArea';
 import { GameLog } from './components/GameLog';
-import { ShopModal } from './components/modals/ShopModal';
-import { TavernModal } from './components/modals/TavernModal';
-import { ForgeModal } from './components/modals/ForgeModal';
-import { StarChartModal } from './components/modals/StarChartModal';
-import { SettingsModal } from './components/modals/SettingsModal';
-import { InventoryModal } from './components/modals/InventoryModal';
-import { BestiaryModal } from './components/modals/BestiaryModal';
-import { StatisticsModal } from './components/modals/StatisticsModal';
-import { HelpModal } from './components/modals/HelpModal';
-import { OfflineModal } from './components/modals/OfflineModal';
-import { DailyRewardsModal } from './components/modals/DailyRewardsModal'; // Phase 56
-import { VictoryModal } from './components/modals/VictoryModal'; // Phase 9 Victory
-
-import { TowerModal } from './components/modals/TowerModal';
-import { GuildModal } from './components/modals/GuildModal';
-import { VoidModal } from './components/modals/VoidModal';
-import { ArenaModal } from './components/modals/ArenaModal';
-import { JourneyModal } from './components/modals/JourneyModal';
-import { QuestModal } from './components/modals/QuestModal';
-import { RuneModal } from './components/modals/RuneModal';
-import { AchievementsModal } from './components/modals/AchievementsModal';
-import { StarlightModal } from './components/modals/StarlightModal';
-import { LogModal } from './components/modals/LogModal';
-import { GalaxyModal } from './components/modals/GalaxyModal';
-import { LeaderboardModal } from './components/modals/LeaderboardModal'; // Phase 60
-import { DungeonModal } from './components/modals/DungeonModal'; // Phase 61
-import { StarForgeModal } from './components/modals/StarForgeModal'; // Phase Star Forge
-// PHASE 41
-
-
-import { FishingModal } from './components/modals/FishingModal';
-import { AlchemyModal } from './components/modals/AlchemyModal';
-import { ExpeditionsModal } from './components/modals/ExpeditionsModal';
-import { GardenModal } from './components/modals/GardenModal';
-import { DungeonMasteryModal } from './components/modals/DungeonMasteryModal';
-import { MarketModal } from './components/modals/MarketModal';
-import { RiftModal } from './components/modals/RiftModal';
-import { BreedingModal } from './components/modals/BreedingModal'; // Phase 46
-import { GuildWarModal } from './components/modals/GuildWarModal'; // Phase 47
-import { TownModal } from './components/modals/TownModal'; // Phase 53
-import { MuseumModal } from './components/modals/MuseumModal';
 import { PetList } from './components/PetList';
-import { CampfireModal } from './components/modals/CampfireModal'; // Phase 80
-import { WorldBossModal } from './components/modals/WorldBossModal'; // Phase 6
-import { TownEventWidget } from './components/TownEventWidget'; // Phase 92
-import { IndustryModal } from './components/modals/IndustryModal';
-import { RoguelikeModal } from './components/modals/RoguelikeModal';
-import { BackroomsManagerModal } from './components/modals/BackroomsManagerModal';
+import { TownEventWidget } from './components/TownEventWidget';
 import { NpcTutorialGuide } from './components/NpcTutorialGuide';
 import { NpcGuideTab } from './components/NpcGuideTab';
 import { AriaSidebar } from './components/AriaSidebar';
 import { TUTORIAL_STEPS } from './data/npcTutorial';
-
 import { GlobalDock } from './components/common/GlobalDock';
+import { ModalLoadingFallback } from './components/common/ModalLoadingFallback';
+import { lazyNamed } from './utils/lazy';
 import {
   evaluateJourneyProgress,
   detectActiveBottlenecks,
@@ -67,17 +22,60 @@ import {
   feedAllPets,
   quickSanityRestore
 } from './engine/smartTutorial';
-
 import './index.css';
-import { CardBattleModal } from './components/modals/CardBattleModal'; // Phase 55
-import { DevToolsModal } from './components/modals/DevToolsModal'; // Dev Tools
-import { PortalResetModal } from './components/modals/PortalResetModal';
-import { PrestigeTreeModal } from './components/modals/PrestigeTreeModal';
-import { PetSpaceModal } from './components/modals/PetSpaceModal';
 import { WeatherOverlays } from './components/WeatherOverlays';
-import { ElementalResonanceModal } from './components/modals/ElementalResonanceModal';
-import { RelicChamberModal } from './components/modals/RelicChamberModal';
-import { VoidInfusionModal } from './components/modals/VoidInfusionModal';
+
+// Lazy-loaded modal components (Code Splitting)
+const ShopModal = lazyNamed(() => import('./components/modals/ShopModal'), 'ShopModal');
+const TavernModal = lazyNamed(() => import('./components/modals/TavernModal'), 'TavernModal');
+const ForgeModal = lazyNamed(() => import('./components/modals/ForgeModal'), 'ForgeModal');
+const StarChartModal = lazyNamed(() => import('./components/modals/StarChartModal'), 'StarChartModal');
+const SettingsModal = lazyNamed(() => import('./components/modals/SettingsModal'), 'SettingsModal');
+const InventoryModal = lazyNamed(() => import('./components/modals/InventoryModal'), 'InventoryModal');
+const BestiaryModal = lazyNamed(() => import('./components/modals/BestiaryModal'), 'BestiaryModal');
+const StatisticsModal = lazyNamed(() => import('./components/modals/StatisticsModal'), 'StatisticsModal');
+const HelpModal = lazyNamed(() => import('./components/modals/HelpModal'), 'HelpModal');
+const OfflineModal = lazyNamed(() => import('./components/modals/OfflineModal'), 'OfflineModal');
+const DailyRewardsModal = lazyNamed(() => import('./components/modals/DailyRewardsModal'), 'DailyRewardsModal');
+const VictoryModal = lazyNamed(() => import('./components/modals/VictoryModal'), 'VictoryModal');
+const TowerModal = lazyNamed(() => import('./components/modals/TowerModal'), 'TowerModal');
+const GuildModal = lazyNamed(() => import('./components/modals/GuildModal'), 'GuildModal');
+const VoidModal = lazyNamed(() => import('./components/modals/VoidModal'), 'VoidModal');
+const ArenaModal = lazyNamed(() => import('./components/modals/ArenaModal'), 'ArenaModal');
+const JourneyModal = lazyNamed(() => import('./components/modals/JourneyModal'), 'JourneyModal');
+const QuestModal = lazyNamed(() => import('./components/modals/QuestModal'), 'QuestModal');
+const RuneModal = lazyNamed(() => import('./components/modals/RuneModal'), 'RuneModal');
+const AchievementsModal = lazyNamed(() => import('./components/modals/AchievementsModal'), 'AchievementsModal');
+const StarlightModal = lazyNamed(() => import('./components/modals/StarlightModal'), 'StarlightModal');
+const LogModal = lazyNamed(() => import('./components/modals/LogModal'), 'LogModal');
+const GalaxyModal = lazyNamed(() => import('./components/modals/GalaxyModal'), 'GalaxyModal');
+const LeaderboardModal = lazyNamed(() => import('./components/modals/LeaderboardModal'), 'LeaderboardModal');
+const DungeonModal = lazyNamed(() => import('./components/modals/DungeonModal'), 'DungeonModal');
+const StarForgeModal = lazyNamed(() => import('./components/modals/StarForgeModal'), 'StarForgeModal');
+const FishingModal = lazyNamed(() => import('./components/modals/FishingModal'), 'FishingModal');
+const AlchemyModal = lazyNamed(() => import('./components/modals/AlchemyModal'), 'AlchemyModal');
+const ExpeditionsModal = lazyNamed(() => import('./components/modals/ExpeditionsModal'), 'ExpeditionsModal');
+const GardenModal = lazyNamed(() => import('./components/modals/GardenModal'), 'GardenModal');
+const DungeonMasteryModal = lazyNamed(() => import('./components/modals/DungeonMasteryModal'), 'DungeonMasteryModal');
+const MarketModal = lazyNamed(() => import('./components/modals/MarketModal'), 'MarketModal');
+const RiftModal = lazyNamed(() => import('./components/modals/RiftModal'), 'RiftModal');
+const BreedingModal = lazyNamed(() => import('./components/modals/BreedingModal'), 'BreedingModal');
+const GuildWarModal = lazyNamed(() => import('./components/modals/GuildWarModal'), 'GuildWarModal');
+const TownModal = lazyNamed(() => import('./components/modals/TownModal'), 'TownModal');
+const MuseumModal = lazyNamed(() => import('./components/modals/MuseumModal'), 'MuseumModal');
+const CampfireModal = lazyNamed(() => import('./components/modals/CampfireModal'), 'CampfireModal');
+const WorldBossModal = lazyNamed(() => import('./components/modals/WorldBossModal'), 'WorldBossModal');
+const IndustryModal = lazyNamed(() => import('./components/modals/IndustryModal'), 'IndustryModal');
+const RoguelikeModal = lazyNamed(() => import('./components/modals/RoguelikeModal'), 'RoguelikeModal');
+const BackroomsManagerModal = lazyNamed(() => import('./components/modals/BackroomsManagerModal'), 'BackroomsManagerModal');
+const CardBattleModal = lazyNamed(() => import('./components/modals/CardBattleModal'), 'CardBattleModal');
+const DevToolsModal = lazyNamed(() => import('./components/modals/DevToolsModal'), 'DevToolsModal');
+const PortalResetModal = lazyNamed(() => import('./components/modals/PortalResetModal'), 'PortalResetModal');
+const PrestigeTreeModal = lazyNamed(() => import('./components/modals/PrestigeTreeModal'), 'PrestigeTreeModal');
+const PetSpaceModal = lazyNamed(() => import('./components/modals/PetSpaceModal'), 'PetSpaceModal');
+const ElementalResonanceModal = lazyNamed(() => import('./components/modals/ElementalResonanceModal'), 'ElementalResonanceModal');
+const RelicChamberModal = lazyNamed(() => import('./components/modals/RelicChamberModal'), 'RelicChamberModal');
+const VoidInfusionModal = lazyNamed(() => import('./components/modals/VoidInfusionModal'), 'VoidInfusionModal');
 
 function App() {
   const industry = useIndustry();
@@ -630,15 +628,16 @@ function App() {
         gameState={fullGameState}
         onOpenModal={handleOpenDockModal}
       />
-      <VictoryModal isOpen={victory} playTime={gameStats.playTime} ascensions={voidAscensions} onContinue={() => actions.setVictory(false)} />
-      <LogModal isOpen={showLog} onClose={() => setShowLog(false)} logs={logs} />
-      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-      <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />
-      <StarChartModal isOpen={showStars} onClose={() => setShowStars(false)} divinity={divinity} constellations={constellations} actions={actions} />
-      <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} autoFeedPets={autoFeedPets} theme={theme} />
-      {showShop && <ShopModal isOpen={true} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />}
-      {showTavern && <TavernModal heroes={heroes} gold={gold} tavernPurchases={gameStats.tavernPurchases || 0} heroPity={gameStats.heroPity || 0} petPity={gameStats.petPity || 0} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} onDiceWin={(actions as any).onDiceWin} onDicePerfectWin={(actions as any).onDicePerfectWin} backroomsFloor={backroomsFloor} isBackroomsUnlocked={isBackroomsUnlocked} />}
+      <Suspense fallback={<ModalLoadingFallback />}>
+        {victory && <VictoryModal isOpen={victory} playTime={gameStats.playTime} ascensions={voidAscensions} onContinue={() => actions.setVictory(false)} />}
+        {showLog && <LogModal isOpen={showLog} onClose={() => setShowLog(false)} logs={logs} />}
+        {showHelp && <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />}
+        {offlineGains && <OfflineModal offlineGains={offlineGains} onClose={actions.closeOfflineModal} />}
+        {showStars && <StarChartModal isOpen={showStars} onClose={() => setShowStars(false)} divinity={divinity} constellations={constellations} actions={actions} />}
+        {showBestiary && <BestiaryModal isOpen={showBestiary} onClose={() => setShowBestiary(false)} monsterKills={monsterKills} cards={cards} />}
+        {showSettings && <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} actions={actions} importString={importString} setImportString={setImportString} autoSellRarity={autoSellRarity} autoFeedPets={autoFeedPets} theme={theme} />}
+        {showShop && <ShopModal isOpen={true} onClose={() => setShowShop(false)} souls={souls} talents={talents} boss={boss} actions={actions} />}
+        {showTavern && <TavernModal heroes={heroes} gold={gold} tavernPurchases={gameStats.tavernPurchases || 0} heroPity={gameStats.heroPity || 0} petPity={gameStats.petPity || 0} summonTavern={actions.summonTavernLine} onClose={() => setShowTavern(false)} setGold={setGold} onDiceWin={(actions as any).onDiceWin} onDicePerfectWin={(actions as any).onDicePerfectWin} backroomsFloor={backroomsFloor} isBackroomsUnlocked={isBackroomsUnlocked} />}
 
       {showForge && (
          <ForgeModal
@@ -653,20 +652,22 @@ function App() {
          />
        )}
       {showInventory && <InventoryModal isOpen={true} items={items} onClose={() => setShowInventory(false)} />}
-      <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />
-      <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} guildQueue={guildQueue} />
-      <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} voidAscensions={voidAscensions} voidActive={voidActive} voidTimer={voidTimer} />
-      <ArenaModal
-        isOpen={showArena}
-        onClose={() => setShowArena(false)}
-        rank={arenaRank}
-        glory={glory}
-        heroes={heroes}
-        opponents={arenaOpponents}
-        onFight={actions.fightArena}
-        adrenalineShotsAvailable={globalModifiers?.industry?.adrenalineShotsAvailable || 0}
-        onUseAdrenalineShot={actions.useAdrenalineShot}
-      />
+      {showTower && <TowerModal isOpen={showTower} onClose={() => setShowTower(false)} tower={tower} actions={actions} starlight={starlight} />}
+      {showGuild && <GuildModal isOpen={showGuild} onClose={() => setShowGuild(false)} guild={guild} gold={gold} actions={actions} guildQueue={guildQueue} />}
+      {showVoid && <VoidModal isOpen={showVoid} onClose={() => setShowVoid(false)} voidMatter={voidMatter} actions={actions} voidAscensions={voidAscensions} voidActive={voidActive} voidTimer={voidTimer} />}
+      {showArena && (
+        <ArenaModal
+          isOpen={showArena}
+          onClose={() => setShowArena(false)}
+          rank={arenaRank}
+          glory={glory}
+          heroes={heroes}
+          opponents={arenaOpponents}
+          onFight={actions.fightArena}
+          adrenalineShotsAvailable={globalModifiers?.industry?.adrenalineShotsAvailable || 0}
+          onUseAdrenalineShot={actions.useAdrenalineShot}
+        />
+      )}
       {showQuests && (
         <QuestModal
           quests={quests}
@@ -676,46 +677,50 @@ function App() {
       )}
       <RuneModal isOpen={showRunes} onClose={() => setShowRunes(false)} items={items} resources={resources} souls={souls} actions={{ craftRune, socketRune, combineRunes }} runes={runes || []} />
       {showAchievements && <AchievementsModal isOpen={showAchievements} achievements={achievements} stats={gameStats} onClose={() => setShowAchievements(false)} />}
-      <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />
-      <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} industryInventory={industry.inventory} />
-      <GalaxyModal
-        isOpen={showGalaxy}
-        onClose={() => setShowGalaxy(false)}
-        galaxy={galaxy}
-        onConquer={actions.attackSector}
-        partyPower={partyPower}
-        starlightUpgrades={starlightUpgrades}
-        spaceship={spaceship}
-        onUpgradeShip={upgradeSpaceship}
-        towerFloor={tower.floor}
-        voidAscensions={voidAscensions}
-        onAscend={actions.ascendToVoid}
-        onPreparePlanetaryRun={(sector) => {
-          preparePlanetaryRun(sector.id, sector.name, sector.type as any, sector.level);
-          setShowGalaxy(false);
-          setShowRoguelike(true);
-        }}
-      />
+      {showStats && <StatisticsModal isOpen={showStats} onClose={() => setShowStats(false)} stats={gameStats} />}
+      {showStarlight && <StarlightModal isOpen={showStarlight} onClose={() => setShowStarlight(false)} starlight={starlight} upgrades={starlightUpgrades} onBuy={actions.buyStarlightUpgrade} industryInventory={industry.inventory} />}
+      {showGalaxy && (
+        <GalaxyModal
+          isOpen={showGalaxy}
+          onClose={() => setShowGalaxy(false)}
+          galaxy={galaxy}
+          onConquer={actions.attackSector}
+          partyPower={partyPower}
+          starlightUpgrades={starlightUpgrades}
+          spaceship={spaceship}
+          onUpgradeShip={upgradeSpaceship}
+          towerFloor={tower.floor}
+          voidAscensions={voidAscensions}
+          onAscend={actions.ascendToVoid}
+          onPreparePlanetaryRun={(sector) => {
+            preparePlanetaryRun(sector.id, sector.name, sector.type as any, sector.level);
+            setShowGalaxy(false);
+            setShowRoguelike(true);
+          }}
+        />
+      )}
 
       {/* PHASE 41 Modals */}
-      <FishingModal
-        isOpen={showFishing}
-        onClose={() => setShowFishing(false)}
-        fishCount={resources.fish || 0}
-        legendaryCount={gameStats.legendaryFishCount || 0}
-        setFish={() => actions.manualFish && actions.manualFish()}
-        items={items}
-        convertSeasonalFish={convertSeasonalFish}
-        {...({ setGameStats: (actions as any).setGameStats } as any)}
-      />
+      {showFishing && (
+        <FishingModal
+          isOpen={showFishing}
+          onClose={() => setShowFishing(false)}
+          fishCount={resources.fish || 0}
+          legendaryCount={gameStats.legendaryFishCount || 0}
+          setFish={() => actions.manualFish && actions.manualFish()}
+          items={items}
+          convertSeasonalFish={convertSeasonalFish}
+          {...({ setGameStats: (actions as any).setGameStats } as any)}
+        />
+      )}
 
-      <AlchemyModal isOpen={showAlchemy} onClose={() => setShowAlchemy(false)} resources={resources} activePotions={activePotions || []} brewPotion={actions.brewPotion} />
+      {showAlchemy && <AlchemyModal isOpen={showAlchemy} onClose={() => setShowAlchemy(false)} resources={resources} activePotions={activePotions || []} brewPotion={actions.brewPotion} />}
 
-      <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} assignedPet={pets.find(p => p.assignment === 'expedition')} globalModifiers={globalModifiers} />
+      {showExpeditions && <ExpeditionsModal isOpen={showExpeditions} onClose={() => setShowExpeditions(false)} activeExpeditions={activeExpeditions || []} heroes={heroes} startExpedition={actions.startExpedition} assignedPet={pets.find(p => p.assignment === 'expedition')} globalModifiers={globalModifiers} />}
 
-      <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0) * (globalModifiers?.collection?.gardenSpeedMult || 1.0)} voidOvergrowthActive={voidOvergrowthActive} voidHarvestRuneFragments={globalModifiers?.layer5?.voidHarvestRuneFragments} voidHarvestRareMinerals={globalModifiers?.layer5?.voidHarvestRareMinerals} />
+      {showGarden && <GardenModal isOpen={showGarden} onClose={() => setShowGarden(false)} plots={gardenPlots || []} setPlots={setGardenPlots} resources={resources} setResources={setResources} gold={gold} setGold={setGold} gardenSpeedMult={(patronDeity === 'gaya' ? 1.15 + (deityLevel - 1) * 0.05 : 1.0) * (backroomsUnlockedTechs.includes('cult_rotation') ? 1.10 : 1.0) * (globalModifiers?.collection?.gardenSpeedMult || 1.0)} voidOvergrowthActive={voidOvergrowthActive} voidHarvestRuneFragments={globalModifiers?.layer5?.voidHarvestRuneFragments} voidHarvestRareMinerals={globalModifiers?.layer5?.voidHarvestRareMinerals} />}
 
-      <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} resources={resources} sellOre={sellOre} globalModifiers={globalModifiers} />
+      {showMarket && <MarketModal isOpen={showMarket} onClose={() => setShowMarket(false)} stock={marketStock || []} buyItem={buyMarketItem} gold={gold} divinity={divinity} voidMatter={voidMatter} timer={marketTimer} resources={resources} sellOre={sellOre} globalModifiers={globalModifiers} />}
 
       {/* RIFT OVERLAY */}
       {activeRift && (
@@ -734,15 +739,17 @@ function App() {
         </div>
       )}
 
-      <RiftModal
-        isOpen={showRiftModal}
-        onClose={() => setShowRiftModal(false)}
-        riftState={riftState}
-        startRift={startRift}
-        selectBlessing={selectBlessing}
-        exitRift={exitRift}
-        gameStats={gameStats}
-      />
+      {showRiftModal && (
+        <RiftModal
+          isOpen={showRiftModal}
+          onClose={() => setShowRiftModal(false)}
+          riftState={riftState}
+          startRift={startRift}
+          selectBlessing={selectBlessing}
+          exitRift={exitRift}
+          gameStats={gameStats}
+        />
+      )}
       {showBreedingModal && <BreedingModal isOpen={true} onClose={() => setShowBreedingModal(false)} pets={pets} breedPets={breedPets} gold={gold} />}
 
       {showGuildWar && (() => {
@@ -795,59 +802,63 @@ function App() {
       })()}
 
       {showPetSpace && <PetSpaceModal isOpen={true} onClose={() => setShowPetSpace(false)} pets={pets} gold={gold} souls={souls} autoFeedPets={autoFeedPets} onToggleAutoFeed={actions.toggleAutoFeedPets} onFeedGold={(id) => actions.feedPet('gold', id)} onFeedSouls={(id) => actions.feedPet('souls', id)} onAssignPet={(id, assign) => actions.assignPet && actions.assignPet(id, assign)} onBreed={() => { setShowPetSpace(false); setShowBreedingModal(true); }} />}
-      <TownModal
-        isOpen={showTown}
-        onClose={() => setShowTown(false)}
-        buildings={buildings}
-        gold={gold}
-        upgradeBuilding={upgradeBuilding}
-        tower={tower}
-        openIndustry={() => setShowIndustry(true)}
-        openForge={() => setShowForge(true)}
-        openFishing={() => setShowFishing(true)}
-        openAlchemy={() => setShowAlchemy(true)}
-        openExpeditions={() => setShowExpeditions(true)}
-        openGarden={() => setShowGarden(true)}
-        openRunes={() => { setShowRunes(true); setShowTown(false); }}
-        heroes={heroes}
-        monuments={monuments}
-        enshrineHero={enshrineHero}
-        patronDeity={patronDeity}
-        deityLevel={deityLevel}
-        deityFavor={deityFavor}
-        deityEnergy={deityEnergy}
-        pledgeDeity={pledgeDeity}
-        offerToDeity={offerToDeity}
-        hasDonatedHighTierIndustry={hasDonatedHighTierIndustry}
-        industryInventory={industry.inventory}
-        souls={souls}
-        divinity={divinity}
-        invokeWeather={invokeWeather}
-        resources={resources}
-        openBackrooms={() => { setShowBackrooms(true); setShowTown(false); }}
-        openGuild={() => { setShowGuild(true); setShowTown(false); }}
-        openPetSpace={() => { setShowPetSpace(true); setShowTown(false); }}
-        setBuildings={setBuildings}
-        bossLevel={boss.level}
-        voidAscensions={voidAscensions}
-      />
-      <IndustryModal 
-        isOpen={showIndustry} 
-        onClose={() => setShowIndustry(false)} 
-        industryState={industry} 
-        gold={gold} 
-        buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} 
-        assignedPet={pets.find(p => p.assignment === 'industry')}
-        costReduction={town?.relics?.find(r => r.id === 'relic_gear')?.count ? (town.relics.find(r => r.id === 'relic_gear')!.count * 0.10) : 0} 
-        backroomsFloor={backroomsFloor}
-        backroomsUnlockedTechs={backroomsUnlockedTechs}
-        heroes={heroes}
-        partyPower={partyPower}
-      />
+      {showTown && (
+        <TownModal
+          isOpen={showTown}
+          onClose={() => setShowTown(false)}
+          buildings={buildings}
+          gold={gold}
+          upgradeBuilding={upgradeBuilding}
+          tower={tower}
+          openIndustry={() => setShowIndustry(true)}
+          openForge={() => setShowForge(true)}
+          openFishing={() => setShowFishing(true)}
+          openAlchemy={() => setShowAlchemy(true)}
+          openExpeditions={() => setShowExpeditions(true)}
+          openGarden={() => setShowGarden(true)}
+          openRunes={() => { setShowRunes(true); setShowTown(false); }}
+          heroes={heroes}
+          monuments={monuments}
+          enshrineHero={enshrineHero}
+          patronDeity={patronDeity}
+          deityLevel={deityLevel}
+          deityFavor={deityFavor}
+          deityEnergy={deityEnergy}
+          pledgeDeity={pledgeDeity}
+          offerToDeity={offerToDeity}
+          hasDonatedHighTierIndustry={hasDonatedHighTierIndustry}
+          industryInventory={industry.inventory}
+          souls={souls}
+          divinity={divinity}
+          invokeWeather={invokeWeather}
+          resources={resources}
+          openBackrooms={() => { setShowBackrooms(true); setShowTown(false); }}
+          openGuild={() => { setShowGuild(true); setShowTown(false); }}
+          openPetSpace={() => { setShowPetSpace(true); setShowTown(false); }}
+          setBuildings={setBuildings}
+          bossLevel={boss.level}
+          voidAscensions={voidAscensions}
+        />
+      )}
+      {showIndustry && (
+        <IndustryModal 
+          isOpen={showIndustry} 
+          onClose={() => setShowIndustry(false)} 
+          industryState={industry} 
+          gold={gold} 
+          buyMachine={(cost, execute) => { if (gold >= cost) { setGold(g => g - cost); execute(); } }} 
+          assignedPet={pets.find(p => p.assignment === 'industry')}
+          costReduction={town?.relics?.find(r => r.id === 'relic_gear')?.count ? (town.relics.find(r => r.id === 'relic_gear')!.count * 0.10) : 0} 
+          backroomsFloor={backroomsFloor}
+          backroomsUnlockedTechs={backroomsUnlockedTechs}
+          heroes={heroes}
+          partyPower={partyPower}
+        />
+      )}
       {showMuseum && <MuseumModal onClose={() => setShowMuseum(false)} heroes={heroes} pets={pets} cards={cards} items={items} onDuel={() => { setShowMuseum(false); setShowCardBattle(true); }} relics={town?.relics || []} />}
-      <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} industryInventory={industry.inventory} mechanizedCardsFused={mechanizedCardsFused} fuseMechanizedCards={fuseMechanizedCards} />
+      {showCardBattle && <CardBattleModal isOpen={showCardBattle} onClose={() => setShowCardBattle(false)} cards={cards} onWin={winCardBattle} stats={gameStats} industryInventory={industry.inventory} mechanizedCardsFused={mechanizedCardsFused} fuseMechanizedCards={fuseMechanizedCards} />}
 
-      <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={fakePlayers} currentPower={partyPower} />
+      {showLeaderboard && <LeaderboardModal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} entries={fakePlayers} currentPower={partyPower} />}
       {dungeonActive && (
         <DungeonModal
           dungeon={dungeonState}
@@ -861,13 +872,15 @@ function App() {
         />
       )}
 
-      <DungeonMasteryModal
-        isOpen={showMastery}
-        onClose={() => setShowMastery(false)}
-        mastery={dungeonMastery}
-        tokens={resources.dungeonTokens || 0}
-        buyUpgrade={buyMasteryUpgrade}
-      />
+      {showMastery && (
+        <DungeonMasteryModal
+          isOpen={showMastery}
+          onClose={() => setShowMastery(false)}
+          mastery={dungeonMastery}
+          tokens={resources.dungeonTokens || 0}
+          buyUpgrade={buyMasteryUpgrade}
+        />
+      )}
 
       {activeEvent && (
         <TownEventWidget
@@ -889,33 +902,39 @@ function App() {
       )}
 
 
-      <StarForgeModal
-        isOpen={showStarForge}
-        onClose={() => setShowStarForge(false)}
-        starFragments={resources.starFragments || 0}
-        gold={gold}
-        onCraft={actions.craftStarForgedItem}
-        dailyUsesRemaining={Math.max(0, 5 + (globalModifiers?.industry?.starForgeExtraAttempts || 0) - starForgeDailyUses)}
-        maxDailyUses={5 + (globalModifiers?.industry?.starForgeExtraAttempts || 0)}
-        perfectModChanceBonus={globalModifiers?.industry?.starForgePerfectModChance || 0}
-        classMastery={classMastery}
-      />
-      <WorldBossModal
-        isOpen={showWorldBoss}
-        onClose={() => setShowWorldBoss(false)}
-        worldBoss={worldBoss || null}
-        personalDamage={worldBossDamage || 0}
-        canClaim={worldBossCanClaim || false}
-        cooldownUntil={worldBossCooldownUntil}
-        attackAction={actions.attackWorldBoss}
-        claimAction={actions.claimWorldBossReward}
-      />
-      <CampfireModal
-        isOpen={showCampfire}
-        onClose={() => setShowCampfire(false)}
-        heroes={heroes}
-        onAssign={assignHero}
-      />
+      {showStarForge && (
+        <StarForgeModal
+          isOpen={showStarForge}
+          onClose={() => setShowStarForge(false)}
+          starFragments={resources.starFragments || 0}
+          gold={gold}
+          onCraft={actions.craftStarForgedItem}
+          dailyUsesRemaining={Math.max(0, 5 + (globalModifiers?.industry?.starForgeExtraAttempts || 0) - starForgeDailyUses)}
+          maxDailyUses={5 + (globalModifiers?.industry?.starForgeExtraAttempts || 0)}
+          perfectModChanceBonus={globalModifiers?.industry?.starForgePerfectModChance || 0}
+          classMastery={classMastery}
+        />
+      )}
+      {showWorldBoss && (
+        <WorldBossModal
+          isOpen={showWorldBoss}
+          onClose={() => setShowWorldBoss(false)}
+          worldBoss={worldBoss || null}
+          personalDamage={worldBossDamage || 0}
+          canClaim={worldBossCanClaim || false}
+          cooldownUntil={worldBossCooldownUntil}
+          attackAction={actions.attackWorldBoss}
+          claimAction={actions.claimWorldBossReward}
+        />
+      )}
+      {showCampfire && (
+        <CampfireModal
+          isOpen={showCampfire}
+          onClose={() => setShowCampfire(false)}
+          heroes={heroes}
+          onAssign={assignHero}
+        />
+      )}
       {showDevTools && (
         <DevToolsModal
           isOpen={showDevTools}
@@ -935,157 +954,174 @@ function App() {
       )}
 
       {/* PROGRESSION MODALS */}
-      <PortalResetModal
-        isOpen={!!portalConfig}
-        title={portalConfig?.title}
-        message={portalConfig?.message}
-        warning={portalConfig?.warning}
-        soulsGained={portalConfig?.soulsGained}
-        rewardText={portalConfig?.rewardText}
-        onConfirm={portalConfig?.onConfirm || (() => { })}
-        onCancel={() => setPortalConfig(null)}
-        hasRealityAnchor={(industry.inventory['reality_anchor'] || 0) >= 1}
-        hasPortalStabilizer={(industry.inventory['portal_stabilizer'] || 0) >= 1}
-        buildings={buildings}
-        heroes={heroes}
-      />
+      {!!portalConfig && (
+        <PortalResetModal
+          isOpen={!!portalConfig}
+          title={portalConfig?.title}
+          message={portalConfig?.message}
+          warning={portalConfig?.warning}
+          soulsGained={portalConfig?.soulsGained}
+          rewardText={portalConfig?.rewardText}
+          onConfirm={portalConfig?.onConfirm || (() => { })}
+          onCancel={() => setPortalConfig(null)}
+          hasRealityAnchor={(industry.inventory['reality_anchor'] || 0) >= 1}
+          hasPortalStabilizer={(industry.inventory['portal_stabilizer'] || 0) >= 1}
+          buildings={buildings}
+          heroes={heroes}
+        />
+      )}
 
-      <PrestigeTreeModal
-        isOpen={showPrestigeTree}
-        onClose={() => setShowPrestigeTree(false)}
-        souls={souls}
-        prestigeNodes={prestigeNodes}
-        onBuyNode={actions.buyPrestigeNode}
-      />
+      {showPrestigeTree && (
+        <PrestigeTreeModal
+          isOpen={showPrestigeTree}
+          onClose={() => setShowPrestigeTree(false)}
+          souls={souls}
+          prestigeNodes={prestigeNodes}
+          onBuyNode={actions.buyPrestigeNode}
+        />
+      )}
 
-      <RoguelikeModal
-        isOpen={showRoguelike}
-        onClose={() => {
-          if (roguelikeRun.status === 'none') {
-            clearPlanetaryExpedition();
-          }
-          setShowRoguelike(false);
-        }}
-        run={roguelikeRun}
-        emberFragments={emberFragments}
-        upgrades={roguelikeUpgrades}
-        actions={{
-          startRoguelikeRun: (classType) => {
-            if (roguelikeRun.planetaryExpedition) {
-              startPlanetaryRun(
-                classType,
-                roguelikeRun.planetaryExpedition.sectorId,
-                roguelikeRun.planetaryExpedition.sectorName,
-                roguelikeRun.planetaryExpedition.biome,
-                roguelikeRun.planetaryExpedition.sectorLevel,
-                galaxy
-              );
-            } else {
-              startRoguelikeRun(classType);
+      {showRoguelike && (
+        <RoguelikeModal
+          isOpen={showRoguelike}
+          onClose={() => {
+            if (roguelikeRun.status === 'none') {
+              clearPlanetaryExpedition();
             }
-          },
-          selectRoguelikeNode: selectRoguelikeNode,
-          performRoguelikeCombatAction: performRoguelikeCombatAction,
-          resolveRoguelikeRest: resolveRoguelikeRest,
-          resolveRoguelikeEventOption: resolveRoguelikeEventOption,
-          buyRoguelikeUpgrade,
-          abandonRoguelikeRun
-        }}
-      />
+            setShowRoguelike(false);
+          }}
+          run={roguelikeRun}
+          emberFragments={emberFragments}
+          upgrades={roguelikeUpgrades}
+          actions={{
+            startRoguelikeRun: (classType) => {
+              if (roguelikeRun.planetaryExpedition) {
+                startPlanetaryRun(
+                  classType,
+                  roguelikeRun.planetaryExpedition.sectorId,
+                  roguelikeRun.planetaryExpedition.sectorName,
+                  roguelikeRun.planetaryExpedition.biome,
+                  roguelikeRun.planetaryExpedition.sectorLevel,
+                  galaxy
+                );
+              } else {
+                startRoguelikeRun(classType);
+              }
+            },
+            selectRoguelikeNode: selectRoguelikeNode,
+            performRoguelikeCombatAction: performRoguelikeCombatAction,
+            resolveRoguelikeRest: resolveRoguelikeRest,
+            resolveRoguelikeEventOption: resolveRoguelikeEventOption,
+            buyRoguelikeUpgrade,
+            abandonRoguelikeRun
+          }}
+        />
+      )}
 
-      <BackroomsManagerModal
-        isOpen={showBackrooms}
-        onClose={() => setShowBackrooms(false)}
-        currentTutorialIndex={currentTutorialIndex}
-        explorers={backroomsExplorers}
-        outpost={backroomsOutpost}
-        resources={backroomsResources}
-        logs={backroomsLogs}
-        unlockedTechs={backroomsUnlockedTechs}
-        floor={backroomsFloor}
-        floorProgress={backroomsFloorProgress}
-        bossHp={backroomsBossHp}
-        containedEntities={containedEntities}
-        sectorModules={sectorModules}
-        activeNoclipEvent={activeNoclipEvent}
-        dimensionalInstability={dimensionalInstability}
-        heroPower={partyPower}
-        actions={{
-          recruitExplorer,
-          sendExplorer,
-          recallExplorer,
-          restExplorer,
-          useAlmondWater,
-          upgradeOutpost,
-          craftGear,
-          researchTech,
-          captureEntity,
-          resolveNoclip,
-          upgradeSectorModule,
-          sealDimensionalRift,
-          unlockExplorerTalent
-        }}
-      />
+      {showBackrooms && (
+        <BackroomsManagerModal
+          isOpen={showBackrooms}
+          onClose={() => setShowBackrooms(false)}
+          currentTutorialIndex={currentTutorialIndex}
+          explorers={backroomsExplorers}
+          outpost={backroomsOutpost}
+          resources={backroomsResources}
+          logs={backroomsLogs}
+          unlockedTechs={backroomsUnlockedTechs}
+          floor={backroomsFloor}
+          floorProgress={backroomsFloorProgress}
+          bossHp={backroomsBossHp}
+          containedEntities={containedEntities}
+          sectorModules={sectorModules}
+          activeNoclipEvent={activeNoclipEvent}
+          dimensionalInstability={dimensionalInstability}
+          heroPower={partyPower}
+          actions={{
+            recruitExplorer,
+            sendExplorer,
+            recallExplorer,
+            restExplorer,
+            useAlmondWater,
+            upgradeOutpost,
+            craftGear,
+            researchTech,
+            captureEntity,
+            resolveNoclip,
+            upgradeSectorModule,
+            sealDimensionalRift,
+            unlockExplorerTalent
+          }}
+        />
+      )}
 
-      <JourneyModal
-        isOpen={showJourney}
-        onClose={() => setShowJourney(false)}
-        state={{
-          bossLevel: boss.level,
-          highestFloor: tower.maxFloor || 1,
-          voidAscensions,
-          buildings,
-          outerSpaceUnlocked,
-          riftsUnlocked: backroomsUnlockedTechs.includes('rift_tech'),
-          backroomsUnlockedTechs,
-          backroomsFloor: backroomsFloor || 1,
-          hasGuild: !!buildings.find(b => b.id === 'guild_hall' && b.level > 0),
-          mobaWarActive: mobaWarState?.battleActive,
-          playerTerritoriesCount: (territories || []).filter(t => t.owner === 'player').length,
-          industryUnlocked: !!buildings.find(b => b.id === 'industry' && b.level > 0)
-        }}
-        onNavigate={(destination) => {
-          if (destination === 'town') { actions.visitTown(); setShowTown(true); }
-          else if (destination === 'tower') setShowTower(true);
-          else if (destination === 'world_boss') setShowWorldBoss(true);
-          else if (destination === 'guild') setShowGuild(true);
-          else if (destination === 'guild_war') setShowGuildWar(true);
-          else if (destination === 'backrooms') setShowBackrooms(true);
-          else if (destination === 'industry') setShowIndustry(true);
-          else if (destination === 'galaxy') setShowGalaxy(true);
-        }}
-      />
+      {showJourney && (
+        <JourneyModal
+          isOpen={showJourney}
+          onClose={() => setShowJourney(false)}
+          state={{
+            bossLevel: boss.level,
+            highestFloor: tower.maxFloor || 1,
+            voidAscensions,
+            buildings,
+            outerSpaceUnlocked,
+            riftsUnlocked: backroomsUnlockedTechs.includes('rift_tech'),
+            backroomsUnlockedTechs,
+            backroomsFloor: backroomsFloor || 1,
+            hasGuild: !!buildings.find(b => b.id === 'guild_hall' && b.level > 0),
+            mobaWarActive: mobaWarState?.battleActive,
+            playerTerritoriesCount: (territories || []).filter(t => t.owner === 'player').length,
+            industryUnlocked: !!buildings.find(b => b.id === 'industry' && b.level > 0)
+          }}
+          onNavigate={(destination) => {
+            if (destination === 'town') { actions.visitTown(); setShowTown(true); }
+            else if (destination === 'tower') setShowTower(true);
+            else if (destination === 'world_boss') setShowWorldBoss(true);
+            else if (destination === 'guild') setShowGuild(true);
+            else if (destination === 'guild_war') setShowGuildWar(true);
+            else if (destination === 'backrooms') setShowBackrooms(true);
+            else if (destination === 'industry') setShowIndustry(true);
+            else if (destination === 'galaxy') setShowGalaxy(true);
+          }}
+        />
+      )}
 
-      <ElementalResonanceModal
-        isOpen={showElementalResonance}
-        onClose={() => setShowElementalResonance(false)}
-        elementalResonance={elementalResonance}
-        elementalEssences={elementalEssences}
-        actions={actions}
-      />
+      {showElementalResonance && (
+        <ElementalResonanceModal
+          isOpen={showElementalResonance}
+          onClose={() => setShowElementalResonance(false)}
+          elementalResonance={elementalResonance}
+          elementalEssences={elementalEssences}
+          actions={actions}
+        />
+      )}
 
-      <RelicChamberModal
-        isOpen={showRelicChamber}
-        onClose={() => setShowRelicChamber(false)}
-        ownedRelics={ownedRelics}
-        equippedRelics={equippedRelics}
-        gold={gold}
-        souls={souls}
-        voidMatter={voidMatter}
-        actions={actions}
-        unpurifiedRelics={unpurifiedRelics}
-        unlockedRiftPerks={unlockedRiftPerks}
-        purifyRelic={purifyRelic}
-      />
+      {showRelicChamber && (
+        <RelicChamberModal
+          isOpen={showRelicChamber}
+          onClose={() => setShowRelicChamber(false)}
+          ownedRelics={ownedRelics}
+          equippedRelics={equippedRelics}
+          gold={gold}
+          souls={souls}
+          voidMatter={voidMatter}
+          actions={actions}
+          unpurifiedRelics={unpurifiedRelics}
+          unlockedRiftPerks={unlockedRiftPerks}
+          purifyRelic={purifyRelic}
+        />
+      )}
 
-      <VoidInfusionModal
-        isOpen={showVoidInfusion}
-        onClose={() => setShowVoidInfusion(false)}
-        items={items}
-        voidMatter={voidMatter}
-        actions={actions}
-        industryInventory={industry.inventory}
-      />
+      {showVoidInfusion && (
+        <VoidInfusionModal
+          isOpen={showVoidInfusion}
+          onClose={() => setShowVoidInfusion(false)}
+          items={items}
+          voidMatter={voidMatter}
+          actions={actions}
+          industryInventory={industry.inventory}
+        />
+      )}
+      </Suspense>
 
       {/* GLOBAL COMMAND & NAVIGATION DOCK */}
       <GlobalDock
